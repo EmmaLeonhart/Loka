@@ -23,6 +23,22 @@ WIKIDATA_ENTITY_RE = re.compile(r"^http://www\.wikidata\.org/entity/(Q\d+)$")
 WIKIDATA_PROP_RE = re.compile(r"^http://www\.wikidata\.org/prop/direct/(P\d+)$")
 RDFS_LABEL = "http://www.w3.org/2000/01/rdf-schema#label"
 
+# SutraDB currently surfaces language-tagged literals with the suffix embedded
+# in the value string (e.g. value='Tokyo"@en') rather than as xml:lang metadata.
+# Fall back to parsing the suffix when xml:lang is missing.
+LANG_SUFFIX_RE = re.compile(r'^(.*)"@([a-zA-Z-]+)$')
+
+
+def parse_literal(o: dict) -> tuple[str, str | None]:
+    """Return (clean_value, lang) for a literal, handling the embedded "@lang quirk."""
+    value = o["value"]
+    lang = o.get("xml:lang")
+    if not lang:
+        m = LANG_SUFFIX_RE.match(value)
+        if m:
+            value, lang = m.group(1), m.group(2).lower()
+    return value, lang
+
 
 def fetch_all_triples(endpoint: str) -> list[dict]:
     """Pull every triple from SutraDB. Returns a list of dicts with s/p/o keys.
@@ -50,11 +66,14 @@ def build_qid_label_map(triples: list[dict]) -> dict[str, str]:
     for t in triples:
         if t["p"]["value"] != RDFS_LABEL:
             continue
-        if t["o"].get("xml:lang") != "en":
-            continue
         if t["s"]["type"] != "uri":
             continue
-        labels[t["s"]["value"]] = t["o"]["value"]
+        if t["o"]["type"] != "literal":
+            continue
+        value, lang = parse_literal(t["o"])
+        if lang != "en":
+            continue
+        labels[t["s"]["value"]] = value
     return labels
 
 
@@ -122,9 +141,10 @@ def fetch_wikidata_property_labels(prop_iris: set[str], cache_path: Path) -> dic
 def resolve_term(term: dict, labels: dict[str, str]) -> str | None:
     """Resolve a SPARQL JSON term to its English label. Returns None if unresolvable."""
     if term["type"] == "literal":
-        if term.get("xml:lang") and term["xml:lang"] != "en":
+        value, lang = parse_literal(term)
+        if lang and lang != "en":
             return None
-        return term["value"]
+        return value
     if term["type"] == "uri":
         return labels.get(term["value"])
     return None
