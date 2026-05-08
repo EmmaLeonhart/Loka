@@ -36,3 +36,8 @@ sutra-import-data/
 mnt/
 sutra_error.log
 *.pyc
+
+# Chat exports — commit only the extracted .md, not the bulky HTML and asset bundles
+chats/*.html
+chats/*_files/
+chats/*-raw.md
