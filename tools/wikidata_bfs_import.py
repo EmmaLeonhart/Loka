@@ -74,7 +74,7 @@ def fetch_entity_data(qid: str) -> Optional[dict]:
 
 WDT_PREFIX = "http://www.wikidata.org/prop/direct"
 WD_ENTITY_PREFIX = "http://www.wikidata.org/entity"
-SUTRA_IMPORTED_FROM = "http://sutra.dev/importedFrom"
+SUTRA_IMPORTED_FROM = "http://sutra.dev/provenance/propositionImportedFrom"
 # Stable IRI for "this came from a Wikidata claim on entity Q...".
 # Per-entity granularity (one importedFrom per entity URL) is enough provenance
 # without inflating the corpus with one row per imported triple.

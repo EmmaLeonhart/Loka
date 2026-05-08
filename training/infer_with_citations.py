@@ -54,14 +54,14 @@ from preprocess import (  # noqa: E402
     collect_unlabeled_predicates,
     fetch_wikidata_property_labels,
     parse_literal,
+    is_reserved_predicate,
     RDFS_LABEL,
+    RESERVED_PROVENANCE_PREFIX,
+    SUTRA_GENERATED,
+    SUTRA_GENERATED_BY,
+    SUTRA_CONFIDENCE,
+    SUTRA_INFERRED_FROM,
 )
-
-SUTRA_NS = "http://sutra.dev/"
-SUTRA_GENERATED = SUTRA_NS + "generated"
-SUTRA_GENERATED_BY = SUTRA_NS + "generatedBy"
-SUTRA_CONFIDENCE = SUTRA_NS + "confidence"
-SUTRA_INFERRED_FROM = SUTRA_NS + "inferredFrom"
 
 XSD_BOOLEAN = "http://www.w3.org/2001/XMLSchema#boolean"
 XSD_DECIMAL = "http://www.w3.org/2001/XMLSchema#decimal"
@@ -266,21 +266,29 @@ def main() -> None:
     # predicate_uri -> [(subject_uri, object_term)]
     pred_usage: dict[str, list[tuple[str, dict]]] = defaultdict(list)
 
+    n_reserved_skipped = 0
     for t in triples:
         if t["s"]["type"] != "uri":
             continue
         p_iri = t["p"]["value"]
         if p_iri == RDFS_LABEL:
             continue
-        # Skip RDF-star annotations on already-generated triples (their subjects
-        # are quoted triples, which surface as the synthetic <<QUOTED_TRIPLE>>
-        # marker, not a real URI). We also skip the annotation predicates
-        # themselves so we don't train on our own generated provenance.
-        if p_iri in (SUTRA_GENERATED, SUTRA_GENERATED_BY, SUTRA_CONFIDENCE, SUTRA_INFERRED_FROM):
+        # Reserved-namespace predicates never enter inference state. The model
+        # cannot see them, propose them as candidate predicates, or learn that
+        # they exist. If `fetch_all_triples` happens to return any (which it
+        # shouldn't given the SPARQL-star filter, but defense in depth), drop
+        # them here too.
+        if is_reserved_predicate(p_iri):
+            n_reserved_skipped += 1
             continue
         s_uri = t["s"]["value"]
         subj_facts[s_uri].append((p_iri, t["o"]))
         pred_usage[p_iri].append((s_uri, t["o"]))
+    if n_reserved_skipped:
+        print(
+            f"  dropped {n_reserved_skipped} reserved-namespace rows from inference state",
+            file=sys.stderr,
+        )
 
     candidate_subjects = [
         s for s, facts in subj_facts.items() if len(facts) >= 3 and s in labels
@@ -315,10 +323,19 @@ def main() -> None:
                     neighbor_pred_score[p2] += 1
 
         candidate_preds = sorted(neighbor_pred_score.items(), key=lambda kv: -kv[1])
-        candidate_preds = [p for p, _ in candidate_preds[: args.max_candidates_per_subject]]
+        # Hard guard: never propose a reserved-namespace predicate as a
+        # candidate. Belt-and-suspenders — `is_reserved_predicate` rows were
+        # already filtered out of `pred_usage` above, but if anything ever
+        # bypasses that, this gate stops it before the model sees it.
+        candidate_preds = [
+            p for p, _ in candidate_preds if not is_reserved_predicate(p)
+        ][: args.max_candidates_per_subject]
 
         for p_uri in candidate_preds:
             n_attempted += 1
+            # Final guard before running the model: refuse to even try.
+            if is_reserved_predicate(p_uri):
+                continue
             p_label = labels[p_uri]
             res = predict_object(
                 model, s_label, p_label, vocab, inv_vocab, tokens_per_role, device
@@ -341,6 +358,16 @@ def main() -> None:
                 else:
                     existing_labels.add(parse_literal(oo)[0].lower())
             if o_label.lower() in existing_labels:
+                continue
+
+            # Final emit-time guard. Belt-suspenders-and-elastic: if any prior
+            # filter has been bypassed, this still refuses. Logged loudly so
+            # the regression is obvious.
+            if is_reserved_predicate(p_uri):
+                print(
+                    f"  ! REFUSED to emit reserved-namespace predicate {p_uri!r}",
+                    file=sys.stderr,
+                )
                 continue
 
             s_term = f"<{s_uri}>"
