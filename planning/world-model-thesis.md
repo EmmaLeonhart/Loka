@@ -148,7 +148,7 @@ These are starting positions for the first experiments, **not architectural comm
 3. **Naive text-tokenization of triples.** Triples are not flat sentences.
 4. **OWL as engine reasoner.** Engine has no DL semantics. See §7.
 5. **Closed-world.** The model is not trying to be a database of the entire world.
-6. **Fine-tuning a general model.** Costs more, hallucinates more, learns the wrong priors.
+6. **~~Fine-tuning a general model.~~** Originally rejected for cost / hallucination / wrong-priors reasons. Revisited 2026-05-08: admitted as a parallel near-term track, see "Decisions revisited" below and `planning/fine-tuning-track.md`. The reasons for the original rejection still apply to the from-scratch path; they just no longer block parallel exploration.
 7. **GraphQL / SQL / MongoQL interfaces.** Already in `CLAUDE.md`. Reaffirmed.
 
 ## 7. OWL as expected-triple templates
@@ -202,6 +202,42 @@ Subject to revision based on what's learned at each step:
 6. **Enrollment v1** — non-RDF source ingestion. See `planning/enrollment-v1.md`.
 7. **Model registry** (deferred) — `sutra pull <model-name>` for downloading shared world models, completing the Ollama analogy in the Product Vision section. Out of scope until at least one trained world model is worth sharing.
 
+## 10.5. Decisions revisited
+
+The thesis is canonical but not frozen. Decisions revised since first draft:
+
+### 2026-05-08 — Fine-tuning admitted as parallel track
+
+**Original position (§6.6):** "Fine-tuning a general model" rejected.
+
+**Revised position:** From-scratch remains the canonical long-term path. A
+fine-tuning track is admitted alongside it, with documented constraints. See
+`planning/fine-tuning-track.md` for the full plan.
+
+**Why it changed:** Empirical. v0's 12M-param from-scratch transformer
+trained on 6,296 shrine-heavy triples produced token-level word salad — the
+README warned that v0 was about loop-runs-not-generalization, but it also
+clarified that the from-scratch path needs corpora and compute orders of
+magnitude beyond what we have on hand to produce coherent triples. A
+fine-tuned 1–7B base model can produce coherent triples within days. We need
+the rest of the world-model system (citation schema, write-back,
+OWL-as-template, eval harness) exercised on coherent outputs to know what
+works.
+
+**What didn't change:** The from-scratch track in `training/` continues. The
+`infer_with_citations.py` schema (`sutra:generated`, `sutra:generatedBy`,
+`sutra:confidence`, `sutra:supports`) applies to both tracks. The
+non-negotiable commitments in §5 remain. The "small model is the default
+ambition" position (§5.9) is upheld — the fine-tuning track defaults to
+1.5B–3B parameters before reaching for 7B+.
+
+**What we accept as cost:** Fine-tune outputs have weaker provenance
+guarantees than from-scratch (we can't fully tell whether a prediction came
+from our triples or from the base model's pretraining); we record
+`sutra:baseModel` to keep what auditability we can. Closed-world bias from
+pretrained priors is partially redirected by the masked-triple objective but
+not eliminated.
+
 ## 11. References
 
 - `chats/world-models.md` — full conversation source for §1–§9
@@ -209,5 +245,6 @@ Subject to revision based on what's learned at each step:
 - `planning/symbolic-layer-and-naming.md` — the four-ideas-from-Pramana plan, fifth idea added
 - `planning/structural-typing.md` — combinatoric namespaces and value-space classes
 - `planning/enrollment-v1.md` — non-RDF source ingestion (deferred)
+- `planning/fine-tuning-track.md` — parallel near-term track using QLoRA on a 1–7B base
 - `docs/architecture.md` — current SutraDB architecture
 - `CLAUDE.md` — workflow rules and core philosophy
