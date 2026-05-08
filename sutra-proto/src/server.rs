@@ -932,8 +932,14 @@ async fn insert_triples(
                     .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
                 ps.intern(inner_o)
                     .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
-                ps.insert(inner_triple)
-                    .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
+                // The inner triple of an RDF-star annotation is allowed to
+                // already exist — that's the common case when annotations
+                // are added to a fact that's been stored before. Mirror the
+                // in-memory branch above which already discards the result.
+                match ps.insert(inner_triple) {
+                    Ok(()) | Err(sutra_core::CoreError::DuplicateTriple) => {}
+                    Err(e) => return Err(ProtoError::BadRequest(format!("persist: {}", e))),
+                }
             }
             sutra_core::quoted_triple_id(is_id, ip_id, io_id)
         } else {
@@ -959,8 +965,10 @@ async fn insert_triples(
                     .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
                 ps.intern(inner_o)
                     .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
-                ps.insert(inner_triple)
-                    .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
+                match ps.insert(inner_triple) {
+                    Ok(()) | Err(sutra_core::CoreError::DuplicateTriple) => {}
+                    Err(e) => return Err(ProtoError::BadRequest(format!("persist: {}", e))),
+                }
             }
             sutra_core::quoted_triple_id(is_id, ip_id, io_id)
         } else {
