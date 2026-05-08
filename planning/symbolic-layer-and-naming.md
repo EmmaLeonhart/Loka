@@ -244,3 +244,48 @@ Total: roughly two focused weeks for the entire symbolic-layer minimum-viable su
 - Pramana repo location: `C:\Users\Immanuelle\Documents\Github\Pramana`.
 - Pramana planning doc most worth reading once: `Pramana/planning/02_TECHNICAL_SPECIFICATIONS.md`.
 - SutraDB current architecture: `docs/architecture.md`.
+
+---
+
+## 7. Additions after the world-model vision chats (2026-05-07)
+
+After absorbing `chats/world-models.md` and `chats/ai-bubble.md`, three additions to the original four-idea plan:
+
+### 7.1 Idea 5 — Structural typing on combinatoric namespaces
+
+Pramana's `combinatoric_classes.py` shipped a fifth load-bearing pattern that the original analysis missed: **class membership as a pure function over the canonical form of an IRI**, with no `rdf:type` triples stored. `<num:1,2,0,1>` is a Rational because the parser+classifier says so, not because of an asserted typing triple.
+
+This composes 1:1 with the four planned struct literals (`sutra:num`, `sutra:date`, `sutra:coord`, `sutra:f32vec`) and gives a free `STRUCT_CLASS` / `STRUCT_CHAIN` SPARQL+ extension. The motivating use case is a math database bootstrapped with established rules + named instances (pi, e), where the infinite class of rationals needs zero typing storage.
+
+Full design: **`planning/structural-typing.md`**.
+
+### 7.2 OWL — expected-triple templates, not a reasoner
+
+The persistent OWL question is settled by a user reframing:
+
+> *"OWL is more of a thing that would give expected triples for something and then the world model will fill them out."*
+
+OWL is a **prediction template** for the world-model layer, not a reasoner inside the engine. An OWL class declaration says "an instance of class C is expected to have properties P1, P2, P3"; when the database has a partial entity, the world model reads the OWL template and fills in the missing predicates with cited inferences. The engine itself never reasons about OWL — it just stores the OWL triples.
+
+Combined with §7.1: structural typing handles value-space classes; OWL-as-template handles domain ontologies. Neither requires an engine reasoner.
+
+Full reasoning: **`planning/world-model-thesis.md` §7**.
+
+### 7.3 Pramana lesson — discipline beats ambition
+
+The user's self-reflection on Pramana, paraphrased: *"the problem with Pramana is that we had a large amount of ambition with it but didn't really have much discipline with how we were organizing the program."*
+
+This is now a guiding constraint for SutraDB. Concrete operationalizations:
+
+- **Write the spec before the code.** New planning docs live in `planning/` before implementation begins.
+- **One implementation per concept.** Do not ship parallel V1/V2 adapter generations that disagree on the data model. If a rewrite happens, it replaces, not coexists.
+- **Don't conflate concerns.** Enrollment ≠ interpretation. Storage ≠ reasoning. Engine ≠ SDK validation.
+- **Small disciplined surface beats broad shallow surface.** v1 ships exactly what's specified, no surprise features.
+
+This lesson is also captured in auto-memory as a feedback memory.
+
+### 7.4 Sibling planning docs
+
+- **`planning/world-model-thesis.md`** — the canonical vision spec. Read this first if you're new to the project's direction.
+- **`planning/structural-typing.md`** — combinatoric namespaces and value-space classes. Math database bootstrap.
+- **`planning/enrollment-v1.md`** — non-RDF source ingestion. Design captured, implementation deferred until after first training run.
