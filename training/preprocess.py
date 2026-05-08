@@ -23,6 +23,20 @@ WIKIDATA_ENTITY_RE = re.compile(r"^http://www\.wikidata\.org/entity/(Q\d+)$")
 WIKIDATA_PROP_RE = re.compile(r"^http://www\.wikidata\.org/prop/direct/(P\d+)$")
 RDFS_LABEL = "http://www.w3.org/2000/01/rdf-schema#label"
 
+# Annotation predicates from infer_with_citations.py. Triples carrying these
+# predicates, and triples flagged by them as model-generated, must be excluded
+# from the training corpus — otherwise the model trains on its own outputs.
+SUTRA_GENERATED = "http://sutra.dev/generated"
+SUTRA_GENERATED_BY = "http://sutra.dev/generatedBy"
+SUTRA_CONFIDENCE = "http://sutra.dev/confidence"
+SUTRA_SUPPORTS = "http://sutra.dev/supports"
+ANNOTATION_PREDICATES = {SUTRA_GENERATED, SUTRA_GENERATED_BY, SUTRA_CONFIDENCE, SUTRA_SUPPORTS}
+
+# Synthetic marker the proto layer uses for the subject string of a quoted
+# triple. Triples with this subject are RDF-star annotations, not statements
+# the world model should learn from.
+QUOTED_TRIPLE_MARKER = "<<QUOTED_TRIPLE>>"
+
 # SutraDB currently surfaces language-tagged literals with the suffix embedded
 # in the value string (e.g. value='Tokyo"@en') rather than as xml:lang metadata.
 # Fall back to parsing the suffix when xml:lang is missing.
@@ -178,12 +192,31 @@ def main() -> None:
     out_path = Path(args.output)
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
+    # NOTE on generated triples: the proto layer materialises the *inner*
+    # triple of every RDF-star annotation as a regular (s, p, o) row. So a
+    # generated triple `<S> <P> "X"` ends up in this SPARQL pull alongside its
+    # annotations. We strip the annotations here (subject = QUOTED_TRIPLE
+    # marker or predicate in ANNOTATION_PREDICATES). Filtering the inner
+    # generated triple itself needs a SPARQL-star query — see TODO below.
+    # TODO: when sutra-sparql supports SPARQL-star, replace this with a
+    # CONSTRUCT that excludes any (s, p, o) where << s p o >> sutra:generated
+    # "true" exists.
     written = 0
     skipped = 0
+    skipped_generated = 0
     with out_path.open("w", encoding="utf-8") as f:
         for t in triples:
             if t["p"]["type"] == "uri" and t["p"]["value"] == RDFS_LABEL:
                 continue  # don't train on the label triples themselves
+            # Drop RDF-star annotations on generated triples. Their subject is
+            # the synthetic <<QUOTED_TRIPLE>> marker (no semantic content), and
+            # the annotation predicates are sutra-internal provenance.
+            if t["s"]["type"] == "uri" and t["s"]["value"] == QUOTED_TRIPLE_MARKER:
+                skipped_generated += 1
+                continue
+            if t["p"]["type"] == "uri" and t["p"]["value"] in ANNOTATION_PREDICATES:
+                skipped_generated += 1
+                continue
             s = resolve_term(t["s"], labels)
             p = resolve_term(t["p"], labels)
             o = resolve_term(t["o"], labels)
@@ -195,7 +228,12 @@ def main() -> None:
             f.write(f"{s}\t{p}\t{o}\n")
             written += 1
 
-    print(f"Wrote {written:,} triples to {out_path}; skipped {skipped:,} (unresolved labels)", file=sys.stderr)
+    print(
+        f"Wrote {written:,} triples to {out_path}; "
+        f"skipped {skipped:,} (unresolved labels), "
+        f"{skipped_generated:,} (model-generated / annotations)",
+        file=sys.stderr,
+    )
 
 
 if __name__ == "__main__":
