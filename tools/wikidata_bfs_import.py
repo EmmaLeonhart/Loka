@@ -72,15 +72,70 @@ def fetch_entity_data(qid: str) -> Optional[dict]:
         return None
 
 
+WDT_PREFIX = "http://www.wikidata.org/prop/direct"
+WD_ENTITY_PREFIX = "http://www.wikidata.org/entity"
+
+
+def snak_to_object(snak: dict, linked_qids: list[str]) -> str | None:
+    """Render a Wikidata snak as an N-Triples object token (the right-hand
+    side of `<s> <p> ___ .`).
+
+    Returns None for unsupported snak types so the caller can skip cleanly.
+    Supported value types: wikibase-entityid, string, monolingualtext,
+    quantity, time. globecoordinate is split into lat/long elsewhere — when
+    it appears as a qualifier value we skip rather than complicate the model.
+
+    Side-effect: appends every referenced QID to `linked_qids` so BFS keeps
+    walking into qualifier-referenced entities, not just main statements.
+    """
+    if snak.get("snaktype") != "value":
+        return None
+    datavalue = snak.get("datavalue", {})
+    vtype = datavalue.get("type")
+    value = datavalue.get("value")
+
+    if vtype == "wikibase-entityid":
+        target_qid = value.get("id", "")
+        if not target_qid.startswith("Q"):
+            return None
+        linked_qids.append(target_qid)
+        return f"<{WD_ENTITY_PREFIX}/{target_qid}>"
+    if vtype == "string":
+        val = str(value).replace('"', '\\"')
+        return f'"{val}"'
+    if vtype == "monolingualtext":
+        text = value.get("text", "").replace('"', '\\"')
+        lang = value.get("language", "und")
+        return f'"{text}"@{lang}'
+    if vtype == "quantity":
+        amount = value.get("amount", "0")
+        return f'"{amount}"^^<http://www.w3.org/2001/XMLSchema#decimal>'
+    if vtype == "time":
+        time_val = value.get("time", "")
+        return f'"{time_val}"^^<http://www.w3.org/2001/XMLSchema#dateTime>'
+    # globecoordinate as a qualifier: skip (lossy but cheap; v0)
+    return None
+
+
 def entity_to_triples(qid: str, entity: dict) -> tuple[list[str], list[str], str]:
     """Convert a Wikidata entity to N-Triples lines.
 
+    Each Wikidata claim becomes:
+      - one main triple   `<entity> <wdt:Pmain> <object> .`
+      - one RDF-star annotation per qualifier:
+          `<< <entity> <wdt:Pmain> <object> >> <wdt:Pqualifier> <qual_obj> .`
+
+    Wikidata's RDF dump uses `pq:` and `pr:` namespaces because it predates
+    RDF-star. SutraDB has RDF-star natively, so we use the same `wdt:`
+    predicate URI for both main statements and qualifiers — the
+    qualifier-vs-statement distinction is structural (subject is a quoted
+    triple), not lexical.
+
     Returns (triples, linked_qids, label_for_embedding).
     """
-    wd = f"http://www.wikidata.org/entity/{qid}"
-    wdt = "http://www.wikidata.org/prop/direct"
-    triples = []
-    linked_qids = []
+    wd = f"{WD_ENTITY_PREFIX}/{qid}"
+    triples: list[str] = []
+    linked_qids: list[str] = []
 
     # Labels
     label_en = ""
@@ -99,40 +154,42 @@ def entity_to_triples(qid: str, entity: dict) -> tuple[list[str], list[str], str
             val = descriptions[lang]["value"].replace('"', '\\"')
             triples.append(f'<{wd}> <http://schema.org/description> "{val}"@{lang} .')
 
-    # Claims → triples + linked entities
+    # Claims → main triple + RDF-star qualifier annotations
     claims = entity.get("claims", {})
     for prop_id, claim_list in claims.items():
         for claim in claim_list:
             mainsnak = claim.get("mainsnak", {})
             if mainsnak.get("snaktype") != "value":
                 continue
-            datavalue = mainsnak.get("datavalue", {})
-            vtype = datavalue.get("type")
-            value = datavalue.get("value")
 
-            if vtype == "wikibase-entityid":
-                target_qid = value.get("id", "")
-                if target_qid.startswith("Q"):
-                    triples.append(f'<{wd}> <{wdt}/{prop_id}> <http://www.wikidata.org/entity/{target_qid}> .')
-                    linked_qids.append(target_qid)
-            elif vtype == "string":
-                val = str(value).replace('"', '\\"')
-                triples.append(f'<{wd}> <{wdt}/{prop_id}> "{val}" .')
-            elif vtype == "monolingualtext":
-                text = value.get("text", "").replace('"', '\\"')
-                lang = value.get("language", "und")
-                triples.append(f'<{wd}> <{wdt}/{prop_id}> "{text}"@{lang} .')
-            elif vtype == "quantity":
-                amount = value.get("amount", "0")
-                triples.append(f'<{wd}> <{wdt}/{prop_id}> "{amount}"^^<http://www.w3.org/2001/XMLSchema#decimal> .')
-            elif vtype == "time":
-                time_val = value.get("time", "")
-                triples.append(f'<{wd}> <{wdt}/{prop_id}> "{time_val}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .')
-            elif vtype == "globecoordinate":
+            # Coordinates are a special case: split into lat/long on the entity
+            # itself rather than a single object. Pre-existing behaviour, kept.
+            datavalue = mainsnak.get("datavalue", {})
+            if datavalue.get("type") == "globecoordinate":
+                value = datavalue.get("value", {})
                 lat = value.get("latitude", 0)
                 lon = value.get("longitude", 0)
                 triples.append(f'<{wd}> <http://www.w3.org/2003/01/geo/wgs84_pos#lat> "{lat}"^^<http://www.w3.org/2001/XMLSchema#decimal> .')
                 triples.append(f'<{wd}> <http://www.w3.org/2003/01/geo/wgs84_pos#long> "{lon}"^^<http://www.w3.org/2001/XMLSchema#decimal> .')
+                continue
+
+            obj = snak_to_object(mainsnak, linked_qids)
+            if obj is None:
+                continue
+            main_pred = f"<{WDT_PREFIX}/{prop_id}>"
+            main_subject = f"<{wd}>"
+            triples.append(f"{main_subject} {main_pred} {obj} .")
+
+            # RDF-star qualifiers on this claim
+            qualifiers = claim.get("qualifiers", {})
+            qt_subject = f"<< {main_subject} {main_pred} {obj} >>"
+            for q_pid, q_snaks in qualifiers.items():
+                q_pred = f"<{WDT_PREFIX}/{q_pid}>"
+                for q_snak in q_snaks:
+                    q_obj = snak_to_object(q_snak, linked_qids)
+                    if q_obj is None:
+                        continue
+                    triples.append(f"{qt_subject} {q_pred} {q_obj} .")
 
     # Build embedding text from label + description
     desc_en = descriptions.get("en", {}).get("value", "")
