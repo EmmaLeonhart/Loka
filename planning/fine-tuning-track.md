@@ -36,6 +36,20 @@ haven't fed it enough data. The fine-tuning track is not evidence against
 from-scratch; it's a way to keep the rest of the system moving while the
 from-scratch corpus grows.
 
+**Inference quality is a feature, not a bug.** A pretrained LLM has already
+learned to reason at the natural-language level — to fill in plausible
+relations, recognise type compatibility, generalise from examples. Fine-tuning
+doesn't replace that capacity; it adapts it to RDF structure. The "leakage"
+from pretraining that §6.6 warned about (predictions partially drawing on
+Wikipedia/web data the base model saw) is provenance-opaque, but it is also
+the reason fine-tuning will make sensible inferences on day one — where
+from-scratch needs to learn even basic English structure from RDF alone. This
+is a feature we accept as a trade for opacity; the auditability we lose at
+the model level is partially recovered through `propositionInferredFrom`
+RDF-star edges back to the cited context. The model also likely needs more
+aggressive fine-tuning than usual to keep its predictions grounded in our
+data rather than the base's general knowledge — accepted cost.
+
 ## What this track preserves from the thesis
 
 These remain non-negotiable across both tracks:
