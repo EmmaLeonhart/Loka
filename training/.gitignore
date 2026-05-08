@@ -1,0 +1,7 @@
+data/
+checkpoints/
+*.pt
+*.pth
+__pycache__/
+*.pyc
+property_label_cache.json
