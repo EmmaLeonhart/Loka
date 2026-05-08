@@ -43,7 +43,7 @@ These remain non-negotiable across both tracks:
 - **RDF triples in, RDF triples out** (§5.1). Fine-tune's output format is
   N-Triples-star, same as `infer_with_citations.py` emits.
 - **Self-citing inference** (§5.5). Fine-tune outputs land in SutraDB with
-  `sutra:generated`/`sutra:supports` provenance, identical to from-scratch.
+  `sutra:generated`/`sutra:inferredFrom` provenance, identical to from-scratch.
 - **Same SPARQL+ for both** (§5.6). The fine-tuned model is queried the same
   way as the database and as the from-scratch model. Federation stays
   implicit.
@@ -146,7 +146,7 @@ Same evaluation surface as from-scratch:
 - **Held-out triple recovery**: mask one slot per triple, top-1 / top-5 match.
 - **Smoke coherence**: hand-pick 10 entities, generate 5 candidates each,
   flag obvious nonsense.
-- **Citation usefulness**: spot-check whether `sutra:supports` edges actually
+- **Citation usefulness**: spot-check whether `sutra:inferredFrom` edges actually
   motivate the prediction, or whether they're decorative.
 
 ## Interaction with the corpus
