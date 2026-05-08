@@ -70,15 +70,21 @@ Primary sources, in priority order:
 
 **Key claim: a small model is sufficient.** RDF data is structured and high-quality. The model doesn't need to learn syntax, ambiguity, or conversational coherence. It needs to learn entity relationships and structural patterns. Quality > scale for this regime. Concrete size estimate is deferred until first scale tests, but the working assumption is that the model is decisively smaller than a general-purpose LLM at the same task.
 
-### 3.1 Wikidata-first, English labels, deferred entity resolution
+### 3.1 Working assumptions for early training runs
 
-Wikidata alone is enough training data for many tasks. The full Wikidata RDF dump is many billions of triples covering most of human general knowledge. For the first training runs, Wikidata is the corpus.
+These are starting positions for the first experiments, **not architectural commitments**. They will evolve as we learn what actually works.
 
-**English labels, not QIDs.** Wikidata's QID/PID architecture (`Q42`, `P31`) is not human-readable. The training-corpus pipeline substitutes English-language labels for both items and properties. The model sees `Douglas Adams instance-of human`, not `Q42 P31 Q5`. Rationale, in the user's words: *"human readability is something that's very important because it is AI readability too."* The model's ability to do implicit lexical inference depends on seeing names with semantic content, not opaque identifiers. The same applies to predicates: `P31` becomes `instance of`, `P279` becomes `subclass of`, etc.
+**Wikidata first, but not Wikidata only.** Wikidata is the obvious starting corpus: the dump is large, the structure is consistent, and the entities have stable identifiers. But Wikidata-only training is not a commitment — multiple datasets (DBpedia, Wikifunctions, OpenAlex, domain-specific dumps) will likely be needed at scale. Do not lock the pipeline to a single source.
 
-This is for English specifically and "for the time being." Multilingual variants are a later question. Trade-offs accepted: label collisions (two distinct entities named "John Smith"), label drift over time ("Burma" → "Myanmar"). The alternative — opaque identifiers — defeats the purpose of training a model that can reason about content.
+**Use human-readable labels, not opaque IDs.** Wikidata's QID/PID architecture (`Q42`, `P31`) is not human-readable. The training-corpus preprocessing substitutes labels — names of items and properties — for the IDs. The model sees `Douglas Adams instance-of human`, not `Q42 P31 Q5`. The user's framing: *"human readability is something that's very important because it is AI readability too."* The model's ability to do implicit lexical inference depends on seeing names with semantic content, not opaque identifiers. The same applies to predicates: `P31` becomes `instance of`, `P279` becomes `subclass of`.
 
-**Entity resolution is deferred.** It is important in general, and especially for non-Wikidata sources where the same entity may appear under different names. For Wikidata-only training, however, every entity has a stable QID for deduplication during preprocessing — entity resolution is mostly solved by the source. The problem becomes load-bearing when enrollment of non-RDF sources comes online (see `planning/enrollment-v1.md`), at which point a real entity-resolution pipeline is needed.
+**Multilingual training is the plan; English is just first.** English is the practical starting point — labels are usually present, engineering is simpler — but the explicit intention is to train in many languages. The label-substitution mechanism generalizes to any language Wikidata covers.
+
+**Trade-offs accepted:** label collisions (two distinct entities named "John Smith"), label drift over time, translation drift across languages. These are accepted because the alternative — opaque identifiers — defeats the purpose of training a model that can reason about content.
+
+**What this approach is NOT trying to do:** establish name-equivalences. The model is not being trained to know that "Burma" and "Myanmar" refer to the same place, or that "Cassius Clay" became "Muhammad Ali." Name-equivalence resolution is a separate problem (handled by `owl:sameAs` triples that already exist in Wikidata, plus the deferred entity-resolution pipeline). This preprocessing is about giving the model semantic content to reason over, not synonymy lookups.
+
+**Entity resolution is partially deferred.** Within Wikidata alone, every entity has a stable QID for deduplication — no entity resolution needed at preprocessing time. As soon as multi-source training begins (DBpedia, OpenAlex), entity resolution becomes load-bearing because the same person/place/thing appears under different IDs across sources. A real entity-resolution pipeline is needed at that point, not later. Full enrollment-style entity resolution against arbitrary non-RDF sources is part of the year-deferred enrollment work — see `planning/enrollment-v1.md`.
 
 ---
 
@@ -107,7 +113,7 @@ This is for English specifically and "for the time being." Multilingual variants
 7. **HNSW is the decoder.** Model output → vector → HNSW NN → URI. This makes the existing `sutra-hnsw` crate load-bearing for inference, not just search.
 8. **Common concepts don't need IRIs.** Only proper nouns mint IRIs. Common concepts (`green`, `tree`, `alive`) get consistent embeddings via the model + HNSW. The schema policy follows from this.
 9. **Small model is the default ambition.** Scale up only if the structured-data hypothesis fails empirically.
-10. **Train on English labels, not QIDs.** Wikidata's QID/PID architecture is preprocessed to English labels before training (see §3.1). Human-readable = AI-readable; opaque IDs defeat the model's lexical-inference capacity.
+10. **Train on human-readable labels, not opaque IDs.** Whatever the source, the preprocessing pipeline replaces opaque identifiers with their human-readable labels (Wikidata QIDs/PIDs → label strings, etc.). Languages and per-source mechanics are working choices, not committed (see §3.1); the principle that the model sees names not IDs is committed. Human-readable = AI-readable.
 
 ## 6. Architectural rejections (negative space)
 

@@ -20,29 +20,25 @@ Enrollment does NOT interpret the content. Semantic extraction (LLM-driven entit
 
 ---
 
-## 2. Why deferred
+## 2. Why deferred — and what enrollment actually is
 
-The world-model training corpus is initially Wikidata + DBpedia + other public RDF dumps. These are already RDF. Enrollment is for **non-RDF sources** — a later phase, after the model is producing useful inferences and we want to ingest local CSVs, PDFs, SQL dumps to expand the corpus.
+**Enrollment is two-way sync between live source artifacts and SutraDB.** This is the whole reason it is hard, and the whole reason it is deferred about a year out. The user's framing:
 
-This document captures the design while context is fresh. **Implementation is deferred substantially.** The user's own framing: *"enrollment might be a very useful thing at some point but it's probably to be deferred a lot."* Implementation should not start until:
+> *"Enrollment is something that is two-way but we're going to wait like a fucking year for it after we've trained the models."*
 
-- The first iteration of the world-model layer is producing cited inferences.
-- There is a concrete need for non-RDF sources in the training pipeline or in user-facing workflows.
+Two-way means: when the source (CSV / SQL / PDF / etc.) changes, the enrolled triples update; when the enrolled triples are edited (by curators, by the world model writing back inferences, by SDK clients), those edits propagate back to a representation of the source. Either direction alone is straightforward; together they are a real distributed-systems problem with conflict resolution, change detection, and coupling between SutraDB and the source's storage.
 
-### 2.1 One-way only — no two-way sync
+Deferral timeline: **about a year**, after the world-model layer is trained and producing useful inferences. Pramana attempted enrollment early without that discipline (and without actually solving the sync problem) and the result was the "big mess" the user diagnosed.
 
-A hard architectural rule, settled in advance:
+### 2.1 What enrollment is NOT
 
-> *"One-way imports into a database that are used for training are different and significantly better than trying to do any kind of two-way sync."*
+To avoid confusion: bulk one-way import of an RDF dump (Wikidata, DBpedia, OpenAlex, MusicBrainz) is **not enrollment**. That is straight RDF ingestion — read triples out of a `.ttl` / `.nt` / `.hdt` file, write them into the `.sdb`, done. No two-way sync, no change detection, no source-tracking beyond a `sutra:fromDataset` provenance edge. RDF ingestion is what the world-model layer needs in the near term; it is covered in `planning/world-model-thesis.md` §3 and is mostly already in flight via `tools/wikidata_bfs_import.py`.
 
-Enrollment is **read-only over the source artifact, write-only into SutraDB**. The shadow copy and provenance triples represent a snapshot of the source at enrollment time. They do not mirror the source forward, and they do not propagate edits back.
+Enrollment specifically refers to two-way sync of **non-RDF** source artifacts where the source remains live and authoritative for its own state, and SutraDB needs to stay in agreement with it.
 
-Concretely:
+### 2.2 What's captured below
 
-- If the user updates the original CSV/SQL/PDF, the enrolled triples in SutraDB do not change. The user re-runs `sutra enroll --re-enroll` to capture a new snapshot, which is linked to the prior one via `sutra:supersededBy`.
-- If a downstream process (the world-model layer, an SDK, a human curator) edits enrolled triples in SutraDB, those edits do **not** propagate back to the source artifact. The source is canonical for *its* state at enrollment time; SutraDB is canonical for everything after.
-
-Two-way sync would require change-detection on both sides, conflict resolution, and a coupling between SutraDB and the source's storage system. All three are explicitly out of scope. Enrollment is import, not integration.
+The rest of this document is a sketch design — predicates, locator vocabulary, CLI shape — that anchors what enrollment will look like when we eventually build it. The sketch covers only the import direction (source → SutraDB); the back-propagation direction (SutraDB → source) is the harder half and is intentionally not specified yet. **Treat everything below §3 as reference material for a year-from-now planning revisit, not as a v1 implementation target.**
 
 ---
 
