@@ -17,9 +17,13 @@ import signal
 import sys
 import time
 from collections import deque
+from pathlib import Path
 from typing import Optional
 
 import requests
+
+STATE_PATH = Path("wikidata_import_state.json")
+SAVE_EVERY = 25  # entities
 
 # Fix Windows Unicode
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
@@ -246,14 +250,47 @@ def main():
         sutra_declare_vector()
         print("[OK] Vector predicate declared")
 
-    # BFS state
-    queue = deque([args.seed])
-    visited = set()
+    # BFS state — restore from prior run if present, else start fresh from seed.
+    queue: deque = deque()
+    visited: set[str] = set()
+    if STATE_PATH.exists():
+        try:
+            prev = json.loads(STATE_PATH.read_text(encoding="utf-8"))
+            if isinstance(prev.get("bfs_visited"), list):
+                visited = set(prev["bfs_visited"])
+            if isinstance(prev.get("bfs_queue"), list):
+                queue = deque(prev["bfs_queue"])
+            if visited or queue:
+                print(f"[RESUME] {len(visited)} visited, {len(queue)} queued from prior run")
+        except Exception as e:
+            print(f"[WARN] State file unreadable, ignoring: {e}")
+    if not queue and args.seed not in visited:
+        queue.append(args.seed)
+        print(f"[FRESH] Seeding from {args.seed}")
+
     start_time = time.time()
     total_triples = 0
     total_vectors = 0
     total_entities = 0
     errors = 0
+
+    def save_state(final: bool = False) -> None:
+        elapsed_now = time.time() - start_time
+        state = {
+            "seed": args.seed,
+            "total_entities": total_entities,
+            "total_triples": total_triples,
+            "total_vectors": total_vectors,
+            "errors": errors,
+            "queue_remaining": len(queue),
+            "elapsed_seconds": round(elapsed_now, 1),
+            "visited_count": len(visited),
+            "bfs_visited": sorted(visited),
+            "bfs_queue": list(queue),
+        }
+        STATE_PATH.write_text(json.dumps(state, indent=2), encoding="utf-8")
+        if final:
+            print(f"\nState saved to {STATE_PATH}")
 
     print(f"\n--- Starting BFS from {args.seed} ---\n")
 
@@ -308,6 +345,10 @@ def main():
             if linked not in visited:
                 queue.append(linked)
 
+        # Periodic checkpoint so Ctrl-C / crashes don't lose progress
+        if total_entities % SAVE_EVERY == 0:
+            save_state()
+
     # Summary
     elapsed = time.time() - start_time
     print(f"\n=== Import Complete ===")
@@ -319,20 +360,7 @@ def main():
     print(f"Time:               {elapsed:.1f}s")
     print(f"Rate:               {total_entities / max(elapsed, 1):.1f} entities/s")
 
-    # Save state for resume
-    state = {
-        "seed": args.seed,
-        "total_entities": total_entities,
-        "total_triples": total_triples,
-        "total_vectors": total_vectors,
-        "errors": errors,
-        "queue_remaining": len(queue),
-        "elapsed_seconds": round(elapsed, 1),
-        "visited_count": len(visited),
-    }
-    with open("wikidata_import_state.json", "w") as f:
-        json.dump(state, f, indent=2)
-    print(f"\nState saved to wikidata_import_state.json")
+    save_state(final=True)
 
 
 if __name__ == "__main__":
