@@ -118,7 +118,7 @@ These are starting positions for the first experiments, **not architectural comm
 
 | SutraDB component | Role in world-model layer |
 |---|---|
-| RDF-star storage | Native reification — every inferred triple carries provenance via `<<s p o>> sutra:inferredFrom <<context_s context_p context_o>>`. (Imported triples use `sutra:importedFrom`; the generic stance `sutra:supports` from the symbolic layer is a separate concept.) |
+| RDF-star storage | Native reification — every inferred triple carries provenance via `<<s p o>> sutra-prov:propositionInferredFrom <<context_s context_p context_o>>`. (Imported triples use `sutra-prov:propositionImportedFrom`; the generic stance `sutra:supports` from the symbolic layer is a separate concept. The `sutra-prov:` namespace expands to `http://sutra.dev/provenance/` and is reserved — the world model never sees, proposes, or emits predicates in it.) |
 | SPO/POS/OSP indexes | Training-batch streaming and query-time graph context retrieval. |
 | HNSW vector index | **Output decoder.** Model emits an embedding; HNSW NN resolves to a URI. Vectors are no longer just a search feature — they are the bridge from latent space back to symbolic space. |
 | Struct literals (`sutra:num`, `sutra:date`, `sutra:coord`, `sutra:f32vec`) | Value-space substrate. Numbers, dates, coordinates don't get learned representations — their identity comes from canonical form. See `planning/structural-typing.md`. |

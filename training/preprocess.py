@@ -26,18 +26,33 @@ RDFS_LABEL = "http://www.w3.org/2000/01/rdf-schema#label"
 # Annotation predicates from infer_with_citations.py. Their rows are RDF-star
 # annotations on model-generated triples — sutra-internal provenance, never
 # semantic statements the world model should train on.
-SUTRA_GENERATED = "http://sutra.dev/generated"
-SUTRA_GENERATED_BY = "http://sutra.dev/generatedBy"
-SUTRA_CONFIDENCE = "http://sutra.dev/confidence"
-SUTRA_INFERRED_FROM = "http://sutra.dev/inferredFrom"
-SUTRA_IMPORTED_FROM = "http://sutra.dev/importedFrom"
-ANNOTATION_PREDICATES = {
-    SUTRA_GENERATED,
-    SUTRA_GENERATED_BY,
-    SUTRA_CONFIDENCE,
-    SUTRA_INFERRED_FROM,
-    SUTRA_IMPORTED_FROM,
-}
+# All system-reserved provenance predicates live under this prefix. Nothing
+# the world model has ever seen, anywhere, will use a predicate IRI starting
+# with this string — Wikidata uses wdt:/wd:/wikibase:/, RDFS uses rdfs:/,
+# OWL uses owl:/, schema.org uses schema:/, and so on. So:
+#
+#   * The training corpus drops every row whose predicate is in this namespace.
+#   * The inference script refuses to emit a primary triple whose predicate
+#     is in this namespace, and refuses to even consider one as a candidate.
+#   * The names are deliberately verbose ("propositionGeneratedFrom" not
+#     "generatedFrom") so that any human reading raw triples knows these are
+#     system-only, and any future collision with a real-world predicate is
+#     vanishingly unlikely.
+RESERVED_PROVENANCE_PREFIX = "http://sutra.dev/provenance/"
+SUTRA_GENERATED = RESERVED_PROVENANCE_PREFIX + "propositionGenerated"
+SUTRA_GENERATED_BY = RESERVED_PROVENANCE_PREFIX + "propositionGeneratedBy"
+SUTRA_CONFIDENCE = RESERVED_PROVENANCE_PREFIX + "propositionConfidence"
+SUTRA_INFERRED_FROM = RESERVED_PROVENANCE_PREFIX + "propositionInferredFrom"
+SUTRA_IMPORTED_FROM = RESERVED_PROVENANCE_PREFIX + "propositionImportedFrom"
+
+
+def is_reserved_predicate(iri: str) -> bool:
+    """True if the predicate IRI is in the reserved provenance namespace.
+
+    Used to strip annotation rows from the training corpus AND to guard the
+    inference path from ever producing or considering one.
+    """
+    return iri.startswith(RESERVED_PROVENANCE_PREFIX)
 
 # SPARQL-star query that pulls every triple EXCEPT those flagged
 # `<< ?s ?p ?o >> sutra:generated <anything>`. This removes the inner generated
@@ -212,9 +227,10 @@ def main() -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Inner generated triples have already been excluded by TRAINING_CORPUS_QUERY
-    # (FILTER NOT EXISTS << ?s ?p ?o >> sutra:generated). What still needs
-    # stripping here are the annotation rows themselves — their `?s` is the
-    # bnode-rendered quoted-triple ID, identifiable by predicate.
+    # (FILTER NOT EXISTS << ?s ?p ?o >> propositionGenerated). What still needs
+    # stripping here is every row whose predicate is in the reserved provenance
+    # namespace — that's both the annotation rows on generated/imported triples
+    # AND any defense-in-depth guard against ever training on system metadata.
     written = 0
     skipped = 0
     skipped_annotations = 0
@@ -222,7 +238,7 @@ def main() -> None:
         for t in triples:
             if t["p"]["type"] == "uri" and t["p"]["value"] == RDFS_LABEL:
                 continue  # don't train on the label triples themselves
-            if t["p"]["type"] == "uri" and t["p"]["value"] in ANNOTATION_PREDICATES:
+            if t["p"]["type"] == "uri" and is_reserved_predicate(t["p"]["value"]):
                 skipped_annotations += 1
                 continue
             s = resolve_term(t["s"], labels)

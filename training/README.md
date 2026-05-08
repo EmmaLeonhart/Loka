@@ -86,18 +86,34 @@ Step 7 closes the loop. For each candidate subject, the script:
    `--confidence`, emits a new triple **and** RDF-star annotations:
 
    ```
-   <S>  <P>  "predicted-label" .
-   << <S> <P> "predicted-label" >>  sutra:generated     "true"^^xsd:boolean .
-   << <S> <P> "predicted-label" >>  sutra:generatedBy   "wikidata_v2" .
-   << <S> <P> "predicted-label" >>  sutra:confidence    "0.87"^^xsd:decimal .
-   << <S> <P> "predicted-label" >>  sutra:inferredFrom      << <S> <p_existing> <o_existing> >> .
+   <S> <P> "predicted-label" .
+   << <S> <P> "predicted-label" >>  sutra-prov:propositionGenerated      "true"^^xsd:boolean .
+   << <S> <P> "predicted-label" >>  sutra-prov:propositionGeneratedBy    "wikidata_v2" .
+   << <S> <P> "predicted-label" >>  sutra-prov:propositionConfidence     "0.87"^^xsd:decimal .
+   << <S> <P> "predicted-label" >>  sutra-prov:propositionInferredFrom   << <S> <p_existing> <o_existing> >> .
    ```
 
-The `sutra:inferredFrom` edges cite the subject's existing facts that informed the
-prediction. `preprocess.py` excludes generated triples from the corpus via a
-SPARQL-star `FILTER NOT EXISTS << ?s ?p ?o >> sutra:generated ?_g`, and strips
-the annotation rows themselves by predicate. The model never trains on its
-own outputs.
+   Where `sutra-prov:` expands to `http://sutra.dev/provenance/`.
+
+## Reserved provenance namespace
+
+**Hard rule:** every predicate under `http://sutra.dev/provenance/` is
+system-internal. The world model:
+
+- **never sees them** — `preprocess.py` strips every row with such a predicate
+  from the training corpus (prefix match), and the SPARQL-star
+  `FILTER NOT EXISTS << ?s ?p ?o >> propositionGenerated ?_g` query strips
+  inner generated triples too;
+- **never proposes them** as candidate predicates during inference;
+- **never emits them** — `infer_with_citations.py` has a final guard before
+  every primary triple is written; if the predicate is in the reserved
+  namespace, it's logged and dropped.
+
+Names are deliberately verbose (`propositionGeneratedFrom`, not
+`generatedFrom`) so a human reading raw triples can recognise them at a
+glance, and so collisions with real-world RDF are vanishingly unlikely. The
+model can be trusted to never train on or hallucinate a triple in this
+namespace.
 
 Predicted objects are emitted as plain string literals: the model output is
 text. Resolving predictions to URIs via HNSW nearest-neighbor (the
