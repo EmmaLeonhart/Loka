@@ -8,6 +8,32 @@ This document captures the architectural commitments and rejections that define 
 
 ---
 
+## Product vision: Ollama for world models
+
+SutraDB's product positioning in one analogy:
+
+> **What Ollama is to LLMs, SutraDB is to world models.**
+
+Ollama lets you `pull` any local model, run it on your machine, swap between models trivially. SutraDB does the same for *world models* — except a world model here is not a pretrained text generator; it is an inference engine over your knowledge graph. The composition has three steps:
+
+1. **Import any database into RDF form.** Source data lives in graph databases, relational databases, document stores, file dumps. SutraDB normalizes everything to RDF triples (RDF-star where edge metadata matters). Graph databases (Neo4j, JanusGraph, RDF triplestores) translate most cleanly; relational and document stores translate via the year-deferred enrollment pipeline (see `planning/enrollment-v1.md`). Bulk one-way RDF imports (Wikidata, DBpedia, OpenAlex, MusicBrainz) are direct: dump in, triples out.
+2. **Pull a world model, or train your own.** A world model is a transformer trained from scratch on RDF triples (see §3 onward). User options:
+   - **Pull a pretrained world model** from a shared registry — same UX as `ollama pull`. The model arrives ready to query.
+   - **Train your own** on imported data via the local pipeline (`training/`). Useful for private data, domain-specific inference, or validating ideas at small scale.
+   - **Mix:** pretrained world model + local fine-on-RDF on top, when those approaches mature.
+3. **Run inference against your data.** Model + database compose at the SPARQL+ layer. A query reaches both systems; SutraDB returns exact answers from stored triples, the world model fills gaps with cited inferences. The caller does not pick which system answers — federation is implicit.
+
+Why this is the right framing:
+
+- **Local-first.** Everything runs on the user's machine. No cloud round-trips, no data egress, no model-API rate limits. Like Ollama, like SQLite.
+- **Pluggable.** Model and data are decoupled. Swap models without re-importing data; swap data without re-training the model.
+- **Honest provenance.** Inferred triples land back in SutraDB with their inference chain (per §5 commitment #5). Inferences are auditable, not opaque outputs.
+- **Agent-first.** An AI agent can `sutra pull <model>`, `sutra import <dataset>`, and `sutra query <sparql+>` without ever touching a GUI. The CLI is the primary interface — already an established SutraDB principle.
+
+This is the user-facing organizing principle for everything below. The architectural commitments (§5), rejections (§6), and the OWL framing (§7) all serve it. The current `training/` pipeline is the local-training half; a future model-registry tool will be the `pull` half.
+
+---
+
 ## 1. Premise
 
 **SutraDB is one half of a two-system composition. The other half is a transformer trained from scratch on RDF triples. Both expose the same SPARQL+ interface.**
@@ -174,6 +200,7 @@ Subject to revision based on what's learned at each step:
 4. **Inference write-back** — close the loop. Inferred triples land in SutraDB with provenance.
 5. **Scale up** — corpus size, model size, evaluation harness.
 6. **Enrollment v1** — non-RDF source ingestion. See `planning/enrollment-v1.md`.
+7. **Model registry** (deferred) — `sutra pull <model-name>` for downloading shared world models, completing the Ollama analogy in the Product Vision section. Out of scope until at least one trained world model is worth sharing.
 
 ## 11. References
 
