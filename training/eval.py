@@ -21,6 +21,10 @@ import random
 import sys
 from pathlib import Path
 
+# Make stdout tolerant of non-cp1252 chars (Japanese, etc.) on Windows.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
