@@ -19,7 +19,7 @@ Architecture is documented in `planning/world-model-thesis.md`. The short versio
 | `model.py` | The role-aware transformer (PyTorch). |
 | `train.py` | Masked-triple training loop with AdamW. |
 | `eval.py` | Sanity-check predictions for held-out masked triples. |
-| `infer_with_citations.py` | Generative-citation inference: predict new triples, write them back to SutraDB tagged `sutra:generated` with `sutra:supports` provenance edges to the cited context. |
+| `infer_with_citations.py` | Generative-citation inference: predict new triples, write them back to SutraDB tagged `sutra:generated` with `sutra:inferredFrom` provenance edges to the cited context. |
 | `requirements.txt` | Python deps. |
 
 ## Prerequisites
@@ -90,10 +90,10 @@ Step 7 closes the loop. For each candidate subject, the script:
    << <S> <P> "predicted-label" >>  sutra:generated     "true"^^xsd:boolean .
    << <S> <P> "predicted-label" >>  sutra:generatedBy   "wikidata_v2" .
    << <S> <P> "predicted-label" >>  sutra:confidence    "0.87"^^xsd:decimal .
-   << <S> <P> "predicted-label" >>  sutra:supports      << <S> <p_existing> <o_existing> >> .
+   << <S> <P> "predicted-label" >>  sutra:inferredFrom      << <S> <p_existing> <o_existing> >> .
    ```
 
-The `sutra:supports` edges cite the subject's existing facts that informed the
+The `sutra:inferredFrom` edges cite the subject's existing facts that informed the
 prediction. `preprocess.py` excludes generated triples from the corpus via a
 SPARQL-star `FILTER NOT EXISTS << ?s ?p ?o >> sutra:generated ?_g`, and strips
 the annotation rows themselves by predicate. The model never trains on its
@@ -109,7 +109,7 @@ text. Resolving predictions to URIs via HNSW nearest-neighbor (the
 - **Fixed sequence length** (8 tokens per role, 28 total). Longer triples are truncated.
 - **Single-language (English).** Multi-lingual training is the eventual plan but not v0.
 - **Memorization is acceptable.** With 16K triples and a 5M-param model, the model will largely memorize the corpus. For v0 we want the loop to run, not generalization.
-- **Write-back is wired up.** `infer_with_citations.py` emits N-Triples-star with `sutra:generated`/`sutra:supports` provenance and posts to SutraDB. The corpus puller filters generated triples out via SPARQL-star, so the model never re-trains on its own outputs. Remaining gap: URI resolution for predicted objects (HNSW decoder, world-model-thesis §5.7) — predicted O is currently emitted as a plain literal.
+- **Write-back is wired up.** `infer_with_citations.py` emits N-Triples-star with `sutra:generated`/`sutra:inferredFrom` provenance and posts to SutraDB. The corpus puller filters generated triples out via SPARQL-star, so the model never re-trains on its own outputs. Remaining gap: URI resolution for predicted objects (HNSW decoder, world-model-thesis §5.7) — predicted O is currently emitted as a plain literal.
 
 ## What this proves when it works
 

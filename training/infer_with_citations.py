@@ -8,7 +8,7 @@ top-1 tokens. If the prediction is high-confidence, emit:
     << <S> <P> "predicted-label" >>  sutra:generated     "true"^^xsd:boolean .
     << <S> <P> "predicted-label" >>  sutra:generatedBy   "wikidata_v2" .
     << <S> <P> "predicted-label" >>  sutra:confidence    "0.87"^^xsd:decimal .
-    << <S> <P> "predicted-label" >>  sutra:supports      << <S> <p_existing> <o_existing> >> .
+    << <S> <P> "predicted-label" >>  sutra:inferredFrom  << <S> <p_existing> <o_existing> >> .
     ...
 
 Generated triples are tagged so they can be (a) hidden from default queries and
@@ -61,7 +61,7 @@ SUTRA_NS = "http://sutra.dev/"
 SUTRA_GENERATED = SUTRA_NS + "generated"
 SUTRA_GENERATED_BY = SUTRA_NS + "generatedBy"
 SUTRA_CONFIDENCE = SUTRA_NS + "confidence"
-SUTRA_SUPPORTS = SUTRA_NS + "supports"
+SUTRA_INFERRED_FROM = SUTRA_NS + "inferredFrom"
 
 XSD_BOOLEAN = "http://www.w3.org/2001/XMLSchema#boolean"
 XSD_DECIMAL = "http://www.w3.org/2001/XMLSchema#decimal"
@@ -276,7 +276,7 @@ def main() -> None:
         # are quoted triples, which surface as the synthetic <<QUOTED_TRIPLE>>
         # marker, not a real URI). We also skip the annotation predicates
         # themselves so we don't train on our own generated provenance.
-        if p_iri in (SUTRA_GENERATED, SUTRA_GENERATED_BY, SUTRA_CONFIDENCE, SUTRA_SUPPORTS):
+        if p_iri in (SUTRA_GENERATED, SUTRA_GENERATED_BY, SUTRA_CONFIDENCE, SUTRA_INFERRED_FROM):
             continue
         s_uri = t["s"]["value"]
         subj_facts[s_uri].append((p_iri, t["o"]))
@@ -355,7 +355,7 @@ def main() -> None:
 
             for cp_uri, co_term in subj_facts[s_uri][: args.max_citations]:
                 cited = quoted(s_term, f"<{cp_uri}>", fmt_term(co_term))
-                out_lines.append(f"{qt} <{SUTRA_SUPPORTS}> {cited} .")
+                out_lines.append(f"{qt} <{SUTRA_INFERRED_FROM}> {cited} .")
 
             n_emitted += 1
             print(

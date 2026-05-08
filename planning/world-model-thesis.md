@@ -118,7 +118,7 @@ These are starting positions for the first experiments, **not architectural comm
 
 | SutraDB component | Role in world-model layer |
 |---|---|
-| RDF-star storage | Native reification — every inferred triple carries provenance via `<<s p o>> sutra:supports :evidence`. |
+| RDF-star storage | Native reification — every inferred triple carries provenance via `<<s p o>> sutra:inferredFrom <<context_s context_p context_o>>`. (Imported triples use `sutra:importedFrom`; the generic stance `sutra:supports` from the symbolic layer is a separate concept.) |
 | SPO/POS/OSP indexes | Training-batch streaming and query-time graph context retrieval. |
 | HNSW vector index | **Output decoder.** Model emits an embedding; HNSW NN resolves to a URI. Vectors are no longer just a search feature — they are the bridge from latent space back to symbolic space. |
 | Struct literals (`sutra:num`, `sutra:date`, `sutra:coord`, `sutra:f32vec`) | Value-space substrate. Numbers, dates, coordinates don't get learned representations — their identity comes from canonical form. See `planning/structural-typing.md`. |
@@ -226,7 +226,7 @@ works.
 
 **What didn't change:** The from-scratch track in `training/` continues. The
 `infer_with_citations.py` schema (`sutra:generated`, `sutra:generatedBy`,
-`sutra:confidence`, `sutra:supports`) applies to both tracks. The
+`sutra:confidence`, `sutra:inferredFrom`) applies to both tracks. The
 non-negotiable commitments in §5 remain. The "small model is the default
 ambition" position (§5.9) is upheld — the fine-tuning track defaults to
 1.5B–3B parameters before reaching for 7B+.

@@ -29,8 +29,15 @@ RDFS_LABEL = "http://www.w3.org/2000/01/rdf-schema#label"
 SUTRA_GENERATED = "http://sutra.dev/generated"
 SUTRA_GENERATED_BY = "http://sutra.dev/generatedBy"
 SUTRA_CONFIDENCE = "http://sutra.dev/confidence"
-SUTRA_SUPPORTS = "http://sutra.dev/supports"
-ANNOTATION_PREDICATES = {SUTRA_GENERATED, SUTRA_GENERATED_BY, SUTRA_CONFIDENCE, SUTRA_SUPPORTS}
+SUTRA_INFERRED_FROM = "http://sutra.dev/inferredFrom"
+SUTRA_IMPORTED_FROM = "http://sutra.dev/importedFrom"
+ANNOTATION_PREDICATES = {
+    SUTRA_GENERATED,
+    SUTRA_GENERATED_BY,
+    SUTRA_CONFIDENCE,
+    SUTRA_INFERRED_FROM,
+    SUTRA_IMPORTED_FROM,
+}
 
 # SPARQL-star query that pulls every triple EXCEPT those flagged
 # `<< ?s ?p ?o >> sutra:generated <anything>`. This removes the inner generated

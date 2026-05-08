@@ -30,7 +30,7 @@ from infer_with_citations import (  # noqa: E402
     SUTRA_GENERATED,
     SUTRA_GENERATED_BY,
     SUTRA_CONFIDENCE,
-    SUTRA_SUPPORTS,
+    SUTRA_INFERRED_FROM,
     XSD_BOOLEAN,
     XSD_DECIMAL,
 )
@@ -162,7 +162,7 @@ def main() -> None:
                 cited = quoted(
                     s_term, label_to_urn(cp, "prop"), f'"{escape_literal(co)}"'
                 )
-                out_lines.append(f"{qt} <{SUTRA_SUPPORTS}> {cited} .")
+                out_lines.append(f"{qt} <{SUTRA_INFERRED_FROM}> {cited} .")
             n_emitted += 1
 
     print(f"\n[smoke] {n_emitted}/{n_attempted} predictions met threshold")
