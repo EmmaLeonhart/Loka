@@ -94,10 +94,10 @@ Step 7 closes the loop. For each candidate subject, the script:
    ```
 
 The `sutra:supports` edges cite the subject's existing facts that informed the
-prediction. `preprocess.py` strips these annotations (and the
-`<<QUOTED_TRIPLE>>` synthetic subject) so generated triples don't pollute
-future training corpora — see the TODO there about a full SPARQL-star filter
-once that query support lands.
+prediction. `preprocess.py` excludes generated triples from the corpus via a
+SPARQL-star `FILTER NOT EXISTS << ?s ?p ?o >> sutra:generated ?_g`, and strips
+the annotation rows themselves by predicate. The model never trains on its
+own outputs.
 
 Predicted objects are emitted as plain string literals: the model output is
 text. Resolving predictions to URIs via HNSW nearest-neighbor (the
@@ -109,7 +109,7 @@ text. Resolving predictions to URIs via HNSW nearest-neighbor (the
 - **Fixed sequence length** (8 tokens per role, 28 total). Longer triples are truncated.
 - **Single-language (English).** Multi-lingual training is the eventual plan but not v0.
 - **Memorization is acceptable.** With 16K triples and a 5M-param model, the model will largely memorize the corpus. For v0 we want the loop to run, not generalization.
-- **Write-back is now wired up.** `infer_with_citations.py` emits N-Triples-star with `sutra:generated`/`sutra:supports` provenance and posts to SutraDB. The remaining gaps: (a) URI resolution for predicted objects (HNSW decoder, world-model-thesis §5.7); (b) a full SPARQL-star filter in `preprocess.py` to exclude inner generated triples (currently only annotations are stripped).
+- **Write-back is wired up.** `infer_with_citations.py` emits N-Triples-star with `sutra:generated`/`sutra:supports` provenance and posts to SutraDB. The corpus puller filters generated triples out via SPARQL-star, so the model never re-trains on its own outputs. Remaining gap: URI resolution for predicted objects (HNSW decoder, world-model-thesis §5.7) — predicted O is currently emitted as a plain literal.
 
 ## What this proves when it works
 
