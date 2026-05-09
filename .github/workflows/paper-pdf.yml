@@ -1,0 +1,124 @@
+name: Paper PDF — anonymized + named builds
+
+# Builds two PDFs from paper/paper.tex via the \ifanon switch.
+# Triggered on push to paper/ on master, plus workflow_dispatch.
+# Both PDFs uploaded as workflow artifacts; future extension will
+# also deploy them to the docs site (sutralang.dev).
+#
+# Per Emma 2026-04-30 (queue sub-items 1d + 1e): single source,
+# four outputs (HTML + named PDF + anonymized PDF + clawRxiv
+# upload). The clawRxiv path is in papers-ci.yml; this workflow
+# handles the PDF outputs. HTML is a future extension via
+# pandoc + the docs site deploy.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'paper/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-pdfs:
+    name: Build named + anonymized PDFs
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install TeX Live + pandoc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            texlive-latex-base \
+            texlive-latex-recommended \
+            texlive-latex-extra \
+            texlive-fonts-recommended \
+            texlive-luatex \
+            texlive-xetex \
+            lmodern \
+            latexmk \
+            pandoc
+
+      - name: Generate paper.tex.body from paper.md
+        working-directory: paper
+        run: |
+          # Pre-process paper.md before handing to pandoc:
+          # 1. Strip the first H1 line (the title is rendered by
+          #    paper.tex's \maketitle; emitting the H1 as a section
+          #    duplicates the title on page 1).
+          # 2. Tag the meta-sections (Abstract / References /
+          #    Appendix parent / per-letter Appendix headings) with
+          #    pandoc's {-} unnumbered-heading attribute so they
+          #    render as \section*/\subsection* (no auto number).
+          #    Keeps paper.md's frozen `## Abstract` line literally
+          #    unchanged on disk; transformation is per-build only.
+          sed \
+            -e '1{/^# /d}' \
+            -e 's|^## Abstract$|## Abstract {-}|' \
+            -e 's|^## References$|## References {-}|' \
+            -e 's|^## Appendix$|## Appendix {-}|' \
+            -e 's|^### Appendix \([A-Z]\)\. \(.*\)$|### Appendix \1. \2 {-}|' \
+            paper.md > paper-pre.md
+          # --from=markdown-smart (not gfm): pandoc's gfm reader does
+          # not support the raw_tex extension, so every \begin{align*}
+          # / \begin{figure} / \begin{tikzpicture} block in paper.md
+          # was being escaped to literal \textbackslash text and then
+          # typeset as monospace gibberish.
+          # --shift-heading-level-by=-1: with the H1 stripped above,
+          # we want H2 -> \section (not pandoc's default H2 ->
+          # \subsection). --top-level-division=section did not promote
+          # ## the way we expected; -shift-heading-level-by=-1 is the
+          # explicit promotion. The result: ## -> \section, ### ->
+          # \subsection, with auto-numbering "1", "1.1", "2", etc.
+          pandoc paper-pre.md \
+            --from=markdown-smart \
+            --to=latex \
+            --output=paper.tex.body \
+            --wrap=preserve \
+            --no-highlight \
+            --shift-heading-level-by=-1
+
+      - name: Build named PDF
+        working-directory: paper
+        run: |
+          # NeurIPS 2026 requires pdflatex per the official CFP.
+          # The named build uses [preprint]neurips_2026 (non-
+          # anonymous, no line numbers).
+          # max_repeat=8 gives latexmk extra passes to converge on
+          # cross-references with floating figures.
+          latexmk -pdf -interaction=nonstopmode \
+            -e '$max_repeat=8' paper.tex
+          mv paper.pdf paper-named.pdf
+
+      - name: Clean intermediate
+        working-directory: paper
+        run: |
+          latexmk -c paper.tex || true
+
+      - name: Build anonymized PDF
+        working-directory: paper
+        run: |
+          # NeurIPS submission build: default neurips_2026 (no
+          # [preprint]) renders authors as "Anonymous Authors" and
+          # adds line numbers via the lineno package.
+          # Pass the flag via -usepretex; paper.tex detects via
+          # \ifanon and chooses the [preprint]-less style option.
+          # paper.tex guards its \newif via \@ifundefined so the
+          # pretex \newif does not collide.
+          latexmk -pdf -interaction=nonstopmode \
+            -e '$max_repeat=8' \
+            -usepretex='\newif\ifanon\anontrue' paper.tex
+          mv paper.pdf paper-anonymized.pdf
+
+      - name: Upload PDFs as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: paper-pdfs
+          path: |
+            paper/paper-named.pdf
+            paper/paper-anonymized.pdf
+          retention-days: 90
