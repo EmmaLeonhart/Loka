@@ -8,6 +8,49 @@ The "why" matters more than the "what." Per-commit detail lives in `git log`. Th
 
 ---
 
+## 2026-05-09 (later) — v5 trained: bigger model wins
+
+Headline: **capacity was a real bottleneck for v4.** A 3× scale-up (d_model 256→512, layers 4→6, params 16M→44M) on the same 757k-triple corpus produced both lower final perplexity *and* qualitatively cleaner predictions. With cumulative repetition penalty 3.0 at decode time, v5 + decoder produces predictions that often pick the right *specific* entity, not just the right semantic category.
+
+### Trajectory side-by-side
+
+| Epoch | v4 ppl (16M, 4 layers) | v5 ppl (44M, 6 layers) |
+|---|---|---|
+| 1 | 1150.7 | 1528.7 |
+| 2 | 196.0 | 147.3 |
+| 3 | 133.5 | 104.2 |
+| 4 | 100.7 | 90.7 |
+| **5** | **92.5** | **84.85** |
+
+v5 starts higher in epoch 1 (more parameters, harder optimisation landscape), crosses under v4 at epoch 2, and pulls ahead from there. By epoch 4 it had already passed v4's *final* perplexity. Wall time: 91 min vs v4's 42 min — 2.2× compute, 8% better final ppl.
+
+### Predictions, same seed (42), same penalty (3.0)
+
+| Subject / predicate | v4 (16M) | v5 (44M) |
+|---|---|---|
+| canton of Romilly-sur-Seine-1 / Commons category | "canton of of sur sur" | **"canton of"** (conf 0.882) |
+| Comtesse de Die / educated at | "university of of of of of of of" | **"university of halle"** (conf 0.488; she was educated in Halle) |
+| Zudar / area | (didn't pass threshold) | **"33"** (conf 0.901; numeric) |
+| Meeuwen-Gruitrode / locator map image | "map of comune of meeuwen province province" | "map of comune of" (conf 0.685; clean truncation) |
+| Curt Meyer-Clason / Commons category | "curt meyer clason" | "curt meyer" (conf 0.825) |
+| Kosmos 116 / Commons category | (didn't pass) | **"kosmos 116"** (conf 0.740) |
+| Centralbahnhof / Vikidia article ID | (didn't pass cleanly) | "fr" (conf 0.798) |
+| Liriodendron tulipifera / African Plant Database ID | (n/a) | "liriodendron tulipifera" (conf 0.441) |
+
+The bigger model is doing what bigger models do — picking specific real-world tokens (`halle`, `33`, `kosmos 116`) where the smaller one had to fall back to common connectors. Provenance edges (`propositionInferredFrom`) stay attached on every emit; v5 uses the same write-back schema as v4.
+
+### HF snapshot status
+
+**Blocked on auth.** The leaked write token from the v4 attempt has not been rotated yet. To complete: revoke the old token at https://huggingface.co/settings/tokens, create a fresh one, then `huggingface-cli login` (paste at the prompt — token never enters chat). After that, `python tools/hf_snapshot.py --user EmmaLeonhart --snapshot-name v5 --no-sutra-data` adds v5 to the existing `EmmaLeonhart/loka` repo without re-uploading the 770 MB store.
+
+### What this changes
+
+- v5 (`training/checkpoints/wikidata_v5.pt`, 178 MB) is the new canonical "best" model. v4 stays around for A/B comparison.
+- The next quality lever is no longer "more capacity" — it's the tokenizer (BPE/wordpiece would handle "Saint-Léger" → "Saint" "-" "Léger" instead of `saint l ger`) and the corpus (27,780 entities of 30M available is still a tiny slice).
+- Fine-tuning track (`planning/fine-tuning-track.md`) is still the longer-horizon parallel option.
+
+---
+
 ## 2026-05 — The neuro-symbolic world-model pivot
 
 ### What changed in framing
