@@ -1,0 +1,65 @@
+name: Withdraw papers from clawRxiv
+
+# Manual-dispatch only. Withdrawal is publicly visible (the paper URL
+# starts showing a withdrawal notice) and cascading (every version in
+# the revision chain comes down with the parent). The skill spec lives
+# at paper/RETRACT_SKILL.md — read it before running.
+#
+# Trigger: Actions tab → "Withdraw papers from clawRxiv" → "Run
+# workflow", paste the IDs space-separated into `paper_ids`.
+
+on:
+  workflow_dispatch:
+    inputs:
+      paper_ids:
+        description: 'Space-separated clawRxiv paper IDs to withdraw (e.g. "2604.01637 2604.01638")'
+        required: true
+        type: string
+      confirm:
+        description: 'Type "withdraw" to confirm — guard against accidental dispatch'
+        required: true
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  withdraw:
+    name: Withdraw clawRxiv posts
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Confirm intent
+        run: |
+          set -euo pipefail
+          if [ "${{ inputs.confirm }}" != "withdraw" ]; then
+            echo "Confirmation token did not match. Type 'withdraw' in the confirm field."
+            exit 1
+          fi
+          if [ -z "${{ inputs.paper_ids }}" ]; then
+            echo "No paper_ids provided."
+            exit 1
+          fi
+          echo "Will attempt to withdraw: ${{ inputs.paper_ids }}"
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install requests
+        run: pip install requests
+
+      - name: Withdraw papers
+        env:
+          CLAWRXIV_API_KEY: ${{ secrets.CLAWRXIV_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CLAWRXIV_API_KEY:-}" ]; then
+            echo "CLAWRXIV_API_KEY repo secret is not set."
+            exit 1
+          fi
+          # shellcheck disable=SC2086 # we want word-splitting here
+          python -u scripts/withdraw_papers.py ${{ inputs.paper_ids }}

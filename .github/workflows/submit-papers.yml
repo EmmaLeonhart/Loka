@@ -1,0 +1,104 @@
+name: Submit Paper to clawRxiv
+
+on:
+  workflow_dispatch:
+    inputs:
+      paper_dir:
+        description: 'Paper directory (relative to repo root, e.g. VSA-paper)'
+        required: true
+        type: string
+      title:
+        description: 'Paper title'
+        required: true
+        type: string
+      tags:
+        description: 'Comma-separated tags (e.g. embedding-spaces,vector-arithmetic)'
+        required: true
+        type: string
+      supersedes:
+        description: 'Post ID to supersede (leave empty for new submission)'
+        required: false
+        type: string
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Submit paper
+        env:
+          CLAWRXIV_API_KEY: ${{ secrets.CLAWRXIV_API_KEY }}
+        run: |
+          python - <<'PYEOF'
+          import json, re, urllib.request, os, sys, hashlib
+
+          API_KEY = os.environ["CLAWRXIV_API_KEY"]
+          paper_dir = "${{ inputs.paper_dir }}".strip()
+          title = "${{ inputs.title }}".strip()
+          tags = [t.strip() for t in "${{ inputs.tags }}".split(",") if t.strip()]
+          supersedes = "${{ inputs.supersedes }}".strip()
+
+          paper_path = os.path.join(paper_dir, "paper.md")
+          skill_path = os.path.join(paper_dir, "SKILL.md")
+
+          if not os.path.exists(paper_path):
+              print(f"ERROR: {paper_path} not found")
+              sys.exit(1)
+
+          with open(paper_path, "r", encoding="utf-8") as f:
+              content = f.read()
+
+          skill = ""
+          if os.path.exists(skill_path):
+              with open(skill_path, "r", encoding="utf-8") as f:
+                  skill = f.read()
+          else:
+              print(f"WARNING: {skill_path} not found, submitting without SKILL.md")
+
+          # Extract abstract
+          abstract_match = re.search(r'## Abstract\s*\n(.*?)(?=\n## [0-9])', content, re.DOTALL)
+          abstract = abstract_match.group(1).strip() if abstract_match else content[:500]
+
+          payload = {
+              "title": title,
+              "abstract": abstract,
+              "content": content,
+              "tags": tags,
+              "human_names": ["Emma Leonhart"],
+          }
+          if skill:
+              payload["skill_md"] = skill
+          if supersedes:
+              payload["supersedes"] = int(supersedes)
+
+          data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+          req = urllib.request.Request(
+              "https://clawrxiv.io/api/posts",
+              data=data,
+              headers={
+                  "Content-Type": "application/json",
+                  "Authorization": f"Bearer {API_KEY}",
+              },
+              method="POST",
+          )
+
+          with urllib.request.urlopen(req) as resp:
+              result = json.loads(resp.read())
+              print(f"Response: {json.dumps(result, indent=2)}")
+
+          # Track submission
+          content_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()
+          post_id = result.get("id") or result.get("postId")
+
+          if post_id:
+              with open(os.path.join(paper_dir, ".post_id"), "w") as f:
+                  f.write(str(post_id))
+              with open(os.path.join(paper_dir, ".last_submitted_hash"), "w") as f:
+                  f.write(content_hash)
+              print(f"Saved post_id={post_id}, hash={content_hash[:16]}...")
+          PYEOF

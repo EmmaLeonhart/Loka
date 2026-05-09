@@ -1,0 +1,149 @@
+name: Papers CI — auto-submit Sutra paper to clawRxiv
+
+# Recovered + simplified from the pre-rebrand multi-paper workflow
+# (903308e^:.github/workflows/papers-ci.yml) on 2026-04-30. The
+# original handled three papers (sutra/fly-brain/language); this is
+# the single-paper successor for the new `paper/` directory.
+#
+# Auto-submits paper/paper.md to clawRxiv on push to master, then
+# fetches the AI peer review and commits it back as
+# paper/reviews/v<N>_post<ID>_review.{json,md}.
+#
+# To opt out for a specific commit, add `Skip-Submit: true` as a
+# trailer to the commit message. The workflow's own auto-commits
+# always include this trailer to prevent infinite re-trigger.
+#
+# Manual workflow_dispatch also supported for one-off resubmissions.
+
+on:
+  # Auto-submit on push restored 2026-05-01 (Emma) — the AI reviewer
+  # is just data, not a stressor. Each paper edit triggers a fresh
+  # clawRxiv submission and review fetch; ratings can drift either
+  # direction without us needing to react.
+  push:
+    branches: [master]
+    paths:
+      - 'paper/paper.md'
+      - 'paper/supplementary/SKILL.md'
+  workflow_dispatch:
+
+concurrency:
+  group: papers-ci-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  submit-and-review:
+    name: Submit Sutra paper and fetch review
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # Always grab the current head of master, not the trigger
+          # SHA. The concurrency lock above serializes runs, but each
+          # run's commit-back (paper/.post_id bump, review fetch)
+          # happens AFTER the trigger SHA, so a queued run that
+          # checked out its own trigger SHA would read stale .post_id
+          # and try to supersede a post that has already been
+          # superseded — clawRxiv returns 409 "already been revised."
+          # Using `ref: master` here means a queued run sees the
+          # latest committed state when it finally executes.
+          ref: master
+          # Full history so the Skip-Submit trailer check sees the
+          # full pushed range, not just HEAD~1..HEAD.
+          fetch-depth: 0
+
+      - name: Check Skip-Submit trailer
+        id: skip_check
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "push" ]; then
+            if git log -1 --pretty=%B | grep -Eq "^Skip-Submit:[[:space:]]*true$"; then
+              echo "Commit has Skip-Submit: true trailer — skipping"
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-python@v5
+        if: steps.skip_check.outputs.skip == 'false'
+        with:
+          python-version: '3.13'
+
+      - name: Submit + fetch review
+        if: steps.skip_check.outputs.skip == 'false'
+        env:
+          CLAWRXIV_API_KEY: ${{ secrets.CLAWRXIV_API_KEY }}
+        run: |
+          python -u scripts/paper_submit_and_fetch.py \
+            --paper-dir paper \
+            --tags "programming-languages,vsa,embedding-spaces"
+
+      - name: Sync clawRxiv link in docs/theory-and-paper.md
+        if: steps.skip_check.outputs.skip == 'false'
+        run: |
+          set -euo pipefail
+          # If paper_submit_and_fetch.py wrote a new post_id, also
+          # update the clawRxiv-button URL on the theory-and-paper
+          # docs page so the link tracks the supersedes chain head.
+          # Idempotent: if paper/.post_id wasn't changed by the
+          # submit step (e.g. dedup 409), or the docs file already
+          # matches the post_id, the sed is a no-op.
+          if [ ! -f paper/.post_id ] || [ ! -f docs/theory-and-paper.md ]; then
+            echo "post_id or docs file missing; skipping clawRxiv-link sync"
+            exit 0
+          fi
+          POST_ID=$(tr -d '[:space:]' < paper/.post_id)
+          if [ -z "$POST_ID" ]; then
+            echo "post_id is empty; skipping"
+            exit 0
+          fi
+          # Replace the digit run after `clawrxiv.io/posts/` with the
+          # current post id. Single-quoted sed program avoids shell
+          # interpolation traps; `${POST_ID}` is in a double-quoted
+          # second sed -e segment so it expands cleanly.
+          sed -i -E "s|(https://clawrxiv\.io/posts/)[0-9]+|\1${POST_ID}|g" \
+              docs/theory-and-paper.md
+          echo "clawRxiv link synced to post ${POST_ID}"
+
+      - name: Commit review back (with Skip-Submit trailer + rebase-retry)
+        if: steps.skip_check.outputs.skip == 'false'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet paper/ docs/theory-and-paper.md; then
+            echo "No paper/ or docs link changes after submit; nothing to commit"
+            exit 0
+          fi
+          git add paper/
+          git add docs/theory-and-paper.md
+          git commit -m "papers-ci: paper submission + review
+
+          $(date -u +%Y-%m-%dT%H:%M:%SZ) auto-commit by papers-ci.yml
+          after submitting paper/paper.md to clawRxiv. Review JSON +
+          markdown captured under paper/reviews/. clawRxiv link in
+          docs/theory-and-paper.md auto-synced to the new post id
+          if it changed.
+
+          Skip-Submit: true"
+          # Push race resilience: master may have moved while we were
+          # submitting + polling for the review (a separate push, the
+          # pull-reviews workflow auto-committing reviews, etc.). Retry
+          # up to 3 times with rebase before giving up.
+          for attempt in 1 2 3; do
+            if git push origin HEAD:master; then
+              echo "Pushed on attempt $attempt"
+              exit 0
+            fi
+            echo "Push attempt $attempt rejected; rebasing and retrying..."
+            git fetch origin master
+            git rebase origin/master
+          done
+          echo "ERROR: could not push after 3 rebase-retry attempts"
+          exit 1

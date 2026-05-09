@@ -1,0 +1,138 @@
+name: Pull all clawrxiv reviews into the repo
+
+# Singleton workflow that runs scripts/pull_all_reviews.py to fetch any
+# review files we don't already have locally. Catches up reviews that
+# were submitted via local quick_review.py (which never commits) or
+# reviews whose papers-ci auto-commit-back lost a push race.
+#
+# Why this is separate from papers-ci.yml:
+#   - papers-ci submits + fetches one review per push. This pulls
+#     reviews for ALL known posts, including local candidates.
+#   - The pull is idempotent so re-runs are cheap.
+#   - Decoupling from submit means a review-pull doesn't block a
+#     paper edit, and a submit failure doesn't lose pending reviews.
+#
+# Singleton via the workflow's own bail check: if another instance is
+# already running, we exit 0 immediately instead of queueing. Reasoning:
+# if N pushes fire pull-reviews back-to-back, the first instance picks
+# up everything; later instances would be no-ops anyway, so save the
+# CI minutes.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'paper/**'
+      - 'scripts/pull_all_reviews.py'
+      - 'scripts/paper_submit_and_fetch.py'
+      - '.github/workflows/pull-reviews.yml'
+  workflow_dispatch:
+  schedule:
+    # Every 30 minutes during active development. Picks up reviews from
+    # local quick_review.py runs that didn't trigger any push.
+    - cron: '*/30 * * * *'
+
+# Concurrency-group queueing as a backstop. The bail-if-running check
+# below is the primary mechanism; this is just to prevent multiple
+# scheduled runs from stacking if the bail check has a TOCTOU race.
+concurrency:
+  group: pull-reviews
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  actions: read  # for the bail-if-running gh-api check
+
+jobs:
+  pull:
+    name: Pull missing reviews
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Bail if another pull-reviews instance is already running
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Count in-progress runs of THIS workflow other than ourselves.
+          # This step runs before checkout, so gh has no repo context;
+          # pass --repo explicitly.
+          others=$(gh run list \
+            --repo "${{ github.repository }}" \
+            --workflow=pull-reviews.yml \
+            --status=in_progress \
+            --json databaseId \
+            --jq "[.[] | select(.databaseId != ${{ github.run_id }})] | length")
+          if [ "$others" -gt 0 ]; then
+            echo "Another pull-reviews run is already in progress; bailing."
+            echo "BAIL=true" >> "$GITHUB_ENV"
+          else
+            echo "No other pull-reviews running; proceeding."
+            echo "BAIL=false" >> "$GITHUB_ENV"
+          fi
+
+      - uses: actions/checkout@v4
+        if: env.BAIL == 'false'
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        if: env.BAIL == 'false'
+        with:
+          python-version: '3.13'
+
+      - name: Pull all reviews
+        if: env.BAIL == 'false'
+        env:
+          CLAWRXIV_API_KEY: ${{ secrets.CLAWRXIV_API_KEY }}
+        run: |
+          python -u scripts/pull_all_reviews.py --paper-dir paper
+
+      - name: Commit any new review files (with Skip-Submit + rebase-retry)
+        if: env.BAIL == 'false'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Stage review-adjacent files. Use separate `git add` calls
+          # so a missing path (e.g. paper/candidates.jsonl, which only
+          # exists after the first quick_review.py run) doesn't abort
+          # the whole staging operation. `git add <dir>` picks up
+          # untracked files; `--ignore-errors` keeps going on
+          # individual misses.
+          git add paper/reviews/ 2>/dev/null || true
+          if [ -f paper/candidates.jsonl ]; then
+            git add paper/candidates.jsonl
+          fi
+          if [ -f paper/.post_id ]; then
+            git add paper/.post_id
+          fi
+          # Now check the *index* for staged changes. `git diff --cached
+          # --quiet` returns 0 when nothing is staged.
+          if git diff --cached --quiet; then
+            echo "Nothing to commit (no new reviews / no .post_id change)"
+            exit 0
+          fi
+          echo "Staged changes:"
+          git diff --cached --stat
+          git commit -m "pull-reviews: fetched reviews from clawrxiv
+
+          $(date -u +%Y-%m-%dT%H:%M:%SZ) auto-commit by pull-reviews.yml
+          via scripts/pull_all_reviews.py. Captures reviews for any post
+          we know about (paper/.post_id + paper/candidates.jsonl) whose
+          review wasn't yet in paper/reviews/.
+
+          Skip-Submit: true"
+          # Rebase-retry against the canonical push race.
+          for attempt in 1 2 3; do
+            if git push origin HEAD:master; then
+              echo "Pushed on attempt $attempt"
+              exit 0
+            fi
+            echo "Push attempt $attempt rejected; rebasing and retrying..."
+            git fetch origin master
+            git rebase origin/master
+          done
+          echo "ERROR: could not push after 3 rebase-retry attempts"
+          exit 1

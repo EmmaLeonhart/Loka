@@ -44,6 +44,7 @@ CORPUS_FILES = [
 MODEL_FILES = [
     ("checkpoints/wikidata_v3.pt", "training/checkpoints/wikidata_v3.pt"),
     ("checkpoints/wikidata_v4.pt", "training/checkpoints/wikidata_v4.pt"),
+    ("checkpoints/wikidata_v5.pt", "training/checkpoints/wikidata_v5.pt"),
 ]
 
 # Default folder mappings. The local path is overridable via --sutra-data-path
