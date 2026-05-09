@@ -25,8 +25,10 @@ import requests
 STATE_PATH = Path("wikidata_import_state.json")
 SAVE_EVERY = 25  # entities
 
-# Fix Windows Unicode
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+# Fix Windows Unicode — only when run directly. Importing this module as a
+# library (e.g. from wikidata_hf_import) shouldn't repeatedly wrap stdout.
+if __name__ == "__main__":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 # ── Configuration ────────────────────────────────────────────────────────────
 

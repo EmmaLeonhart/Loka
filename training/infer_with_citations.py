@@ -142,9 +142,24 @@ def build_inference_inputs(s_ids, p_ids, tokens_per_role):
 
 
 def predict_object(
-    model, s_label, p_label, vocab, inv_vocab, tokens_per_role, device, per_token_floor=0.05
+    model,
+    s_label,
+    p_label,
+    vocab,
+    inv_vocab,
+    tokens_per_role,
+    device,
+    per_token_floor=0.05,
+    repetition_penalty: float = 3.0,
 ):
-    """Return (predicted_label, mean_confidence) or None if no usable prediction."""
+    """Return (predicted_label, mean_confidence) or None if no usable prediction.
+
+    Decoding uses greedy top-1 with a repetition penalty: every time we emit a
+    token, its probability mass at later masked positions is divided by
+    `repetition_penalty`. This prevents the model from looping on filler tokens
+    like "of"/"and" while still letting it reuse a token if the unpenalised
+    distribution strongly demands it.
+    """
     s_ids = encode(s_label, vocab)
     p_ids = encode(p_label, vocab)
     if not s_ids or not p_ids:
@@ -162,16 +177,27 @@ def predict_object(
     skip_ids = {PAD_ID, MASK_ID, UNK_ID, CLS_ID, SEP_S_ID, SEP_P_ID, SEP_O_ID}
     out_tokens: list[str] = []
     out_probs: list[float] = []
+    emit_counts: dict[int, int] = {}
     for mp in masked_positions:
         p = probs[0, mp].clone()
         for sid in skip_ids:
             p[sid] = 0
+        # Cumulative repetition penalty: divide by `repetition_penalty ** count`
+        # so each repeat compounds. Three emissions of "of" with penalty 3.0
+        # multiply its divisor by 27, which usually drops it below
+        # per_token_floor and breaks the loop. A genuinely-needed repeat
+        # (e.g. "of [thing] of [thing]") can still win the second time
+        # through, just not a third or fourth.
+        if repetition_penalty != 1.0:
+            for prev_id, count in emit_counts.items():
+                p[prev_id] = p[prev_id] / (repetition_penalty ** count)
         idx = int(p.argmax().item())
         prob = float(p[idx].item())
         if prob < per_token_floor:
             break
         out_tokens.append(inv_vocab[idx])
         out_probs.append(prob)
+        emit_counts[idx] = emit_counts.get(idx, 0) + 1
 
     if not out_tokens:
         return None
@@ -201,6 +227,13 @@ def main() -> None:
         type=float,
         default=0.4,
         help="Mean per-token probability threshold for emitting a triple",
+    )
+    parser.add_argument(
+        "--repetition-penalty",
+        type=float,
+        default=3.0,
+        help="Divide already-emitted token probabilities by this factor at later "
+             "positions. 1.0 disables. Higher = harder for the model to loop.",
     )
     parser.add_argument("--output", default="training/data/generated.nt")
     parser.add_argument(
@@ -338,7 +371,8 @@ def main() -> None:
                 continue
             p_label = labels[p_uri]
             res = predict_object(
-                model, s_label, p_label, vocab, inv_vocab, tokens_per_role, device
+                model, s_label, p_label, vocab, inv_vocab, tokens_per_role, device,
+                repetition_penalty=args.repetition_penalty,
             )
             if res is None:
                 continue

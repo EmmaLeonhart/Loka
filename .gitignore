@@ -29,8 +29,20 @@ Thumbs.db
 
 # Database data directories (binary, not versioned)
 sutra-data/
+sutra-data-backup-*/
 sutra-import-data/
 *.sdb
+
+# BFS / HF import state (regenerated each run)
+wikidata_import_state.json*
+wikidata_hf_import_state.json*
+
+# Inference / debugging artifacts
+smoke_out.nt
+claim_dump.json
+hf_schema*.json
+hf_schema*.txt
+training/data/generated_*.nt
 
 # Claude artifacts
 mnt/

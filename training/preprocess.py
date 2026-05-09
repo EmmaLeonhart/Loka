@@ -67,20 +67,33 @@ TRAINING_CORPUS_QUERY = f"""SELECT ?s ?p ?o WHERE {{
   }}
 }}"""
 
-# SutraDB currently surfaces language-tagged literals with the suffix embedded
-# in the value string (e.g. value='Tokyo"@en') rather than as xml:lang metadata.
-# Fall back to parsing the suffix when xml:lang is missing.
+# SutraDB currently surfaces tagged literals with the suffix embedded in the
+# value string rather than as separate JSON fields. Two flavours:
+#   language-tagged   value='Tokyo"@en'
+#   datatyped         value='+1966-02-18T00:00:00Z"^^<http://.../dateTime>'
+# Both must be stripped before the value reaches training, otherwise tokens
+# like "xmlschema", "decimal", "org" leak into the corpus as if they were
+# entity content.
 LANG_SUFFIX_RE = re.compile(r'^(.*)"@([a-zA-Z-]+)$')
+TYPED_SUFFIX_RE = re.compile(r'^(.*)"\^\^<[^>]+>$')
 
 
 def parse_literal(o: dict) -> tuple[str, str | None]:
-    """Return (clean_value, lang) for a literal, handling the embedded "@lang quirk."""
+    """Return (clean_value, lang) for a literal, handling SutraDB's embedded suffixes.
+
+    Returns (value-only, None) for datatyped literals (datatype is dropped).
+    Returns (value, lang) for language-tagged literals.
+    """
     value = o["value"]
     lang = o.get("xml:lang")
     if not lang:
         m = LANG_SUFFIX_RE.match(value)
         if m:
             value, lang = m.group(1), m.group(2).lower()
+        else:
+            m = TYPED_SUFFIX_RE.match(value)
+            if m:
+                value = m.group(1)
     return value, lang
 
 
@@ -168,13 +181,21 @@ def fetch_wikidata_property_labels(prop_iris: set[str], cache_path: Path) -> dic
           FILTER(LANG(?label) = "en")
         }}
         """
-        resp = requests.get(
-            WIKIDATA_SPARQL,
-            params={"query": query, "format": "json"},
-            headers={"User-Agent": USER_AGENT, "Accept": "application/sparql-results+json"},
-            timeout=120,
-        )
-        resp.raise_for_status()
+        try:
+            resp = requests.get(
+                WIKIDATA_SPARQL,
+                params={"query": query, "format": "json"},
+                headers={"User-Agent": USER_AGENT, "Accept": "application/sparql-results+json"},
+                timeout=120,
+            )
+            resp.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            # Wikidata throttles aggressively. Failing here would block the
+            # whole pipeline over a handful of unresolved predicate labels;
+            # those predicates simply won't be candidates for inference. Log
+            # and continue.
+            print(f"  [WARN] Wikidata fetch failed ({e}); continuing without {len(batch)} labels", file=sys.stderr)
+            continue
         for row in resp.json()["results"]["bindings"]:
             wd_iri = row["p"]["value"]
             pid = wd_iri.rsplit("/", 1)[-1]
@@ -234,11 +255,19 @@ def main() -> None:
     written = 0
     skipped = 0
     skipped_annotations = 0
+    skipped_nonuri_pred = 0
     with out_path.open("w", encoding="utf-8") as f:
         for t in triples:
-            if t["p"]["type"] == "uri" and t["p"]["value"] == RDFS_LABEL:
+            # SutraDB's SPARQL occasionally surfaces RDF-star inner-triple
+            # components in the wrong slot, returning literal values where ?p
+            # should be a URI. That's invalid RDF and corrupts training, so
+            # drop those rows entirely.
+            if t["p"]["type"] != "uri":
+                skipped_nonuri_pred += 1
+                continue
+            if t["p"]["value"] == RDFS_LABEL:
                 continue  # don't train on the label triples themselves
-            if t["p"]["type"] == "uri" and is_reserved_predicate(t["p"]["value"]):
+            if is_reserved_predicate(t["p"]["value"]):
                 skipped_annotations += 1
                 continue
             s = resolve_term(t["s"], labels)
@@ -255,7 +284,8 @@ def main() -> None:
     print(
         f"Wrote {written:,} triples to {out_path}; "
         f"skipped {skipped:,} (unresolved labels), "
-        f"{skipped_annotations:,} (sutra:generated/supports annotations)",
+        f"{skipped_annotations:,} (sutra-internal provenance annotations), "
+        f"{skipped_nonuri_pred:,} (non-URI predicate; SutraDB SPARQL quirk)",
         file=sys.stderr,
     )
 
