@@ -46,8 +46,10 @@ MODEL_FILES = [
     ("checkpoints/wikidata_v4.pt", "training/checkpoints/wikidata_v4.pt"),
 ]
 
-# Folders (repo_path, local_path)
-DATA_FOLDERS = [
+# Default folder mappings. The local path is overridable via --sutra-data-path
+# so the user can upload from a frozen backup directory instead of the live
+# store (which is locked while sutra serve is running).
+DATA_FOLDERS_DEFAULT = [
     ("sutra-data", "sutra-data"),
 ]
 
@@ -197,6 +199,13 @@ def main() -> None:
         default=True,
         help="Skip uploading the 770 MB sutra-data/ folder.",
     )
+    parser.add_argument(
+        "--sutra-data-path",
+        default="sutra-data",
+        help="Local folder to upload as `sutra-data/` in the repo. Default: "
+             "the live store. Point at a backup (e.g. sutra-data-backup-DATE) "
+             "to avoid file-lock errors while sutra serve is running.",
+    )
     args = parser.parse_args()
 
     try:
@@ -228,7 +237,8 @@ def main() -> None:
     upload_files(api, repo_id, CORPUS_FILES)
     upload_files(api, repo_id, MODEL_FILES)
     if args.include_sutra_data:
-        upload_folders(api, repo_id, DATA_FOLDERS)
+        data_folders = [("sutra-data", args.sutra_data_path)]
+        upload_folders(api, repo_id, data_folders)
 
     print(f"\n=== Tagging '{args.snapshot_name}' ===")
     api.create_tag(
