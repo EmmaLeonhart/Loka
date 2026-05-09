@@ -1,8 +1,8 @@
 """Wikidata BFS Import for SutraDB.
 
 Breadth-first imports entities from Wikidata starting from a seed entity,
-fetches their properties, and generates embeddings via Ollama. All data is
-sent to a running SutraDB instance.
+including RDF-star qualifier and reference annotations on each claim.
+All data is sent to a running SutraDB instance via POST /triples.
 
 Safe to terminate at any time — each entity is committed individually.
 
@@ -32,10 +32,6 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 SUTRA_ENDPOINT = "http://localhost:3030"
 WIKIDATA_SPARQL = "https://query.wikidata.org/sparql"
-OLLAMA_ENDPOINT = "http://localhost:11434"
-EMBEDDING_MODEL = "mxbai-embed-large"
-EMBEDDING_DIM = 1024
-VECTOR_PREDICATE = "http://sutra.dev/hasEmbedding"
 
 USER_AGENT = "SutraDB-Import/0.1 (https://github.com/EmmaLeonhart/SutraDB)"
 
@@ -131,28 +127,25 @@ def entity_to_triples(qid: str, entity: dict) -> tuple[list[str], list[str], str
     qualifier-vs-statement distinction is structural (subject is a quoted
     triple), not lexical.
 
-    Returns (triples, linked_qids, label_for_embedding).
+    Returns (triples, linked_qids).
     """
     wd = f"{WD_ENTITY_PREFIX}/{qid}"
     triples: list[str] = []
     linked_qids: list[str] = []
 
-    # Labels
-    label_en = ""
+    # Labels — every language Wikidata has for this entity. Training resolves
+    # QIDs to English at preprocess time, but storing all languages keeps the
+    # door open for multilingual training and gives richer entity context.
     labels = entity.get("labels", {})
-    for lang in ["en", "ja", "de", "fr", "zh"]:
-        if lang in labels:
-            val = labels[lang]["value"].replace('"', '\\"')
-            triples.append(f'<{wd}> <http://www.w3.org/2000/01/rdf-schema#label> "{val}"@{lang} .')
-            if lang == "en":
-                label_en = labels[lang]["value"]
+    for lang, lab in labels.items():
+        val = lab["value"].replace('"', '\\"')
+        triples.append(f'<{wd}> <http://www.w3.org/2000/01/rdf-schema#label> "{val}"@{lang} .')
 
-    # Descriptions
+    # Descriptions — every language too, same reasoning.
     descriptions = entity.get("descriptions", {})
-    for lang in ["en", "ja"]:
-        if lang in descriptions:
-            val = descriptions[lang]["value"].replace('"', '\\"')
-            triples.append(f'<{wd}> <http://schema.org/description> "{val}"@{lang} .')
+    for lang, desc in descriptions.items():
+        val = desc["value"].replace('"', '\\"')
+        triples.append(f'<{wd}> <http://schema.org/description> "{val}"@{lang} .')
 
     # Claims → main triple + RDF-star qualifier annotations
     claims = entity.get("claims", {})
@@ -205,29 +198,7 @@ def entity_to_triples(qid: str, entity: dict) -> tuple[list[str], list[str], str
                             continue
                         triples.append(f"{qt_subject} {r_pred} {r_obj} .")
 
-    # Build embedding text from label + description
-    desc_en = descriptions.get("en", {}).get("value", "")
-    embed_text = f"{label_en}. {desc_en}" if label_en else qid
-
-    return triples, linked_qids, embed_text
-
-
-# ── Ollama Embedding ─────────────────────────────────────────────────────────
-
-def get_embedding(text: str) -> Optional[list[float]]:
-    """Get an embedding vector from Ollama."""
-    try:
-        resp = requests.post(
-            f"{OLLAMA_ENDPOINT}/api/embeddings",
-            json={"model": EMBEDDING_MODEL, "prompt": text},
-            timeout=60,
-        )
-        if resp.status_code != 200:
-            return None
-        return resp.json().get("embedding")
-    except Exception as e:
-        print(f"  [WARN] Embedding failed: {e}")
-        return None
+    return triples, linked_qids
 
 
 # ── SutraDB Client ───────────────────────────────────────────────────────────
@@ -258,40 +229,6 @@ def sutra_insert_triples(ntriples: str) -> int:
         return 0
 
 
-def sutra_declare_vector():
-    """Declare the vector predicate (idempotent — ignores if already declared)."""
-    try:
-        requests.post(
-            f"{SUTRA_ENDPOINT}/vectors/declare",
-            json={
-                "predicate": VECTOR_PREDICATE,
-                "dimensions": EMBEDDING_DIM,
-                "m": 16,
-                "ef_construction": 200,
-                "metric": "cosine",
-            },
-            timeout=10,
-        )
-    except:
-        pass
-
-
-def sutra_insert_vector(subject: str, vector: list[float]):
-    """Insert a vector embedding for a subject."""
-    try:
-        requests.post(
-            f"{SUTRA_ENDPOINT}/vectors",
-            json={
-                "predicate": VECTOR_PREDICATE,
-                "subject": subject,
-                "vector": vector,
-            },
-            timeout=30,
-        )
-    except Exception as e:
-        print(f"  [WARN] Vector insert: {e}")
-
-
 # ── Main BFS Import ─────────────────────────────────────────────────────────
 
 def main():
@@ -299,14 +236,12 @@ def main():
     parser.add_argument("--seed", default="Q11064932", help="Starting Wikidata QID")
     parser.add_argument("--max-time", type=int, default=3600, help="Max runtime in seconds")
     parser.add_argument("--max-entities", type=int, default=10000, help="Max entities to import")
-    parser.add_argument("--no-vectors", action="store_true", help="Skip embedding generation")
     args = parser.parse_args()
 
     print(f"=== Wikidata BFS Import ===")
     print(f"Seed: {args.seed}")
     print(f"Max time: {args.max_time}s")
     print(f"Max entities: {args.max_entities}")
-    print(f"Vectors: {'disabled' if args.no_vectors else 'enabled (mxbai-embed-large)'}")
     print()
 
     # Check SutraDB is running
@@ -315,11 +250,6 @@ def main():
         print("Start it with: cargo run -- serve")
         sys.exit(1)
     print("[OK] SutraDB is running")
-
-    # Declare vector predicate
-    if not args.no_vectors:
-        sutra_declare_vector()
-        print("[OK] Vector predicate declared")
 
     # BFS state — restore from prior run if present, else start fresh from seed.
     queue: deque = deque()
@@ -341,7 +271,6 @@ def main():
 
     start_time = time.time()
     total_triples = 0
-    total_vectors = 0
     total_entities = 0
     errors = 0
 
@@ -351,7 +280,6 @@ def main():
             "seed": args.seed,
             "total_entities": total_entities,
             "total_triples": total_triples,
-            "total_vectors": total_vectors,
             "errors": errors,
             "queue_remaining": len(queue),
             "elapsed_seconds": round(elapsed_now, 1),
