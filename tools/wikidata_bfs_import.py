@@ -74,11 +74,6 @@ def fetch_entity_data(qid: str) -> Optional[dict]:
 
 WDT_PREFIX = "http://www.wikidata.org/prop/direct"
 WD_ENTITY_PREFIX = "http://www.wikidata.org/entity"
-SUTRA_IMPORTED_FROM = "http://sutra.dev/provenance/propositionImportedFrom"
-# Stable IRI for "this came from a Wikidata claim on entity Q...".
-# Per-entity granularity (one importedFrom per entity URL) is enough provenance
-# without inflating the corpus with one row per imported triple.
-WIKIDATA_SOURCE_IRI = "http://www.wikidata.org"
 
 
 def snak_to_object(snak: dict, linked_qids: list[str]) -> str | None:
@@ -186,13 +181,6 @@ def entity_to_triples(qid: str, entity: dict) -> tuple[list[str], list[str], str
             triples.append(f"{main_subject} {main_pred} {obj} .")
 
             qt_subject = f"<< {main_subject} {main_pred} {obj} >>"
-
-            # Provenance: this claim was imported from Wikidata's record for
-            # this entity. RDF-star annotation; same shape as inferredFrom.
-            triples.append(
-                f'{qt_subject} <{SUTRA_IMPORTED_FROM}> '
-                f'<{WIKIDATA_SOURCE_IRI}/wiki/{qid}> .'
-            )
 
             # RDF-star qualifiers on this claim
             qualifiers = claim.get("qualifiers", {})
