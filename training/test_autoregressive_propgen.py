@@ -197,28 +197,50 @@ def adjacent_context(
     n_pred_obj_max: int,
     n_subj_pred_max: int,
     cap: int,
+    hops: int = 2,
 ) -> tuple[list[dict], list[dict]]:
-    """Return (kept_context_triples, dropped_asymmetric_triples)."""
+    """BFS-collect adjacent triples (s-shared, o-shared, object-traversal),
+    out to `hops` levels, then run the asymmetry filter and cap.
+
+    1-hop is rarely enough on small seed graphs: a triple <S, P, literal>
+    only finds more S-rooted triples that way, all of whose predicates are
+    already on S. 2-hop walks into S's URI neighbors and harvests their
+    predicate-set, which is what makes "propose a new predicate for S" work.
+    """
     seen: set[tuple] = {triple_id(src)}
     raw: list[dict] = []
+
+    frontier_subjects: set[str] = set()
     if src["s"]["type"] == "uri":
-        for t in subj_facts.get(src["s"]["value"], []):
-            tid = triple_id(t)
-            if tid not in seen:
-                raw.append(t)
-                seen.add(tid)
+        frontier_subjects.add(src["s"]["value"])
+    if src["o"]["type"] == "uri":
+        frontier_subjects.add(src["o"]["value"])
     src_o_key = o_key(src["o"])
+    # Reverse-traversal: subjects whose object-key matches the source's object.
     for t in obj_back.get(src_o_key, []):
+        if t["s"]["type"] == "uri":
+            frontier_subjects.add(t["s"]["value"])
         tid = triple_id(t)
         if tid not in seen:
             raw.append(t)
             seen.add(tid)
-    if src["o"]["type"] == "uri":
-        for t in subj_facts.get(src["o"]["value"], []):
-            tid = triple_id(t)
-            if tid not in seen:
-                raw.append(t)
+
+    visited_subjects: set[str] = set()
+    for _ in range(max(hops, 1)):
+        next_frontier: set[str] = set()
+        for s in frontier_subjects:
+            if s in visited_subjects:
+                continue
+            visited_subjects.add(s)
+            for t in subj_facts.get(s, []):
+                tid = triple_id(t)
+                if tid in seen:
+                    continue
                 seen.add(tid)
+                raw.append(t)
+                if t["o"]["type"] == "uri":
+                    next_frontier.add(t["o"]["value"])
+        frontier_subjects = next_frontier
 
     kept: list[dict] = []
     dropped: list[dict] = []
@@ -365,6 +387,10 @@ def main() -> None:
     parser.add_argument("--children-per-source", type=int, default=10)
     parser.add_argument("--context-cap", type=int, default=10,
                         help="Max adjacent triples kept after asymmetry filter")
+    parser.add_argument("--hops", type=int, default=2,
+                        help="BFS hops from the source triple when building context")
+    parser.add_argument("--prefer-uri-objects", action="store_true", default=True,
+                        help="Bias source-triple selection toward URI-object triples (default)")
     parser.add_argument("--n-pred-obj-max", type=int, default=10,
                         help="Drop adjacent triples whose (p, o) appears more often than this")
     parser.add_argument("--n-subj-pred-max", type=int, default=20,
@@ -375,6 +401,8 @@ def main() -> None:
     parser.add_argument("--simd-cap", type=int, default=10)
     parser.add_argument("--no-simd", action="store_true",
                         help="Disable parallel-subgraph context extension")
+    parser.add_argument("--verbose", action="store_true",
+                        help="Print per-candidate prediction outcomes")
     parser.add_argument("--device", default=None)
     parser.add_argument("--seed", type=int, default=7)
     parser.add_argument("--model-version", default=None)
@@ -464,8 +492,19 @@ def main() -> None:
         and t["p"]["value"] != RDFS_LABEL
         and not is_reserved_predicate(t["p"]["value"])
     ]
-    _random.shuffle(candidate_sources)
-    sources = candidate_sources[: args.max_source_triples]
+    if args.prefer_uri_objects:
+        uri_obj = [t for t in candidate_sources if t["o"]["type"] == "uri"]
+        lit_obj = [t for t in candidate_sources if t["o"]["type"] != "uri"]
+        _random.shuffle(uri_obj)
+        _random.shuffle(lit_obj)
+        # 80% URI-object sources, 20% literal-object so we still see how the
+        # context routine behaves on both kinds.
+        n_uri = int(args.max_source_triples * 0.8)
+        sources = uri_obj[:n_uri] + lit_obj[: args.max_source_triples - n_uri]
+        _random.shuffle(sources)
+    else:
+        _random.shuffle(candidate_sources)
+        sources = candidate_sources[: args.max_source_triples]
     print(f"\nGenerating from {len(sources)} source triples\n", file=sys.stderr)
 
     out_lines: list[str] = []
@@ -485,6 +524,7 @@ def main() -> None:
         adj, dropped = adjacent_context(
             src, subj_facts, obj_back, pred_obj_count, subj_pred_count,
             args.n_pred_obj_max, args.n_subj_pred_max, args.context_cap,
+            hops=args.hops,
         )
         if args.no_simd:
             simd_extra: list[dict] = []
@@ -514,6 +554,8 @@ def main() -> None:
             for cand_p, _ in ranked:
                 p_lbl = labels.get(cand_p, "")
                 if not p_lbl:
+                    if args.verbose:
+                        print(f"        skip (no label): {cand_p}", file=sys.stderr)
                     continue
                 res = predict_object(
                     model, s_label, p_lbl, vocab, inv_vocab,
@@ -522,11 +564,17 @@ def main() -> None:
                     encode_fn=encode_fn,
                 )
                 if res is None:
+                    if args.verbose:
+                        print(f"        skip (no prediction): {p_lbl}", file=sys.stderr)
                     continue
                 o_label, conf = res
                 if conf < args.confidence:
+                    if args.verbose:
+                        print(f"        skip (conf {conf:.3f}<{args.confidence}): {p_lbl} -> {o_label!r}", file=sys.stderr)
                     continue
                 if len(o_label) < 2:
+                    if args.verbose:
+                        print(f"        skip (too short): {p_lbl} -> {o_label!r}", file=sys.stderr)
                     continue
                 # Don't re-emit a label the model already produced for this S/P
                 # in the seed.
@@ -536,10 +584,14 @@ def main() -> None:
                     for t in subj_facts.get(s_iri, []) if t["p"]["value"] == cand_p
                 }
                 if o_label.lower() in existing_objs:
+                    if args.verbose:
+                        print(f"        skip (dup): {p_lbl} -> {o_label!r}", file=sys.stderr)
                     continue
                 chosen = (cand_p, p_lbl, o_label, conf)
                 break
             if chosen is None:
+                if args.verbose:
+                    print(f"      no candidate accepted, stopping for this source", file=sys.stderr)
                 break
             cand_p, p_lbl, o_label, conf = chosen
             emitted_preds.add(cand_p)
