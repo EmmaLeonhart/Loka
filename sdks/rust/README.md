@@ -1,20 +1,20 @@
-# sutradb
+# loka
 
-Rust client for [SutraDB](https://github.com/EmmaLeonhart/SutraDB) — an RDF-star triplestore with native HNSW vector indexing.
+Rust client for [Loka](https://github.com/EmmaLeonhart/Loka) — an RDF-star triplestore with native HNSW vector indexing.
 
 ## Installation
 
 ```sh
-cargo add sutradb
+cargo add loka
 ```
 
 ## Usage
 
 ```rust
-use sutradb::SutraClient;
+use loka::LokaClient;
 
-fn main() -> sutradb::Result<()> {
-    let client = SutraClient::new("http://localhost:7878");
+fn main() -> loka::Result<()> {
+    let client = LokaClient::new("http://localhost:7878");
 
     // Health check
     assert!(client.health()?);

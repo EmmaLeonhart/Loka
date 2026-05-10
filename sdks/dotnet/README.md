@@ -1,21 +1,21 @@
-# SutraDB.Client
+# Loka.Client
 
-C# client for [SutraDB](https://github.com/EmmaLeonhart/SutraDB) — an RDF-star triplestore with native HNSW vector indexing.
+C# client for [Loka](https://github.com/EmmaLeonhart/Loka) — an RDF-star triplestore with native HNSW vector indexing.
 
 Targets .NET 8.0. No external dependencies beyond `System.Text.Json`.
 
 ## Installation
 
 ```sh
-dotnet add package SutraDB.Client
+dotnet add package Loka.Client
 ```
 
 ## Usage
 
 ```csharp
-using SutraDB.Client;
+using Loka.Client;
 
-var client = new SutraClient("http://localhost:7878");
+var client = new LokaClient("http://localhost:7878");
 
 // Health check
 bool alive = await client.HealthAsync();

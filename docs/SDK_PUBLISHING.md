@@ -186,7 +186,7 @@ dotnet nuget push bin/Release/*.nupkg --api-key YOUR_KEY --source https://api.nu
 2. Push the tag: `git push --tags`
 3. The Go module proxy (proxy.golang.org) picks it up automatically
 
-**First time:** Users can immediately `go get github.com/EmmaLeonhart/SutraDB/sdks/go@v0.1.0`
+**First time:** Users can immediately `go get github.com/EmmaLeonhart/Loka/sdks/go@v0.1.0`
 
 ---
 
@@ -200,7 +200,7 @@ When ready to release:
 # - sdks/typescript/package.json → version
 # - sdks/rust/Cargo.toml → version
 # - sdks/java/build.gradle.kts → version
-# - sdks/dotnet/SutraDB.Client.csproj → Version
+# - sdks/dotnet/Loka.Client.csproj → Version
 # - sdks/go/go.mod (module path stays the same)
 
 # Then tag and push

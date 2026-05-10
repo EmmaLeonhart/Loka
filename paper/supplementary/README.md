@@ -24,8 +24,8 @@ The runnable artifacts referenced in the paper are in the parent repository:
 
 ## Engine version
 
-The paper's experiments run against SutraDB v0.4.0. Pre-built binaries:
-https://github.com/EmmaLeonhart/SutraDB/releases/tag/v0.4.0
+The paper's experiments run against Loka v0.4.0. Pre-built binaries:
+https://github.com/EmmaLeonhart/Loka/releases/tag/v0.4.0
 
 ## Hugging Face mirror
 

@@ -4,23 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Four-Index Architecture — SutraDB">
-    <meta property="og:description" content="How SutraDB treats HNSW as a fourth index type alongside SPO/POS/OSP, eliminating the need for a separate vector database.">
-    <meta name="description" content="How SutraDB treats HNSW as a fourth index type alongside SPO/POS/OSP, eliminating the need for a separate vector database.">
+    <meta property="og:title" content="Four-Index Architecture — Loka">
+    <meta property="og:description" content="How Loka treats HNSW as a fourth index type alongside SPO/POS/OSP, eliminating the need for a separate vector database.">
+    <meta name="description" content="How Loka treats HNSW as a fourth index type alongside SPO/POS/OSP, eliminating the need for a separate vector database.">
     <meta property="og:url" content="https://sutradb.org/theory/four-index-architecture/">
-    <meta property="og:site_name" content="SutraDB">
+    <meta property="og:site_name" content="Loka">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="Four-Index Architecture — SutraDB">
-    <meta name="twitter:description" content="How SutraDB treats HNSW as a fourth index type alongside SPO/POS/OSP.">
+    <meta name="twitter:title" content="Four-Index Architecture — Loka">
+    <meta name="twitter:description" content="How Loka treats HNSW as a fourth index type alongside SPO/POS/OSP.">
     <meta name="theme-color" content="#58a6ff">
     <link rel="canonical" href="https://sutradb.org/theory/four-index-architecture/">
-    <title>Four-Index Architecture &mdash; SutraDB</title>
+    <title>Four-Index Architecture &mdash; Loka</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f4dc;</text></svg>">
     <link rel="stylesheet" href="../../style.css">
 </head>
 <body>
 <nav>
-    <a href="../../" class="logo"><span>Sutra</span>DB</a>
+    <a href="../../" class="logo"><span>Loka</span></a>
     <a href="../../#download">Download</a>
     <a href="../../graph-vector/">Graph+Vector</a>
     <a href="../../sdb-format/">Architecture</a>
@@ -52,9 +52,9 @@
 
     <p>When you add vector search to a triplestore, the traditional approach is to bolt on a separate vector database. This creates two systems with different APIs, different storage, and a JSON handoff between them. The query planner has no visibility into the vector index &mdash; it can't reason about whether to use the HNSW index or the SPO index for a given pattern.</p>
 
-    <h2>SutraDB's Approach: HNSW as a Fourth Index</h2>
+    <h2>Loka's Approach: HNSW as a Fourth Index</h2>
 
-    <p>SutraDB treats the HNSW index as a <strong>fourth index type</strong> that sits alongside SPO/POS/OSP. The query planner sees all four indexes and chooses the best access path for each pattern:</p>
+    <p>Loka treats the HNSW index as a <strong>fourth index type</strong> that sits alongside SPO/POS/OSP. The query planner sees all four indexes and chooses the best access path for each pattern:</p>
 
     <table>
         <tr><th>Index</th><th>Key Order</th><th>Data Structure</th><th>When Used</th></tr>
@@ -66,7 +66,7 @@
 
     <h2>How It Works</h2>
 
-    <p>When a vector predicate (e.g., <code>:hasEmbedding</code>) is declared, SutraDB creates an HNSW index for that predicate. The vector literal is stored as a regular triple in SPO/POS/OSP, and the HNSW index maintains a parallel proximity graph keyed by the vector object's TermId.</p>
+    <p>When a vector predicate (e.g., <code>:hasEmbedding</code>) is declared, Loka creates an HNSW index for that predicate. The vector literal is stored as a regular triple in SPO/POS/OSP, and the HNSW index maintains a parallel proximity graph keyed by the vector object's TermId.</p>
 
     <p>The query planner's decision is straightforward:</p>
 

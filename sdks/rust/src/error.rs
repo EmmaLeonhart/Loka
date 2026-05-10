@@ -1,14 +1,14 @@
 use thiserror::Error;
 
-/// Errors that can occur when communicating with a SutraDB instance.
+/// Errors that can occur when communicating with a Loka instance.
 #[derive(Debug, Error)]
-pub enum SutraError {
+pub enum LokaError {
     /// An HTTP-level error occurred (connection refused, timeout, etc.).
     #[error("HTTP error: {0}")]
     Http(#[from] reqwest::Error),
 
     /// The server returned a non-success status code or an error payload.
-    #[error("SutraDB server error ({status}): {message}")]
+    #[error("Loka server error ({status}): {message}")]
     Server {
         status: u16,
         message: String,
@@ -19,5 +19,5 @@ pub enum SutraError {
     Deserialization(#[from] serde_json::Error),
 }
 
-/// A convenience alias for `std::result::Result<T, SutraError>`.
-pub type Result<T> = std::result::Result<T, SutraError>;
+/// A convenience alias for `std::result::Result<T, LokaError>`.
+pub type Result<T> = std::result::Result<T, LokaError>;

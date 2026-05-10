@@ -34,15 +34,15 @@ export interface DeclareVectorOptions {
   metric?: "cosine" | "euclidean" | "dot";
 }
 
-/** Error thrown by the SutraDB client. */
-export class SutraError extends Error {
+/** Error thrown by the Loka client. */
+export class LokaError extends Error {
   public readonly statusCode?: number;
 
   constructor(message: string, statusCode?: number) {
     super(message);
-    this.name = "SutraError";
+    this.name = "LokaError";
     this.statusCode = statusCode;
     // Restore prototype chain (required for extending built-ins in TS).
-    Object.setPrototypeOf(this, SutraError.prototype);
+    Object.setPrototypeOf(this, LokaError.prototype);
   }
 }

@@ -1,11 +1,11 @@
 [package]
-name = "sutradb"
+name = "loka"
 version = "0.1.0"
 edition = "2021"
-description = "Rust client for SutraDB — RDF-star triplestore with native vector indexing"
+description = "Rust client for Loka — RDF-star triplestore with native vector indexing"
 license = "Apache-2.0"
-repository = "https://github.com/EmmaLeonhart/SutraDB"
-keywords = ["sutradb", "rdf", "sparql", "vector", "graph-database"]
+repository = "https://github.com/EmmaLeonhart/Loka"
+keywords = ["loka", "rdf", "sparql", "vector", "graph-database"]
 categories = ["database", "web-programming"]
 
 [dependencies]

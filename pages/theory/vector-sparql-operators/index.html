@@ -4,23 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="VECTOR_SIMILAR & VECTOR_SCORE — SutraDB">
-    <meta property="og:description" content="SutraDB's SPARQL+ extensions for vector similarity search integrated directly into graph queries.">
-    <meta name="description" content="SutraDB's SPARQL+ extensions for vector similarity search integrated directly into graph queries.">
+    <meta property="og:title" content="VECTOR_SIMILAR & VECTOR_SCORE — Loka">
+    <meta property="og:description" content="Loka's SPARQL+ extensions for vector similarity search integrated directly into graph queries.">
+    <meta name="description" content="Loka's SPARQL+ extensions for vector similarity search integrated directly into graph queries.">
     <meta property="og:url" content="https://sutradb.org/theory/vector-sparql-operators/">
-    <meta property="og:site_name" content="SutraDB">
+    <meta property="og:site_name" content="Loka">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="VECTOR_SIMILAR & VECTOR_SCORE — SutraDB">
+    <meta name="twitter:title" content="VECTOR_SIMILAR & VECTOR_SCORE — Loka">
     <meta name="twitter:description" content="Vector similarity search as SPARQL operators, not a separate API.">
     <meta name="theme-color" content="#58a6ff">
     <link rel="canonical" href="https://sutradb.org/theory/vector-sparql-operators/">
-    <title>VECTOR_SIMILAR &amp; VECTOR_SCORE &mdash; SutraDB</title>
+    <title>VECTOR_SIMILAR &amp; VECTOR_SCORE &mdash; Loka</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f4dc;</text></svg>">
     <link rel="stylesheet" href="../../style.css">
 </head>
 <body>
 <nav>
-    <a href="../../" class="logo"><span>Sutra</span>DB</a>
+    <a href="../../" class="logo"><span>Loka</span></a>
     <a href="../../#download">Download</a>
     <a href="../../graph-vector/">Graph+Vector</a>
     <a href="../../sdb-format/">Architecture</a>
@@ -37,7 +37,7 @@
 
     <h2>The Operators</h2>
 
-    <p>SutraDB extends SPARQL 1.1 with two operators that integrate vector similarity search directly into graph query patterns:</p>
+    <p>Loka extends SPARQL 1.1 with two operators that integrate vector similarity search directly into graph query patterns:</p>
 
     <h3>VECTOR_SIMILAR</h3>
 
@@ -47,7 +47,7 @@
 SELECT ?doc ?entity WHERE {
   ?entity rdf:type :Person .
   ?doc :mentions ?entity .
-  VECTOR_SIMILAR(?doc :hasEmbedding "0.23 -0.11 ..."^^sutra:f32vec, 0.85)
+  VECTOR_SIMILAR(?doc :hasEmbedding "0.23 -0.11 ..."^^loka:f32vec, 0.85)
 }</code></pre>
 
     <p>The key: <code>VECTOR_SIMILAR</code> participates in the same query plan as regular triple patterns. The planner decides whether to run the vector search first or the graph pattern first based on cost.</p>
@@ -58,7 +58,7 @@ SELECT ?doc ?entity WHERE {
 
     <pre><code>SELECT ?doc ?score WHERE {
   ?doc :hasEmbedding ?emb .
-  BIND(VECTOR_SCORE(?doc :hasEmbedding "0.23 -0.11 ..."^^sutra:f32vec) AS ?score)
+  BIND(VECTOR_SCORE(?doc :hasEmbedding "0.23 -0.11 ..."^^loka:f32vec) AS ?score)
 }
 ORDER BY DESC(?score)
 LIMIT 10</code></pre>
@@ -68,10 +68,10 @@ LIMIT 10</code></pre>
     <p>Both operators accept optional hints for fine-tuning HNSW search behavior:</p>
 
     <pre><code><span class="cmt"># Explicit ef_search for higher recall</span>
-VECTOR_SIMILAR(?doc :hasEmbedding "..."^^sutra:f32vec, 0.85, ef:=200)
+VECTOR_SIMILAR(?doc :hasEmbedding "..."^^loka:f32vec, 0.85, ef:=200)
 
 <span class="cmt"># Explicit k limit</span>
-VECTOR_SIMILAR(?doc :hasEmbedding "..."^^sutra:f32vec, 0.80, k:=50)</code></pre>
+VECTOR_SIMILAR(?doc :hasEmbedding "..."^^loka:f32vec, 0.80, k:=50)</code></pre>
 
     <h2>How It Integrates with Graph Patterns</h2>
 

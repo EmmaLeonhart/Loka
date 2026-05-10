@@ -1,8 +1,8 @@
-# SutraDB Symbolic Layer & Naming — Planning Document
+# Loka Symbolic Layer & Naming — Planning Document
 
 **Status:** Draft, 2026-05-07
 **Author:** Immanuelle (with Claude-assisted analysis)
-**Decision needed:** Concrete shape of the symbolic layer + whether to rename `SutraDB` → `Pramana` (or `PramanaDB`).
+**Decision needed:** Concrete shape of the symbolic layer + whether to rename `Loka` → `Pramana` (or `PramanaDB`).
 
 ---
 
@@ -13,9 +13,9 @@ After a frank analysis of the [Pramana repo](https://github.com/Emma-Leonhart/Pr
 - Pramana the *codebase* is sunk cost. Streamlit + Fuseki + a 7 MB JSON blob is not a database. It is not worth porting.
 - Pramana the *name and four ideas* are worth carrying forward.
 
-This document captures (a) the four ideas and how they should land in SutraDB's symbolic layer, and (b) the open question of whether the database itself should be called Pramana.
+This document captures (a) the four ideas and how they should land in Loka's symbolic layer, and (b) the open question of whether the database itself should be called Pramana.
 
-The broader vision the work is in service of: a **neuro-symbolic infinite database for world models** — RDF-star storage (SutraDB has this), HNSW vector indexing (SutraDB has this), plus a symbolic layer that handles OWL class rules, provenance, stance, and epistemic grounding (this is what's missing).
+The broader vision the work is in service of: a **neuro-symbolic infinite database for world models** — RDF-star storage (Loka has this), HNSW vector indexing (Loka has this), plus a symbolic layer that handles OWL class rules, provenance, stance, and epistemic grounding (this is what's missing).
 
 ---
 
@@ -25,36 +25,36 @@ The broader vision the work is in service of: a **neuro-symbolic infinite databa
 
 **The idea.** Every value in the database belongs to one of three kinds:
 
-1. **`external-id`** — a reference to something with an authoritative ID elsewhere (Wikidata QID, ORCID, ISBN, DOI, MeSH ID, etc.). The ID is opaque to SutraDB; it just stores the string.
-2. **`item`** — a SutraDB-native IRI for an entity that lives inside this graph. Minted at insert time.
+1. **`external-id`** — a reference to something with an authoritative ID elsewhere (Wikidata QID, ORCID, ISBN, DOI, MeSH ID, etc.). The ID is opaque to Loka; it just stores the string.
+2. **`item`** — a Loka-native IRI for an entity that lives inside this graph. Minted at insert time.
 3. **`struct`** — a literal value whose IRI is **deterministically derived from the canonical form of its content**, via UUIDv5. Two inserts of the same value get the same IRI. Free deduplication, no coordination required.
 
-**Why this matters in SutraDB.** SutraDB already has `sutra:f32vec` for vector literals. The struct pattern generalises that idea: any typed literal with a canonical form gets a content-addressed IRI.
+**Why this matters in Loka.** Loka already has `loka:f32vec` for vector literals. The struct pattern generalises that idea: any typed literal with a canonical form gets a content-addressed IRI.
 
-**Concrete shape.** Add to `sutra-core`:
+**Concrete shape.** Add to `loka-core`:
 
 ```rust
-// Existing: sutra:f32vec
+// Existing: loka:f32vec
 // New: structured-value literal types with canonical-form interning
 pub trait StructLiteral {
     fn canonical_form(&self) -> String;
     fn struct_iri(&self) -> Iri {
-        Iri::from_uuid_v5(SUTRA_STRUCT_NAMESPACE, self.canonical_form())
+        Iri::from_uuid_v5(LOKA_STRUCT_NAMESPACE, self.canonical_form())
     }
 }
 ```
 
 Initial struct types to ship:
-- `sutra:num` — Gaussian rational `a + bi + c√n + d√(-n)` (port the four-tuple from Pramana's `combinatoric_classes.py`, simplified to start as just `Q[i]`)
-- `sutra:date` — ISO 8601 with optional precision (year / month / day / instant)
-- `sutra:coord` — WGS84 lat/lng pair
-- `sutra:duration` — ISO 8601 duration
-- `sutra:f32vec` — already exists
+- `loka:num` — Gaussian rational `a + bi + c√n + d√(-n)` (port the four-tuple from Pramana's `combinatoric_classes.py`, simplified to start as just `Q[i]`)
+- `loka:date` — ISO 8601 with optional precision (year / month / day / instant)
+- `loka:coord` — WGS84 lat/lng pair
+- `loka:duration` — ISO 8601 duration
+- `loka:f32vec` — already exists
 
 **Out of scope for v1.** Pramana's `LinearConstantComplex` (8-coefficient π/e basis). Cute but premature.
 
 **Open questions.**
-- UUIDv5 namespace UUID — pick one and freeze it as `SUTRA_STRUCT_NAMESPACE`.
+- UUIDv5 namespace UUID — pick one and freeze it as `LOKA_STRUCT_NAMESPACE`.
 - Should structs be visible in SPO/POS/OSP indexes as IRIs, or kept as a special literal kind? Recommend: stored as IRIs in the indexes for traversal symmetry, but the storage layer remembers they are content-addressed and can round-trip back to the canonical literal form on read.
 
 ---
@@ -73,18 +73,18 @@ Initial struct types to ship:
 **Concrete shape.** A predicate-level OWL annotation:
 
 ```turtle
-sutra:sourceExempt rdf:type owl:AnnotationProperty .
+loka:sourceExempt rdf:type owl:AnnotationProperty .
 
-rdf:type sutra:sourceExempt true .
-owl:sameAs sutra:sourceExempt true .
-sutra:supports sutra:sourceExempt true .
+rdf:type loka:sourceExempt true .
+owl:sameAs loka:sourceExempt true .
+loka:supports loka:sourceExempt true .
 # user-extensible: any predicate the user designates as structural
 ```
 
 The grounding analyzer (Idea 4) reads this annotation and skips exempt predicates when deciding whether a proposition has warrant.
 
 **Open questions.**
-- Should `sutra:sourceExempt` be a hardcoded list in the engine, or purely OWL-driven? Recommend: OWL-driven, with a default ontology shipped at `sutra:core` namespace that marks the obvious cases.
+- Should `loka:sourceExempt` be a hardcoded list in the engine, or purely OWL-driven? Recommend: OWL-driven, with a default ontology shipped at `loka:core` namespace that marks the obvious cases.
 
 ---
 
@@ -94,23 +94,23 @@ The grounding analyzer (Idea 4) reads this annotation and skips exempt predicate
 
 | Predicate | Meaning |
 |---|---|
-| `sutra:supports` | Source S supports the truth of proposition P |
-| `sutra:contradicts` | Source S contradicts proposition P |
-| `sutra:isAbout` | Source S is about (mentions, discusses) proposition P or entity E |
-| `sutra:isUncertain` | Marker for propositions the author is unsure of |
-| `sutra:retracts` | A previously-asserted proposition has been withdrawn |
+| `loka:supports` | Source S supports the truth of proposition P |
+| `loka:contradicts` | Source S contradicts proposition P |
+| `loka:isAbout` | Source S is about (mentions, discusses) proposition P or entity E |
+| `loka:isUncertain` | Marker for propositions the author is unsure of |
+| `loka:retracts` | A previously-asserted proposition has been withdrawn |
 
 **Why this matters.** Provenance edges in real-world knowledge graphs are messy. PROV-O is too generic, SEPIO is too academic. Five terms cover 95% of practical needs and force consistency.
 
-**Concrete shape.** Ship as a default ontology loaded into every `.sdb` (or `.pra`) on creation, in the `sutra:` namespace. Used with RDF-star:
+**Concrete shape.** Ship as a default ontology loaded into every `.sdb` (or `.pra`) on creation, in the `loka:` namespace. Used with RDF-star:
 
 ```turtle
-<< :paper_42 :discusses :TransformerArchitecture >> sutra:supports :paper_42 .
-<< :paper_42 :discusses :TransformerArchitecture >> sutra:isUncertain true .
+<< :paper_42 :discusses :TransformerArchitecture >> loka:supports :paper_42 .
+<< :paper_42 :discusses :TransformerArchitecture >> loka:isUncertain true .
 ```
 
 **Open questions.**
-- Do we need `sutra:cites` separately, or is that just `sutra:isAbout` + the RDF-star reification? Recommend: skip `cites` for now, let users layer their own bibliographic vocabulary on top.
+- Do we need `loka:cites` separately, or is that just `loka:isAbout` + the RDF-star reification? Recommend: skip `cites` for now, let users layer their own bibliographic vocabulary on top.
 
 ---
 
@@ -129,7 +129,7 @@ The distribution across these levels is a single-number health signal for "how w
 **Concrete shape.**
 
 ```bash
-sutra health --grounding
+loka health --grounding
 # → BASE:    12,420 propositions (38%)
 # → L1:       8,901 propositions (27%)
 # → L2:       4,210 propositions (13%)
@@ -137,7 +137,7 @@ sutra health --grounding
 # → ORPHAN:   6,191 propositions (19%) ← needs review
 ```
 
-Algorithm: fixed-point traversal up to a depth bound (default 20 hops, matching Pramana's pragmatic cap), via `sutra:supports` / `sutra:isAbout` edges, treating `sutra:sourceExempt` predicates as transparent, terminating at any node with an `external-id` typed predicate.
+Algorithm: fixed-point traversal up to a depth bound (default 20 hops, matching Pramana's pragmatic cap), via `loka:supports` / `loka:isAbout` edges, treating `loka:sourceExempt` predicates as transparent, terminating at any node with an `external-id` typed predicate.
 
 **Out of scope for v1.** Real-time recomputation. Run on demand; cache the last result; recompute when the user asks.
 
@@ -147,7 +147,7 @@ Algorithm: fixed-point traversal up to a depth bound (default 20 hops, matching 
 
 ---
 
-## 3. The Naming Question — `SutraDB` or `Pramana`?
+## 3. The Naming Question — `Loka` or `Pramana`?
 
 The user has raised: *Pramana might actually be the better name for this database.*
 
@@ -157,15 +157,15 @@ Worth taking seriously. Here is the honest case both ways.
 
 - **Semantic accuracy.** Pramāṇa (प्रमाण) means "valid means of knowledge / epistemic instrument" in Sanskrit philosophy — perception, inference, testimony, comparison. With the four ideas above, the database literally *is* an epistemic instrument: it stores claims, tracks their warrant, and reports their grounding level. The name describes the thing.
 - **Sutra is generic.** "Sutra" means thread / aphorism. It evokes connectedness, which fits any graph DB. It does not fit *this* graph DB more than any other. There are also many existing products called Sutra-something, and the term is overloaded.
-- **The four-idea framing demands the name.** None of the four ideas is about graph traversal *per se* — they are all about epistemic structure. Calling it `SutraDB` and then explaining "but it's about epistemology" is the wrong order.
-- **`.pra` already exists.** Pramana the project uses `.pra` as a file extension. SutraDB could legitimately reclaim it for a proper binary RDF-star format (versus Pramana's JSON-blob misuse).
+- **The four-idea framing demands the name.** None of the four ideas is about graph traversal *per se* — they are all about epistemic structure. Calling it `Loka` and then explaining "but it's about epistemology" is the wrong order.
+- **`.pra` already exists.** Pramana the project uses `.pra` as a file extension. Loka could legitimately reclaim it for a proper binary RDF-star format (versus Pramana's JSON-blob misuse).
 - **Differentiation.** "Pramana" is rare in software. "Sutra" is not.
 
-### 3.2 Case for keeping SutraDB
+### 3.2 Case for keeping Loka
 
 - **Sunk-cost-name fallacy in reverse.** Pramana was the user's earlier failed project. Reusing the name might *feel* like dragging baggage forward, even if the new thing has no code in common.
 - **Pronounceability.** "Sutra" is two syllables, immediately readable in English. "Pramāṇa" / "Pramana" is three syllables and the macron-or-no-macron ambiguity is permanent.
-- **Existing investment.** Repo name, GitHub releases, Cargo crate names (`sutra-core`, `sutra-hnsw`, `sutra-sparql`, `sutra-proto`, `sutra-cli`, `sutra-ffi`), `.sdb` extension, `sutra:` IRI namespace, `sutra` CLI binary, branding in `README.md` and `CLAUDE.md`, `BENCHMARKS.md`.
+- **Existing investment.** Repo name, GitHub releases, Cargo crate names (`loka-core`, `loka-hnsw`, `loka-sparql`, `loka-proto`, `loka-cli`, `loka-ffi`), `.sdb` extension, `loka:` IRI namespace, `loka` CLI binary, branding in `README.md` and `CLAUDE.md`, `BENCHMARKS.md`.
 - **Time.** A rename is a day of work, plus permanent confusion for early adopters.
 
 ### 3.3 Concrete rename cost catalog
@@ -174,40 +174,40 @@ If we rename, here is everything that touches:
 
 | Surface | From | To | Cost |
 |---|---|---|---|
-| Repo name | `SutraDB` | `Pramana` or `PramanaDB` | Trivial (GitHub redirects). |
-| Crate names | `sutra-core` etc. | `pramana-core` etc. | Trivial unless already published to crates.io. **Verify before renaming.** |
+| Repo name | `Loka` | `Pramana` or `PramanaDB` | Trivial (GitHub redirects). |
+| Crate names | `loka-core` etc. | `pramana-core` etc. | Trivial unless already published to crates.io. **Verify before renaming.** |
 | File extension | `.sdb` | `.pra` | Trivial in code; medium for any existing `.sdb` files in the wild. **Likely none yet.** |
-| CLI binary | `sutra` | `pramana` | Trivial. |
-| IRI namespace | `sutra:` | `pramana:` (or keep `sutra:` for the predicate vocabulary as a sub-brand) | Affects every example and every default ontology. Medium. |
+| CLI binary | `loka` | `pramana` | Trivial. |
+| IRI namespace | `loka:` | `pramana:` (or keep `loka:` for the predicate vocabulary as a sub-brand) | Affects every example and every default ontology. Medium. |
 | Docs | `README.md`, `CLAUDE.md`, `docs/*.md`, `BENCHMARKS.md`, `TODO.md`, `planning/*.md` | rewrite | Half-day with `sed` + manual review. |
-| Sutra Studio | the GUI | rename | Trivial. |
+| Loka Studio | the GUI | rename | Trivial. |
 | External: any landing page, social, GitHub org | — | — | Depends. Likely small at this stage. |
 
 **Realistic estimate:** one focused day if done before any v1.0 release. Significantly worse after.
 
 ### 3.4 Recommendation
 
-**Rename to `Pramana`** (not `PramanaDB` — drop the suffix; it's clean enough), but **keep `sutra:` as the sub-brand for the SPARQL+ extension and the default predicate vocabulary**. So:
+**Rename to `Pramana`** (not `PramanaDB` — drop the suffix; it's clean enough), but **keep `loka:` as the sub-brand for the SPARQL+ extension and the default predicate vocabulary**. So:
 
 - The database is **Pramana**.
 - The query language is **SPARQL+** (SPARQL 1.1 superset).
-- The vector-extension predicates and default vocabulary stay in the `sutra:` namespace because that's the *thread/aphorism* metaphor that fits SPARQL traversal extensions.
+- The vector-extension predicates and default vocabulary stay in the `loka:` namespace because that's the *thread/aphorism* metaphor that fits SPARQL traversal extensions.
 
 This gives:
 - An accurately-named database (Pramana = epistemic instrument).
-- An accurately-named query extension (`sutra:` = threads through the graph).
+- An accurately-named query extension (`loka:` = threads through the graph).
 - A natural division: Pramana the engine, Sutra the language extension.
 
 **Trigger condition for the rename:** before the first tagged v1.0 release. After that, the cost climbs sharply.
 
-**Don't rename if:** crates are already published to crates.io under `sutra-*` names with non-trivial download counts, OR there's a real user community calling it SutraDB.
+**Don't rename if:** crates are already published to crates.io under `loka-*` names with non-trivial download counts, OR there's a real user community calling it Loka.
 
 ### 3.5 crates.io status (verified 2026-05-07)
 
 | Name | Status | Notes |
 |---|---|---|
-| `sutra-core`, `sutra-hnsw`, `sutra-sparql`, `sutra-proto`, `sutra-cli`, `sutra-ffi` | **all unpublished** | Migration cost on crates.io: zero. |
-| `sutra` (bare) | published — unrelated | Daniel Norman's dev-environment status dashboard (v0.1.3, 43 downloads). Not in conflict; SutraDB never published under this name. |
+| `loka-core`, `loka-hnsw`, `loka-sparql`, `loka-proto`, `loka-cli`, `loka-ffi` | **all unpublished** | Migration cost on crates.io: zero. |
+| `loka` (bare) | published — unrelated | Daniel Norman's dev-environment status dashboard (v0.1.3, 43 downloads). Not in conflict; Loka never published under this name. |
 | `pramana` (bare) | published — unrelated | Robert MacCracken's Rust statistics library: "distributions, Bayesian inference, hypothesis testing, Monte Carlo, Markov chains" (v1.2.0, 389 downloads). Mild thematic-overlap concern (Bayesian inference is epistemic) but the descriptions distinguish them clearly. The bare name is not available — workspace must use the `pramana-*` prefix. |
 | `pramana-core`, `pramana-cli` | **unpublished** | Free to claim. By implication `pramana-hnsw`, `pramana-sparql`, `pramana-proto`, `pramana-ffi` are also free (verify before publishing). |
 
@@ -220,9 +220,9 @@ This gives:
 Suggested rough ordering (does not yet account for the existing TODO.md / ontochronology pivot work):
 
 1. **Idea 1 — struct literals** (`num:`, `date:`, `coord:`). Concrete, testable, immediately useful for the Wikidata BFS import. ~1 week.
-2. **Idea 2 — `sutra:sourceExempt` annotation** + default ontology declaring the obvious exempt predicates. ~2 days.
+2. **Idea 2 — `loka:sourceExempt` annotation** + default ontology declaring the obvious exempt predicates. ~2 days.
 3. **Idea 3 — stance vocabulary** as default ontology. Mostly schema work, no engine code. ~1 day.
-4. **Idea 4 — grounding-level health metric** (`sutra health --grounding`). Depends on 2 and 3. ~3 days.
+4. **Idea 4 — grounding-level health metric** (`loka health --grounding`). Depends on 2 and 3. ~3 days.
 5. **Naming decision and rename** if going forward. Block before v1.0 release. ~1 day.
 
 Total: roughly two focused weeks for the entire symbolic-layer minimum-viable surface, plus the rename window.
@@ -234,7 +234,7 @@ Total: roughly two focused weeks for the entire symbolic-layer minimum-viable su
 - **Whether to rename.** The recommendation in §3.4 is a recommendation, not a commitment. Decide after sleeping on it.
 - **The exact UUIDv5 namespace UUID** for struct literals.
 - **Interaction with the ontochronology pivot.** TSPO indexing and temporal SPARQL+ operators are in flight; the symbolic layer needs to compose with them, not against them. To be reconciled in a separate doc.
-- **MCP server surface for the symbolic layer.** Should `sutra mcp` expose `grounding_report` and `validate_owl` as tools? Probably yes, but separate decision.
+- **MCP server surface for the symbolic layer.** Should `loka mcp` expose `grounding_report` and `validate_owl` as tools? Probably yes, but separate decision.
 
 ---
 
@@ -243,7 +243,7 @@ Total: roughly two focused weeks for the entire symbolic-layer minimum-viable su
 - Frank assessment of the Pramana repo: see auto-memory `project_pramana_disposition.md`.
 - Pramana repo location: `C:\Users\Immanuelle\Documents\Github\Pramana`.
 - Pramana planning doc most worth reading once: `Pramana/planning/02_TECHNICAL_SPECIFICATIONS.md`.
-- SutraDB current architecture: `docs/architecture.md`.
+- Loka current architecture: `docs/architecture.md`.
 
 ---
 
@@ -255,7 +255,7 @@ After absorbing `chats/world-models.md` and `chats/ai-bubble.md`, three addition
 
 Pramana's `combinatoric_classes.py` shipped a fifth load-bearing pattern that the original analysis missed: **class membership as a pure function over the canonical form of an IRI**, with no `rdf:type` triples stored. `<num:1,2,0,1>` is a Rational because the parser+classifier says so, not because of an asserted typing triple.
 
-This composes 1:1 with the four planned struct literals (`sutra:num`, `sutra:date`, `sutra:coord`, `sutra:f32vec`) and gives a free `STRUCT_CLASS` / `STRUCT_CHAIN` SPARQL+ extension. The motivating use case is a math database bootstrapped with established rules + named instances (pi, e), where the infinite class of rationals needs zero typing storage.
+This composes 1:1 with the four planned struct literals (`loka:num`, `loka:date`, `loka:coord`, `loka:f32vec`) and gives a free `STRUCT_CLASS` / `STRUCT_CHAIN` SPARQL+ extension. The motivating use case is a math database bootstrapped with established rules + named instances (pi, e), where the infinite class of rationals needs zero typing storage.
 
 Full design: **`planning/structural-typing.md`**.
 
@@ -275,7 +275,7 @@ Full reasoning: **`planning/world-model-thesis.md` §7**.
 
 The user's self-reflection on Pramana, paraphrased: *"the problem with Pramana is that we had a large amount of ambition with it but didn't really have much discipline with how we were organizing the program."*
 
-This is now a guiding constraint for SutraDB. Concrete operationalizations:
+This is now a guiding constraint for Loka. Concrete operationalizations:
 
 - **Write the spec before the code.** New planning docs live in `planning/` before implementation begins.
 - **One implementation per concept.** Do not ship parallel V1/V2 adapter generations that disagree on the data model. If a rewrite happens, it replaces, not coexists.

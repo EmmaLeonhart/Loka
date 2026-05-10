@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageId>Loka.Client</PackageId>
+    <Version>0.1.0</Version>
+    <Description>C# client for Loka — RDF-star triplestore with native vector indexing</Description>
+    <Authors>EmmaLeonhart</Authors>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/EmmaLeonhart/Loka</RepositoryUrl>
+    <PackageTags>loka;rdf;sparql;vector;graph-database;triplestore</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="8.0.0" />
+  </ItemGroup>
+</Project>

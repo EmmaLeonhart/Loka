@@ -5,23 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- Open Graph / Discord / Twitter preview -->
     <meta property="og:type" content="website">
-    <meta property="og:title" content="RDF & RDF-star — SutraDB">
-    <meta property="og:description" content="RDF and RDF-star data model in SutraDB: triples, quoted triples, and vector literals.">
-    <meta name="description" content="RDF and RDF-star data model in SutraDB: triples, quoted triples, and vector literals.">
+    <meta property="og:title" content="RDF & RDF-star — Loka">
+    <meta property="og:description" content="RDF and RDF-star data model in Loka: triples, quoted triples, and vector literals.">
+    <meta name="description" content="RDF and RDF-star data model in Loka: triples, quoted triples, and vector literals.">
     <meta property="og:url" content="https://sutradb.org/rdf/">
-    <meta property="og:site_name" content="SutraDB">
+    <meta property="og:site_name" content="Loka">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="RDF & RDF-star — SutraDB">
-    <meta name="twitter:description" content="RDF and RDF-star data model in SutraDB: triples, quoted triples, and vector literals.">
+    <meta name="twitter:title" content="RDF & RDF-star — Loka">
+    <meta name="twitter:description" content="RDF and RDF-star data model in Loka: triples, quoted triples, and vector literals.">
     <meta name="theme-color" content="#58a6ff">
     <link rel="canonical" href="https://sutradb.org/rdf/">
-    <title>RDF &amp; RDF-star &mdash; SutraDB</title>
+    <title>RDF &amp; RDF-star &mdash; Loka</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f4dc;</text></svg>">
     <link rel="stylesheet" href="../style.css">
 </head>
 <body>
 <nav>
-    <a href="../" class="logo"><span>Sutra</span>DB</a>
+    <a href="../" class="logo"><span>Loka</span></a>
     <a href="../#download">Download</a>
     <a href="../graph-vector/">Graph+Vector</a>
     <a href="../sdb-format/">Architecture</a>
@@ -33,7 +33,7 @@
 <div class="container">
     <div class="page-header">
         <h1>RDF, RDF 1.2, and <span>RDF-star</span></h1>
-        <p class="subtitle">Why SutraDB uses RDF-star &mdash; the most expressive superset of the W3C data model.</p>
+        <p class="subtitle">Why Loka uses RDF-star &mdash; the most expressive superset of the W3C data model.</p>
     </div>
 
     <h2>The Three Levels of RDF</h2>
@@ -80,7 +80,7 @@
         Triple terms can only appear in object position. You cannot write <code>&lt;&lt; :Alice :knows :Bob &gt;&gt; :confidence 0.9</code> directly &mdash; you need the intermediate <code>rdf:reifies</code> node.
     </div>
 
-    <h3>RDF-star (What SutraDB Uses)</h3>
+    <h3>RDF-star (What Loka Uses)</h3>
 
     <p>RDF-star removes the restriction. Triple terms can appear in <strong>any position</strong> &mdash; subject, predicate, or object. This is the most natural way to annotate triples:</p>
 
@@ -95,7 +95,7 @@
 
 <pre><code><span class="cmt">-- An embedding on a relationship (RDF-star)</span>
 &lt;&lt; :paper42 :discusses :TransformerArchitecture &gt;&gt;
-    :hasEmbedding <span class="str">"0.23 -0.11 0.87 ..."</span>^^sutra:f32vec .
+    :hasEmbedding <span class="str">"0.23 -0.11 0.87 ..."</span>^^loka:f32vec .
 &lt;&lt; :paper42 :discusses :TransformerArchitecture &gt;&gt;
     :confidence 0.91 .</code></pre>
 
@@ -137,23 +137,23 @@
 
     <h2>Why RDF-star?</h2>
 
-    <p>SutraDB's primary use case is storing vector embeddings alongside graph structure. The <code>&lt;&lt; s p o &gt;&gt; :hasEmbedding ...</code> pattern is the natural representation for "this edge has an embedding." RDF 1.2's object-only restriction would require an extra indirection node for every annotated edge.</p>
+    <p>Loka's primary use case is storing vector embeddings alongside graph structure. The <code>&lt;&lt; s p o &gt;&gt; :hasEmbedding ...</code> pattern is the natural representation for "this edge has an embedding." RDF 1.2's object-only restriction would require an extra indirection node for every annotated edge.</p>
 
     <div class="callout green">
         <strong>Full compatibility</strong>
-        Since RDF-star is a superset of RDF 1.2, which is a superset of legacy RDF, any existing RDF data works in SutraDB without modification. You only need RDF-star syntax when you want to annotate triples directly.
+        Since RDF-star is a superset of RDF 1.2, which is a superset of legacy RDF, any existing RDF data works in Loka without modification. You only need RDF-star syntax when you want to annotate triples directly.
     </div>
 
     <h3>Practical impact</h3>
 
     <ul>
-        <li><strong>Embeddings on edges</strong>: <code>&lt;&lt; :paper :cites :other &gt;&gt; :hasEmbedding "..."^^sutra:f32vec</code> &mdash; one triple, not three</li>
+        <li><strong>Embeddings on edges</strong>: <code>&lt;&lt; :paper :cites :other &gt;&gt; :hasEmbedding "..."^^loka:f32vec</code> &mdash; one triple, not three</li>
         <li><strong>Provenance</strong>: <code>&lt;&lt; :Alice :birthDate "1990" &gt;&gt; :source :Wikipedia</code> &mdash; directly attach source to the fact</li>
         <li><strong>Confidence scores</strong>: <code>&lt;&lt; :model :predicts :outcome &gt;&gt; :confidence 0.95</code> &mdash; annotate predictions with scores</li>
         <li><strong>Temporal metadata</strong>: <code>&lt;&lt; :company :ceo :person &gt;&gt; :startDate "2020" ; :endDate "2023"</code></li>
     </ul>
 
-    <h2>How SutraDB Stores RDF-star</h2>
+    <h2>How Loka Stores RDF-star</h2>
 
     <p>Quoted triples are handled efficiently using content-addressed hashing:</p>
 
@@ -168,7 +168,7 @@
 
     <h2>Oxigraph's Different Choice</h2>
 
-    <p><a href="https://github.com/oxigraph/oxigraph">Oxigraph</a>, the closest existing Rust triplestore, migrated from RDF-star to RDF 1.2 in v0.5. Their rationale was alignment with the W3C working draft. SutraDB took the opposite position: RDF-star's direct edge annotation is essential for the vector embedding use case, and since it's a superset, RDF 1.2 compatibility comes for free.</p>
+    <p><a href="https://github.com/oxigraph/oxigraph">Oxigraph</a>, the closest existing Rust triplestore, migrated from RDF-star to RDF 1.2 in v0.5. Their rationale was alignment with the W3C working draft. Loka took the opposite position: RDF-star's direct edge annotation is essential for the vector embedding use case, and since it's a superset, RDF 1.2 compatibility comes for free.</p>
 
 </div>
 

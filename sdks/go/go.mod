@@ -1,3 +1,3 @@
-module github.com/EmmaLeonhart/SutraDB/sdks/go
+module github.com/EmmaLeonhart/Loka/sdks/go
 
 go 1.21

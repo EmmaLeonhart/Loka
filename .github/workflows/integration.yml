@@ -19,15 +19,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Build SutraDB
+      # Build Loka
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - run: cargo build --release -p sutra-cli
+      - run: cargo build --release -p loka-cli
 
-      # Start SutraDB in background
-      - name: Start SutraDB
+      # Start Loka in background
+      - name: Start Loka
         run: |
-          ./target/release/sutra serve --memory-only --port 3030 &
+          ./target/release/loka serve --memory-only --port 3030 &
           sleep 2
           curl -f http://localhost:3030/health
 
@@ -58,8 +58,8 @@ jobs:
           cd sdks/python
           pip install -e .
           python -c "
-          from sutradb import SutraClient
-          c = SutraClient()
+          from loka import LokaClient
+          c = LokaClient()
           assert c.health(), 'Health check failed'
           r = c.sparql('SELECT * WHERE { ?s ?p ?o } LIMIT 5')
           assert len(r['results']['bindings']) > 0, 'No SPARQL results'

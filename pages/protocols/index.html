@@ -5,23 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- Open Graph / Discord / Twitter preview -->
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Protocols & Standards — SutraDB">
-    <meta property="og:description" content="SPARQL HTTP protocol, Graph Store Protocol, and REST API for SutraDB.">
-    <meta name="description" content="SPARQL HTTP protocol, Graph Store Protocol, and REST API for SutraDB.">
+    <meta property="og:title" content="Protocols & Standards — Loka">
+    <meta property="og:description" content="SPARQL HTTP protocol, Graph Store Protocol, and REST API for Loka.">
+    <meta name="description" content="SPARQL HTTP protocol, Graph Store Protocol, and REST API for Loka.">
     <meta property="og:url" content="https://sutradb.org/protocols/">
-    <meta property="og:site_name" content="SutraDB">
+    <meta property="og:site_name" content="Loka">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="Protocols & Standards — SutraDB">
-    <meta name="twitter:description" content="SPARQL HTTP protocol, Graph Store Protocol, and REST API for SutraDB.">
+    <meta name="twitter:title" content="Protocols & Standards — Loka">
+    <meta name="twitter:description" content="SPARQL HTTP protocol, Graph Store Protocol, and REST API for Loka.">
     <meta name="theme-color" content="#58a6ff">
     <link rel="canonical" href="https://sutradb.org/protocols/">
-    <title>Protocols &amp; Standards &mdash; SutraDB</title>
+    <title>Protocols &amp; Standards &mdash; Loka</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f4dc;</text></svg>">
     <link rel="stylesheet" href="../style.css">
 </head>
 <body>
 <nav>
-    <a href="../" class="logo"><span>Sutra</span>DB</a>
+    <a href="../" class="logo"><span>Loka</span></a>
     <a href="../#download">Download</a>
     <a href="../graph-vector/">Graph+Vector</a>
     <a href="../sdb-format/">Architecture</a>
@@ -33,12 +33,12 @@
 <div class="container">
     <div class="page-header">
         <h1>Protocols &amp; <span>Standards</span></h1>
-        <p class="subtitle">What SutraDB follows, extends, and deliberately skips.</p>
+        <p class="subtitle">What Loka follows, extends, and deliberately skips.</p>
     </div>
 
     <div class="callout green">
         <strong>Superset philosophy</strong>
-        SutraDB is a superset of W3C standards &mdash; both in data model (RDF-star &supset; RDF 1.2) and query language (SPARQL + VECTOR_SIMILAR &supset; SPARQL 1.1). Any valid standard query or dataset works unchanged. Extensions add what the standards can't express.
+        Loka is a superset of W3C standards &mdash; both in data model (RDF-star &supset; RDF 1.2) and query language (SPARQL + VECTOR_SIMILAR &supset; SPARQL 1.1). Any valid standard query or dataset works unchanged. Extensions add what the standards can't express.
     </div>
 
     <h2>Standards We Follow</h2>
@@ -84,7 +84,7 @@
 
     <h2>ACID Compliance</h2>
 
-    <p>SutraDB targets full ACID compliance:</p>
+    <p>Loka targets full ACID compliance:</p>
 
     <table>
         <tr><th>Property</th><th>Status</th><th>Implementation</th></tr>
@@ -116,12 +116,12 @@
         <div class="card">
             <h4>Serverless (Default)</h4>
             <p>Like SQLite. Open a <code>.sdb</code> file directly from your application. No daemon, no port, no configuration. Single-process access.</p>
-            <pre><code>sutra query "SELECT * WHERE { ?s ?p ?o }" --data my.sdb</code></pre>
+            <pre><code>loka query "SELECT * WHERE { ?s ?p ?o }" --data my.sdb</code></pre>
         </div>
         <div class="card">
             <h4>Server Mode</h4>
             <p>Like PostgreSQL. Start a SPARQL HTTP endpoint for multi-client access, remote queries, and REST API operations.</p>
-            <pre><code>sutra serve --port 3030 --data my.sdb</code></pre>
+            <pre><code>loka serve --port 3030 --data my.sdb</code></pre>
         </div>
     </div>
 
@@ -158,7 +158,7 @@
 
     <h2>File Format</h2>
 
-    <p>SutraDB uses the <code>.sdb</code> file extension. This is deliberately <strong>not</strong> a standard RDF serialization format &mdash; it's a binary storage format containing:</p>
+    <p>Loka uses the <code>.sdb</code> file extension. This is deliberately <strong>not</strong> a standard RDF serialization format &mdash; it's a binary storage format containing:</p>
     <ul>
         <li>SPO/POS/OSP triple indexes (sorted u64 keys)</li>
         <li>Term dictionary (IRI interning)</li>

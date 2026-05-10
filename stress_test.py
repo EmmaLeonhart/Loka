@@ -1,5 +1,5 @@
 """
-SutraDB Stress Test v2 — Proper data model.
+Loka Stress Test v2 — Proper data model.
 
 All data is triples. Entities connect to each other via relationship triples
 (predicate "1") and ~50% of entities also have vector triples (predicate "2")
@@ -25,7 +25,7 @@ DIMENSIONS = 64
 NUM_ENTITIES = 50_000
 VECTOR_FRACTION = 0.5  # 50% of entities get vectors
 
-NS = "http://test.sutradb.dev/"
+NS = "http://test.loka.dev/"
 PRED_LINK = f"{NS}link"        # predicate "1" — entity-to-entity relationships
 PRED_TYPE = f"{NS}type"        # rdf:type equivalent
 PRED_VEC = f"{NS}hasEmbedding" # predicate "2" — entity-to-vector
@@ -63,7 +63,7 @@ def gen_vector(type_idx, entity_idx):
 def generate_and_load():
     session = requests.Session()
     print("=" * 60)
-    print("SUTRADB STRESS TEST v2")
+    print("LOKA STRESS TEST v2")
     print(f"Entities: {NUM_ENTITIES:,}, Dimensions: {DIMENSIONS}")
     print(f"Vector fraction: {VECTOR_FRACTION:.0%}")
     print("=" * 60)
@@ -243,7 +243,7 @@ def run_queries(entities):
     vec_str = " ".join(f"{v:.6f}" for v in query_vec)
 
     run("VECTOR_SIMILAR: find entities near alpha vector (threshold 0.7)",
-        f'SELECT ?entity WHERE {{ VECTOR_SIMILAR(?entity <{PRED_VEC}> "{vec_str}"^^<http://sutra.dev/f32vec>, 0.7) }} LIMIT 20',
+        f'SELECT ?entity WHERE {{ VECTOR_SIMILAR(?entity <{PRED_VEC}> "{vec_str}"^^<http://loka.dev/f32vec>, 0.7) }} LIMIT 20',
         expect_min=1)
 
     # Pick a beta entity for cross-cluster search
@@ -252,25 +252,25 @@ def run_queries(entities):
     beta_vec_str = " ".join(f"{v:.6f}" for v in beta_vec)
 
     run("VECTOR_SIMILAR: find entities near beta vector (threshold 0.7)",
-        f'SELECT ?entity WHERE {{ VECTOR_SIMILAR(?entity <{PRED_VEC}> "{beta_vec_str}"^^<http://sutra.dev/f32vec>, 0.7) }} LIMIT 20',
+        f'SELECT ?entity WHERE {{ VECTOR_SIMILAR(?entity <{PRED_VEC}> "{beta_vec_str}"^^<http://loka.dev/f32vec>, 0.7) }} LIMIT 20',
         expect_min=1)
 
     # ── 3. Wormhole queries: graph ↔ vector ──
 
     run("WORMHOLE vector→graph: similar to alpha, get their type",
-        f'SELECT ?entity ?type WHERE {{ VECTOR_SIMILAR(?entity <{PRED_VEC}> "{vec_str}"^^<http://sutra.dev/f32vec>, 0.7) . ?entity <{PRED_TYPE}> ?type }} LIMIT 20',
+        f'SELECT ?entity ?type WHERE {{ VECTOR_SIMILAR(?entity <{PRED_VEC}> "{vec_str}"^^<http://loka.dev/f32vec>, 0.7) . ?entity <{PRED_TYPE}> ?type }} LIMIT 20',
         expect_min=1)
 
     run("WORMHOLE vector→graph→graph: similar to alpha, follow link, get type",
-        f'SELECT ?entity ?linked ?type WHERE {{ VECTOR_SIMILAR(?entity <{PRED_VEC}> "{vec_str}"^^<http://sutra.dev/f32vec>, 0.7) . ?entity <{PRED_LINK}> ?linked . ?linked <{PRED_TYPE}> ?type }} LIMIT 20',
+        f'SELECT ?entity ?linked ?type WHERE {{ VECTOR_SIMILAR(?entity <{PRED_VEC}> "{vec_str}"^^<http://loka.dev/f32vec>, 0.7) . ?entity <{PRED_LINK}> ?linked . ?linked <{PRED_TYPE}> ?type }} LIMIT 20',
         expect_min=1)
 
     run("WORMHOLE graph→vector: alpha entities filtered by vector similarity",
-        f'SELECT ?entity WHERE {{ ?entity <{PRED_TYPE}> <{NS}class/alpha> . VECTOR_SIMILAR(?entity <{PRED_VEC}> "{vec_str}"^^<http://sutra.dev/f32vec>, 0.7) }} LIMIT 20',
+        f'SELECT ?entity WHERE {{ ?entity <{PRED_TYPE}> <{NS}class/alpha> . VECTOR_SIMILAR(?entity <{PRED_VEC}> "{vec_str}"^^<http://loka.dev/f32vec>, 0.7) }} LIMIT 20',
         expect_min=1)
 
     run("WORMHOLE graph→vector→graph: typed entities, vector filter, follow link",
-        f'SELECT ?entity ?linked WHERE {{ ?entity <{PRED_TYPE}> <{NS}class/alpha> . VECTOR_SIMILAR(?entity <{PRED_VEC}> "{vec_str}"^^<http://sutra.dev/f32vec>, 0.7) . ?entity <{PRED_LINK}> ?linked }} LIMIT 20',
+        f'SELECT ?entity ?linked WHERE {{ ?entity <{PRED_TYPE}> <{NS}class/alpha> . VECTOR_SIMILAR(?entity <{PRED_VEC}> "{vec_str}"^^<http://loka.dev/f32vec>, 0.7) . ?entity <{PRED_LINK}> ?linked }} LIMIT 20',
         expect_min=1)
 
     # ── 4. UNION + Vector ──
@@ -280,13 +280,13 @@ def run_queries(entities):
         expect_min=50)
 
     run("UNION + VECTOR: (alpha UNION beta) filtered by vector similarity",
-        f'SELECT ?e WHERE {{ {{ ?e <{PRED_TYPE}> <{NS}class/alpha> }} UNION {{ ?e <{PRED_TYPE}> <{NS}class/beta> }} . VECTOR_SIMILAR(?e <{PRED_VEC}> "{vec_str}"^^<http://sutra.dev/f32vec>, 0.6) }} LIMIT 20',
+        f'SELECT ?e WHERE {{ {{ ?e <{PRED_TYPE}> <{NS}class/alpha> }} UNION {{ ?e <{PRED_TYPE}> <{NS}class/beta> }} . VECTOR_SIMILAR(?e <{PRED_VEC}> "{vec_str}"^^<http://loka.dev/f32vec>, 0.6) }} LIMIT 20',
         expect_min=1)
 
     # ── 5. Cross-cluster vector search ──
 
     run("Cross-cluster: search with alpha vector, find what types come back",
-        f'SELECT ?entity ?type WHERE {{ VECTOR_SIMILAR(?entity <{PRED_VEC}> "{vec_str}"^^<http://sutra.dev/f32vec>, 0.3) . ?entity <{PRED_TYPE}> ?type }} LIMIT 50',
+        f'SELECT ?entity ?type WHERE {{ VECTOR_SIMILAR(?entity <{PRED_VEC}> "{vec_str}"^^<http://loka.dev/f32vec>, 0.3) . ?entity <{PRED_TYPE}> ?type }} LIMIT 50',
         expect_min=1)
 
     # ── Summary ──
@@ -310,7 +310,7 @@ def run_queries(entities):
 
 if __name__ == "__main__":
     if not health_check():
-        print("ERROR: SutraDB not running at", ENDPOINT)
+        print("ERROR: Loka not running at", ENDPOINT)
         sys.exit(1)
 
     total_triples, vec_count, entities = generate_and_load()

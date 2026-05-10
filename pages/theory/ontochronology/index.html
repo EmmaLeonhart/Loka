@@ -4,23 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Ontochronology — SutraDB">
+    <meta property="og:title" content="Ontochronology — Loka">
     <meta property="og:description" content="Time as a first-class structural axis, not metadata on triples. Query the complete world state at any moment.">
-    <meta name="description" content="Ontochronology: modeling what exists at which times. SutraDB treats time as a primary index axis for temporal graph queries.">
+    <meta name="description" content="Ontochronology: modeling what exists at which times. Loka treats time as a primary index axis for temporal graph queries.">
     <meta property="og:url" content="https://sutradb.org/theory/ontochronology/">
-    <meta property="og:site_name" content="SutraDB">
+    <meta property="og:site_name" content="Loka">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="Ontochronology — SutraDB">
+    <meta name="twitter:title" content="Ontochronology — Loka">
     <meta name="twitter:description" content="Time as a first-class structural axis. Query the complete world state at any moment.">
     <meta name="theme-color" content="#58a6ff">
     <link rel="canonical" href="https://sutradb.org/theory/ontochronology/">
-    <title>Ontochronology &mdash; SutraDB</title>
+    <title>Ontochronology &mdash; Loka</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f4dc;</text></svg>">
     <link rel="stylesheet" href="../../style.css">
 </head>
 <body>
 <nav>
-    <a href="../../" class="logo"><span>Sutra</span>DB</a>
+    <a href="../../" class="logo"><span>Loka</span></a>
     <a href="../../#download">Download</a>
     <a href="../../graph-vector/">Graph+Vector</a>
     <a href="../../sdb-format/">Architecture</a>
@@ -51,7 +51,7 @@
 
     <h2>The Insight: Time as a Leading Index Key</h2>
 
-    <p>SutraDB already maintains three index orderings over every triple &mdash; SPO, POS, and OSP &mdash; so that any access pattern hits an index. Ontochronology adds a fourth ordering with <strong>time as the leading key</strong>:</p>
+    <p>Loka already maintains three index orderings over every triple &mdash; SPO, POS, and OSP &mdash; so that any access pattern hits an index. Ontochronology adds a fourth ordering with <strong>time as the leading key</strong>:</p>
 
     <table>
         <tr><th>Index</th><th>Key Order</th><th>Answers</th></tr>
@@ -66,7 +66,7 @@
 
     <div class="callout green">
         <strong>This is almost embarrassingly cheap.</strong>
-        Time is 1D. A range scan on 1D ordered data is a B-tree lookup &mdash; the simplest index structure in computer science. SutraDB already pays the hard tax for HNSW (approximate search in 768+ dimensions). Temporal indexing is a rounding error by comparison.
+        Time is 1D. A range scan on 1D ordered data is a B-tree lookup &mdash; the simplest index structure in computer science. Loka already pays the hard tax for HNSW (approximate search in 768+ dimensions). Temporal indexing is a rounding error by comparison.
     </div>
 
     <h2>Not Always a Clock</h2>
@@ -87,9 +87,9 @@
     <p>The axis type is a <strong>database-wide setting</strong> configured at creation time. You do not mix frame numbers and UTC timestamps in the same TSPO index &mdash; that would make range scans meaningless.</p>
 
     <pre><code><span class="cmt"># Database creation with non-default axis</span>
-sutra create movie.sdb <span class="kw">--temporal-axis</span>=integer    <span class="cmt"># frame/scene numbers</span>
-sutra create scripture.sdb <span class="kw">--temporal-axis</span>=float  <span class="cmt"># chapter.verse as float</span>
-sutra create events.sdb                            <span class="cmt"># default: UTC timestamp</span></code></pre>
+loka create movie.sdb <span class="kw">--temporal-axis</span>=integer    <span class="cmt"># frame/scene numbers</span>
+loka create scripture.sdb <span class="kw">--temporal-axis</span>=float  <span class="cmt"># chapter.verse as float</span>
+loka create events.sdb                            <span class="cmt"># default: UTC timestamp</span></code></pre>
 
     <div class="callout orange">
         <strong>Same index, different semantics.</strong>
@@ -128,12 +128,12 @@ sutra create events.sdb                            <span class="cmt"># default: 
     <div class="comparison">
         <div class="card">
             <h4>Precise</h4>
-            <pre><code><span class="str">"1977-10-29"</span>^^sutra:temporal
+            <pre><code><span class="str">"1977-10-29"</span>^^loka:temporal
 <span class="cmt">&rarr; day precision</span></code></pre>
         </div>
         <div class="card">
             <h4>Imprecise</h4>
-            <pre><code><span class="str">"1909"</span>^^sutra:temporal
+            <pre><code><span class="str">"1909"</span>^^loka:temporal
 <span class="cmt">&rarr; year precision</span></code></pre>
         </div>
     </div>
@@ -146,16 +146,16 @@ sutra create events.sdb                            <span class="cmt"># default: 
 
     <pre><code><span class="cmt"># Assertion time only (the crutch)</span>
 &lt;&lt; <span class="fn">:building_42</span> <span class="fn">:locatedIn</span> <span class="fn">:MainStreet</span> &gt;&gt;
-    <span class="kw">sutra:assertedAt</span> <span class="str">"1847"</span>^^sutra:temporal .
+    <span class="kw">loka:assertedAt</span> <span class="str">"1847"</span>^^loka:temporal .
 
 <span class="cmt"># Full valid-time interval</span>
 &lt;&lt; <span class="fn">:napoleon</span> <span class="fn">:heldPosition</span> <span class="fn">:Emperor</span> &gt;&gt;
-    <span class="kw">sutra:validFrom</span> <span class="str">"1804-05-18"</span>^^sutra:temporal ;
-    <span class="kw">sutra:validTo</span>   <span class="str">"1814-04-11"</span>^^sutra:temporal .
+    <span class="kw">loka:validFrom</span> <span class="str">"1804-05-18"</span>^^loka:temporal ;
+    <span class="kw">loka:validTo</span>   <span class="str">"1814-04-11"</span>^^loka:temporal .
 
 <span class="cmt"># Open-ended (still true)</span>
 &lt;&lt; <span class="fn">:alice</span> <span class="fn">:worksAt</span> <span class="fn">:Acme</span> &gt;&gt;
-    <span class="kw">sutra:validFrom</span> <span class="str">"2023-01-15"</span>^^sutra:temporal .
+    <span class="kw">loka:validFrom</span> <span class="str">"2023-01-15"</span>^^loka:temporal .
 
 <span class="cmt"># Atemporal (no temporal annotation at all)</span>
 <span class="fn">:water</span> <span class="fn">:chemicalFormula</span> <span class="str">"H2O"</span> .</code></pre>
@@ -198,7 +198,7 @@ sutra create events.sdb                            <span class="cmt"># default: 
 <span class="kw">SELECT</span> ?change ?s ?p ?o <span class="kw">WHERE</span> {
   <span class="fn">TEMPORAL_DIFF</span>(<span class="str">"scene_3_end"</span>, <span class="str">"scene_4_start"</span>) {
     ?s ?p ?o .
-    <span class="kw">BIND</span>(sutra:changeType <span class="kw">AS</span> ?change)
+    <span class="kw">BIND</span>(loka:changeType <span class="kw">AS</span> ?change)
   }
 }</code></pre>
 
@@ -211,7 +211,7 @@ sutra create events.sdb                            <span class="cmt"># default: 
     ?entity rdf:type <span class="fn">:Person</span> .
     ?doc <span class="fn">:mentions</span> ?entity .
   }
-  <span class="fn">VECTOR_SIMILAR</span>(?doc <span class="fn">:hasEmbedding</span> <span class="str">"..."</span>^^sutra:f32vec, 0.85)
+  <span class="fn">VECTOR_SIMILAR</span>(?doc <span class="fn">:hasEmbedding</span> <span class="str">"..."</span>^^loka:f32vec, 0.85)
 }</code></pre>
 
     <h2>Use Cases</h2>
@@ -250,7 +250,7 @@ sutra create events.sdb                            <span class="cmt"># default: 
     </table>
 
     <div class="callout purple">
-        <strong>SutraDB already pays the hard tax for the high-dimensional end.</strong>
+        <strong>Loka already pays the hard tax for the high-dimensional end.</strong>
         HNSW solves approximate search in hundreds of dimensions. Temporal and spatial indexing are just B-trees &mdash; exact, cheap, and well understood since the 1970s. They are essentially free once you have HNSW.
     </div>
 
@@ -270,9 +270,9 @@ sutra create events.sdb                            <span class="cmt"># default: 
 
     <table>
         <tr><th>Predicate</th><th>Purpose</th></tr>
-        <tr><td><code>sutra:assertedAt</code></td><td>Point attestation &mdash; &ldquo;known true at this time&rdquo;</td></tr>
-        <tr><td><code>sutra:validFrom</code></td><td>Interval start &mdash; &ldquo;became true at this time&rdquo;</td></tr>
-        <tr><td><code>sutra:validTo</code></td><td>Interval end &mdash; &ldquo;stopped being true at this time&rdquo;</td></tr>
+        <tr><td><code>loka:assertedAt</code></td><td>Point attestation &mdash; &ldquo;known true at this time&rdquo;</td></tr>
+        <tr><td><code>loka:validFrom</code></td><td>Interval start &mdash; &ldquo;became true at this time&rdquo;</td></tr>
+        <tr><td><code>loka:validTo</code></td><td>Interval end &mdash; &ldquo;stopped being true at this time&rdquo;</td></tr>
     </table>
 
     <p>The query planner treats TSPO exactly like it treats SPO, POS, OSP, and VECTOR &mdash; as an access path with cost estimates. Temporal queries that benefit from TSPO get routed there. Queries that don&rsquo;t simply ignore it.</p>

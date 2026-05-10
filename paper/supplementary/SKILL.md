@@ -1,7 +1,7 @@
 ---
 name: loka-world-model
-description: Reproduce results from the Loka paper — build the SutraDB engine, ingest the philippesaade/wikidata HF parquet stream into a 5M-triple RDF-star corpus, train the role-aware transformer (v4 baseline 16M params, v5 main 44M params), and run generative-citation inference with cumulative repetition penalty against the trained checkpoints.
-allowed-tools: Bash(python *), Bash(pip *), Bash(cd *), Bash(cargo *), Bash(git *), Bash(curl *), Bash(./target/*), Bash(*sutra serve*)
+description: Reproduce results from the Loka paper — build the Loka engine, ingest the philippesaade/wikidata HF parquet stream into a 5M-triple RDF-star corpus, train the role-aware transformer (v4 baseline 16M params, v5 main 44M params), and run generative-citation inference with cumulative repetition penalty against the trained checkpoints.
+allowed-tools: Bash(python *), Bash(pip *), Bash(cd *), Bash(cargo *), Bash(git *), Bash(curl *), Bash(./target/*), Bash(*loka serve*)
 ---
 
 # Loka: reproduction skill
@@ -14,11 +14,11 @@ This skill reproduces the empirical claims of the paper.
 
 ```bash
 # 1. Working directory: the repo root.
-git clone https://github.com/EmmaLeonhart/SutraDB.git
-cd SutraDB
+git clone https://github.com/EmmaLeonhart/Loka.git
+cd Loka
 
 # 2. Engine binary.
-cargo build --release -p sutra-cli
+cargo build --release -p loka-cli
 
 # 3. Python deps.
 pip install torch transformers
@@ -29,7 +29,7 @@ pip install datasets pyarrow huggingface_hub
 ## Run the engine
 
 ```bash
-./target/release/sutra serve --port 3030 &
+./target/release/loka serve --port 3030 &
 # Health check
 curl http://localhost:3030/health
 ```
@@ -40,7 +40,7 @@ curl http://localhost:3030/health
 # Single dataset repo holds the 5M-triple store, both checkpoints, the
 # tokenized corpus, and prior generated_v*.nt outputs.
 git clone https://huggingface.co/datasets/EmmaLeonhart/loka /tmp/loka
-cp -r /tmp/loka/sutra-data ./
+cp -r /tmp/loka/loka-data ./
 cp /tmp/loka/corpus/triples.txt training/data/
 cp /tmp/loka/corpus/vocab.json training/data/
 cp /tmp/loka/checkpoints/wikidata_v4.pt training/checkpoints/
@@ -117,7 +117,7 @@ The same seed and penalty mean the candidate (subject, predicate) pairs are iden
 curl -s -X POST http://localhost:3030/sparql \
     -H 'Content-Type: application/sparql-query' \
     --data 'SELECT (COUNT(*) AS ?n) WHERE {
-              << ?s ?p ?o >> <http://sutra.dev/provenance/propositionGenerated> "true" .
+              << ?s ?p ?o >> <http://loka.dev/provenance/propositionGenerated> "true" .
             }'
 
 # Equally, the corpus extractor's SPARQL-star FILTER excludes them:
@@ -126,4 +126,4 @@ grep -E 'propositionGenerated|FILTER NOT EXISTS' training/preprocess.py
 
 ## Engine version
 
-Tested against SutraDB v0.4.0. Earlier versions had a `DuplicateTriple` regression on RDF-star annotation rows (fixed in commit `7143e5d`); reproduction will produce diverging results before v0.4.0.
+Tested against Loka v0.4.0. Earlier versions had a `DuplicateTriple` regression on RDF-star annotation rows (fixed in commit `7143e5d`); reproduction will produce diverging results before v0.4.0.

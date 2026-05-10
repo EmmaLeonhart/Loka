@@ -4,13 +4,13 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>dev.sutra</groupId>
-    <artifactId>sutradb-protege-plugin</artifactId>
+    <groupId>dev.loka</groupId>
+    <artifactId>loka-protege-plugin</artifactId>
     <version>0.1.0</version>
     <packaging>bundle</packaging>
 
-    <name>SutraDB Protégé Plugin</name>
-    <description>Connect Protégé to a SutraDB instance: load, save, and validate ontologies.</description>
+    <name>Loka Protégé Plugin</name>
+    <description>Connect Protégé to a Loka instance: load, save, and validate ontologies.</description>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
@@ -65,10 +65,10 @@
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
-                        <Bundle-SymbolicName>dev.sutra.protege;singleton:=true</Bundle-SymbolicName>
-                        <Bundle-Name>SutraDB Plugin</Bundle-Name>
+                        <Bundle-SymbolicName>dev.loka.protege;singleton:=true</Bundle-SymbolicName>
+                        <Bundle-Name>Loka Plugin</Bundle-Name>
                         <Bundle-Version>${project.version}</Bundle-Version>
-                        <Bundle-Vendor>SutraDB</Bundle-Vendor>
+                        <Bundle-Vendor>Loka</Bundle-Vendor>
                         <Import-Package>
                             org.protege.editor.core.*;version="5.0",
                             org.protege.editor.owl.*;version="5.0",
@@ -81,7 +81,7 @@
                             java.net.*,
                             java.nio.charset.*
                         </Import-Package>
-                        <Export-Package>dev.sutra.protege;version="${project.version}"</Export-Package>
+                        <Export-Package>dev.loka.protege;version="${project.version}"</Export-Package>
                     </instructions>
                 </configuration>
             </plugin>

@@ -1,4 +1,4 @@
 @echo off
-echo Opening SutraDB Browser...
-echo Make sure SutraDB is running: sutra serve --port 3030
+echo Opening Loka Browser...
+echo Make sure Loka is running: loka serve --port 3030
 start "" "%~dp0tools\browse.html"

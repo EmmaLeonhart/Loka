@@ -1,4 +1,4 @@
-"""Pull triples from SutraDB, substitute Wikidata QIDs/PIDs with English labels.
+"""Pull triples from Loka, substitute Wikidata QIDs/PIDs with English labels.
 
 Output: a flat training file, one triple per line, tab-separated:
     subject_label\tpredicate_label\tobject_label
@@ -17,14 +17,14 @@ from pathlib import Path
 import requests
 
 WIKIDATA_SPARQL = "https://query.wikidata.org/sparql"
-USER_AGENT = "SutraDB-Training/0.1 (https://github.com/EmmaLeonhart/SutraDB)"
+USER_AGENT = "Loka-Training/0.1 (https://github.com/EmmaLeonhart/Loka)"
 
 WIKIDATA_ENTITY_RE = re.compile(r"^http://www\.wikidata\.org/entity/(Q\d+)$")
 WIKIDATA_PROP_RE = re.compile(r"^http://www\.wikidata\.org/prop/direct/(P\d+)$")
 RDFS_LABEL = "http://www.w3.org/2000/01/rdf-schema#label"
 
 # Annotation predicates from infer_with_citations.py. Their rows are RDF-star
-# annotations on model-generated triples — sutra-internal provenance, never
+# annotations on model-generated triples — loka-internal provenance, never
 # semantic statements the world model should train on.
 # All system-reserved provenance predicates live under this prefix. Nothing
 # the world model has ever seen, anywhere, will use a predicate IRI starting
@@ -38,12 +38,12 @@ RDFS_LABEL = "http://www.w3.org/2000/01/rdf-schema#label"
 #     "generatedFrom") so that any human reading raw triples knows these are
 #     system-only, and any future collision with a real-world predicate is
 #     vanishingly unlikely.
-RESERVED_PROVENANCE_PREFIX = "http://sutra.dev/provenance/"
-SUTRA_GENERATED = RESERVED_PROVENANCE_PREFIX + "propositionGenerated"
-SUTRA_GENERATED_BY = RESERVED_PROVENANCE_PREFIX + "propositionGeneratedBy"
-SUTRA_CONFIDENCE = RESERVED_PROVENANCE_PREFIX + "propositionConfidence"
-SUTRA_INFERRED_FROM = RESERVED_PROVENANCE_PREFIX + "propositionInferredFrom"
-SUTRA_IMPORTED_FROM = RESERVED_PROVENANCE_PREFIX + "propositionImportedFrom"
+RESERVED_PROVENANCE_PREFIX = "http://loka.dev/provenance/"
+LOKA_GENERATED = RESERVED_PROVENANCE_PREFIX + "propositionGenerated"
+LOKA_GENERATED_BY = RESERVED_PROVENANCE_PREFIX + "propositionGeneratedBy"
+LOKA_CONFIDENCE = RESERVED_PROVENANCE_PREFIX + "propositionConfidence"
+LOKA_INFERRED_FROM = RESERVED_PROVENANCE_PREFIX + "propositionInferredFrom"
+LOKA_IMPORTED_FROM = RESERVED_PROVENANCE_PREFIX + "propositionImportedFrom"
 
 
 def is_reserved_predicate(iri: str) -> bool:
@@ -55,7 +55,7 @@ def is_reserved_predicate(iri: str) -> bool:
     return iri.startswith(RESERVED_PROVENANCE_PREFIX)
 
 # SPARQL-star query that pulls every triple EXCEPT those flagged
-# `<< ?s ?p ?o >> sutra:generated <anything>`. This removes the inner generated
+# `<< ?s ?p ?o >> loka:generated <anything>`. This removes the inner generated
 # triples (which would otherwise look like normal facts in a plain SPO scan).
 # Annotation rows themselves still come through because their `?s` is the
 # bnode-rendered quoted-triple ID, not a real interned term — those are
@@ -63,11 +63,11 @@ def is_reserved_predicate(iri: str) -> bool:
 TRAINING_CORPUS_QUERY = f"""SELECT ?s ?p ?o WHERE {{
   ?s ?p ?o .
   FILTER NOT EXISTS {{
-    << ?s ?p ?o >> <{SUTRA_GENERATED}> ?_gen .
+    << ?s ?p ?o >> <{LOKA_GENERATED}> ?_gen .
   }}
 }}"""
 
-# SutraDB currently surfaces tagged literals with the suffix embedded in the
+# Loka currently surfaces tagged literals with the suffix embedded in the
 # value string rather than as separate JSON fields. Two flavours:
 #   language-tagged   value='Tokyo"@en'
 #   datatyped         value='+1966-02-18T00:00:00Z"^^<http://.../dateTime>'
@@ -79,7 +79,7 @@ TYPED_SUFFIX_RE = re.compile(r'^(.*)"\^\^<[^>]+>$')
 
 
 def parse_literal(o: dict) -> tuple[str, str | None]:
-    """Return (clean_value, lang) for a literal, handling SutraDB's embedded suffixes.
+    """Return (clean_value, lang) for a literal, handling Loka's embedded suffixes.
 
     Returns (value-only, None) for datatyped literals (datatype is dropped).
     Returns (value, lang) for language-tagged literals.
@@ -98,13 +98,13 @@ def parse_literal(o: dict) -> tuple[str, str | None]:
 
 
 def fetch_all_triples(endpoint: str, exclude_generated: bool = True) -> list[dict]:
-    """Pull every triple from SutraDB. Returns a list of dicts with s/p/o keys.
+    """Pull every triple from Loka. Returns a list of dicts with s/p/o keys.
 
     Each value is a dict with 'type' (uri/literal/bnode) and 'value' (string).
     Literals may also have 'xml:lang' or 'datatype'.
 
     By default, model-generated triples (flagged via the RDF-star annotation
-    `<< s p o >> sutra:generated ...`) are excluded so the training corpus
+    `<< s p o >> loka:generated ...`) are excluded so the training corpus
     never feeds back its own outputs.
     """
     query = TRAINING_CORPUS_QUERY if exclude_generated else "SELECT ?s ?p ?o WHERE { ?s ?p ?o }"
@@ -221,7 +221,7 @@ def resolve_term(term: dict, labels: dict[str, str]) -> str | None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--endpoint", default="http://localhost:3030", help="SutraDB SPARQL endpoint")
+    parser.add_argument("--endpoint", default="http://localhost:3030", help="Loka SPARQL endpoint")
     parser.add_argument("--output", required=True, help="Path to write training file")
     parser.add_argument(
         "--property-cache",
@@ -258,7 +258,7 @@ def main() -> None:
     skipped_nonuri_pred = 0
     with out_path.open("w", encoding="utf-8") as f:
         for t in triples:
-            # SutraDB's SPARQL occasionally surfaces RDF-star inner-triple
+            # Loka's SPARQL occasionally surfaces RDF-star inner-triple
             # components in the wrong slot, returning literal values where ?p
             # should be a URI. That's invalid RDF and corrupts training, so
             # drop those rows entirely.
@@ -284,8 +284,8 @@ def main() -> None:
     print(
         f"Wrote {written:,} triples to {out_path}; "
         f"skipped {skipped:,} (unresolved labels), "
-        f"{skipped_annotations:,} (sutra-internal provenance annotations), "
-        f"{skipped_nonuri_pred:,} (non-URI predicate; SutraDB SPARQL quirk)",
+        f"{skipped_annotations:,} (loka-internal provenance annotations), "
+        f"{skipped_nonuri_pred:,} (non-URI predicate; Loka SPARQL quirk)",
         file=sys.stderr,
     )
 

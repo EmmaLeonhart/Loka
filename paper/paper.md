@@ -1,14 +1,14 @@
 # Loka: Generative Citation in a Neuro-Symbolic World Model over RDF-Star Knowledge Graphs
 
-**Code:** <https://github.com/EmmaLeonhart/SutraDB> (engine release `v0.4.0`: <https://github.com/EmmaLeonhart/SutraDB/releases/tag/v0.4.0>) &middot; **Corpus + checkpoints:** <https://huggingface.co/datasets/EmmaLeonhart/loka> (snapshot tags `v3`, `v4`, `v5`, `v6-bpe`) &middot; **Source dataset:** <https://huggingface.co/datasets/philippesaade/wikidata>
+**Code:** <https://github.com/EmmaLeonhart/Loka> (engine release `v0.4.0`: <https://github.com/EmmaLeonhart/Loka/releases/tag/v0.4.0>) &middot; **Corpus + checkpoints:** <https://huggingface.co/datasets/EmmaLeonhart/loka> (snapshot tags `v3`, `v4`, `v5`, `v6-bpe`) &middot; **Source dataset:** <https://huggingface.co/datasets/philippesaade/wikidata>
 
 ---
 
 ## Abstract
 
-**Loka** is a neuro-symbolic world model assembled from two systems sharing one query language. The first is an RDF-star triplestore (the engine, formerly published as SutraDB) — explicit memory, exact answers. The second is a small role-aware transformer trained from scratch on the same triples, with English labels substituted for opaque entity identifiers — implicit memory, plausible answers. They compose at the SPARQL+ layer: a query reaches both systems and the caller does not pick which one answered, except by inspecting `propositionInferredFrom` provenance edges on each result.
+**Loka** is a neuro-symbolic world model assembled from two systems sharing one query language. The first is an RDF-star triplestore (the engine, formerly published as Loka) — explicit memory, exact answers. The second is a small role-aware transformer trained from scratch on the same triples, with English labels substituted for opaque entity identifiers — implicit memory, plausible answers. They compose at the SPARQL+ layer: a query reaches both systems and the caller does not pick which one answered, except by inspecting `propositionInferredFrom` provenance edges on each result.
 
-The technical contribution is **generative citation**: a closed loop in which the transformer's predicted triples are written back into the triplestore as RDF-star annotations whose subject is the *quoted* generated triple and whose object is *another* quoted triple — a directly cited piece of context the prediction was conditioned on. A reserved system namespace (`http://sutra.dev/provenance/`) marks every system-emitted predicate, which is enforced at three layers (corpus stripping, candidate filtering, emit-time guard) so the model never sees, learns to predict, or hallucinates a citation predicate. Hallucinated *citations* (the model picking the wrong context triple as the support) are auditable and filterable like any other generated triple — they degrade like other RDF rather than vanishing into opaque embeddings.
+The technical contribution is **generative citation**: a closed loop in which the transformer's predicted triples are written back into the triplestore as RDF-star annotations whose subject is the *quoted* generated triple and whose object is *another* quoted triple — a directly cited piece of context the prediction was conditioned on. A reserved system namespace (`http://loka.dev/provenance/`) marks every system-emitted predicate, which is enforced at three layers (corpus stripping, candidate filtering, emit-time guard) so the model never sees, learns to predict, or hallucinates a citation predicate. Hallucinated *citations* (the model picking the wrong context triple as the support) are auditable and filterable like any other generated triple — they degrade like other RDF rather than vanishing into opaque embeddings.
 
 We demonstrate the end-to-end loop on a 5,055,385-triple slice of Wikidata (philippesaade/wikidata, streamed from Hugging Face), with role-aware masked-S/P/O training producing models from 16M to 44M parameters that reach final perplexities of 92.5 and 84.85 respectively over five epochs. Predictions emerge that are not memorized templates (e.g., `Comtesse de Die | educated at | university of halle` correctly identifies Halle, where she studied; `Abbas Mirza | has works in the collection | metropolitan museum of museum` correctly identifies the Met). We characterize the failure modes — mode collapse on common connector tokens, mitigated at decode time by a *cumulative* repetition penalty rather than at training time — and document two engine-level bugs surfaced by the data scale.
 
@@ -26,7 +26,7 @@ Second: **language models hallucinate without traceable inference.** LLM respons
 
 ### Contributions
 
-1. **A reserved provenance namespace and a three-layer enforcement.** Predicates under `http://sutra.dev/provenance/` (e.g., `propositionGenerated`, `propositionInferredFrom`, `propositionGeneratedBy`, `propositionConfidence`) are system-only. Three independent guards prevent the model from ever seeing, proposing, or emitting one: a SPARQL-star `FILTER NOT EXISTS << ?s ?p ?o >> propositionGenerated ?_g` clause in the corpus puller, a candidate-predicate filter in the inference loop, and an emit-time guard before each primary triple is written. Any single guard suffices; together they ensure that even with a regression in one path, generated provenance never re-enters training data. (§3.1)
+1. **A reserved provenance namespace and a three-layer enforcement.** Predicates under `http://loka.dev/provenance/` (e.g., `propositionGenerated`, `propositionInferredFrom`, `propositionGeneratedBy`, `propositionConfidence`) are system-only. Three independent guards prevent the model from ever seeing, proposing, or emitting one: a SPARQL-star `FILTER NOT EXISTS << ?s ?p ?o >> propositionGenerated ?_g` clause in the corpus puller, a candidate-predicate filter in the inference loop, and an emit-time guard before each primary triple is written. Any single guard suffices; together they ensure that even with a regression in one path, generated provenance never re-enters training data. (§3.1)
 
 2. **Generative citation as RDF-star reification.** Every model-generated triple `<S> <P> "X"` is accompanied by a fixed-shape annotation block. The block's subject is the *quoted* generated triple `<<S P "X">>`. Its objects include four metadata predicates (`propositionGenerated`, `propositionGeneratedBy`, `propositionConfidence`, ...) and one or more `propositionInferredFrom` edges whose object is *another quoted triple* — a cited piece of context. The result is a graph of generated triples threaded by citation edges to the curated context that informed them. (§3.2)
 
@@ -50,7 +50,7 @@ RDF-star is an extension of RDF in which any of the three positions of a triple 
 <<:Tokyo :population "13929286">>  :statedIn    :census2020 .
 ```
 
-The same shape that Wikidata expresses through reified statement nodes (e.g., `wds:Q1490-abc...`) collapses into one structural primitive. Two storage strategies exist: separate-asserted-graph (RDF 1.2 working draft) and synthetic-ID interning (used by SutraDB, where `quoted_triple_id(s_id, p_id, o_id) = xxh3` deterministically). We use the latter for compact joins on quoted-triple subjects.
+The same shape that Wikidata expresses through reified statement nodes (e.g., `wds:Q1490-abc...`) collapses into one structural primitive. Two storage strategies exist: separate-asserted-graph (RDF 1.2 working draft) and synthetic-ID interning (used by Loka, where `quoted_triple_id(s_id, p_id, o_id) = xxh3` deterministically). We use the latter for compact joins on quoted-triple subjects.
 
 ### 2.2 Transformer-based knowledge graph completion
 
@@ -66,7 +66,7 @@ Loka's training is from scratch on RDF-derived text, not fine-tuning of a pretra
 
 ### 3.1 The reserved provenance namespace
 
-Every predicate under `http://sutra.dev/provenance/` is system-internal. The names are deliberately verbose — `propositionGeneratedFrom` rather than `generatedFrom` — so a human scanning raw triples spots them at a glance and accidental collision with real-world predicates is vanishingly unlikely. The full namespace currently holds:
+Every predicate under `http://loka.dev/provenance/` is system-internal. The names are deliberately verbose — `propositionGeneratedFrom` rather than `generatedFrom` — so a human scanning raw triples spots them at a glance and accidental collision with real-world predicates is vanishingly unlikely. The full namespace currently holds:
 
 | Predicate | Object type | Meaning |
 |---|---|---|
@@ -84,7 +84,7 @@ Three layers of enforcement keep these out of the model's view and output:
 SELECT ?s ?p ?o WHERE {
   ?s ?p ?o .
   FILTER NOT EXISTS {
-    << ?s ?p ?o >> <http://sutra.dev/provenance/propositionGenerated> ?_g .
+    << ?s ?p ?o >> <http://loka.dev/provenance/propositionGenerated> ?_g .
   }
 }
 ```
@@ -126,7 +126,7 @@ Hallucinated citations are not a correctness problem. A fabricated `propositionI
    └─────────┬─────────┘
              ▼
    ┌───────────────────┐         ┌──────────────────────┐
-   │ SutraDB store     │ ─────→  │ Training corpus      │
+   │ Loka store     │ ─────→  │ Training corpus      │
    │  (.sdb, RDF-star) │  SPARQL │  (label-substituted) │
    │                   │  +SPARQL-│                      │
    │                   │  star    │                      │
@@ -162,7 +162,7 @@ The loop is closed: generated triples land in the store with `propositionGenerat
 
 Source: `philippesaade/wikidata` on Hugging Face — a CC0 parquet dump of ~30M Wikidata entities, each row a JSON-shaped record with labels (every language), descriptions, sitelinks, and claims. We stream via the `datasets` library, converting each entity to N-Triples-star form: one main triple per claim, plus one RDF-star annotation per qualifier and per reference, all sharing the same `<<S P O>>` quoted-triple subject. Wikidata's `pq:` (qualifier) and `pr:` (reference) namespaces collapse into the same `wdt:` predicate URI on the annotation row — the qualifier-vs-reference distinction is structural (subject is a quoted triple), not lexical.
 
-Final ingested store: 5,055,385 triples / 1,695,402 RDF-star annotations / 27,780 entities / 770 MB on-disk SutraDB store. Every language label and description Wikidata has is included.
+Final ingested store: 5,055,385 triples / 1,695,402 RDF-star annotations / 27,780 entities / 770 MB on-disk Loka store. Every language label and description Wikidata has is included.
 
 ### 4.2 Label substitution
 
@@ -176,9 +176,9 @@ The model is trained on text, not URIs. The corpus extractor walks all `rdfs:lab
 
 Property labels missing from the live store are fetched from Wikidata's public SPARQL endpoint with caching and 429-tolerance. Two preprocessing fixes were essential and are fragile enough to surface here:
 
-1. **Strip `^^<datatype>` suffixes from typed literals.** SutraDB's SPARQL serialization embeds the datatype URI in the literal value string (e.g., `"+1966-02-18T00:00:00Z\"^^<http://www.w3.org/2001/XMLSchema#dateTime>"`) rather than separating it as `datatype` metadata. Without stripping, datatype-URI fragments (`xmlschema`, `decimal`, `org`) reach the tokenizer as if they were entity content and dominate certain predictions (§5.1).
+1. **Strip `^^<datatype>` suffixes from typed literals.** Loka's SPARQL serialization embeds the datatype URI in the literal value string (e.g., `"+1966-02-18T00:00:00Z\"^^<http://www.w3.org/2001/XMLSchema#dateTime>"`) rather than separating it as `datatype` metadata. Without stripping, datatype-URI fragments (`xmlschema`, `decimal`, `org`) reach the tokenizer as if they were entity content and dominate certain predictions (§5.1).
 
-2. **Drop rows with non-URI predicates.** ~1% of rows on a 5M corpus exhibit a SutraDB SPARQL bug (§6.1) where literal values surface in the `?p` slot. RDF disallows literal predicates, so dropping is safe.
+2. **Drop rows with non-URI predicates.** ~1% of rows on a 5M corpus exhibit a Loka SPARQL bug (§6.1) where literal values surface in the `?p` slot. RDF disallows literal predicates, so dropping is safe.
 
 After cleaning, the training file holds 757,592 lines for our 5M-triple corpus.
 
@@ -217,7 +217,7 @@ For each candidate subject in the corpus:
 
    Greedy top-1 selection, no beam search.
 3. **Confidence-thresholded emit.** Mean per-token probability is the prediction's confidence. If confidence ≥ threshold (default 0.4) and the predicted object is not a duplicate of an existing fact for this (S, P), emit the RDF-star block (§3.2).
-4. **Optional `--post`.** Write the emitted N-Triples-star to the live SutraDB store via `POST /triples`. Subsequent training-corpus extractions exclude these via the SPARQL-star FILTER from §3.1.
+4. **Optional `--post`.** Write the emitted N-Triples-star to the live Loka store via `POST /triples`. Subsequent training-corpus extractions exclude these via the SPARQL-star FILTER from §3.1.
 
 The cumulative penalty matters: a *non*-cumulative penalty (set membership) was tested first and failed to break loops on dominant common tokens because the penalty applied only once regardless of how many times the token had already won. With cumulative, three emissions of `of` at penalty 3.0 multiply its divisor by 27 and reliably drop it below the floor, breaking the cascade.
 
@@ -312,7 +312,7 @@ Two larger questions are open:
 
 ## References
 
-- SutraDB. *SutraDB / Loka — RDF-star triplestore with native HNSW vector indexing.* GitHub release `v0.4.0`, 2026. https://github.com/EmmaLeonhart/SutraDB/releases/tag/v0.4.0. Apache-2.0.
+- Loka. *Loka / Loka — RDF-star triplestore with native HNSW vector indexing.* GitHub release `v0.4.0`, 2026. https://github.com/EmmaLeonhart/Loka/releases/tag/v0.4.0. Apache-2.0.
 - Wikidata Foundation. *Wikidata.* https://www.wikidata.org/. CC0.
 - philippesaade. *philippesaade/wikidata.* Hugging Face dataset, snapshot 2024-09-18. https://huggingface.co/datasets/philippesaade/wikidata. CC0.
 - W3C. *RDF-star and SPARQL-star.* https://w3c.github.io/rdf-star/cg-spec/.

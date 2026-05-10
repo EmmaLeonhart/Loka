@@ -4,23 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="HNSW Implementation Details — SutraDB">
-    <meta property="og:description" content="Tombstone deletion, multi-entry points, ephemeral rebuild, and concurrency design in SutraDB's HNSW index.">
-    <meta name="description" content="Tombstone deletion, multi-entry points, ephemeral rebuild, and concurrency design in SutraDB's HNSW index.">
+    <meta property="og:title" content="HNSW Implementation Details — Loka">
+    <meta property="og:description" content="Tombstone deletion, multi-entry points, ephemeral rebuild, and concurrency design in Loka's HNSW index.">
+    <meta name="description" content="Tombstone deletion, multi-entry points, ephemeral rebuild, and concurrency design in Loka's HNSW index.">
     <meta property="og:url" content="https://sutradb.org/theory/hnsw-implementation/">
-    <meta property="og:site_name" content="SutraDB">
+    <meta property="og:site_name" content="Loka">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="HNSW Implementation — SutraDB">
+    <meta name="twitter:title" content="HNSW Implementation — Loka">
     <meta name="twitter:description" content="Tombstone deletion, multi-entry points, and ephemeral rebuild design.">
     <meta name="theme-color" content="#58a6ff">
     <link rel="canonical" href="https://sutradb.org/theory/hnsw-implementation/">
-    <title>HNSW Implementation &mdash; SutraDB</title>
+    <title>HNSW Implementation &mdash; Loka</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f4dc;</text></svg>">
     <link rel="stylesheet" href="../../style.css">
 </head>
 <body>
 <nav>
-    <a href="../../" class="logo"><span>Sutra</span>DB</a>
+    <a href="../../" class="logo"><span>Loka</span></a>
     <a href="../../#download">Download</a>
     <a href="../../graph-vector/">Graph+Vector</a>
     <a href="../../sdb-format/">Architecture</a>
@@ -47,7 +47,7 @@
 
     <p>Standard HNSW uses a single entry point at the top layer. This can cause searches to get stuck in local optima on large, clustered vector spaces &mdash; if the entry point is far from the query region, greedy descent may converge to a suboptimal cluster.</p>
 
-    <p>SutraDB maintains multiple entry points with geometric probability. Searches begin from the entry point closest to the query vector, reducing the number of hops needed to reach the target region.</p>
+    <p>Loka maintains multiple entry points with geometric probability. Searches begin from the entry point closest to the query vector, reducing the number of hops needed to reach the target region.</p>
 
     <h2>Ephemeral HNSW with Optional Snapshots</h2>
 

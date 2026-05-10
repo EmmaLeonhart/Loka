@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<layout>
+    <VSNode splits="1.0">
+        <CNode>
+            <Component label="Loka">
+                <Property id="pluginId" value="dev.loka.protege.LokaDbView"/>
+            </Component>
+        </CNode>
+    </VSNode>
+</layout>

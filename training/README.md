@@ -1,31 +1,31 @@
-# SutraDB World-Model Training Pipeline (v0)
+# Loka World-Model Training Pipeline (v0)
 
-End-to-end pipeline that trains a small transformer to predict masked RDF triples, using SutraDB as the data source. **This is the v0 smoke-test pipeline** — proves the loop runs end-to-end on a small corpus. Scaling up the corpus and the model are separate concerns.
+End-to-end pipeline that trains a small transformer to predict masked RDF triples, using Loka as the data source. **This is the v0 smoke-test pipeline** — proves the loop runs end-to-end on a small corpus. Scaling up the corpus and the model are separate concerns.
 
 Architecture is documented in `planning/world-model-thesis.md`. The short version:
 
-- **Input:** RDF triples in SutraDB. Wikidata-style data (entities with `rdfs:label`s) preferred.
+- **Input:** RDF triples in Loka. Wikidata-style data (entities with `rdfs:label`s) preferred.
 - **Preprocessing:** Substitute opaque IRIs (Wikidata QIDs/PIDs) with English labels. The model sees `Douglas Adams instance of human`, not `Q42 P31 Q5`.
 - **Model:** Small role-aware transformer. Each triple becomes `[CLS] s_tokens [SEP_S] p_tokens [SEP_P] o_tokens [SEP_O]`. Role embeddings carry which slot (S/P/O) each token belongs to.
 - **Objective:** Mask one role at random, predict its tokens. Cross-entropy loss on masked positions.
-- **Output (in v0):** A trained checkpoint that predicts plausible tokens for masked roles. **Not yet** writing inferences back to SutraDB — that's the next milestone after v0.
+- **Output (in v0):** A trained checkpoint that predicts plausible tokens for masked roles. **Not yet** writing inferences back to Loka — that's the next milestone after v0.
 
 ## Files
 
 | File | Purpose |
 |---|---|
-| `preprocess.py` | Pull triples from SutraDB via SPARQL, resolve IRIs to English labels, emit a flat training file. Skips RDF-star annotations on model-generated triples. |
+| `preprocess.py` | Pull triples from Loka via SPARQL, resolve IRIs to English labels, emit a flat training file. Skips RDF-star annotations on model-generated triples. |
 | `tokenizer.py` | Build a word-level vocabulary from the training file. |
 | `model.py` | The role-aware transformer (PyTorch). |
 | `train.py` | Masked-triple training loop with AdamW. |
 | `eval.py` | Sanity-check predictions for held-out masked triples. |
-| `infer_with_citations.py` | Generative-citation inference: predict new triples, write them back to SutraDB tagged `sutra:generated` with `sutra:inferredFrom` provenance edges to the cited context. |
+| `infer_with_citations.py` | Generative-citation inference: predict new triples, write them back to Loka tagged `loka:generated` with `loka:inferredFrom` provenance edges to the cited context. |
 | `requirements.txt` | Python deps. |
 
 ## Prerequisites
 
 1. **Python 3.10+** with `pip`.
-2. **SutraDB running** at `http://localhost:3030` with Wikidata data imported. Populate it first via `tools/wikidata_bfs_import.py` (see that script's usage). Smoke-test corpus = 16K triples is enough.
+2. **Loka running** at `http://localhost:3030` with Wikidata data imported. Populate it first via `tools/wikidata_bfs_import.py` (see that script's usage). Smoke-test corpus = 16K triples is enough.
 3. **PyTorch.** GPU recommended but CPU works for the v0 smoke test.
 
 ```bash
@@ -35,8 +35,8 @@ pip install -r training/requirements.txt
 ## End-to-end run
 
 ```bash
-# 1. Make sure SutraDB is serving
-sutra serve --data-dir ./sutra-data &
+# 1. Make sure Loka is serving
+loka serve --data-dir ./loka-data &
 
 # 2. (One-time) Populate Wikidata data if the database is empty
 python tools/wikidata_bfs_import.py --seed Q11064932 --max-time 3600
@@ -87,17 +87,17 @@ Step 7 closes the loop. For each candidate subject, the script:
 
    ```
    <S> <P> "predicted-label" .
-   << <S> <P> "predicted-label" >>  sutra-prov:propositionGenerated      "true"^^xsd:boolean .
-   << <S> <P> "predicted-label" >>  sutra-prov:propositionGeneratedBy    "wikidata_v2" .
-   << <S> <P> "predicted-label" >>  sutra-prov:propositionConfidence     "0.87"^^xsd:decimal .
-   << <S> <P> "predicted-label" >>  sutra-prov:propositionInferredFrom   << <S> <p_existing> <o_existing> >> .
+   << <S> <P> "predicted-label" >>  loka-prov:propositionGenerated      "true"^^xsd:boolean .
+   << <S> <P> "predicted-label" >>  loka-prov:propositionGeneratedBy    "wikidata_v2" .
+   << <S> <P> "predicted-label" >>  loka-prov:propositionConfidence     "0.87"^^xsd:decimal .
+   << <S> <P> "predicted-label" >>  loka-prov:propositionInferredFrom   << <S> <p_existing> <o_existing> >> .
    ```
 
-   Where `sutra-prov:` expands to `http://sutra.dev/provenance/`.
+   Where `loka-prov:` expands to `http://loka.dev/provenance/`.
 
 ## Reserved provenance namespace
 
-**Hard rule:** every predicate under `http://sutra.dev/provenance/` is
+**Hard rule:** every predicate under `http://loka.dev/provenance/` is
 system-internal. The world model:
 
 - **never sees them** — `preprocess.py` strips every row with such a predicate
@@ -125,12 +125,12 @@ text. Resolving predictions to URIs via HNSW nearest-neighbor (the
 - **Fixed sequence length** (8 tokens per role, 28 total). Longer triples are truncated.
 - **Single-language (English).** Multi-lingual training is the eventual plan but not v0.
 - **Memorization is acceptable.** With 16K triples and a 5M-param model, the model will largely memorize the corpus. For v0 we want the loop to run, not generalization.
-- **Write-back is wired up.** `infer_with_citations.py` emits N-Triples-star with `sutra:generated`/`sutra:inferredFrom` provenance and posts to SutraDB. The corpus puller filters generated triples out via SPARQL-star, so the model never re-trains on its own outputs. Remaining gap: URI resolution for predicted objects (HNSW decoder, world-model-thesis §5.7) — predicted O is currently emitted as a plain literal.
+- **Write-back is wired up.** `infer_with_citations.py` emits N-Triples-star with `loka:generated`/`loka:inferredFrom` provenance and posts to Loka. The corpus puller filters generated triples out via SPARQL-star, so the model never re-trains on its own outputs. Remaining gap: URI resolution for predicted objects (HNSW decoder, world-model-thesis §5.7) — predicted O is currently emitted as a plain literal.
 
 ## What this proves when it works
 
 - The end-to-end loop runs.
-- Triples can be pulled from SutraDB, label-substituted, tokenized, trained on.
+- Triples can be pulled from Loka, label-substituted, tokenized, trained on.
 - The model architecture compiles, trains, converges (loss goes down).
 - `eval.py` returns sensible top-k predictions for masked roles.
 

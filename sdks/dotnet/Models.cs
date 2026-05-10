@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace SutraDB.Client;
+namespace Loka.Client;
 
 /// <summary>
 /// A single binding value in a SPARQL result row.

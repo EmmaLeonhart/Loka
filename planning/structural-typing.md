@@ -26,7 +26,7 @@ Three pieces define a structural namespace:
 2. **A classifier** — pure function from canonical form to ordered class chain (most-specific to most-general).
 3. **A v5 minter** — `uuid5(NAMESPACE, canonical_form)` so the same value always has the same identity, regardless of how it entered.
 
-The same pattern handles vector literals (`sutra:f32vec`), numbers, dates, coordinates, durations — anything whose identity is its value.
+The same pattern handles vector literals (`loka:f32vec`), numbers, dates, coordinates, durations — anything whose identity is its value.
 
 ---
 
@@ -52,7 +52,7 @@ The Pramana origin (`src/combinatoric_classes.py:38-165`) shipped this pattern i
 | `duration:PT30M` | ISO 8601 duration | Duration → TemporalInterval |
 | `f32vec:[...]` (existing) | fixed-dim f32 array | Vector |
 
-Each namespace ships a parser + classifier + minter as a Rust module in `sutra-core`. SPARQL+ functions exposed: `STRUCT_CLASS(?x)`, `STRUCT_CHAIN(?x)`, plus per-class predicates (`IS_INTEGER(?x)`, `IS_REAL(?x)`, `IS_PRIME(?x)`, etc.).
+Each namespace ships a parser + classifier + minter as a Rust module in `loka-core`. SPARQL+ functions exposed: `STRUCT_CLASS(?x)`, `STRUCT_CHAIN(?x)`, plus per-class predicates (`IS_INTEGER(?x)`, `IS_REAL(?x)`, `IS_PRIME(?x)`, etc.).
 
 ---
 
@@ -117,7 +117,7 @@ The model also doesn't need to predict canonical forms. If the model emits a vec
 - **Namespace UUID** for v5 minting. Pick one, freeze it.
 - **NFC normalization for `str:`** — Unicode normalization form for string literals. NFC is the working default.
 - **Time-zone handling for date/datetime/interval** — UTC default, offset suffixes allowed only in display. Canonical form is always UTC.
-- **User-extensibility.** Pramana hardcoded the namespaces. Should SutraDB allow plugin-based namespace registration? Defer until a real use case demands it.
+- **User-extensibility.** Pramana hardcoded the namespaces. Should Loka allow plugin-based namespace registration? Defer until a real use case demands it.
 - **`coord:` precision and projection.** WGS84 default. Projected coordinates probably out of scope until a user asks.
 
 ---

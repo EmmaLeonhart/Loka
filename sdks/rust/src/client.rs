@@ -1,43 +1,43 @@
 use reqwest::blocking::Client;
 use serde_json::json;
 
-use crate::error::{Result, SutraError};
+use crate::error::{Result, LokaError};
 use crate::types::{
     DeclareVectorResult, InsertResult, InsertVectorResult, SparqlResults,
 };
 
-/// A blocking client for communicating with a SutraDB instance.
+/// A blocking client for communicating with a Loka instance.
 ///
 /// # Example
 ///
 /// ```no_run
-/// use sutradb::SutraClient;
+/// use loka::LokaClient;
 ///
-/// let client = SutraClient::new("http://localhost:7878");
+/// let client = LokaClient::new("http://localhost:7878");
 /// let alive = client.health().unwrap();
 /// assert!(alive);
 /// ```
-pub struct SutraClient {
+pub struct LokaClient {
     http: Client,
     endpoint: String,
 }
 
-impl SutraClient {
-    /// Create a new client pointing at the given SutraDB endpoint.
+impl LokaClient {
+    /// Create a new client pointing at the given Loka endpoint.
     ///
     /// The endpoint should be the base URL without a trailing slash,
     /// e.g. `"http://localhost:7878"`.
     pub fn new(endpoint: &str) -> Self {
         let endpoint = endpoint.trim_end_matches('/').to_string();
         let http = Client::builder()
-            .user_agent(format!("sutradb-rust-sdk/{}", env!("CARGO_PKG_VERSION")))
+            .user_agent(format!("loka-rust-sdk/{}", env!("CARGO_PKG_VERSION")))
             .build()
             .expect("failed to build HTTP client");
 
         Self { http, endpoint }
     }
 
-    /// Check whether the SutraDB instance is reachable and healthy.
+    /// Check whether the Loka instance is reachable and healthy.
     ///
     /// Returns `Ok(true)` if the server responds with a success status,
     /// `Ok(false)` if it responds with a non-success status, or an error
@@ -65,7 +65,7 @@ impl SutraClient {
         let status = resp.status();
         if !status.is_success() {
             let body = resp.text().unwrap_or_default();
-            return Err(SutraError::Server {
+            return Err(LokaError::Server {
                 status: status.as_u16(),
                 message: body,
             });
@@ -91,7 +91,7 @@ impl SutraClient {
         let status = resp.status();
         if !status.is_success() {
             let body = resp.text().unwrap_or_default();
-            return Err(SutraError::Server {
+            return Err(LokaError::Server {
                 status: status.as_u16(),
                 message: body,
             });
@@ -136,7 +136,7 @@ impl SutraClient {
         let status = resp.status();
         if !status.is_success() {
             let body = resp.text().unwrap_or_default();
-            return Err(SutraError::Server {
+            return Err(LokaError::Server {
                 status: status.as_u16(),
                 message: body,
             });
@@ -175,7 +175,7 @@ impl SutraClient {
         let status = resp.status();
         if !status.is_success() {
             let body = resp.text().unwrap_or_default();
-            return Err(SutraError::Server {
+            return Err(LokaError::Server {
                 status: status.as_u16(),
                 message: body,
             });
@@ -197,13 +197,13 @@ mod tests {
 
     #[test]
     fn new_client_strips_trailing_slash() {
-        let client = SutraClient::new("http://localhost:7878/");
+        let client = LokaClient::new("http://localhost:7878/");
         assert_eq!(client.endpoint(), "http://localhost:7878");
     }
 
     #[test]
     fn new_client_preserves_clean_url() {
-        let client = SutraClient::new("http://localhost:7878");
+        let client = LokaClient::new("http://localhost:7878");
         assert_eq!(client.endpoint(), "http://localhost:7878");
     }
 }

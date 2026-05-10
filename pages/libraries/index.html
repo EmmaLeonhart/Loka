@@ -5,23 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- Open Graph / Discord / Twitter preview -->
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Libraries & Extensions — SutraDB">
-    <meta property="og:description" content="Client libraries and extensions for SutraDB: Python, TypeScript, Go, Rust, Java, .NET.">
-    <meta name="description" content="Client libraries and extensions for SutraDB: Python, TypeScript, Go, Rust, Java, .NET.">
+    <meta property="og:title" content="Libraries & Extensions — Loka">
+    <meta property="og:description" content="Client libraries and extensions for Loka: Python, TypeScript, Go, Rust, Java, .NET.">
+    <meta name="description" content="Client libraries and extensions for Loka: Python, TypeScript, Go, Rust, Java, .NET.">
     <meta property="og:url" content="https://sutradb.org/libraries/">
-    <meta property="og:site_name" content="SutraDB">
+    <meta property="og:site_name" content="Loka">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="Libraries & Extensions — SutraDB">
-    <meta name="twitter:description" content="Client libraries and extensions for SutraDB: Python, TypeScript, Go, Rust, Java, .NET.">
+    <meta name="twitter:title" content="Libraries & Extensions — Loka">
+    <meta name="twitter:description" content="Client libraries and extensions for Loka: Python, TypeScript, Go, Rust, Java, .NET.">
     <meta name="theme-color" content="#58a6ff">
     <link rel="canonical" href="https://sutradb.org/libraries/">
-    <title>Libraries &amp; Extensions &mdash; SutraDB</title>
+    <title>Libraries &amp; Extensions &mdash; Loka</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f4dc;</text></svg>">
     <link rel="stylesheet" href="../style.css">
 </head>
 <body>
 <nav>
-    <a href="../" class="logo"><span>Sutra</span>DB</a>
+    <a href="../" class="logo"><span>Loka</span></a>
     <a href="../#download">Download</a>
     <a href="../graph-vector/">Graph+Vector</a>
     <a href="../sdb-format/">Architecture</a>
@@ -33,7 +33,7 @@
 <div class="container">
     <div class="page-header">
         <h1>Libraries &amp; <span>Extensions</span></h1>
-        <p class="subtitle">Official SDKs, tools, and integrations for SutraDB &mdash; all in one monorepo.</p>
+        <p class="subtitle">Official SDKs, tools, and integrations for Loka &mdash; all in one monorepo.</p>
     </div>
 
     <div class="callout green">
@@ -43,7 +43,7 @@
 
     <h2>Client SDKs</h2>
 
-    <p>Official client libraries for connecting to SutraDB from any language. Each SDK provides:</p>
+    <p>Official client libraries for connecting to Loka from any language. Each SDK provides:</p>
     <ul>
         <li>SPARQL query execution (including VECTOR_SIMILAR extensions)</li>
         <li>Triple insertion (N-Triples format)</li>
@@ -55,42 +55,42 @@
         <tr><th>Language</th><th>Package Name</th><th>Registry</th><th>Install</th><th>Status</th></tr>
         <tr>
             <td><strong>Python</strong></td>
-            <td><a href="https://pypi.org/project/sutradb/"><code>sutradb</code></a></td>
-            <td><a href="https://pypi.org/project/sutradb/">PyPI</a></td>
-            <td><code>pip install sutradb</code></td>
+            <td><a href="https://pypi.org/project/loka/"><code>loka</code></a></td>
+            <td><a href="https://pypi.org/project/loka/">PyPI</a></td>
+            <td><code>pip install loka</code></td>
             <td><span class="badge badge-green">Published</span></td>
         </tr>
         <tr>
             <td><strong>TypeScript / JavaScript</strong></td>
-            <td><a href="https://www.npmjs.com/package/sutradb"><code>sutradb</code></a></td>
-            <td><a href="https://www.npmjs.com/package/sutradb">npm</a></td>
-            <td><code>npm install sutradb</code></td>
+            <td><a href="https://www.npmjs.com/package/loka"><code>loka</code></a></td>
+            <td><a href="https://www.npmjs.com/package/loka">npm</a></td>
+            <td><code>npm install loka</code></td>
             <td><span class="badge badge-green">Published</span></td>
         </tr>
         <tr>
             <td><strong>Rust</strong></td>
-            <td><code>sutradb</code></td>
+            <td><code>loka</code></td>
             <td><a href="https://crates.io">crates.io</a></td>
-            <td><code>cargo add sutradb</code></td>
+            <td><code>cargo add loka</code></td>
             <td><span class="badge badge-orange">Planned</span></td>
         </tr>
         <tr>
             <td><strong>Java</strong></td>
-            <td><code>dev.sutradb:sutradb-java</code></td>
+            <td><code>dev.loka:loka-java</code></td>
             <td><a href="https://central.sonatype.com">Maven Central</a></td>
             <td>Maven/Gradle dependency</td>
             <td><span class="badge badge-orange">Planned</span></td>
         </tr>
         <tr>
             <td><strong>C# / .NET</strong></td>
-            <td><code>SutraDB.Client</code></td>
+            <td><code>Loka.Client</code></td>
             <td><a href="https://www.nuget.org">NuGet</a></td>
-            <td><code>dotnet add package SutraDB.Client</code></td>
+            <td><code>dotnet add package Loka.Client</code></td>
             <td><span class="badge badge-orange">Planned</span></td>
         </tr>
         <tr>
             <td><strong>Go</strong></td>
-            <td><code>sutradb</code></td>
+            <td><code>loka</code></td>
             <td><a href="https://pkg.go.dev">pkg.go.dev</a></td>
             <td><code>go get github.com/EmmaLeonhart/Loka/sdks/go</code></td>
             <td><span class="badge badge-orange">Planned</span></td>
@@ -104,9 +104,9 @@
     <div class="comparison">
         <div class="card">
             <h4>Python</h4>
-<pre><code>from sutradb import SutraClient
+<pre><code>from loka import LokaClient
 
-db = SutraClient("http://localhost:3030")
+db = LokaClient("http://localhost:3030")
 
 # Insert triples
 db.insert_triples("""
@@ -125,15 +125,15 @@ db.insert_vector("ex:embedding",
 results = db.sparql("""
   SELECT ?person WHERE {
     VECTOR_SIMILAR(?person ex:embedding
-      "0.1 0.2 ..."^^sutra:f32vec, 0.8)
+      "0.1 0.2 ..."^^loka:f32vec, 0.8)
   }
 """)</code></pre>
         </div>
         <div class="card">
             <h4>TypeScript</h4>
-<pre><code>import { SutraClient } from 'sutradb';
+<pre><code>import { LokaClient } from "loka";
 
-const db = new SutraClient('http://localhost:3030');
+const db = new LokaClient('http://localhost:3030');
 
 // Insert triples
 await db.insertTriples(`
@@ -152,7 +152,7 @@ await db.insertVector('ex:embedding',
 const results = await db.sparql(`
   SELECT ?person WHERE {
     VECTOR_SIMILAR(?person ex:embedding
-      "0.1 0.2 ..."^^sutra:f32vec, 0.8)
+      "0.1 0.2 ..."^^loka:f32vec, 0.8)
   }
 `);</code></pre>
         </div>
@@ -164,12 +164,12 @@ const results = await db.sparql(`
         <tr><th>Extension</th><th>Description</th><th>Status</th></tr>
         <tr>
             <td><strong>Prot&eacute;g&eacute; Plugin</strong></td>
-            <td>Connect the <a href="https://protege.stanford.edu/">Prot&eacute;g&eacute;</a> OWL ontology editor to SutraDB. Author ontologies visually, query the live database, browse inferred triples. Since SutraDB supports OWL reasoning (planned), Prot&eacute;g&eacute; becomes a natural companion for schema design.</td>
+            <td>Connect the <a href="https://protege.stanford.edu/">Prot&eacute;g&eacute;</a> OWL ontology editor to Loka. Author ontologies visually, query the live database, browse inferred triples. Since Loka supports OWL reasoning (planned), Prot&eacute;g&eacute; becomes a natural companion for schema design.</td>
             <td><span class="badge badge-orange">Planned</span></td>
         </tr>
         <tr>
             <td><strong>Docker Image</strong></td>
-            <td>Official Docker image on Docker Hub. <code>docker run sutradb/sutra --port 3030</code> for instant deployment.</td>
+            <td>Official Docker image on Docker Hub. <code>docker run loka/loka --port 3030</code> for instant deployment.</td>
             <td><span class="badge badge-green">Complete</span></td>
         </tr>
         <tr>
@@ -179,7 +179,7 @@ const results = await db.sparql(`
         </tr>
         <tr>
             <td><strong>LangChain / LlamaIndex</strong></td>
-            <td>SutraDB as a vector store + knowledge graph for RAG pipelines. Combined retrieval: semantic similarity + graph context in one call.</td>
+            <td>Loka as a vector store + knowledge graph for RAG pipelines. Combined retrieval: semantic similarity + graph context in one call.</td>
             <td><span class="badge badge-green">Complete</span></td>
         </tr>
     </table>
@@ -188,13 +188,13 @@ const results = await db.sparql(`
 
     <p>All SDKs and extensions are developed in a single monorepo with shared CI:</p>
 
-<pre><code>SutraDB/
+<pre><code>Loka/
   sdks/
-    python/         # sutradb (PyPI)
-    typescript/     # sutradb (npm)
-    rust/           # sutradb (crates.io)
-    java/           # dev.sutradb:sutradb-java (Maven Central)
-    dotnet/         # SutraDB.Client (NuGet)
+    python/         # loka (PyPI)
+    typescript/     # loka (npm)
+    rust/           # loka (crates.io)
+    java/           # dev.loka:loka-java (Maven Central)
+    dotnet/         # Loka.Client (NuGet)
     go/             # github.com/EmmaLeonhart/Loka/sdks/go
   extensions/
     protege/        # Prot&eacute;g&eacute; plugin (Java)
@@ -217,14 +217,14 @@ const results = await db.sparql(`
     <p>SDKs are thin HTTP clients &mdash; they wrap the REST API (<code>/sparql</code>, <code>/triples</code>, <code>/vectors</code>). Adding a new language SDK is straightforward:</p>
 
     <ol>
-        <li>Implement the HTTP client (GET/POST to the SutraDB endpoints)</li>
+        <li>Implement the HTTP client (GET/POST to the Loka endpoints)</li>
         <li>Add SPARQL result parsing (JSON format)</li>
         <li>Add type-safe wrappers for vector operations</li>
-        <li>Write tests against a running SutraDB instance</li>
+        <li>Write tests against a running Loka instance</li>
         <li>Add a CI workflow for the language's package registry</li>
     </ol>
 
-    <p>All SDKs test against the same SutraDB binary, ensuring consistency across languages.</p>
+    <p>All SDKs test against the same Loka binary, ensuring consistency across languages.</p>
 
 </div>
 

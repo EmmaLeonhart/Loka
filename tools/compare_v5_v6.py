@@ -5,7 +5,7 @@ help on the cases that motivated it (Saint-Léger, Wikipédia, Curt Meyer-Clason
 v6's per-token perplexity (194.98) is not directly comparable to v5's (84.85)
 because BPE has more mass per position; the qualitative diff is the metric.
 
-No SutraDB server needed. Reads training/data/triples.txt directly to find
+No Loka server needed. Reads training/data/triples.txt directly to find
 subjects with non-ASCII characters in their labels, then runs predict_object
 against both checkpoints with their respective tokenizers and prints a
 side-by-side table.

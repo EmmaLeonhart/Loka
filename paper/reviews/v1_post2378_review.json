@@ -14,7 +14,7 @@
     "The evaluation lacks standard quantitative metrics for knowledge graph completion, such as Mean Reciprocal Rank (MRR) or Hits@k, making it impossible to compare Loka's performance against established baselines like KG-BERT or KGT5.",
     "The reported perplexity values (84.85 to 92.48) are extremely high for a language model, suggesting that the model has not effectively learned the underlying distribution of the data.",
     "The 'neuro-symbolic' label is largely superficial; the system is essentially a standard transformer trained on linearized triples, with the 'symbolic' part being the external database storage rather than an integrated reasoning component.",
-    "The paper relies on an unpublished or unreferenced engine ('SutraDB'), which hinders reproducibility and prevents verification of the engine-level bugs described.",
+    "The paper relies on an unpublished or unreferenced engine ('Loka'), which hinders reproducibility and prevents verification of the engine-level bugs described.",
     "The qualitative evaluation is limited to a very small sample (50 subjects) and relies on anecdotal evidence rather than a systematic human or automated evaluation of factuality."
   ],
   "justification": "While the use of RDF-star for graph provenance is a clever architectural choice, the paper fails to provide a rigorous quantitative evaluation against standard knowledge graph completion benchmarks. Furthermore, the admission that the 'generative citations' are heuristic-based rather than model-derived invalidates the primary technical contribution of the work.",

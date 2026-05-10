@@ -1,23 +1,23 @@
-# sutradb
+# loka
 
-Python client for [SutraDB](https://github.com/EmmaLeonhart/SutraDB) — an RDF-star triplestore with native HNSW vector indexing.
+Python client for [Loka](https://github.com/EmmaLeonhart/Loka) — an RDF-star triplestore with native HNSW vector indexing.
 
 ## Installation
 
 ```bash
-pip install sutradb
+pip install loka
 ```
 
 ## Quick Start
 
 ```python
-from sutradb import SutraClient
+from loka import LokaClient
 
-client = SutraClient("http://localhost:3030")
+client = LokaClient("http://localhost:3030")
 
 # Check server health
 if client.health():
-    print("SutraDB is running")
+    print("Loka is running")
 
 # Run a SPARQL query
 results = client.sparql("""

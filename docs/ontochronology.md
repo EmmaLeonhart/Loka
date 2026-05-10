@@ -1,4 +1,4 @@
-# SutraDB — Ontochronology
+# Loka — Ontochronology
 
 > Ontochronology: the study and modeling of what exists at which times.
 > Time is not metadata on triples. Time is a structural axis of the database.
@@ -21,7 +21,7 @@ This distinction determines what you can query efficiently:
 | **Time as qualifier** | "What changed between 1804 and 1814?" | Full graph scan, filter every triple's qualifiers |
 | **Time as structural axis** | "What changed between 1804 and 1814?" | Two range scans, compute diff |
 
-The second approach makes temporal queries graph-native rather than post-hoc filters. This is the approach SutraDB takes.
+The second approach makes temporal queries graph-native rather than post-hoc filters. This is the approach Loka takes.
 
 ---
 
@@ -79,9 +79,9 @@ The axis type is a **database-wide setting** configured at creation time. Once s
 
 ```
 # Database creation with non-default axis
-sutra create movie.sdb --temporal-axis=integer    # frame/scene numbers
-sutra create scripture.sdb --temporal-axis=float   # chapter.verse as float
-sutra create events.sdb                            # default: UTC timestamp
+loka create movie.sdb --temporal-axis=integer    # frame/scene numbers
+loka create scripture.sdb --temporal-axis=float   # chapter.verse as float
+loka create events.sdb                            # default: UTC timestamp
 ```
 
 The implementation cost of supporting different axis types is near zero. The B-tree doesn't care what the bytes represent — it only needs a total ordering. An integer axis, a float axis, and a timestamp axis all produce the same index structure with the same performance characteristics.
@@ -103,7 +103,7 @@ The SPARQL+ operators (`AT_TIME`, `DURING`, `WORLD_STATE`, `TEMPORAL_DIFF`) work
 
 ### 4.1 Three Temporal Signifiers
 
-Every triple in SutraDB can carry up to three temporal signifiers. None are required — some triples are intrinsically atemporal (definitional facts, ontological axioms). A triple can have zero, one, two, or all three.
+Every triple in Loka can carry up to three temporal signifiers. None are required — some triples are intrinsically atemporal (definitional facts, ontological axioms). A triple can have zero, one, two, or all three.
 
 | Signifier | Meaning | When to use |
 |---|---|---|
@@ -180,7 +180,7 @@ With TSPO, "give me the complete world state at time T" is a single range scan o
 
 Time indexing is a 1D exact range query on ordered data. That's a B-tree — the simplest, most well-understood index structure in computer science.
 
-Compare to SutraDB's existing indexes:
+Compare to Loka's existing indexes:
 
 | Index | Dimensions | Data Structure | Algorithmic Complexity |
 |---|---|---|---|
@@ -208,14 +208,14 @@ Coordinate indexing is opt-in. Not every dataset has spatial data, and forcing i
 | "Everything at location (X,Y)" | XYSPO | R-tree or composite B-tree (2D range scan) |
 | "Everything at location L during interval T" | TXYSPO | Composite range scan |
 
-The dimensional spectrum for SutraDB's indexes:
+The dimensional spectrum for Loka's indexes:
 
 - **1D** (time, confidence, version): B-tree
 - **2–3D** (coordinates): R-tree or composite B-tree
 - **4–20D** (low-dimensional embeddings): KD-tree variants
 - **20D+** (embeddings): HNSW
 
-SutraDB already pays the hard tax for the high-dimensional end. Low-dimensional indexing is a rounding error on implementation cost.
+Loka already pays the hard tax for the high-dimensional end. Low-dimensional indexing is a rounding error on implementation cost.
 
 ### 5.4 Provenance as a Low-Dimensional Index
 
@@ -328,7 +328,7 @@ SELECT ?change_type ?s ?p ?o WHERE {
     "2024-03-14T11:00:00"^^xsd:dateTime
   ) {
     ?s ?p ?o .
-    BIND(sutra:changeType AS ?change_type)
+    BIND(loka:changeType AS ?change_type)
   }
 }
 ```
@@ -345,7 +345,7 @@ SELECT ?doc ?entity WHERE {
     ?entity rdf:type :Person .
     ?doc :mentions ?entity .
   }
-  VECTOR_SIMILAR(?doc :hasEmbedding "..."^^sutra:f32vec, 0.85)
+  VECTOR_SIMILAR(?doc :hasEmbedding "..."^^loka:f32vec, 0.85)
 }
 ```
 
@@ -361,28 +361,28 @@ Temporal data is stored using RDF-star annotations on triples:
 
 ```turtle
 # Assertion time only (the crutch)
-<< :building_42 :locatedIn :MainStreet >> sutra:assertedAt "1847"^^sutra:temporal .
+<< :building_42 :locatedIn :MainStreet >> loka:assertedAt "1847"^^loka:temporal .
 
 # Full valid-time interval
-<< :napoleon :heldPosition :Emperor >> sutra:validFrom "1804-05-18"^^sutra:temporal ;
-                                       sutra:validTo   "1814-04-11"^^sutra:temporal .
+<< :napoleon :heldPosition :Emperor >> loka:validFrom "1804-05-18"^^loka:temporal ;
+                                       loka:validTo   "1814-04-11"^^loka:temporal .
 
 # Open-ended interval (still true)
-<< :alice :worksAt :Acme >> sutra:validFrom "2023-01-15"^^sutra:temporal .
+<< :alice :worksAt :Acme >> loka:validFrom "2023-01-15"^^loka:temporal .
 
 # Atemporal fact (no temporal signifiers at all)
 :water :chemicalFormula "H2O" .
 ```
 
-### 8.2 The `sutra:temporal` Datatype
+### 8.2 The `loka:temporal` Datatype
 
 A new literal type that encodes both a timestamp and its precision:
 
 ```
-"1847"^^sutra:temporal           → year precision
-"1847-03"^^sutra:temporal        → month precision
-"1847-03-15"^^sutra:temporal     → day precision
-"1847-03-15T09:32"^^sutra:temporal → minute precision
+"1847"^^loka:temporal           → year precision
+"1847-03"^^loka:temporal        → month precision
+"1847-03-15"^^loka:temporal     → day precision
+"1847-03-15T09:32"^^loka:temporal → minute precision
 ```
 
 The precision is derived from the format of the literal, not from a separate field. This keeps the data model simple while preserving precision information.
@@ -391,11 +391,11 @@ The precision is derived from the format of the literal, not from a separate fie
 
 ```turtle
 # Person held same title in two separate periods
-<< :alice :jobTitle :Director >> sutra:validFrom "2018-01-01"^^sutra:temporal ;
-                                 sutra:validTo   "2020-06-30"^^sutra:temporal .
+<< :alice :jobTitle :Director >> loka:validFrom "2018-01-01"^^loka:temporal ;
+                                 loka:validTo   "2020-06-30"^^loka:temporal .
 
-<< :alice :jobTitle :Director >> sutra:validFrom "2022-03-01"^^sutra:temporal ;
-                                 sutra:validTo   "2024-01-15"^^sutra:temporal .
+<< :alice :jobTitle :Director >> loka:validFrom "2022-03-01"^^loka:temporal ;
+                                 loka:validTo   "2024-01-15"^^loka:temporal .
 ```
 
 Each interval is a separate RDF-star annotation. The TSPO index has separate entries for each interval, both pointing to the same underlying triple.
@@ -414,7 +414,7 @@ This means the TSPO index is fundamentally an index over events, not states. The
 
 ### 9.2 Periodic Snapshots
 
-To avoid full replay on every temporal query, SutraDB can maintain periodic world-state snapshots. These are complete copies of all valid triples at meaningful boundaries:
+To avoid full replay on every temporal query, Loka can maintain periodic world-state snapshots. These are complete copies of all valid triples at meaningful boundaries:
 
 - **Automatic**: at configurable intervals (hourly, daily, on significant change volume)
 - **User-directed**: at domain-meaningful boundaries (scene breaks, chapter ends, transaction batches)
@@ -539,11 +539,11 @@ This ordering ensures that well-annotated data always surfaces above uncertain d
 
 ---
 
-## 10. Relationship to Existing SutraDB Architecture
+## 10. Relationship to Existing Loka Architecture
 
 ### 10.1 New Index Type
 
-TSPO joins SPO/POS/OSP/VECTOR as a fifth index type. Like VECTOR indexes, it is opt-in — enabled when temporal predicates (`sutra:assertedAt`, `sutra:validFrom`, `sutra:validTo`) are present in the data.
+TSPO joins SPO/POS/OSP/VECTOR as a fifth index type. Like VECTOR indexes, it is opt-in — enabled when temporal predicates (`loka:assertedAt`, `loka:validFrom`, `loka:validTo`) are present in the data.
 
 The query planner treats TSPO the same way it treats all other indexes: as an access path with cost estimates. Temporal queries that benefit from TSPO get routed there; queries that don't simply ignore it.
 
@@ -551,15 +551,15 @@ The query planner treats TSPO the same way it treats all other indexes: as an ac
 
 | Predicate | Domain | Range | Purpose |
 |---|---|---|---|
-| `sutra:assertedAt` | Quoted triple | `sutra:temporal` | Point attestation time |
-| `sutra:validFrom` | Quoted triple | `sutra:temporal` | Interval start time |
-| `sutra:validTo` | Quoted triple | `sutra:temporal` | Interval end time |
+| `loka:assertedAt` | Quoted triple | `loka:temporal` | Point attestation time |
+| `loka:validFrom` | Quoted triple | `loka:temporal` | Interval start time |
+| `loka:validTo` | Quoted triple | `loka:temporal` | Interval end time |
 
 These are reserved predicates that trigger TSPO indexing when used.
 
 ### 10.3 New Literal Type
 
-`sutra:temporal` — a timestamp with embedded precision. Stored internally as a (i64 timestamp, u8 precision) pair for efficient comparison and range scanning.
+`loka:temporal` — a timestamp with embedded precision. Stored internally as a (i64 timestamp, u8 precision) pair for efficient comparison and range scanning.
 
 ### 10.4 Compatibility
 
@@ -576,7 +576,7 @@ Ontochronological features are purely additive:
 
 ### 11.1 Why Not a Separate Temporal Database?
 
-For the same reason SutraDB doesn't use a separate vector database. The whole point is that temporal queries compose with graph traversal and vector search in a single query. Splitting temporal data into a separate system creates the same JSON-handoff problem that SutraDB already solved for vectors.
+For the same reason Loka doesn't use a separate vector database. The whole point is that temporal queries compose with graph traversal and vector search in a single query. Splitting temporal data into a separate system creates the same JSON-handoff problem that Loka already solved for vectors.
 
 ### 11.2 Why RDF-star Annotations, Not Named Graphs?
 
@@ -596,8 +596,8 @@ As data quality improves, assertion time becomes less necessary. A well-instrume
 
 ## 12. Implementation Priority
 
-1. ~~**`sutra:temporal` literal type** — timestamp + precision, stored as (i64, u8)~~ ✅ Done
-2. ~~**Reserved temporal predicates** — `sutra:assertedAt`, `sutra:validFrom`, `sutra:validTo`~~ ✅ Done
+1. ~~**`loka:temporal` literal type** — timestamp + precision, stored as (i64, u8)~~ ✅ Done
+2. ~~**Reserved temporal predicates** — `loka:assertedAt`, `loka:validFrom`, `loka:validTo`~~ ✅ Done
 3. ~~**TSPO index** — B-tree with time as leading key, built when temporal predicates are detected~~ ✅ Done
 4. ~~**AT_TIME / DURING** — SPARQL+ temporal scope operators~~ ✅ Done
 5. ~~**WORLD_STATE** — complete state snapshot query~~ ✅ Done
@@ -627,7 +627,7 @@ The timestamp uses **sign-bit-flip encoding** (`XOR` with `0x8000000000000000`) 
 
 **Temporal annotations are on quoted triples, not regular triples.** The RDF-star pattern is:
 ```turtle
-<< :alice :worksAt :acme >> sutra:validFrom "2023-01-15"^^sutra:temporal .
+<< :alice :worksAt :acme >> loka:validFrom "2023-01-15"^^loka:temporal .
 ```
 The TSPO index stores the *inner* triple `(:alice, :worksAt, :acme)` with the timestamp from the outer triple's object. The store's `insert_temporal()` method takes the pre-extracted (signifier, timestamp, S, P, O) — it does not parse RDF-star structure itself. The ingestion layer is responsible for detecting temporal predicates and calling `insert_temporal()`.
 
@@ -710,7 +710,7 @@ Temporal operators accept timestamps in multiple formats:
 | Input | Interpretation |
 |---|---|
 | `"2024-03-14T10:00:00"^^xsd:dateTime` | Parsed as temporal literal → seconds since epoch |
-| `"1847"^^sutra:temporal` | Year precision → start of year in seconds |
+| `"1847"^^loka:temporal` | Year precision → start of year in seconds |
 | `"hello"` (plain literal) | Parsed as temporal string (ISO-like format) |
 | `42` (integer literal) | Raw integer — used as-is (seconds, frames, scenes) |
 | `?var` (bound variable) | Decoded from inline temporal TermId, or resolved from dictionary and parsed |

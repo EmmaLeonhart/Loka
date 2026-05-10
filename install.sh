@@ -1,27 +1,27 @@
 #!/bin/bash
-# Install SutraDB CLI.
+# Install Loka CLI.
 # Requires Rust toolchain (cargo) to be installed.
 
 set -e
 
-echo "Building SutraDB (release)..."
-cargo build --release -p sutra-cli
+echo "Building Loka (release)..."
+cargo build --release -p loka-cli
 
-INSTALL_DIR="${HOME}/.sutra/bin"
+INSTALL_DIR="${HOME}/.loka/bin"
 mkdir -p "$INSTALL_DIR"
 
-echo "Installing to $INSTALL_DIR/sutra ..."
-cp target/release/sutra "$INSTALL_DIR/sutra"
-chmod +x "$INSTALL_DIR/sutra"
+echo "Installing to $INSTALL_DIR/loka ..."
+cp target/release/loka "$INSTALL_DIR/loka"
+chmod +x "$INSTALL_DIR/loka"
 
 echo ""
 echo "Done! Add $INSTALL_DIR to your PATH if not already there:"
 echo "  export PATH=\"$INSTALL_DIR:\$PATH\""
 echo ""
 echo "Usage:"
-echo "  sutra serve                    Start the HTTP server"
-echo "  sutra query \"SELECT ...\"       Run a SPARQL query"
-echo "  sutra import data.nt           Import N-Triples file"
-echo "  sutra export -o dump.nt        Export all triples"
-echo "  sutra info                     Show database statistics"
+echo "  loka serve                    Start the HTTP server"
+echo "  loka query \"SELECT ...\"       Run a SPARQL query"
+echo "  loka import data.nt           Import N-Triples file"
+echo "  loka export -o dump.nt        Export all triples"
+echo "  loka info                     Show database statistics"
 echo ""

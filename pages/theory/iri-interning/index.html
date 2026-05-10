@@ -4,23 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="IRI Interning & Content-Addressed RDF-star — SutraDB">
-    <meta property="og:description" content="How SutraDB compresses IRIs to 8-byte integers and assigns deterministic IDs to quoted triples for zero-overhead edge annotation.">
-    <meta name="description" content="How SutraDB compresses IRIs to 8-byte integers and assigns deterministic IDs to quoted triples for zero-overhead edge annotation.">
+    <meta property="og:title" content="IRI Interning & Content-Addressed RDF-star — Loka">
+    <meta property="og:description" content="How Loka compresses IRIs to 8-byte integers and assigns deterministic IDs to quoted triples for zero-overhead edge annotation.">
+    <meta name="description" content="How Loka compresses IRIs to 8-byte integers and assigns deterministic IDs to quoted triples for zero-overhead edge annotation.">
     <meta property="og:url" content="https://sutradb.org/theory/iri-interning/">
-    <meta property="og:site_name" content="SutraDB">
+    <meta property="og:site_name" content="Loka">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="IRI Interning — SutraDB">
-    <meta name="twitter:description" content="How SutraDB compresses IRIs to 8-byte integers and assigns deterministic IDs to quoted triples.">
+    <meta name="twitter:title" content="IRI Interning — Loka">
+    <meta name="twitter:description" content="How Loka compresses IRIs to 8-byte integers and assigns deterministic IDs to quoted triples.">
     <meta name="theme-color" content="#58a6ff">
     <link rel="canonical" href="https://sutradb.org/theory/iri-interning/">
-    <title>IRI Interning &mdash; SutraDB</title>
+    <title>IRI Interning &mdash; Loka</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f4dc;</text></svg>">
     <link rel="stylesheet" href="../../style.css">
 </head>
 <body>
 <nav>
-    <a href="../../" class="logo"><span>Sutra</span>DB</a>
+    <a href="../../" class="logo"><span>Loka</span></a>
     <a href="../../#download">Download</a>
     <a href="../../graph-vector/">Graph+Vector</a>
     <a href="../../sdb-format/">Architecture</a>
@@ -43,7 +43,7 @@
 
     <h2>IRI Interning</h2>
 
-    <p>SutraDB interns every IRI, blank node, and literal to a <code>u64</code> (8-byte integer) at write time. A bidirectional lookup table maps strings to IDs and back:</p>
+    <p>Loka interns every IRI, blank node, and literal to a <code>u64</code> (8-byte integer) at write time. A bidirectional lookup table maps strings to IDs and back:</p>
 
     <ul>
         <li><strong>Forward map:</strong> <code>"http://example.org/Tokyo"</code> &rarr; <code>42</code></li>
@@ -65,7 +65,7 @@
 
     <h2>Content-Addressed RDF-star IDs</h2>
 
-    <p>RDF-star allows any triple to be used as a subject or object of another triple (a "quoted triple"). SutraDB assigns a deterministic <code>u64</code> ID to each quoted triple by hashing its three components:</p>
+    <p>RDF-star allows any triple to be used as a subject or object of another triple (a "quoted triple"). Loka assigns a deterministic <code>u64</code> ID to each quoted triple by hashing its three components:</p>
 
     <pre><code>quoted_id = hash(subject_id, predicate_id, object_id)</code></pre>
 

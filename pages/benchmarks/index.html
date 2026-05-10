@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta property="og:title" content="SutraDB Benchmarks">
-    <meta property="og:description" content="Live performance benchmarks for SutraDB: triple store, HNSW vector index, and SPARQL query engine.">
-    <meta name="description" content="Live performance benchmarks for SutraDB: triple store, HNSW vector index, and SPARQL query engine.">
-    <title>Benchmarks &mdash; SutraDB</title>
+    <meta property="og:title" content="Loka Benchmarks">
+    <meta property="og:description" content="Live performance benchmarks for Loka: triple store, HNSW vector index, and SPARQL query engine.">
+    <meta name="description" content="Live performance benchmarks for Loka: triple store, HNSW vector index, and SPARQL query engine.">
+    <title>Benchmarks &mdash; Loka</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f4dc;</text></svg>">
     <style>
         :root {
@@ -47,7 +47,7 @@
 <body>
 
 <nav style="padding:12px 24px;border-bottom:1px solid #30363d;display:flex;align-items:center;gap:24px;font-size:0.9em;">
-    <a href="../" style="font-weight:700;font-size:1.1em;color:#e6edf3;text-decoration:none;"><span style="color:#58a6ff;">Sutra</span>DB</a>
+    <a href="../" style="font-weight:700;font-size:1.1em;color:#e6edf3;text-decoration:none;"><span style="color:#58a6ff;">Loka</span></a>
     <a href="../#download" style="color:#8b949e;">Download</a>
     <a href="../graph-vector/" style="color:#8b949e;">Graph+Vector</a>
     <a href="../sdb-format/" style="color:#8b949e;">Architecture</a>
@@ -62,7 +62,7 @@
 
     <div class="meta" id="meta">Loading latest results...</div>
 
-    <h2>sutra-core &mdash; Triple Store &mdash; <strong style="color:#3fb950;">Lower is better</strong></h2>
+    <h2>loka-core &mdash; Triple Store &mdash; <strong style="color:#3fb950;">Lower is better</strong></h2>
     <p>The storage engine: how fast can we insert, look up, and scan triples? These benchmarks measure the SPO/POS/OSP index performance, IRI interning, pseudo-table discovery (auto-detected relational structure), and SIMD column scans. All values are nanoseconds per operation.</p>
     <div class="chart-container"><canvas id="chart-core"></canvas></div>
     <details style="margin-bottom:16px;color:var(--text-muted);font-size:0.9em;">
@@ -83,7 +83,7 @@
     </details>
     <table id="table-core"><thead><tr><th>Benchmark</th><th class="num">ns/iter</th><th class="num">&plusmn;variance</th></tr></thead><tbody></tbody></table>
 
-    <h2>sutra-hnsw &mdash; Vector Index &mdash; <strong style="color:#3fb950;">Lower is better</strong></h2>
+    <h2>loka-hnsw &mdash; Vector Index &mdash; <strong style="color:#3fb950;">Lower is better</strong></h2>
     <p>The HNSW approximate nearest neighbor index: how fast can we insert vectors, search for similar ones, and how does it handle deletions and high dimensions? These are the numbers that matter if you're storing embeddings.</p>
     <div class="chart-container"><canvas id="chart-hnsw"></canvas></div>
     <details style="margin-bottom:16px;color:var(--text-muted);font-size:0.9em;">
@@ -106,15 +106,15 @@
     <p>Recall measures how many of the true nearest neighbors HNSW actually finds, compared to brute-force. 1.0 = perfect, meaning all 10 true nearest neighbors were returned.</p>
     <table id="table-hnsw-quality"><thead><tr><th>Benchmark</th><th class="num">Recall@10</th></tr></thead><tbody></tbody></table>
 
-    <h2>sutra-sparql &mdash; Query Engine &mdash; <strong style="color:#3fb950;">Lower is better</strong></h2>
-    <p>End-to-end SPARQL query performance: parsing, planning, and execution. Includes pure graph traversal, vector similarity search, and the combined graph+vector queries that are SutraDB's core differentiator. All values are nanoseconds per query.</p>
+    <h2>loka-sparql &mdash; Query Engine &mdash; <strong style="color:#3fb950;">Lower is better</strong></h2>
+    <p>End-to-end SPARQL query performance: parsing, planning, and execution. Includes pure graph traversal, vector similarity search, and the combined graph+vector queries that are Loka's core differentiator. All values are nanoseconds per query.</p>
     <div class="chart-container"><canvas id="chart-sparql"></canvas></div>
     <details style="margin-bottom:16px;color:var(--text-muted);font-size:0.9em;">
         <summary style="cursor:pointer;color:var(--accent);margin-bottom:8px;">What each benchmark measures</summary>
         <dl style="margin-left:16px;">
             <dt><strong>sparql_parse/simple_select</strong></dt><dd>Parse a basic <code>SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 10</code>. Measures parser overhead.</dd>
             <dt><strong>sparql_parse/complex_with_filter</strong></dt><dd>Parse a query with multiple patterns, FILTER, ORDER BY, and LIMIT. Worst-case parse time.</dd>
-            <dt><strong>sparql_parse/vector_similar</strong></dt><dd>Parse a VECTOR_SIMILAR query (SutraDB extension). Measures the cost of parsing vector literals.</dd>
+            <dt><strong>sparql_parse/vector_similar</strong></dt><dd>Parse a VECTOR_SIMILAR query (Loka extension). Measures the cost of parsing vector literals.</dd>
             <dt><strong>sparql_chain_traversal/N_nodes/H_hops</strong></dt><dd>Traverse a chain graph (node&rarr;node&rarr;node...) for H hops across N nodes. The fundamental graph walk. 4 hops on 200 nodes = following 4 edges.</dd>
             <dt><strong>sparql_star_join/N_leaves/C_cats</strong></dt><dd>Star join: from a center node, fan out to N leaves, then join on type and category. Like a SQL <code>SELECT ... JOIN ... WHERE type = 'Leaf'</code>.</dd>
             <dt><strong>sparql_vector_search/docs/N</strong></dt><dd>VECTOR_SIMILAR search across N documents with type filtering. The basic "find similar documents" query.</dd>
@@ -131,7 +131,7 @@
 </div>
 
 <footer>
-    <p>SutraDB is open source under the Apache 2.0 license.</p>
+    <p>Loka is open source under the Apache 2.0 license.</p>
     <p style="margin-top:8px;">
         <a href="https://github.com/EmmaLeonhart/Loka">GitHub</a> &middot;
         <a href="../">Home</a>
@@ -154,9 +154,9 @@
         var sections = {core: [], hnsw: [], sparql: []};
         var current = null;
         text.split('\n').forEach(function(line) {
-            if (line.indexOf('sutra-core') !== -1) current = 'core';
-            else if (line.indexOf('sutra-hnsw') !== -1) current = 'hnsw';
-            else if (line.indexOf('sutra-sparql') !== -1) current = 'sparql';
+            if (line.indexOf('loka-core') !== -1) current = 'core';
+            else if (line.indexOf('loka-hnsw') !== -1) current = 'hnsw';
+            else if (line.indexOf('loka-sparql') !== -1) current = 'sparql';
             if (!current) return;
             var m = line.match(/^\| (.+?) \| ([\d,]+) \| ([\d,]+) \|$/);
             if (m && m[1].trim() !== 'Benchmark' && m[1].trim() !== '(no results)') {
@@ -188,9 +188,9 @@
             };
             var currentSuite = null;
             block.split('\n').forEach(function(line) {
-                if (line.indexOf('sutra-core') !== -1) currentSuite = 'core';
-                else if (line.indexOf('sutra-hnsw') !== -1) currentSuite = 'hnsw';
-                else if (line.indexOf('sutra-sparql') !== -1) currentSuite = 'sparql';
+                if (line.indexOf('loka-core') !== -1) currentSuite = 'core';
+                else if (line.indexOf('loka-hnsw') !== -1) currentSuite = 'hnsw';
+                else if (line.indexOf('loka-sparql') !== -1) currentSuite = 'sparql';
                 if (!currentSuite) return;
                 var m = line.match(/^test (.+?) \.\.\. bench:\s+([\d,]+) ns\/iter/);
                 if (m) entry[currentSuite][m[1].trim()] = parseInt(m[2].replace(/,/g, ''));

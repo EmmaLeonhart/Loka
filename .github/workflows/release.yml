@@ -19,20 +19,20 @@ jobs:
         include:
           - target: x86_64-pc-windows-msvc
             os: windows-latest
-            artifact: sutra.exe
-            archive: sutra-windows-x64.zip
+            artifact: loka.exe
+            archive: loka-windows-x64.zip
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
-            artifact: sutra
-            archive: sutra-linux-x64.tar.gz
+            artifact: loka
+            archive: loka-linux-x64.tar.gz
           - target: aarch64-apple-darwin
             os: macos-latest
-            artifact: sutra
-            archive: sutra-macos-arm64.tar.gz
+            artifact: loka
+            archive: loka-macos-arm64.tar.gz
           - target: x86_64-apple-darwin
             os: macos-latest
-            artifact: sutra
-            archive: sutra-macos-x64.tar.gz
+            artifact: loka
+            archive: loka-macos-x64.tar.gz
 
     steps:
       - uses: actions/checkout@v4
@@ -46,7 +46,7 @@ jobs:
           key: ${{ matrix.target }}
 
       - name: Build release binary
-        run: cargo build --release --target ${{ matrix.target }} -p sutra-cli
+        run: cargo build --release --target ${{ matrix.target }} -p loka-cli
 
       - name: Package (Windows)
         if: contains(matrix.target, 'windows')
@@ -77,17 +77,17 @@ jobs:
             os: windows-latest
             build_cmd: flutter build windows --release
             output_dir: build/windows/x64/runner/Release
-            archive: sutra-studio-windows-x64.zip
+            archive: loka-studio-windows-x64.zip
           - platform: linux
             os: ubuntu-latest
             build_cmd: flutter build linux --release
             output_dir: build/linux/x64/release/bundle
-            archive: sutra-studio-linux-x64.tar.gz
+            archive: loka-studio-linux-x64.tar.gz
           - platform: macos
             os: macos-latest
             build_cmd: flutter build macos --release
             output_dir: build/macos/Build/Products/Release
-            archive: sutra-studio-macos-arm64.tar.gz
+            archive: loka-studio-macos-arm64.tar.gz
 
     steps:
       - uses: actions/checkout@v4
@@ -103,40 +103,40 @@ jobs:
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev
 
       - name: Get Flutter dependencies
-        working-directory: sutra-studio
+        working-directory: loka-studio
         run: flutter pub get
 
       - name: Build Studio
-        working-directory: sutra-studio
+        working-directory: loka-studio
         run: ${{ matrix.build_cmd }}
 
       - name: Package (Windows)
         if: matrix.platform == 'windows'
         shell: bash
-        working-directory: sutra-studio
+        working-directory: loka-studio
         run: |
           cd "${{ matrix.output_dir }}"
-          7z a "$GITHUB_WORKSPACE/sutra-studio/${{ matrix.archive }}" .
+          7z a "$GITHUB_WORKSPACE/loka-studio/${{ matrix.archive }}" .
 
       - name: Package (Linux)
         if: matrix.platform == 'linux'
-        working-directory: sutra-studio
+        working-directory: loka-studio
         run: |
           cd "${{ matrix.output_dir }}"
-          tar czf "$GITHUB_WORKSPACE/sutra-studio/${{ matrix.archive }}" .
+          tar czf "$GITHUB_WORKSPACE/loka-studio/${{ matrix.archive }}" .
 
       - name: Package (macOS)
         if: matrix.platform == 'macos'
-        working-directory: sutra-studio
+        working-directory: loka-studio
         run: |
           cd "${{ matrix.output_dir }}"
-          tar czf "$GITHUB_WORKSPACE/sutra-studio/${{ matrix.archive }}" sutra_studio.app
+          tar czf "$GITHUB_WORKSPACE/loka-studio/${{ matrix.archive }}" loka_studio.app
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.archive }}
-          path: sutra-studio/${{ matrix.archive }}
+          path: loka-studio/${{ matrix.archive }}
 
   release:
     name: Create Release
@@ -151,11 +151,11 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            sutra-windows-x64.zip
-            sutra-linux-x64.tar.gz
-            sutra-macos-arm64.tar.gz
-            sutra-macos-x64.tar.gz
-            sutra-studio-windows-x64.zip
-            sutra-studio-linux-x64.tar.gz
-            sutra-studio-macos-arm64.tar.gz
+            loka-windows-x64.zip
+            loka-linux-x64.tar.gz
+            loka-macos-arm64.tar.gz
+            loka-macos-x64.tar.gz
+            loka-studio-windows-x64.zip
+            loka-studio-linux-x64.tar.gz
+            loka-studio-macos-arm64.tar.gz
           generate_release_notes: true

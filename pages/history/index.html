@@ -6,7 +6,7 @@
 <meta property="og:title" content="Loka — Development History">
 <meta property="og:description" content="The full narrative of how a lean RDF-star triplestore became a neuro-symbolic world-model engine. Two months of decisions, dead ends, and the things that worked.">
 <meta property="og:url" content="https://sutradb.org/history/">
-<meta name="description" content="Development history of Loka (formerly SutraDB) — from initial scaffold through the world-model pivot, with what worked, what didn't, and why.">
+<meta name="description" content="Development history of Loka (formerly Loka) — from initial scaffold through the world-model pivot, with what worked, what didn't, and why.">
 <link rel="canonical" href="https://sutradb.org/history/">
 <title>Loka — Development History</title>
 <style>
@@ -81,7 +81,7 @@ hr { border: none; border-top: 1px solid #21262d; margin: 36px 0; }
     <li><a href="#may-2026-decoder">2026-05 — Cumulative repetition penalty</a></li>
     <li><a href="#may-2026-loka">2026-05 — Loka rebrand and Hugging Face mirror</a></li>
     <li><a href="#apr-2026">2026-04 — ManuForge integration → v0.3.7</a></li>
-    <li><a href="#mar-2026-late">2026-03 (late) — Ontochronology + Sutra Studio + FFI</a></li>
+    <li><a href="#mar-2026-late">2026-03 (late) — Ontochronology + Loka Studio + FFI</a></li>
     <li><a href="#mar-2026-mid">2026-03 (mid) — v0.2.0 Developer Preview</a></li>
     <li><a href="#mar-2026-sweep">2026-03-15 — The SPARQL completeness sweep</a></li>
     <li><a href="#mar-2026-foundation">2026-03 (early) — Foundation + 1M embedding stress test</a></li>
@@ -106,7 +106,7 @@ hr { border: none; border-top: 1px solid #21262d; margin: 36px 0; }
 </p>
 <p>
   Product framing: <strong>what Ollama is to LLMs, Loka is to world models.</strong> Pull or train a world model locally; pluggable;
-  agent-first; honest provenance. The "agent-first" stance was already baked into SutraDB; the world-model layer is what makes the whole project
+  agent-first; honest provenance. The "agent-first" stance was already baked into Loka; the world-model layer is what makes the whole project
   a thing you'd want to install rather than just a database.
 </p>
 <div class="callout">
@@ -133,7 +133,7 @@ hr { border: none; border-top: 1px solid #21262d; margin: 36px 0; }
   same RDF-star annotation form because they're semantically the same thing.
 </p>
 <p>
-  <strong>Reserved namespace.</strong> Every predicate under <code>http://sutra.dev/provenance/</code> is system-internal. The world model
+  <strong>Reserved namespace.</strong> Every predicate under <code>http://loka.dev/provenance/</code> is system-internal. The world model
   <em>never</em> sees, proposes, or emits one. Three layers of enforcement:
 </p>
 <ol>
@@ -164,12 +164,12 @@ hr { border: none; border-top: 1px solid #21262d; margin: 36px 0; }
   Local-bandwidth-bound instead of API-bound.
 </p>
 <p>
-  End state: 5,055,385 triples / 1,695,402 RDF-star annotations / 27,780 entities / 770 MB on-disk SutraDB store.
+  End state: 5,055,385 triples / 1,695,402 RDF-star annotations / 27,780 entities / 770 MB on-disk Loka store.
 </p>
 
 <h3>propositionImportedFrom dropped</h3>
 <p>
-  Initially every imported triple got <code>&lt;&lt;S P O&gt;&gt; sutra:propositionImportedFrom &lt;wikidata.org/wiki/Q...&gt;</code>.
+  Initially every imported triple got <code>&lt;&lt;S P O&gt;&gt; loka:propositionImportedFrom &lt;wikidata.org/wiki/Q...&gt;</code>.
   For a database where every row came from Wikidata, that's redundant noise &mdash; 22,593 rows after the first hour of re-walk (~46% of all annotations).
   The actual provenance is already in Wikidata's own reference predicates. Dropped.
 </p>
@@ -183,7 +183,7 @@ hr { border: none; border-top: 1px solid #21262d; margin: 36px 0; }
 <h3>Embeddings: gone</h3>
 <p>
   The original BFS importer called Ollama (<code>mxbai-embed-large</code>) per entity. The world-model loop tokenizes English labels &mdash; vectors don't enter
-  the training corpus. Stripped from the importer. The HNSW index in <code>sutra-core</code> stays &mdash; that's an engine feature, not specific to import.
+  the training corpus. Stripped from the importer. The HNSW index in <code>loka-core</code> stays &mdash; that's an engine feature, not specific to import.
 </p>
 
 <div class="callout warn">
@@ -218,10 +218,10 @@ hr { border: none; border-top: 1px solid #21262d; margin: 36px 0; }
 
 <h3>Two corpus quality fixes between v3 and v4</h3>
 <ol>
-  <li><strong>Strip <code>^^&lt;datatype&gt;</code> suffixes from typed literals.</strong> SutraDB's SPARQL serialization embeds the datatype URI in the literal value
+  <li><strong>Strip <code>^^&lt;datatype&gt;</code> suffixes from typed literals.</strong> Loka's SPARQL serialization embeds the datatype URI in the literal value
   string. Without stripping, datatype-URI fragments (<code>xmlschema</code>, <code>decimal</code>, <code>org</code>) reached the tokenizer as if they were entity content
   and dominated certain predictions.</li>
-  <li><strong>Drop rows with non-URI predicates.</strong> ~1% of rows on a 5M corpus exhibit a SutraDB SPARQL bug where literal values surface in the
+  <li><strong>Drop rows with non-URI predicates.</strong> ~1% of rows on a 5M corpus exhibit a Loka SPARQL bug where literal values surface in the
   <code>?p</code> slot. RDF disallows literal predicates, so dropping is safe.</li>
 </ol>
 
@@ -265,7 +265,7 @@ hr { border: none; border-top: 1px solid #21262d; margin: 36px 0; }
 
 <h2 id="may-2026-loka">2026-05 — Loka rebrand and Hugging Face mirror</h2>
 <p>
-  "SutraDB" is a name for the engine. The project that's emerging (engine + corpus + trained world model + inference layer) needs its own identity.
+  "Loka" is a name for the engine. The project that's emerging (engine + corpus + trained world model + inference layer) needs its own identity.
   <strong>Loka</strong> is the name on Hugging Face. The GitHub repo will be renamed to match later.
 </p>
 <p>
@@ -287,7 +287,7 @@ ckpt = hf_hub_download(
 
 <h2 id="apr-2026">2026-04 — ManuForge integration → v0.3.7</h2>
 <p>
-  Brief period of production-readiness fixes after testing SutraDB against the ManuForge SDK consumer. Surfaced a small set of real issues:
+  Brief period of production-readiness fixes after testing Loka against the ManuForge SDK consumer. Surfaced a small set of real issues:
 </p>
 <ul>
   <li><strong>RDF-star query support fixes</strong> &mdash; quoted-triple wildcards weren't matching correctly.</li>
@@ -298,16 +298,16 @@ ckpt = hf_hub_download(
 </ul>
 <p>Bumped to <strong>v0.3.7</strong> at the end of this round. The ManuForge integration also produced <code>docs/AGENT_SETUP.md</code> for AI-agent consumers.</p>
 
-<h2 id="mar-2026-late">2026-03 (late) — Ontochronology + Sutra Studio + FFI</h2>
+<h2 id="mar-2026-late">2026-03 (late) — Ontochronology + Loka Studio + FFI</h2>
 
-<h3>Sutra Studio (Flutter desktop/web/mobile client)</h3>
+<h3>Loka Studio (Flutter desktop/web/mobile client)</h3>
 <p>
-  <code>sutra-ffi</code> crate wraps the engine in a C-compatible shared library so non-Rust consumers (Flutter, in particular) can embed the database in-process.
-  Studio uses <code>dart:ffi</code> to load <code>sutra_ffi.dll</code>/<code>.so</code>/<code>.dylib</code> and runs the engine on a background thread sharing the same handle as the optional MCP server.
+  <code>loka-ffi</code> crate wraps the engine in a C-compatible shared library so non-Rust consumers (Flutter, in particular) can embed the database in-process.
+  Studio uses <code>dart:ffi</code> to load <code>loka_ffi.dll</code>/<code>.so</code>/<code>.dylib</code> and runs the engine on a background thread sharing the same handle as the optional MCP server.
 </p>
 <p>
-  Two entry points: <code>sutra mcp</code> (MCP + database, no GUI) and Sutra Studio (GUI + database + optional MCP server, all one process).
-  Studio also auto-starts the server in serverless mode when launched, so the user never has to run <code>sutra serve</code> manually.
+  Two entry points: <code>loka mcp</code> (MCP + database, no GUI) and Loka Studio (GUI + database + optional MCP server, all one process).
+  Studio also auto-starts the server in serverless mode when launched, so the user never has to run <code>loka serve</code> manually.
   Includes graph view (D3 then vis-network), HNSW health diagnostics, OWL/Turtle export, dark/light theme, persistent connection settings.
 </p>
 
@@ -317,7 +317,7 @@ ckpt = hf_hub_download(
   "what changed between T1 and T2" without reifying every statement individually. Implementation phases:
 </p>
 <ul>
-  <li><strong>Phase 1–3</strong> &mdash; temporal literal type, predicates (<code>sutra:assertedAt</code>, <code>sutra:validFrom</code>, <code>sutra:validTo</code>), TSPO index.</li>
+  <li><strong>Phase 1–3</strong> &mdash; temporal literal type, predicates (<code>loka:assertedAt</code>, <code>loka:validFrom</code>, <code>loka:validTo</code>), TSPO index.</li>
   <li><strong>Phase 4a</strong> &mdash; <code>AT_TIME</code> and <code>DURING</code> query operators.</li>
   <li><strong>Phase 4b</strong> &mdash; <code>WORLD_STATE</code> and <code>TEMPORAL_DIFF</code>.</li>
   <li>Temporal-aware property path traversal.</li>
@@ -337,7 +337,7 @@ ckpt = hf_hub_download(
 
 <h2 id="mar-2026-mid">2026-03 (mid) — v0.2.0 Developer Preview</h2>
 <p>
-  A consolidating release. Headlines: query planner, agent installer, Java SDK, Sutra Studio first cut. All four SDKs (Go, Rust, Java, .NET) had endpoint mismatches caught and fixed. SDK publish workflow + integration test CI added.
+  A consolidating release. Headlines: query planner, agent installer, Java SDK, Loka Studio first cut. All four SDKs (Go, Rust, Java, .NET) had endpoint mismatches caught and fixed. SDK publish workflow + integration test CI added.
 </p>
 <p>
   Pseudo-tables landed in this window: columnar indexes with zonemap pruning and vectorized scans, on top of the standard SPO/POS/OSP indexes. Designed to make multi-hop subgraph queries (the kind RDF databases are typically slow at) competitive with property-graph databases.
@@ -385,10 +385,10 @@ ckpt = hf_hub_download(
 
 <h3>CLI, distribution, ecosystem</h3>
 <ul>
-  <li><code>sutra import</code> / <code>export</code> / <code>info</code> / <code>install-agent</code></li>
+  <li><code>loka import</code> / <code>export</code> / <code>info</code> / <code>install-agent</code></li>
   <li>Install scripts, Dockerfile, GraphStoreProtocol, content negotiation</li>
   <li><strong>Protégé plugin</strong> (Java OSGi)</li>
-  <li><strong>MCP server</strong> for AI-agent ↔ SutraDB integration</li>
+  <li><strong>MCP server</strong> for AI-agent ↔ Loka integration</li>
   <li>Client-side OWL validation, OWL verification query generation</li>
   <li>Turtle, RDF/XML, JSON-LD, N-Quads parsers</li>
   <li>LangChain VectorStore integration; Jupyter <code>%%sparql</code> cell magic</li>
@@ -398,7 +398,7 @@ ckpt = hf_hub_download(
 
 <h2 id="mar-2026-foundation">2026-03 (early) — Foundation + 1M embedding stress test</h2>
 <p>
-  Project began on <strong>2026-03-13</strong> with the cleanvibe scaffold. Within 24 hours: architecture docs, normalised <code>sutra-*</code> workspace structure, <code>sutra-core</code> and <code>sutra-hnsw</code> foundations. Apache 2.0 license. CI workflow.
+  Project began on <strong>2026-03-13</strong> with the cleanvibe scaffold. Within 24 hours: architecture docs, normalised <code>loka-*</code> workspace structure, <code>loka-core</code> and <code>loka-hnsw</code> foundations. Apache 2.0 license. CI workflow.
   Borrowed patterns explicitly from <a href="https://github.com/qdrant/qdrant">Qdrant</a> (HNSW: immutable <code>GraphLayers</code> for search, thread-local visited pools, per-node <code>RwLock</code> during construction) and <a href="https://github.com/oxigraph/oxigraph">Oxigraph</a> (storage, IRI interning, RDF triplestore baseline).
 </p>
 <p>

@@ -4,17 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Roadmap — SutraDB">
-    <meta property="og:description" content="SutraDB development roadmap. Developer Preview status and what's coming next.">
-    <meta name="description" content="SutraDB development roadmap. Developer Preview status and what's coming next.">
+    <meta property="og:title" content="Roadmap — Loka">
+    <meta property="og:description" content="Loka development roadmap. Developer Preview status and what's coming next.">
+    <meta name="description" content="Loka development roadmap. Developer Preview status and what's coming next.">
     <meta property="og:url" content="https://sutradb.org/roadmap/">
-    <meta property="og:site_name" content="SutraDB">
+    <meta property="og:site_name" content="Loka">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="Roadmap — SutraDB">
-    <meta name="twitter:description" content="SutraDB development roadmap. Developer Preview status and what's coming next.">
+    <meta name="twitter:title" content="Roadmap — Loka">
+    <meta name="twitter:description" content="Loka development roadmap. Developer Preview status and what's coming next.">
     <meta name="theme-color" content="#58a6ff">
     <link rel="canonical" href="https://sutradb.org/roadmap/">
-    <title>Roadmap &mdash; SutraDB</title>
+    <title>Roadmap &mdash; Loka</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f4dc;</text></svg>">
     <link rel="stylesheet" href="../style.css">
     <style>
@@ -72,7 +72,7 @@
 </head>
 <body>
 <nav>
-    <a href="../" class="logo"><span>Sutra</span>DB</a>
+    <a href="../" class="logo"><span>Loka</span></a>
     <a href="../#download">Download</a>
     <a href="../graph-vector/">Graph+Vector</a>
     <a href="../sdb-format/">Architecture</a>
@@ -84,7 +84,7 @@
 <div class="container">
     <div class="page-header">
         <h1><span>Roadmap</span></h1>
-        <p class="subtitle">SutraDB is in <strong>Developer Preview</strong>. Core engine, SPARQL+, vector indexing, and HTTP server are fully functional. Here's what's done and what's next.</p>
+        <p class="subtitle">Loka is in <strong>Developer Preview</strong>. Core engine, SPARQL+, vector indexing, and HTTP server are fully functional. Here's what's done and what's next.</p>
     </div>
 
     <div style="margin-bottom: 40px;">
@@ -96,7 +96,7 @@
 
     <div class="roadmap-item">
         <h3>AI Agent Installer <span class="status-tag status-active">In Progress</span></h3>
-        <p>The <code>sutra install-agent</code> command sets up a database interactively for AI agents. Currently debugging path handling, HNSW index rebuild on startup, and error messaging for non-interactive environments. Goal: any AI agent says "set up a database" and it just works.</p>
+        <p>The <code>loka install-agent</code> command sets up a database interactively for AI agents. Currently debugging path handling, HNSW index rebuild on startup, and error messaging for non-interactive environments. Goal: any AI agent says "set up a database" and it just works.</p>
     </div>
 
     <div class="roadmap-item">
@@ -106,7 +106,7 @@
 
     <div class="roadmap-item">
         <h3>HNSW Traversal via SPARQL Property Paths <span class="status-tag status-active">In Progress</span></h3>
-        <p>HNSW topology is exposed as virtual RDF triples (<code>sutra:hnswNeighbor</code>). Remaining: make property path evaluation produce correct ANN results by letting greedy descent + beam search emerge from the graph structure.</p>
+        <p>HNSW topology is exposed as virtual RDF triples (<code>loka:hnswNeighbor</code>). Remaining: make property path evaluation produce correct ANN results by letting greedy descent + beam search emerge from the graph structure.</p>
     </div>
 
     <div class="roadmap-item">
@@ -164,7 +164,7 @@
     </div>
 
     <div class="roadmap-item">
-        <h3>Sutra Studio (Flutter GUI) <span class="status-tag status-done">Complete</span></h3>
+        <h3>Loka Studio (Flutter GUI) <span class="status-tag status-done">Complete</span></h3>
         <p>Desktop and web client. Graph visualization, SPARQL editor, HNSW health dashboard, triple editor, OWL ontology viewer, backup management. 90% feature complete.</p>
     </div>
 
@@ -175,12 +175,12 @@
 
     <div class="roadmap-item">
         <h3>Self-Update &amp; Version Management <span class="status-tag status-done">Complete</span></h3>
-        <p><code>sutra update</code> command, <code>--version</code> flag, startup version check, and HNSW rebuild endpoint. The CLI can check for new releases, self-update in place, and trigger index rebuilds after version upgrades.</p>
+        <p><code>loka update</code> command, <code>--version</code> flag, startup version check, and HNSW rebuild endpoint. The CLI can check for new releases, self-update in place, and trigger index rebuilds after version upgrades.</p>
     </div>
 
     <div class="roadmap-item">
         <h3>MCP Server <span class="status-tag status-done">Complete</span></h3>
-        <p>Dual-mode MCP server supporting both serverless and server configurations. Provides 8 maintenance tools for AI agents to manage SutraDB instances through the Model Context Protocol.</p>
+        <p>Dual-mode MCP server supporting both serverless and server configurations. Provides 8 maintenance tools for AI agents to manage Loka instances through the Model Context Protocol.</p>
     </div>
 
     <div class="roadmap-item">

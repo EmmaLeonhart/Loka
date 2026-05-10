@@ -1,23 +1,23 @@
-"""SutraDB MCP Server — Sutra Studio for AI agents.
+"""Loka MCP Server — Loka Studio for AI agents.
 
 Dual-mode MCP server for database maintenance and querying.
 This is the agent<->database bridge, designed maintenance-first.
 
 Modes:
-- Server mode:     connects to SutraDB HTTP endpoint (default http://localhost:3030)
-- Serverless mode: shells out to `sutra` CLI binary for direct .sdb file access
+- Server mode:     connects to Loka HTTP endpoint (default http://localhost:3030)
+- Serverless mode: shells out to `loka` CLI binary for direct .sdb file access
 
 Environment variables:
-  SUTRA_MODE      = server | serverless  (default: server)
-  SUTRA_URL       = HTTP endpoint        (default: http://localhost:3030)
-  SUTRA_DATA_DIR  = path to .sdb data    (default: ./sutra-data)
-  SUTRA_CLI       = path to sutra binary (default: sutra)
-  SUTRA_PASSCODE  = auth passcode        (optional, server mode only)
+  LOKA_MODE      = server | serverless  (default: server)
+  LOKA_URL       = HTTP endpoint        (default: http://localhost:3030)
+  LOKA_DATA_DIR  = path to .sdb data    (default: ./loka-data)
+  LOKA_CLI       = path to loka binary (default: loka)
+  LOKA_PASSCODE  = auth passcode        (optional, server mode only)
 
 Usage:
     python tools/mcp-server/server.py
     python tools/mcp-server/server.py --mode serverless --data-dir ./my-data
-    SUTRA_MODE=server SUTRA_URL=http://localhost:3030 python tools/mcp-server/server.py
+    LOKA_MODE=server LOKA_URL=http://localhost:3030 python tools/mcp-server/server.py
 
 Protocol: JSON-RPC over stdio, MCP version 2024-11-05
 """
@@ -38,32 +38,32 @@ sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 
-MODE = os.environ.get("SUTRA_MODE", "server")  # server | serverless
-SUTRA_URL = os.environ.get("SUTRA_URL", "http://localhost:3030")
-DATA_DIR = os.environ.get("SUTRA_DATA_DIR", "./sutra-data")
-SUTRA_CLI = os.environ.get("SUTRA_CLI", "sutra")
-PASSCODE = os.environ.get("SUTRA_PASSCODE", "")
+MODE = os.environ.get("LOKA_MODE", "server")  # server | serverless
+LOKA_URL = os.environ.get("LOKA_URL", "http://localhost:3030")
+DATA_DIR = os.environ.get("LOKA_DATA_DIR", "./loka-data")
+LOKA_CLI = os.environ.get("LOKA_CLI", "loka")
+PASSCODE = os.environ.get("LOKA_PASSCODE", "")
 
 
 def configure_from_args():
     """Override config from command-line arguments if provided."""
-    global MODE, SUTRA_URL, DATA_DIR, SUTRA_CLI, PASSCODE
-    parser = argparse.ArgumentParser(description="SutraDB MCP Server")
+    global MODE, LOKA_URL, DATA_DIR, LOKA_CLI, PASSCODE
+    parser = argparse.ArgumentParser(description="Loka MCP Server")
     parser.add_argument("--mode", choices=["server", "serverless"], default=None)
-    parser.add_argument("--url", default=None, help="SutraDB HTTP endpoint")
+    parser.add_argument("--url", default=None, help="Loka HTTP endpoint")
     parser.add_argument("--data-dir", default=None, help="Path to .sdb data directory")
-    parser.add_argument("--cli", default=None, help="Path to sutra CLI binary")
+    parser.add_argument("--cli", default=None, help="Path to loka CLI binary")
     parser.add_argument("--passcode", default=None, help="Auth passcode")
     args = parser.parse_args()
 
     if args.mode:
         MODE = args.mode
     if args.url:
-        SUTRA_URL = args.url
+        LOKA_URL = args.url
     if args.data_dir:
         DATA_DIR = args.data_dir
     if args.cli:
-        SUTRA_CLI = args.cli
+        LOKA_CLI = args.cli
     if args.passcode:
         PASSCODE = args.passcode
 
@@ -80,13 +80,13 @@ def _auth_headers() -> dict:
 
 
 def http_request(method: str, path: str, **kwargs) -> dict:
-    """Make an HTTP request to SutraDB server."""
-    url = f"{SUTRA_URL}{path}"
+    """Make an HTTP request to Loka server."""
+    url = f"{LOKA_URL}{path}"
     headers = {**_auth_headers(), **kwargs.pop("headers", {})}
     try:
         resp = requests.request(method, url, timeout=60, headers=headers, **kwargs)
     except requests.ConnectionError:
-        return {"error": f"Cannot connect to SutraDB at {SUTRA_URL}. Is the server running?"}
+        return {"error": f"Cannot connect to Loka at {LOKA_URL}. Is the server running?"}
     except requests.Timeout:
         return {"error": "Request timed out after 60 seconds."}
     except Exception as e:
@@ -101,8 +101,8 @@ def http_request(method: str, path: str, **kwargs) -> dict:
 
 
 def cli_run(args: list, input_data: Optional[str] = None) -> dict:
-    """Run a sutra CLI command and return structured output."""
-    cmd = [SUTRA_CLI] + args
+    """Run a loka CLI command and return structured output."""
+    cmd = [LOKA_CLI] + args
     try:
         result = subprocess.run(
             cmd,
@@ -112,7 +112,7 @@ def cli_run(args: list, input_data: Optional[str] = None) -> dict:
             input=input_data,
         )
     except FileNotFoundError:
-        return {"error": f"sutra CLI not found at '{SUTRA_CLI}'. Is it installed and on PATH?"}
+        return {"error": f"loka CLI not found at '{LOKA_CLI}'. Is it installed and on PATH?"}
     except subprocess.TimeoutExpired:
         return {"error": "CLI command timed out after 120 seconds."}
     except Exception as e:
@@ -136,7 +136,7 @@ def tool_health_report(_args: dict) -> Any:
         is_healthy = health.get("result") == "ok" or health.get("result", "").strip() == "ok"
         return {
             "mode": "server",
-            "endpoint": SUTRA_URL,
+            "endpoint": LOKA_URL,
             "server_reachable": "error" not in health,
             "healthy": is_healthy,
             "vector_indexes": vectors,
@@ -174,7 +174,7 @@ def tool_verify_consistency(_args: dict) -> Any:
         is_reachable = "error" not in health
         return {
             "mode": "server",
-            "endpoint": SUTRA_URL,
+            "endpoint": LOKA_URL,
             "server_reachable": is_reachable,
             "note": (
                 "Server mode auto-repairs index inconsistencies on startup. "
@@ -193,7 +193,7 @@ def tool_verify_consistency(_args: dict) -> Any:
                 "mode": "serverless",
                 "consistent": False,
                 "error": info_result["error"],
-                "recommendation": "Try running: sutra health --data-dir " + DATA_DIR,
+                "recommendation": "Try running: loka health --data-dir " + DATA_DIR,
             }
         return {
             "mode": "serverless",
@@ -237,7 +237,7 @@ def tool_database_info(_args: dict) -> Any:
 
         return {
             "mode": "server",
-            "endpoint": SUTRA_URL,
+            "endpoint": LOKA_URL,
             "healthy": "error" not in health,
             "triple_count": triple_count,
             "vector_indexes": vectors,
@@ -271,7 +271,7 @@ def tool_backup(args: dict) -> Any:
                 "or use serverless mode to access the .sdb files directly."
             ),
             "recommendation": (
-                "Start the server with: sutra serve --backup-interval 60 "
+                "Start the server with: loka serve --backup-interval 60 "
                 "for hourly automatic backups."
             ),
         }
@@ -308,7 +308,7 @@ def tool_backup(args: dict) -> Any:
 
 
 def tool_sparql_query(args: dict) -> Any:
-    """Execute a SPARQL query against SutraDB."""
+    """Execute a SPARQL query against Loka."""
     query = args.get("query", "")
     if not query.strip():
         return {"error": "Query cannot be empty."}
@@ -381,7 +381,7 @@ def tool_vector_search(args: dict) -> Any:
     Accepts either raw vector floats or a SPARQL query with VECTOR_SIMILAR.
     """
     vector = args.get("vector", "")
-    predicate = args.get("predicate", "http://sutra.dev/hasEmbedding")
+    predicate = args.get("predicate", "http://loka.dev/hasEmbedding")
     threshold = args.get("threshold", 0.5)
     limit = args.get("limit", 10)
 
@@ -391,7 +391,7 @@ def tool_vector_search(args: dict) -> Any:
     query = (
         f"SELECT ?entity WHERE {{\n"
         f'  VECTOR_SIMILAR(?entity <{predicate}> '
-        f'"{vector}"^^<http://sutra.dev/f32vec>, {threshold})\n'
+        f'"{vector}"^^<http://loka.dev/f32vec>, {threshold})\n'
         f"}} LIMIT {limit}"
     )
 
@@ -438,7 +438,7 @@ TOOLS = [
     {
         "name": "health_report",
         "description": (
-            "Full SutraDB health diagnostics. Returns HNSW vector index health "
+            "Full Loka health diagnostics. Returns HNSW vector index health "
             "(tombstone ratios, connectivity, dimensions), storage status, and "
             "server reachability. Use this first to understand database state."
         ),
@@ -508,7 +508,7 @@ TOOLS = [
     {
         "name": "sparql_query",
         "description": (
-            "Execute a SPARQL query against SutraDB. Supports SELECT, ASK, "
+            "Execute a SPARQL query against Loka. Supports SELECT, ASK, "
             "CONSTRUCT, DESCRIBE, INSERT DATA, DELETE DATA. Also supports "
             "VECTOR_SIMILAR and VECTOR_SCORE extensions. Returns results as "
             "structured JSON with columns and rows."
@@ -562,7 +562,7 @@ TOOLS = [
                 "predicate": {
                     "type": "string",
                     "description": (
-                        "Vector predicate IRI (default: http://sutra.dev/hasEmbedding)."
+                        "Vector predicate IRI (default: http://loka.dev/hasEmbedding)."
                     ),
                 },
                 "threshold": {
@@ -597,7 +597,7 @@ def handle_message(msg: dict) -> Optional[dict]:
                 "protocolVersion": "2024-11-05",
                 "capabilities": {"tools": {}},
                 "serverInfo": {
-                    "name": "sutra-mcp",
+                    "name": "loka-mcp",
                     "version": "0.2.0",
                 },
             },
@@ -676,14 +676,14 @@ def main():
     """Run the MCP server on stdio."""
     configure_from_args()
 
-    sys.stderr.write(f"sutra-mcp v0.2.0 starting (mode={MODE})\n")
+    sys.stderr.write(f"loka-mcp v0.2.0 starting (mode={MODE})\n")
     if MODE == "server":
-        sys.stderr.write(f"  endpoint: {SUTRA_URL}\n")
+        sys.stderr.write(f"  endpoint: {LOKA_URL}\n")
         if PASSCODE:
             sys.stderr.write("  auth: passcode configured\n")
     else:
         sys.stderr.write(f"  data_dir: {DATA_DIR}\n")
-        sys.stderr.write(f"  cli: {SUTRA_CLI}\n")
+        sys.stderr.write(f"  cli: {LOKA_CLI}\n")
 
     for line in sys.stdin:
         line = line.strip()

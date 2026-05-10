@@ -4,23 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Rhizomatic Description Framework — SutraDB">
+    <meta property="og:title" content="Rhizomatic Description Framework — Loka">
     <meta property="og:description" content="RDF as a rhizome: why the Resource Description Framework is accidentally the most Deleuzian data structure ever built.">
     <meta name="description" content="An exploration of RDF through Deleuze and Guattari's concept of the rhizome. No roots, no hierarchy, just connections.">
     <meta property="og:url" content="https://sutradb.org/theory/rhizomatic-description-framework/">
-    <meta property="og:site_name" content="SutraDB">
+    <meta property="og:site_name" content="Loka">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="Rhizomatic Description Framework — SutraDB">
+    <meta name="twitter:title" content="Rhizomatic Description Framework — Loka">
     <meta name="twitter:description" content="RDF as a rhizome: no roots, no hierarchy, just connections.">
     <meta name="theme-color" content="#58a6ff">
     <link rel="canonical" href="https://sutradb.org/theory/rhizomatic-description-framework/">
-    <title>Rhizomatic Description Framework &mdash; SutraDB</title>
+    <title>Rhizomatic Description Framework &mdash; Loka</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f4dc;</text></svg>">
     <link rel="stylesheet" href="../../style.css">
 </head>
 <body>
 <nav>
-    <a href="../../" class="logo"><span>Sutra</span>DB</a>
+    <a href="../../" class="logo"><span>Loka</span></a>
     <a href="../../#download">Download</a>
     <a href="../../graph-vector/">Graph+Vector</a>
     <a href="../../sdb-format/">Architecture</a>
@@ -87,7 +87,7 @@
 
     <p>An RDF graph is a map of a domain, not a schema that generates instances. You don&rsquo;t define a &ldquo;Person table&rdquo; and then fill in rows. You make statements &mdash; <code>:Alice rdf:type :Person</code> &mdash; and the &ldquo;schema&rdquo; emerges from the data. OWL ontologies describe the territory after the fact; they don&rsquo;t prescribe it.</p>
 
-    <p>This is why SutraDB stores first and reasons second. The database is a map of what you&rsquo;ve asserted. OWL validation happens in the SDKs, not in the storage engine. The map is never rejected for failing to match a tracing.</p>
+    <p>This is why Loka stores first and reasons second. The database is a map of what you&rsquo;ve asserted. OWL validation happens in the SDKs, not in the storage engine. The map is never rejected for failing to match a tracing.</p>
 
     <h3>6. Decalcomania</h3>
 
@@ -127,7 +127,7 @@
 
     <p>Storing knowledge for AI in a tree structure (SQL tables, JSON documents) forces the AI to think in terms of joins and key lookups. Storing it in a rhizome (RDF) lets the AI think in terms of <em>traversal</em> &mdash; which is how it already reasons internally.</p>
 
-    <p>SutraDB makes this explicit: the graph is the knowledge, the HNSW index is the associative leap, and SPARQL+ is the language for expressing both structured traversal and semantic proximity. The rhizome is the database.</p>
+    <p>Loka makes this explicit: the graph is the knowledge, the HNSW index is the associative leap, and SPARQL+ is the language for expressing both structured traversal and semantic proximity. The rhizome is the database.</p>
 
     <h2>The Open World</h2>
 

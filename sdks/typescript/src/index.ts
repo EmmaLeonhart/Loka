@@ -1,2 +1,2 @@
-export { SutraClient } from "./client";
+export { LokaClient } from "./client";
 export * from "./types";

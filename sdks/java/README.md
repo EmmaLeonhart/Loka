@@ -1,6 +1,6 @@
-# SutraDB — Kotlin / Java Client
+# Loka — Kotlin / Java Client
 
-Client for [SutraDB](https://github.com/EmmaLeonhart/SutraDB) — an RDF-star triplestore with native HNSW vector indexing.
+Client for [Loka](https://github.com/EmmaLeonhart/Loka) — an RDF-star triplestore with native HNSW vector indexing.
 
 Requires Java 11+. Uses `java.net.http.HttpClient` (no external HTTP dependencies). Built with Gradle (Kotlin DSL).
 
@@ -9,13 +9,13 @@ Requires Java 11+. Uses `java.net.http.HttpClient` (no external HTTP dependencie
 ### Gradle (Kotlin DSL)
 
 ```kotlin
-implementation("io.github.emmaleonhart:sutradb:0.3.0")
+implementation("io.github.emmaleonhart:loka:0.3.0")
 ```
 
 ### Gradle (Groovy DSL)
 
 ```groovy
-implementation 'io.github.emmaleonhart:sutradb:0.3.0'
+implementation 'io.github.emmaleonhart:loka:0.3.0'
 ```
 
 ### Maven
@@ -23,7 +23,7 @@ implementation 'io.github.emmaleonhart:sutradb:0.3.0'
 ```xml
 <dependency>
     <groupId>io.github.emmaleonhart</groupId>
-    <artifactId>sutradb</artifactId>
+    <artifactId>loka</artifactId>
     <version>0.3.0</version>
 </dependency>
 ```
@@ -31,10 +31,10 @@ implementation 'io.github.emmaleonhart:sutradb:0.3.0'
 ## Usage
 
 ```java
-import io.github.emmaleonhart.sutradb.SutraClient;
-import io.github.emmaleonhart.sutradb.SparqlResults;
+import io.github.emmaleonhart.loka.LokaClient;
+import io.github.emmaleonhart.loka.SparqlResults;
 
-SutraClient client = new SutraClient("http://localhost:7878");
+LokaClient client = new LokaClient("http://localhost:7878");
 
 // Health check
 boolean alive = client.health();

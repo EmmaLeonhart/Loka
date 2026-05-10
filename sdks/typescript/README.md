@@ -1,23 +1,23 @@
-# sutradb
+# loka
 
-TypeScript/JavaScript client for [SutraDB](https://github.com/EmmaLeonhart/SutraDB) — an RDF-star triplestore with native HNSW vector indexing.
+TypeScript/JavaScript client for [Loka](https://github.com/EmmaLeonhart/Loka) — an RDF-star triplestore with native HNSW vector indexing.
 
 ## Installation
 
 ```bash
-npm install sutradb
+npm install loka
 ```
 
 ## Quick Start
 
 ```typescript
-import { SutraClient } from "sutradb";
+import { LokaClient } from "loka";
 
-const client = new SutraClient("http://localhost:3030");
+const client = new LokaClient("http://localhost:3030");
 
 // Check server health
 if (await client.health()) {
-  console.log("SutraDB is running");
+  console.log("Loka is running");
 }
 
 // Run a SPARQL query

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SutraDB Browser</title>
+    <title>Loka Browser</title>
     <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
     <style>
         :root {
@@ -96,7 +96,7 @@
 <body>
 
 <header>
-    <span class="logo"><span>Sutra</span>DB Browser</span>
+    <span class="logo"><span>Loka</span> Browser</span>
     <input id="endpoint" value="http://localhost:3030">
     <span id="status" class="off">...</span>
     <span style="margin-left:auto;color:var(--muted);font-size:0.75em">Click node to expand | Double-click for detail | Drag to move</span>
@@ -147,7 +147,7 @@ function sh(iri) {
         .replace('http://www.wikidata.org/entity/','wd:')
         .replace('http://www.wikidata.org/prop/direct/','wdt:')
         .replace('http://embedding-mapping.local/ontology/','emb:')
-        .replace('http://sutra.dev/','sutra:')
+        .replace('http://loka.dev/','loka:')
         .replace(/^http:\/\/[^/]+\//,'');
 }
 function isVec(v) { return v && v.includes('f32vec'); }
@@ -194,7 +194,7 @@ function addEdge(from, to, label) {
     const eid = from+'|'+to+'|'+label;
     if (visEdges.get(eid)) return;
     const hidden = filterState[label] === false;
-    const isHnswEdge = label === 'hnswNeighbor' || label === 'sutra:hnswNeighbor';
+    const isHnswEdge = label === 'hnswNeighbor' || label === 'loka:hnswNeighbor';
     visEdges.add({
         id: eid, from, to,
         label: isHnswEdge ? '' : label,
@@ -274,7 +274,7 @@ async function expandNode(iri) {
         }
         // HNSW neighbors (virtual edges — shows the index graph structure)
         try {
-            const hnsw = await sparql(`SELECT ?neighbor WHERE { <${iri}> <http://sutra.dev/hnswNeighbor> ?neighbor } LIMIT 20`);
+            const hnsw = await sparql(`SELECT ?neighbor WHERE { <${iri}> <http://loka.dev/hnswNeighbor> ?neighbor } LIMIT 20`);
             for (const b of hnsw.results.bindings) {
                 const nId = b.neighbor.value;
                 addNode(nId, sh(nId), 'iri');
@@ -460,8 +460,8 @@ function qk(t) {
         all: 'SELECT ?s ?p ?o WHERE {\n  ?s ?p ?o\n} LIMIT 30',
         types: 'SELECT DISTINCT ?type WHERE {\n  ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?type\n} LIMIT 30',
         vecs: 'SELECT ?s ?p ?o WHERE {\n  ?s ?p ?o\n} LIMIT 50',
-        hnsw: '# HNSW neighbor graph — shows the actual index structure\nSELECT ?s ?o WHERE {\n  ?s <http://sutra.dev/hnswNeighbor> ?o\n} LIMIT 100',
-        hnswNode: '# HNSW neighbors of a specific entity\n# Replace the IRI with any entity that has a vector\nSELECT ?s ?o WHERE {\n  ?s <http://sutra.dev/hnswNeighbor> ?o\n} LIMIT 50',
+        hnsw: '# HNSW neighbor graph — shows the actual index structure\nSELECT ?s ?o WHERE {\n  ?s <http://loka.dev/hnswNeighbor> ?o\n} LIMIT 100',
+        hnswNode: '# HNSW neighbors of a specific entity\n# Replace the IRI with any entity that has a vector\nSELECT ?s ?o WHERE {\n  ?s <http://loka.dev/hnswNeighbor> ?o\n} LIMIT 50',
     };
     box.value = qs[t] || qs.all;
     if (t === 'hnsw' || t === 'hnswNode') {
