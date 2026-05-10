@@ -30,20 +30,40 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from model import TripleTransformer, ROLE_SPECIAL, ROLE_S, ROLE_P, ROLE_O  # noqa: E402
 from tokenizer import (  # noqa: E402
     PAD_ID, CLS_ID, SEP_S_ID, SEP_P_ID, SEP_O_ID, MASK_ID, UNK_ID,
-    encode,
+    encode as encode_word,
 )
 
 
 class TripleDataset(Dataset):
-    def __init__(self, path: Path, vocab: dict[str, int], tokens_per_role: int = 8) -> None:
+    def __init__(
+        self,
+        path: Path,
+        vocab: dict[str, int],
+        tokens_per_role: int = 8,
+        bpe_tokenizer=None,
+    ) -> None:
+        """Read triples; encode via word-level vocab OR a BPE tokenizer.
+
+        If `bpe_tokenizer` is provided (a HuggingFace `tokenizers.Tokenizer`
+        loaded from `tokenizer_bpe.json`), each role string is encoded with
+        BPE. Otherwise the original word-level path runs unchanged. Special
+        token IDs (PAD/CLS/SEP_*/MASK/UNK) are stable across both paths
+        because both vocabs reserve 0..6 for them.
+        """
         self.tokens_per_role = tokens_per_role
         self.examples: list[tuple[list[int], list[int], list[int]]] = []
+        if bpe_tokenizer is not None:
+            def _enc(text: str) -> list[int]:
+                return bpe_tokenizer.encode(text, add_special_tokens=False).ids
+        else:
+            def _enc(text: str) -> list[int]:
+                return encode_word(text, vocab)
         with path.open(encoding="utf-8") as f:
             for line in f:
                 parts = line.rstrip("\n").split("\t")
                 if len(parts) != 3:
                     continue
-                s, p, o = (encode(x, vocab) for x in parts)
+                s, p, o = (_enc(x) for x in parts)
                 if not s or not p or not o:
                     continue
                 self.examples.append((s, p, o))
@@ -118,6 +138,14 @@ def main() -> None:
     parser.add_argument("--weight-decay", type=float, default=0.01)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--device", default=None, help="cuda / cpu / mps; auto-detect if unset")
+    parser.add_argument(
+        "--bpe-tokenizer",
+        default=None,
+        help="Optional path to a tokenizer_bpe.json (HuggingFace tokenizers format). "
+             "If provided, encodes each role's text with BPE instead of the word-level "
+             "vocab. The first 7 special token IDs (PAD/CLS/SEP_S/SEP_P/SEP_O/MASK/UNK) "
+             "are stable across both paths so the masked-prediction loop is unchanged.",
+    )
     args = parser.parse_args()
 
     random.seed(args.seed)
@@ -136,8 +164,19 @@ def main() -> None:
     vocab = json.loads(Path(args.vocab).read_text(encoding="utf-8"))
     print(f"Vocabulary: {len(vocab):,} tokens", file=sys.stderr)
 
+    bpe_tokenizer = None
+    if args.bpe_tokenizer:
+        from tokenizers import Tokenizer  # type: ignore
+        bpe_tokenizer = Tokenizer.from_file(args.bpe_tokenizer)
+        print(f"BPE tokenizer loaded: {args.bpe_tokenizer}", file=sys.stderr)
+
     print(f"Loading dataset from {args.data}...", file=sys.stderr)
-    dataset = TripleDataset(Path(args.data), vocab, args.tokens_per_role)
+    dataset = TripleDataset(
+        Path(args.data),
+        vocab,
+        args.tokens_per_role,
+        bpe_tokenizer=bpe_tokenizer,
+    )
     print(f"  examples: {len(dataset):,}", file=sys.stderr)
     if len(dataset) == 0:
         raise SystemExit("Empty dataset; preprocess.py may have produced no triples.")
