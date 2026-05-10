@@ -1,6 +1,6 @@
 # Loka: Generative Citation in a Neuro-Symbolic World Model over RDF-Star Knowledge Graphs
 
-**Code:** <https://github.com/EmmaLeonhart/SutraDB> &middot; **Corpus + checkpoints:** <https://huggingface.co/datasets/EmmaLeonhart/loka> (snapshot tags `v3`, `v4`, `v5`) &middot; **Source dataset:** <https://huggingface.co/datasets/philippesaade/wikidata>
+**Code:** <https://github.com/EmmaLeonhart/SutraDB> (engine release `v0.4.0`: <https://github.com/EmmaLeonhart/SutraDB/releases/tag/v0.4.0>) &middot; **Corpus + checkpoints:** <https://huggingface.co/datasets/EmmaLeonhart/loka> (snapshot tags `v3`, `v4`, `v5`, `v6-bpe`) &middot; **Source dataset:** <https://huggingface.co/datasets/philippesaade/wikidata>
 
 ---
 
@@ -98,6 +98,8 @@ It also drops any row whose predicate IRI matches the reserved prefix.
 Any single layer suffices. Three are kept because regressions in one path should not silently allow the model to learn or output system metadata.
 
 ### 3.2 Generative citation as RDF-star reification
+
+A note on what "citation" claims here. At v0, the cited context triples are not selected by the model's internal attention or by a learned retrieval head; they are the rows the inference loop's candidate-predicate selection (§4.4 step 1) conditioned on. The contribution we claim is the *schema* — the data shape that lets a model emit a triple together with a transparent, queryable, post-hoc-auditable record of which curated rows were considered for that prediction — not a learned mapping from prediction to evidence. We treat this as a v0 design choice, not a final position; §6.3 records the gap and §7 sketches the OWL-template and HNSW-decoder paths that would make the link mechanistic. The schema makes the gap auditable: a downstream consumer can SPARQL-star over the `propositionInferredFrom` edges and decide for themselves whether each citation is informative, regardless of what the model "actually" attended to.
 
 When the inference layer accepts a candidate `(S, P)` and emits a predicted object `"X"`, it writes a fixed-shape block:
 
@@ -284,6 +286,16 @@ At threshold 0.4, v4 emits 32/250 candidate predictions; v5 emits a comparable r
 
 - **Citation hallucination is structurally bounded but not zero.** A `propositionInferredFrom` row points at a concrete context triple, which is auditable, but the *choice* of which context triples to cite is heuristic (§4.4 step 1). The model is not actually inspecting these specific triples during prediction; the citation is "the candidate-predicate selection considered these triples." We document this tradeoff as accepted: the schema is honest about what it represents.
 
+### 6.4 What we are *not* claiming, and why we do not report MRR / Hits@k
+
+The dominant evaluation regime in transformer-on-KG completion (KG-BERT, KGT5, et al.) reports MRR and Hits@k against held-out triples on closed benchmarks like FB15k-237 or WN18RR. We do not report these numbers, and we want to be explicit about why — both so the gap is visible and so future work in the regime is well-scoped.
+
+1. **Prediction space, not entity space.** Loka v0 emits *labels*, not entity IRIs. The model produces `"university of halle"` token-by-token, not `<wd:Q156667>`. MRR and Hits@k assume a finite candidate set of entities to rank; we have a vocabulary over English subword pieces (BPE in v6, word-level in v3–v5). The HNSW-as-decoder direction sketched in §7 would close this gap and is a precondition for a meaningful Hits@k number — until then, comparing to a benchmark that ranks entities is category-mistaken, not just unflattering.
+2. **Open-world Wikidata, not closed-world benchmarks.** The 5M-triple slice has no held-out test set in the FB15k sense, and constructing one is non-trivial without leakage: Wikidata is open-world, the corpus is updated continuously, and the same predicate often has many correct values (a city has many `instance of` claims, all valid). The held-out set we *would* construct would be a soft top-k accuracy rather than a hard "correct/incorrect" split.
+3. **What we report instead.** Perplexity (§5.2) is a per-token quantity that says how surprised the model is by the corpus on average; it is a substrate property, not a completion metric. The qualitative comparison (§5.3) is a 50-subject hand-audit; we acknowledge this is anecdotal and is presented as such. The right systematic evaluation, after the entity-decoder lands, is filtered Hits@k against a held-out wikidata snapshot constructed as the symmetric difference between two dump dates.
+
+We treat MRR / Hits@k as *blocked future work*, gated on the entity-decoder, not as a comparison the paper sidesteps. The reproducibility supplement records the held-out construction we would run.
+
 ---
 
 ## 7. Discussion
@@ -300,6 +312,7 @@ Two larger questions are open:
 
 ## References
 
+- SutraDB. *SutraDB / Loka — RDF-star triplestore with native HNSW vector indexing.* GitHub release `v0.4.0`, 2026. https://github.com/EmmaLeonhart/SutraDB/releases/tag/v0.4.0. Apache-2.0.
 - Wikidata Foundation. *Wikidata.* https://www.wikidata.org/. CC0.
 - philippesaade. *philippesaade/wikidata.* Hugging Face dataset, snapshot 2024-09-18. https://huggingface.co/datasets/philippesaade/wikidata. CC0.
 - W3C. *RDF-star and SPARQL-star.* https://w3c.github.io/rdf-star/cg-spec/.
