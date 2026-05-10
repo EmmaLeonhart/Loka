@@ -46,7 +46,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from model import TripleTransformer, ROLE_SPECIAL, ROLE_S, ROLE_P, ROLE_O  # noqa: E402
 from tokenizer import (  # noqa: E402
     PAD_ID, CLS_ID, SEP_S_ID, SEP_P_ID, SEP_O_ID, MASK_ID, UNK_ID,
-    encode,
+    encode as encode_word,
 )
 from preprocess import (  # noqa: E402
     fetch_all_triples,
@@ -151,6 +151,7 @@ def predict_object(
     device,
     per_token_floor=0.05,
     repetition_penalty: float = 3.0,
+    encode_fn=None,
 ):
     """Return (predicted_label, mean_confidence) or None if no usable prediction.
 
@@ -159,9 +160,17 @@ def predict_object(
     `repetition_penalty`. This prevents the model from looping on filler tokens
     like "of"/"and" while still letting it reuse a token if the unpenalised
     distribution strongly demands it.
+
+    `encode_fn`, if provided, is a callable that maps a label string to a list
+    of token IDs (e.g. a BPE tokenizer's encoder). If None, falls back to the
+    word-level regex encoder against `vocab`.
     """
-    s_ids = encode(s_label, vocab)
-    p_ids = encode(p_label, vocab)
+    if encode_fn is not None:
+        s_ids = encode_fn(s_label)
+        p_ids = encode_fn(p_label)
+    else:
+        s_ids = encode_word(s_label, vocab)
+        p_ids = encode_word(p_label, vocab)
     if not s_ids or not p_ids:
         return None
     tokens, roles, attention, masked_positions = build_inference_inputs(
@@ -248,6 +257,13 @@ def main() -> None:
     )
     parser.add_argument("--seed", type=int, default=7)
     parser.add_argument("--device", default=None)
+    parser.add_argument(
+        "--bpe-tokenizer",
+        default=None,
+        help="Optional path to a tokenizer_bpe.json (HuggingFace tokenizers format). "
+             "If provided, encode S/P labels with BPE instead of the word-level vocab. "
+             "Use the same tokenizer that the checkpoint was trained with.",
+    )
     args = parser.parse_args()
 
     random.seed(args.seed)
@@ -282,6 +298,14 @@ def main() -> None:
         f"Loaded {args.checkpoint} ({n_params:,} params, {ckpt['vocab_size']:,} vocab)",
         file=sys.stderr,
     )
+
+    encode_fn = None
+    if args.bpe_tokenizer:
+        from tokenizers import Tokenizer  # type: ignore
+        bpe_tok = Tokenizer.from_file(args.bpe_tokenizer)
+        def encode_fn(text: str) -> list[int]:
+            return bpe_tok.encode(text, add_special_tokens=False).ids
+        print(f"Using BPE tokenizer: {args.bpe_tokenizer}", file=sys.stderr)
 
     print(f"Fetching triples from {args.endpoint}...", file=sys.stderr)
     triples = fetch_all_triples(args.endpoint)
@@ -373,6 +397,7 @@ def main() -> None:
             res = predict_object(
                 model, s_label, p_label, vocab, inv_vocab, tokens_per_role, device,
                 repetition_penalty=args.repetition_penalty,
+                encode_fn=encode_fn,
             )
             if res is None:
                 continue
