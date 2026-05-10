@@ -20,20 +20,18 @@ In strategic order. Top item is the current focus.
 
 5. **Fine-tuning track scaffolding.** `planning/fine-tuning-track.md` defines the parallel near-term track: Qwen 2.5 1.5B-Instruct + QLoRA on the same `triples.txt` format, sharing the `propositionInferredFrom` output schema. Build `training/finetune/`.
 
-6. **Qualitative comparison: v5 (word) vs v6 (BPE) on unicode names.** v6 trained and pinned (final ppl 194.98, not directly comparable to v5's 84.85 because BPE has more mass per position). Run `infer_with_citations.py --bpe-tokenizer training/data/tokenizer_bpe.json` against subjects with names like `Saint-Léger`, `Wikipédia`, `Curt Meyer-Clason` and compare to v5's emissions for the same subjects. This is the actual win condition for the BPE round.
-
-7. **Address Gemini 3 Flash review (v1 post 2378).** Six concrete critiques in `paper/reviews/v1_post2378_review.md`. Highest-signal three for a v2 revision:
+6. **Address Gemini 3 Flash review (v1 post 2378).** Six concrete critiques in `paper/reviews/v1_post2378_review.md`. Highest-signal three for a v2 revision:
    - Cite the SutraDB v0.4.0 release URL more prominently (review called the engine "unpublished").
    - Acknowledge the heuristic-citation framing more directly as a v0 design choice (review §6.3 already does this; tighten in §3 too).
    - Add explicit "future work" framing for standard KG-completion metrics (MRR, Hits@k); justify why we're not in that regime today.
    Then `POST /api/posts/2378/revise` for v2.
 
-8. **Repo rename SutraDB → Loka.** Top of `TODO.md` has the full checklist.
+7. **Repo rename SutraDB → Loka.** Top of `TODO.md` has the full checklist.
 
-9. **World-model cascade-retraction: remove a generated node and all inferences that cite it.** Today the engine has per-triple `DELETE DATA` only — no entity-level cascade, no RDF-star annotation cleanup, no HNSW tombstone flip on the delete path (rebuild required). For the world model this matters because every generated triple carries `propositionInferredFrom <<S P O>>` pointing at the context that informed it; when the user retracts a generated node X, the right semantics are: drop every triple where X is S/P/O, drop the `<<...>>`-quoted annotation rows whose inner triple involves X, and recursively retract any other generated triple whose `propositionInferredFrom` chain dereferences a now-removed triple. (RDFS/OWL inference is out of scope per CLAUDE.md, so this is *only* about model-emitted provenance chains, not symbolic entailment closures.) Expose this two ways:
-   - **MCP tool** (`retract_generated_node` or similar) so an agent can do it programmatically. Accepts an IRI; returns the count + IRIs of triples removed at each cascade depth.
-   - **Sutra Studio action** so a user inspecting a suspect generated triple can click "retract" and see the affected dependency tree before confirming.
-   Engine-side prerequisites surfaced by the audit: (a) a back-reference from inner-triple ID to annotation rows so RDF-star cleanup is O(deg) not O(N), (b) `VectorRegistry::delete` actually called from `execute_delete_data` so the HNSW tombstone path is live, (c) optional new SPARQL+ verb or REST endpoint that takes the cascade root and returns the dependency tree before the delete commits. Cascade scope must be bounded to the reserved provenance namespace — never traverse a non-`http://sutra.dev/provenance/` predicate as a "dependency" (a regular `wdt:P31` edge is data, not derivation).
+8. **World-model cascade-retraction: remove any node — real data or AI-generated — and all generated inferences that cite it disappear.** A node has two kinds of edges leaving it: ordinary data edges (`wdt:P31`, `:hasEmbedding`, etc.) and provenance back-edges from generated triples that cited it (`<<X p o>> sutra-prov:propositionInferredFrom <<source-of-X>>`). Cascade-retraction propagates **only along provenance back-edges**, recursively, regardless of whether the deleted node was real data or model-emitted. So: deleting a real-data node drops the node's own triples *and* every generated triple whose `propositionInferredFrom` chain dereferences any of those rows, transitively. Deleting a generated node does the same plus removes the node's own row. Real data → real data is *not* a dependency: ordinary edges are not derivations. (RDFS/OWL closures stay out of scope per CLAUDE.md; this is purely about provenance bookkeeping.) Engine today supports per-triple `DELETE DATA` only — no entity cascade, no RDF-star annotation cleanup, and `VectorRegistry::delete` is wired but never called from `execute_delete_data` (manual `POST /vectors/rebuild` is the only HNSW cleanup). Surface the cascade twice:
+   - **MCP tool** (`retract_node` — name covers both real and generated cases). Accepts an IRI; returns count + IRIs of triples removed at each cascade depth, and a count of any HNSW tombstones flipped.
+   - **Sutra Studio action**: click a node, see the dependency-tree preview (which generated rows would disappear), confirm.
+   Engine-side prerequisites: (a) back-reference from inner-triple ID to annotation rows so RDF-star cleanup is O(deg) not O(N); (b) `VectorRegistry::delete` actually invoked from the delete path so HNSW tombstones go live; (c) a preview endpoint that takes a root IRI and returns the would-be-deleted set without committing. Cascade traversal must be bounded to the reserved `http://sutra.dev/provenance/` namespace — never follow a regular predicate as if it were a derivation edge.
 
 ---
 
@@ -42,6 +40,7 @@ In strategic order. Top item is the current focus.
 - ✓ v6 trained on BPE tokenizer (queue.md #5 from prior session). 5 epochs, final ppl 194.98. Wall time ~2.5h with one long thermal/sleep stall in epoch 4.
 - ✓ v6 pushed to HF as `EmmaLeonhart/loka` tag `v6-bpe` (the `v6` tag had been created by an earlier run before v6.pt existed). `MODEL.json` bumped to v6 with BPE tokenizer pinned alongside vocab.
 - ✓ `tools/hf_snapshot.py` taught about v6.pt + BPE files (`tokenizer_bpe.json`, `vocab_bpe.json`).
+- ✓ v5 vs v6 qualitative comparison on unicode-name subjects (`tools/compare_v5_v6.py` + DEVLOG entry). Findings: v6 preserves accents (v5 strips them at the regex stage), pulls v5's no-prediction holes off the floor for identifier-shaped predicates, but a per-token-floor decoder bug truncates BPE date emissions to just `"+"`. Decoder fix is the next quality lever.
 
 ## Done (2026-05-09 session)
 

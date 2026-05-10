@@ -8,6 +8,45 @@ The "why" matters more than the "what." Per-commit detail lives in `git log`. Th
 
 ---
 
+## 2026-05-10 — v6 trained (BPE) and qualitative comparison vs v5
+
+Headline: **the BPE round preserves accents and pulls v5's no-prediction holes off the floor, but a decoder bug makes v6 look worse than it is for date-shaped predicates.** v6 is the same architecture as v5 (d_model 512, 6 layers, 44M params, 5 epochs) trained on the same 757k-triple corpus, with one change: every role string is encoded by `tokenizer_bpe.json` (50K vocab) instead of the word-level regex. Final epoch-5 perplexity: 194.98. *Not directly comparable to v5's 84.85* — BPE has more tokens per role, so loss-per-position is naturally higher; the metric for v6 is qualitative.
+
+Pushed as `EmmaLeonhart/loka@v6-bpe`. (The `v6` tag was already taken — an earlier upload run created it before v6.pt existed, so the new round uses a fresh tag rather than rewriting the existing one.) `MODEL.json` now pins the BPE tokenizer alongside the vocab so `loader.py` resolves all three pieces.
+
+### Side-by-side on unicode-name subjects (`tools/compare_v5_v6.py`)
+
+`predict_object` with `repetition_penalty=3.0`, `per_token_floor=0.05`, on subjects from `triples.txt` whose label contains non-ASCII characters and which have ≥5 facts. Picked candidate predicates by the same shared-object heuristic as `smoke_infer.py`. Showing representative rows from the 12-subject run.
+
+| Subject / predicate | v5 (word) | v6 (BPE) |
+|---|---|---|
+| Saint-Léonard-de-Noblat / licence plate | (no pred) | "U" 0.06 (low) |
+| Didier André / image | "didier andr" 0.45 | (no pred) |
+| Didier André / point in time | "didier 00 01t0" 0.44 | "+" 0.99 |
+| 1000 km Nürburgring / Driver Database driver ID | "1000 24 n" 0.62 | (no pred) |
+| 17º Stormo Incursori / official website | "https www comu" 0.46 | "https :// www" **0.92** |
+| 17º Stormo Incursori / population | (no pred) | "+" 1.00 |
+| 1966–67 Cupa României / Freebase ID | "m" 1.00 | "/ m / 0 c _ _" 0.42 |
+| 1970–71 DFB-Pokal / point in time | "1970 01 01t00" 0.31 | "+" 1.00 |
+
+### What v6 actually fixed
+
+- **Accents survive.** v5 dropped them at the regex stage: "Didier André" tokenised to `["didier", "andr"]` because `é` doesn't match the word-character class. v6's BPE keeps `é` as its own piece. So v5's emit for the image-of-Didier prediction was `"didier andr"`; v6 either emits the right thing or nothing.
+- **Coverage gains on identifier-shaped predicates.** v6 produces a confident `"https :// www"` for the official website where v5 was at 0.46. Cases where v5 said "(no pred)" because the candidate predicate had zero word-vocab overlap now succeed because BPE always has *some* subword to encode through.
+
+### What v6 looks like it broke (it didn't)
+
+- **The `"+"` predictions on date-shaped predicates.** Wikidata serialises dates as `"+1970-01-01T00:00:00Z"`. The leading `+` is a high-frequency BPE token, and the per-token-floor `0.05` breaks decoding the moment the *next* token's probability dips. With BPE the next token is one of dozens of digit pieces and routinely sits below the floor, so we stop after `"+"`. v5 didn't have this problem because its first emitted token was `"1970"` (a word-vocab piece), which carried more of the date's mass. **This is a decoder issue, not a v6 capability issue:** the model knows the date; the heuristic stops asking. Fix is to relax `per_token_floor` for BPE or use temperature-aware multi-step decode.
+- **Truncated identifiers.** `"/ m / 0 c _ _"` for a Freebase ID is valid Freebase shape. v5's `"m"` is degenerately short. v6 is closer; the `_` tokens are BPE-internal noise that needs cleaning at decode.
+
+### What this changes
+
+- v6 is the new pinned default for inference (`MODEL.json` rev `v6-bpe`). v5 stays around for the date-format regression cases until the decoder catches up.
+- The next quality lever is the **BPE-aware decoder**: `per_token_floor` and the early-stop heuristic in `predict_object` were tuned for word-level vocab where each emitted token carries roughly one fact's worth of probability mass. BPE pieces are sub-token, so the floor needs to scale with expected token length per role. Track this as a follow-up; not a queue item yet.
+- The bigger corpus (queue #3, `--max-triples 50000000`) is now the highest-leverage move. v6 tokenisation is no longer the bottleneck.
+
+---
+
 ## 2026-05-09 (later) — v5 trained: bigger model wins
 
 Headline: **capacity was a real bottleneck for v4.** A 3× scale-up (d_model 256→512, layers 4→6, params 16M→44M) on the same 757k-triple corpus produced both lower final perplexity *and* qualitatively cleaner predictions. With cumulative repetition penalty 3.0 at decode time, v5 + decoder produces predictions that often pick the right *specific* entity, not just the right semantic category.

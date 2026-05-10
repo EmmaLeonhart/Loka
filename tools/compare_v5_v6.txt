@@ -1,0 +1,44 @@
+Loading v5 (word-level) ...
+C:\Users\Immanuelle\Documents\Github\SutraDB\training\model.py:45: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  self.encoder = nn.TransformerEncoder(layer, num_layers)
+Loading v6 (BPE) ...
+Scanning C:\Users\Immanuelle\Documents\Github\SutraDB\training\data\triples.txt for unicode-name subjects ...
+  2,499 unicode subjects with >=5 facts
+
+====================================================================================================
+subject / predicate                              | v5 (word)              | v6 (BPE)              
+====================================================================================================
+Saint-Léonard-de-Noblat / licence plate          | (no pred)              | U              0.059 (low)
+  / local dialing code                           | (no pred)              | 07             0.126 (low)
+  / UN/LOCODE                                    | (no pred)              | IT             0.192 (low)
+----------------------------------------------------------------------------------------------------
+Curt Mündel                                      | (no candidate predicates)
+Toussaint-François Rallier du Baty               | (no candidate predicates)
+Didier André / number of matc                    | 33 3 1 2 1     0.158 (low) | + 2 - 3 -      0.324  
+  / image                                        | didier andr    0.449   | (no pred)             
+  / point in time                                | didier 00 01t0 0.441   | +              0.987  
+----------------------------------------------------------------------------------------------------
+Zentral-Dombauverein zu Köln v / language of w   | (no pred)              | (no pred)             
+----------------------------------------------------------------------------------------------------
+Kaufingerstraße (München)                        | (no candidate predicates)
+São Martinho das Moitas                          | (no candidate predicates)
+.бг / Commons catego                             | (no pred)              | (no pred)             
+  / point in time                                | (no pred)              | +              0.991  
+  / Google Knowledge Graph ID                    | (no pred)              | / g / 121 _ 5  0.431  
+----------------------------------------------------------------------------------------------------
+1000 km Nürburgring / number of matc             | 33             0.253 (low) | + 2 - 3 -      0.326  
+  / date of birth                                | (no pred)              | +              0.998  
+  / Driver Database driver ID                    | 1000 24 n      0.615   | (no pred)             
+----------------------------------------------------------------------------------------------------
+17º Stormo Incursori / population                | (no pred)              | +              1.000  
+  / official website                             | https www comu 0.460   | https :// www  0.919  
+  / postal code                                  | (no pred)              | (no pred)             
+----------------------------------------------------------------------------------------------------
+1966–67 Cupa României / Freebase ID              | m              1.000   | / m / 0 c _ _  0.424  
+  / point in time                                | 1966 00 00t00  0.227 (low) | +              0.996  
+  / Encyclopædia Universalis ID                  | 1966 67 de de  0.177 (low) | (no pred)             
+----------------------------------------------------------------------------------------------------
+1970–71 DFB-Pokal / point in time                | 1970 01 01t00  0.311   | +              0.996  
+  / start time                                   | (no pred)              | +              0.958  
+  / end time                                     | https          0.115 (low) | + 2012 - 00 -  0.419  
+----------------------------------------------------------------------------------------------------
