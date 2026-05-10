@@ -1,21 +1,26 @@
 {
-  "name": "loka-wikidata-v5",
-  "version": "v5",
-  "released": "2026-05-09",
+  "name": "loka-wikidata-v6",
+  "version": "v6",
+  "released": "2026-05-10",
   "repo_id": "EmmaLeonhart/loka",
   "repo_type": "dataset",
-  "revision": "v5",
+  "revision": "v6-bpe",
   "files": {
     "checkpoint": {
-      "in_repo": "checkpoints/wikidata_v5.pt",
-      "local": "training/checkpoints/wikidata_v5.pt",
+      "in_repo": "checkpoints/wikidata_v6.pt",
+      "local": "training/checkpoints/wikidata_v6.pt",
       "size_mb": 178.2
     },
     "vocab": {
-      "in_repo": "corpus/vocab.json",
-      "local": "training/data/vocab.json",
+      "in_repo": "corpus/vocab_bpe.json",
+      "local": "training/data/vocab_bpe.json",
+      "size_mb": 1.0
+    },
+    "tokenizer_bpe": {
+      "in_repo": "corpus/tokenizer_bpe.json",
+      "local": "training/data/tokenizer_bpe.json",
       "size_mb": 1.0
     }
   },
-  "notes": "Word-level vocab. Trained on the cleaned 5M-triple Wikidata slice (philippesaade/wikidata via tools/wikidata_hf_import.py). Best perplexity to date — see DEVLOG.md for the v3 -> v4 -> v5 history. The v6 (BPE-tokenized, 50K vocab) round is queued but not yet trained; bump this file when v6 ships."
+  "notes": "BPE-tokenized round (50K vocab). Same architecture as v5 (d_model 512, 6 layers, 44M params), trained 5 epochs on the 757k-triple Wikidata slice with the BPE tokenizer added in 8252f13. Final epoch-5 perplexity 194.98 — not directly comparable to v5's 84.85 because BPE has more tokens per role (more mass to predict per position). The point of v6 is qualitative: tokenizer now handles unicode names like 'Saint-Léger' and 'Wikipédia' as proper subword pieces instead of dropping accents. Tag is `v6-bpe` (not `v6`) because an empty `v6` tag was created by an earlier upload run before v6.pt existed; the newer upload uses a fresh tag rather than rewriting the existing one. The vocab pinned here is the BPE vocab; the BPE tokenizer JSON is also pinned so inference scripts can resolve it via `loader._resolve('tokenizer_bpe')`."
 }

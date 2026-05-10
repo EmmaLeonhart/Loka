@@ -18,9 +18,9 @@ In strategic order. Top item is the current focus.
 
 4. **Live `--post` end-to-end test of generative citation.** Attempted with `--max-subjects 30 --post`; script hung 7 min with no output, indicating engine bug #1 triggered during the POST phase. Re-attempt at lower scope after #1 is fixed.
 
-5. **Train v6 with BPE tokenizer.** d_model 512, 6 layers, 5 epochs, but on the BPE-vocabbed corpus. CLI is wired (`021fd4c` adds `--bpe-tokenizer` to both `train.py` and `infer_with_citations.py`); just needs a fired training run. Compare prediction quality on the unicode-name cases (`Saint-Léger`, `Wikipédia`).
+5. **Fine-tuning track scaffolding.** `planning/fine-tuning-track.md` defines the parallel near-term track: Qwen 2.5 1.5B-Instruct + QLoRA on the same `triples.txt` format, sharing the `propositionInferredFrom` output schema. Build `training/finetune/`.
 
-6. **Fine-tuning track scaffolding.** `planning/fine-tuning-track.md` defines the parallel near-term track: Qwen 2.5 1.5B-Instruct + QLoRA on the same `triples.txt` format, sharing the `propositionInferredFrom` output schema. Build `training/finetune/`.
+6. **Qualitative comparison: v5 (word) vs v6 (BPE) on unicode names.** v6 trained and pinned (final ppl 194.98, not directly comparable to v5's 84.85 because BPE has more mass per position). Run `infer_with_citations.py --bpe-tokenizer training/data/tokenizer_bpe.json` against subjects with names like `Saint-Léger`, `Wikipédia`, `Curt Meyer-Clason` and compare to v5's emissions for the same subjects. This is the actual win condition for the BPE round.
 
 7. **Address Gemini 3 Flash review (v1 post 2378).** Six concrete critiques in `paper/reviews/v1_post2378_review.md`. Highest-signal three for a v2 revision:
    - Cite the SutraDB v0.4.0 release URL more prominently (review called the engine "unpublished").
@@ -31,6 +31,12 @@ In strategic order. Top item is the current focus.
 8. **Repo rename SutraDB → Loka.** Top of `TODO.md` has the full checklist.
 
 ---
+
+## Done (2026-05-10 session)
+
+- ✓ v6 trained on BPE tokenizer (queue.md #5 from prior session). 5 epochs, final ppl 194.98. Wall time ~2.5h with one long thermal/sleep stall in epoch 4.
+- ✓ v6 pushed to HF as `EmmaLeonhart/loka` tag `v6-bpe` (the `v6` tag had been created by an earlier run before v6.pt existed). `MODEL.json` bumped to v6 with BPE tokenizer pinned alongside vocab.
+- ✓ `tools/hf_snapshot.py` taught about v6.pt + BPE files (`tokenizer_bpe.json`, `vocab_bpe.json`).
 
 ## Done (2026-05-09 session)
 
