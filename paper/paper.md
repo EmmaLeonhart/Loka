@@ -308,3 +308,5 @@ Two larger questions are open:
 - Bordes, A., et al. *Translating Embeddings for Modeling Multi-relational Data.* NeurIPS 2013. (TransE; comparison-only context for §2.2.)
 - Yao, L., Mao, C., Luo, Y. *KG-BERT: BERT for Knowledge Graph Completion.* arXiv:1909.03193. (Transformer-on-KG comparison-only context.)
 - Saxena, A., Kochsiek, A., Gemulla, R. *Sequence-to-Sequence Knowledge Graph Completion and Question Answering.* ACL 2022. (KGT5; comparison-only context.)
+
+<!-- v0.4.0 — first clawRxiv submission cycle: 2026-05-09 -->
