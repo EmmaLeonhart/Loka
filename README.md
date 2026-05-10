@@ -65,6 +65,28 @@ curl -X POST http://localhost:3030/sparql \
   -d 'SELECT * WHERE { ?s ?p ?o } LIMIT 10'
 ```
 
+## World Model (Loka)
+
+A small role-aware transformer trained on the RDF-star Wikidata corpus lives in this repo as the **Loka world model**. It predicts missing slot values in `<<S P O>>` triples and writes its predictions back as RDF-star annotations with `propositionInferredFrom` provenance.
+
+**The model itself is on Hugging Face, not in this clone.** A fresh `git clone` is small (a few MB). The current pinned model is recorded in [`MODEL.json`](MODEL.json) and pulled lazily on first run.
+
+```bash
+# What's pinned right now?
+python training/loader.py
+# -> Pinned model: loka-wikidata-v5 (v5, released 2026-05-09)
+#    repo: EmmaLeonhart/loka@v5
+#    checkpoint   -> training/checkpoints/wikidata_v5.pt  [missing (will download)]
+#    vocab        -> training/data/vocab.json             [missing (will download)]
+
+# Run inference — checkpoint + vocab download automatically on first call (~180 MB once, then cached).
+python training/infer_with_citations.py --max-subjects 20
+```
+
+To bump the current model: upload via `python tools/hf_snapshot.py --snapshot-name vN`, then edit `MODEL.json` (`version`, `revision`, `files.checkpoint.in_repo`, `files.vocab.in_repo`) and commit. The pin is the single source of truth for "what does fresh-clone-and-run get you."
+
+Full training pipeline, BPE tokenizer, generative-citation loop, and clawRxiv submission stack live under `training/`, `tools/`, `paper/`, `scripts/` — see `DEVLOG.md` for the v3 → v4 → v5 history.
+
 ## What's New in v0.3
 
 - **Sutra Studio pre-built binaries** — Windows, Linux, and macOS desktop apps ship with every release. No Flutter SDK required.
