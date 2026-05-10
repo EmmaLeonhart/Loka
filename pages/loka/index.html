@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Loka — Neuro-Symbolic World Model on RDF-Star">
+<meta property="og:description" content="Generative citation in a two-system world model. Explicit memory (RDF-star triplestore) + implicit memory (transformer trained on the same triples) sharing one query language.">
+<meta property="og:url" content="https://sutradb.org/loka/">
+<meta name="description" content="Loka is the world-model layer built on top of the SutraDB engine. A small role-aware transformer trained on label-substituted RDF-star triples, producing predictions that land back in the store as RDF-star annotations with propositionInferredFrom citation edges.">
+<link rel="canonical" href="https://sutradb.org/loka/">
+<title>Loka — Neuro-Symbolic World Model</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #0d1117;
+  color: #c9d1d9;
+  line-height: 1.6;
+  padding: 0 0 60px;
+}
+.container { max-width: 920px; margin: 0 auto; padding: 0 24px; }
+nav.top { background: #161b22; border-bottom: 1px solid #30363d; padding: 14px 24px; }
+nav.top a { color: #8b949e; margin-right: 18px; text-decoration: none; font-size: 0.9rem; }
+nav.top a:hover { color: #79c0ff; }
+nav.top a.brand { color: #58a6ff; font-weight: 600; }
+header.hero { padding: 64px 24px 40px; text-align: center; border-bottom: 1px solid #21262d; margin-bottom: 40px; }
+header.hero h1 { font-size: 2.4rem; color: #e6edf3; margin-bottom: 10px; letter-spacing: -0.5px; }
+header.hero h1 .accent { color: #58a6ff; }
+header.hero .tagline { color: #8b949e; font-size: 1.05rem; max-width: 620px; margin: 0 auto; }
+header.hero .tagline strong { color: #c9d1d9; }
+.badges { margin-top: 22px; }
+.badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; margin: 0 4px; background: #1f2937; color: #79c0ff; border: 1px solid #2d4a6f; }
+h2 { color: #e6edf3; margin-top: 40px; margin-bottom: 12px; font-size: 1.4rem; padding-bottom: 6px; border-bottom: 1px solid #21262d; }
+h3 { color: #79c0ff; margin-top: 24px; margin-bottom: 8px; font-size: 1.05rem; }
+p { margin-bottom: 14px; }
+a { color: #58a6ff; }
+code, pre { font-family: 'Consolas', 'Courier New', monospace; }
+code { background: #161b22; padding: 1px 6px; border-radius: 3px; font-size: 0.92em; color: #d2a8ff; }
+pre { background: #161b22; border: 1px solid #21262d; padding: 14px 18px; border-radius: 6px; overflow-x: auto; margin: 16px 0; font-size: 0.88rem; line-height: 1.5; }
+pre code { background: none; padding: 0; color: #c9d1d9; }
+table { width: 100%; border-collapse: collapse; margin: 14px 0; }
+th, td { padding: 8px 12px; border: 1px solid #30363d; text-align: left; vertical-align: top; }
+th { background: #161b22; color: #79c0ff; font-weight: 600; }
+.callout { background: #1c2128; border-left: 3px solid #58a6ff; padding: 14px 18px; margin: 18px 0; border-radius: 4px; }
+.callout strong { color: #79c0ff; }
+.diagram { background: #0a0d12; border: 1px solid #21262d; padding: 18px; border-radius: 6px; margin: 20px 0; font-family: 'Consolas', monospace; white-space: pre; font-size: 0.82rem; line-height: 1.4; color: #c9d1d9; overflow-x: auto; }
+ul { margin: 0 0 16px 24px; }
+li { margin-bottom: 6px; }
+.meta { color: #6e7681; font-size: 0.85rem; }
+.cta { display: inline-block; background: #1f6feb; color: white; padding: 10px 22px; border-radius: 6px; text-decoration: none; margin: 8px 6px 0 0; font-size: 0.95rem; }
+.cta:hover { background: #388bfd; }
+.cta.secondary { background: #1c2128; color: #c9d1d9; border: 1px solid #30363d; }
+.cta.secondary:hover { background: #21262d; }
+</style>
+</head>
+<body>
+
+<nav class="top">
+  <a href="/" class="brand">Loka</a>
+  <a href="/loka/">World Model</a>
+  <a href="/history/">History</a>
+  <a href="/theory/">Theory</a>
+  <a href="/sparql/">SPARQL+</a>
+  <a href="/rdf/">RDF-star</a>
+  <a href="/owl/">OWL</a>
+  <a href="https://huggingface.co/datasets/EmmaLeonhart/loka">HF: Loka</a>
+  <a href="https://github.com/EmmaLeonhart/SutraDB">GitHub</a>
+</nav>
+
+<header class="hero">
+  <h1><span class="accent">Loka</span> &mdash; a neuro-symbolic world model</h1>
+  <p class="tagline">
+    Two systems sharing one query language. <strong>Explicit memory</strong> (an RDF-star triplestore, exact answers) plus
+    <strong>implicit memory</strong> (a transformer trained on the same triples, plausible answers). Generated facts
+    write back into the store as RDF-star annotations with <code>propositionInferredFrom</code> citation edges.
+  </p>
+  <div class="badges">
+    <span class="badge">RDF-star</span>
+    <span class="badge">SPARQL+ &amp; SPARQL-star</span>
+    <span class="badge">Self-citing inference</span>
+    <span class="badge">v0.4.0 — World-model release</span>
+  </div>
+  <div style="margin-top: 28px;">
+    <a href="https://huggingface.co/datasets/EmmaLeonhart/loka" class="cta">Pull from Hugging Face</a>
+    <a href="https://github.com/EmmaLeonhart/SutraDB/releases/latest" class="cta secondary">Engine release</a>
+    <a href="/history/" class="cta secondary">Full history</a>
+  </div>
+</header>
+
+<div class="container">
+
+<h2>The pivot in one paragraph</h2>
+<p>
+  Loka started as <strong>SutraDB</strong>, a lean RDF-star triplestore with native vector indexing. Over time the <em>purpose</em>
+  shifted: the engine is now one half of a neuro-symbolic world-model engine. The other half is a small role-aware
+  transformer trained from scratch on the same triples (with English labels substituted for opaque QIDs/PIDs). Both
+  expose the same SPARQL+ interface. A query reaches both systems and the caller doesn't pick which one answered &mdash;
+  except via <code>propositionInferredFrom</code> RDF-star edges that thread every model-generated triple back to the
+  context that informed it. The engine retains the SutraDB name; the project as a whole is becoming Loka.
+</p>
+
+<h2>The two-system loop</h2>
+<div class="diagram">┌───────────────────┐
+│ Curated triples   │  (Wikidata, philippesaade/wikidata HF parquet)
+│   (RDF-star)      │
+└─────────┬─────────┘
+          ▼
+┌───────────────────┐         ┌──────────────────────┐
+│ SutraDB store     │ ──────► │ Training corpus      │
+│   (.sdb file)     │ SPARQL+ │  (label-substituted) │
+│                   │ SPARQL- │                      │
+│                   │  star   │                      │
+└─────────▲─────────┘         └──────────┬───────────┘
+          │                              ▼
+          │                  ┌──────────────────────┐
+          │                  │ Role-aware           │
+          │                  │ transformer          │
+          │                  │  (16M / 44M params)  │
+          │                  └──────────┬───────────┘
+          │                             ▼
+          │                  ┌──────────────────────┐
+          │                  │ Inference loop       │
+          │                  │  + cumulative rep.   │
+          │                  │    penalty decoder   │
+          │                  │  + RDF-star write-   │
+          │                  │    back to store     │
+          │                  └──────────┬───────────┘
+          │                             ▼
+          │                  ┌──────────────────────┐
+          └──────────────────┤ Generated triples +  │
+                             │ propositionInferred  │
+                             │ From edges           │
+                             └──────────────────────┘</div>
+
+<p>
+  The loop is <strong>closed</strong>. Generated triples land in the store flagged <code>propositionGenerated true</code>.
+  The next training-corpus extraction's SPARQL-star FILTER excludes them, so the model never trains on its own output.
+  Inference can be re-run repeatedly to grow the citation graph without polluting the training distribution.
+</p>
+
+<h2>Generative citation</h2>
+<p>
+  When the inference layer accepts a candidate <code>(S, P)</code> and emits a predicted object <code>"X"</code>, it
+  writes a fixed-shape annotation block. The block's <em>subject</em> is the quoted generated triple. Its objects
+  include the metadata predicates plus one or more <code>propositionInferredFrom</code> edges whose object is
+  <em>another</em> quoted triple &mdash; a cited piece of context the prediction was conditioned on:
+</p>
+
+<pre><code>&lt;S&gt; &lt;P&gt; "X" .
+&lt;&lt;S P "X"&gt;&gt;  prov:propositionGenerated     "true"^^xsd:boolean .
+&lt;&lt;S P "X"&gt;&gt;  prov:propositionGeneratedBy   "wikidata_v5" .
+&lt;&lt;S P "X"&gt;&gt;  prov:propositionConfidence    "0.43"^^xsd:decimal .
+&lt;&lt;S P "X"&gt;&gt;  prov:propositionInferredFrom  &lt;&lt;S existing_p1 existing_o1&gt;&gt; .
+&lt;&lt;S P "X"&gt;&gt;  prov:propositionInferredFrom  &lt;&lt;S existing_p2 existing_o2&gt;&gt; .
+   ...one per cited context triple (default 10)
+</code></pre>
+
+<p>
+  <code>prov:</code> expands to <code>http://sutra.dev/provenance/</code>. This whole namespace is <strong>reserved</strong>:
+  the world model never sees, proposes, or emits one of its predicates. Three independent guards enforce that &mdash; corpus
+  stripping at extraction time, candidate-predicate filtering during inference, and an emit-time guard before each primary
+  triple is written. Verbose names (<code>propositionGeneratedFrom</code>, not <code>generatedFrom</code>) make the rule
+  scannable by humans and collision-resistant against real-world predicates.
+</p>
+
+<div class="callout">
+  <strong>Why hallucinated citations aren't a blocker.</strong>
+  A fabricated <code>propositionInferredFrom</code> edge is still a <em>transparent</em> RDF-star row pointing at a
+  concrete context triple &mdash; auditable, filterable like any generated triple, often informative about what the
+  model thinks the reasoning is. The schema does the work; we don't need elaborate guards.
+</div>
+
+<h2>Cumulative repetition penalty</h2>
+<p>
+  Masked-S/P/O training produces models that "know" the answer category (university, museum, https-URL) but degenerate
+  during greedy decoding into fillers like <code>of of of of</code> or <code>museum museum</code>. We don't fix this at
+  training time. We fix it at decode time:
+</p>
+<p>
+  Every emission of token <em>t</em> increments a per-token counter. At each later masked position we divide the logit
+  of every emitted token by <code>repetition_penalty<sup>count</sup></code>. Three emissions of <code>of</code> at penalty 3.0
+  multiply its divisor by 27, reliably dropping it below the per-token floor and breaking the cascade. A genuinely-needed
+  re-use can still win on its first repeat; only loops collapse.
+</p>
+
+<h3>Same checkpoint, different decoder</h3>
+<table>
+<thead><tr><th>Subject / predicate</th><th>No penalty</th><th>Cumulative penalty 3.0</th></tr></thead>
+<tbody>
+<tr><td><code>Comtesse de Die / educated at</code></td><td><code>university of of of of of of of</code></td><td><strong><code>university of halle</code></strong> (correctly identifies Halle, where she studied)</td></tr>
+<tr><td><code>canton of Romilly / Commons category</code></td><td><code>canton of of sur sur</code></td><td><strong><code>canton of</code></strong> (clean truncation)</td></tr>
+<tr><td><code>Zudar / area</code></td><td>(didn't pass threshold)</td><td><strong><code>33</code></strong> (numeric — model picked up that area is a number)</td></tr>
+<tr><td><code>Abbas Mirza / has works in collection</code></td><td><code>1 http www w3 org 2001 xmlschema decimal</code></td><td><strong><code>metropolitan museum of museum</code></strong> (the Met genuinely holds Abbas Mirza pieces)</td></tr>
+</tbody>
+</table>
+
+<h2>Trained checkpoints</h2>
+<p>
+  All checkpoints train on a 5,055,385-triple slice of Wikidata streamed from <a href="https://huggingface.co/datasets/philippesaade/wikidata">philippesaade/wikidata</a>,
+  with English labels substituted for QIDs/PIDs. Pull a snapshot from
+  <a href="https://huggingface.co/datasets/EmmaLeonhart/loka">huggingface.co/datasets/EmmaLeonhart/loka</a>:
+</p>
+<table>
+<thead><tr><th>Model</th><th>Architecture</th><th>Final ppl</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td><code>wikidata_v3.pt</code></td><td>16M params (256 / 4 layers)</td><td>53.43</td><td>Pre-cleanup corpus &mdash; misleadingly low ppl from memorising datatype-suffix tokens.</td></tr>
+<tr><td><code>wikidata_v4.pt</code></td><td>16M params (256 / 4 layers)</td><td>92.48</td><td>Cleaned corpus. Higher ppl, qualitatively much better content.</td></tr>
+<tr><td><code>wikidata_v5.pt</code></td><td><strong>44M params (512 / 6 layers)</strong></td><td><strong>84.85</strong></td><td>Bigger model. Beats v4's final ppl by epoch 4. Picks specific real-world tokens (<code>halle</code>, <code>33</code>, <code>kosmos 116</code>) where v4 fell back to common connectors.</td></tr>
+</tbody>
+</table>
+
+<pre><code>from huggingface_hub import hf_hub_download
+
+ckpt = hf_hub_download(
+    repo_id="EmmaLeonhart/loka",
+    repo_type="dataset",
+    filename="checkpoints/wikidata_v5.pt",
+    revision="v5",
+)
+</code></pre>
+
+<h2>Run the full loop</h2>
+<pre><code># 1. Engine
+cargo build --release -p sutra-cli
+./target/release/sutra serve --port 3030 &
+
+# 2. Pull the prebuilt corpus snapshot (or rebuild via tools/wikidata_hf_import.py)
+git clone https://huggingface.co/datasets/EmmaLeonhart/loka
+
+# 3. Generative-citation inference (v5 + cumulative penalty)
+python training/infer_with_citations.py \
+    --checkpoint training/checkpoints/wikidata_v5.pt \
+    --vocab training/data/vocab.json \
+    --endpoint http://localhost:3030 \
+    --max-subjects 50 \
+    --confidence 0.4 \
+    --repetition-penalty 3.0 \
+    --output training/data/generated_v5.nt
+# add --post to write predictions back into the store</code></pre>
+
+<h2>Read more</h2>
+<ul>
+<li><a href="/history/">Full development history</a> &mdash; the pivot, the corpus rebuild, every checkpoint, every dead end.</li>
+<li><a href="https://github.com/EmmaLeonhart/SutraDB/blob/main/planning/world-model-thesis.md">world-model-thesis.md</a> &mdash; canonical vision document.</li>
+<li><a href="https://github.com/EmmaLeonhart/SutraDB/blob/main/planning/fine-tuning-track.md">fine-tuning-track.md</a> &mdash; parallel near-term track admitting Qwen-style fine-tuning.</li>
+<li><a href="https://github.com/EmmaLeonhart/SutraDB/blob/main/paper/paper.md">paper draft</a> &mdash; <em>Loka: Generative Citation in a Neuro-Symbolic World Model over RDF-Star Knowledge Graphs.</em></li>
+<li><a href="https://huggingface.co/datasets/EmmaLeonhart/loka">Hugging Face dataset</a> &mdash; corpus + checkpoints with snapshot tags.</li>
+</ul>
+
+<p class="meta" style="margin-top: 40px; padding-top: 16px; border-top: 1px solid #21262d;">
+The engine remains <strong>SutraDB</strong> in code (<code>sutra-core</code>, <code>sutra-hnsw</code>, etc.). The project &mdash;
+engine + corpus + transformer + inference layer &mdash; is <strong>Loka</strong>.
+</p>
+
+</div>
+</body>
+</html>
