@@ -37,6 +37,8 @@ REPO_NAME = "loka"
 CORPUS_FILES = [
     ("corpus/triples.txt", "training/data/triples.txt"),
     ("corpus/vocab.json", "training/data/vocab.json"),
+    ("corpus/vocab_bpe.json", "training/data/vocab_bpe.json"),
+    ("corpus/tokenizer_bpe.json", "training/data/tokenizer_bpe.json"),
     ("corpus/generated_v4_test.nt", "training/data/generated_v4_test.nt"),
     ("corpus/generated_v4_repcumul.nt", "training/data/generated_v4_repcumul.nt"),
 ]
@@ -45,6 +47,7 @@ MODEL_FILES = [
     ("checkpoints/wikidata_v3.pt", "training/checkpoints/wikidata_v3.pt"),
     ("checkpoints/wikidata_v4.pt", "training/checkpoints/wikidata_v4.pt"),
     ("checkpoints/wikidata_v5.pt", "training/checkpoints/wikidata_v5.pt"),
+    ("checkpoints/wikidata_v6.pt", "training/checkpoints/wikidata_v6.pt"),
 ]
 
 # Default folder mappings. The local path is overridable via --sutra-data-path
