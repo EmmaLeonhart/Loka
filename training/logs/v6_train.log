@@ -1,0 +1,14 @@
+Device: cuda
+Vocabulary: 50,000 tokens
+BPE tokenizer loaded: training/data/tokenizer_bpe.json
+Loading dataset from training/data/triples.txt...
+  examples: 757,592
+C:\Users\Immanuelle\Documents\Github\SutraDB\training\model.py:45: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  self.encoder = nn.TransformerEncoder(layer, num_layers)
+Model parameters: 44,531,712
+epoch   1/5  loss 7.9736  ppl 2903.27  (1095.4s, 11838 batches)
+epoch   2/5  loss 5.6234  ppl 276.84  (1098.4s, 11838 batches)
+epoch   3/5  loss 5.4472  ppl 232.12  (1101.8s, 11838 batches)
+epoch   4/5  loss 5.3361  ppl 207.71  (5342.8s, 11838 batches)
+epoch   5/5  loss 5.2729  ppl 194.98  (1093.4s, 11838 batches)
+Saved checkpoint to training/checkpoints/wikidata_v6.pt
