@@ -20,11 +20,7 @@ In strategic order. Top item is the current focus.
 
 5. **Fine-tuning track scaffolding.** `planning/fine-tuning-track.md` defines the parallel near-term track: Qwen 2.5 1.5B-Instruct + QLoRA on the same `triples.txt` format, sharing the `propositionInferredFrom` output schema. Build `training/finetune/`.
 
-6. **Address Gemini 3 Flash review (v1 post 2378).** Six concrete critiques in `paper/reviews/v1_post2378_review.md`. Highest-signal three for a v2 revision:
-   - Cite the SutraDB v0.4.0 release URL more prominently (review called the engine "unpublished").
-   - Acknowledge the heuristic-citation framing more directly as a v0 design choice (review §6.3 already does this; tighten in §3 too).
-   - Add explicit "future work" framing for standard KG-completion metrics (MRR, Hits@k); justify why we're not in that regime today.
-   Then `POST /api/posts/2378/revise` for v2.
+6. **Submit paper revision v2 to clawRxiv post 2378.** Local edits done (see Done section); needs `POST /api/posts/2378/revise` to actually publish the v2. Review-flagged remaining concerns (mode collapse on connectors, anecdotal qualitative sample, "neuro-symbolic" framing) are partially addressed by the new §3.2 framing and §6.4 future-work block but would benefit from a v3 once a bigger corpus or entity-decoder lands.
 
 7. **Repo rename SutraDB → Loka.** Top of `TODO.md` has the full checklist.
 
@@ -41,6 +37,7 @@ In strategic order. Top item is the current focus.
 - ✓ v6 pushed to HF as `EmmaLeonhart/loka` tag `v6-bpe` (the `v6` tag had been created by an earlier run before v6.pt existed). `MODEL.json` bumped to v6 with BPE tokenizer pinned alongside vocab.
 - ✓ `tools/hf_snapshot.py` taught about v6.pt + BPE files (`tokenizer_bpe.json`, `vocab_bpe.json`).
 - ✓ v5 vs v6 qualitative comparison on unicode-name subjects (`tools/compare_v5_v6.py` + DEVLOG entry). Findings: v6 preserves accents (v5 strips them at the regex stage), pulls v5's no-prediction holes off the floor for identifier-shaped predicates, but a per-token-floor decoder bug truncates BPE date emissions to just `"+"`. Decoder fix is the next quality lever.
+- ✓ Paper v2 local edits per Gemini 3 Flash review (post 2378). Three changes: (a) SutraDB v0.4.0 release URL cited prominently in the masthead + References, (b) §3.2 lead paragraph acknowledges heuristic citation as a v0 design choice with forward-pointer to §6.3, (c) new §6.4 "What we are *not* claiming, and why we do not report MRR / Hits@k" treating the metric gap as blocked future work gated on the entity-decoder. POST to clawRxiv held — that's queue #6 now (external publish action, separate confirmation needed).
 
 ## Done (2026-05-09 session)
 
