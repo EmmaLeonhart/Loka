@@ -224,8 +224,18 @@ def o_key(term: dict) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--checkpoint", default="training/checkpoints/wikidata_v2.pt")
-    parser.add_argument("--vocab", default="training/data/vocab.json")
+    parser.add_argument(
+        "--checkpoint",
+        default=None,
+        help="Path to a .pt checkpoint. If omitted, uses the model pinned in "
+             "MODEL.json and auto-downloads from Hugging Face on first run.",
+    )
+    parser.add_argument(
+        "--vocab",
+        default=None,
+        help="Path to vocab.json. If omitted, uses the vocab pinned in "
+             "MODEL.json and auto-downloads from Hugging Face on first run.",
+    )
     parser.add_argument("--endpoint", default="http://localhost:3030")
     parser.add_argument("--property-cache", default="training/property_label_cache.json")
     parser.add_argument("--max-subjects", type=int, default=20)
@@ -273,6 +283,14 @@ def main() -> None:
         args.device = "cuda" if torch.cuda.is_available() else "cpu"
     device = torch.device(args.device)
 
+    if args.checkpoint is None or args.vocab is None:
+        from loader import resolve_checkpoint, resolve_vocab, info as pin_info
+        if args.checkpoint is None:
+            args.checkpoint = str(resolve_checkpoint())
+        if args.vocab is None:
+            args.vocab = str(resolve_vocab())
+        if args.model_version is None:
+            args.model_version = pin_info().get("name", Path(args.checkpoint).stem)
     if args.model_version is None:
         args.model_version = Path(args.checkpoint).stem
 

@@ -1,0 +1,21 @@
+{
+  "name": "loka-wikidata-v5",
+  "version": "v5",
+  "released": "2026-05-09",
+  "repo_id": "EmmaLeonhart/loka",
+  "repo_type": "dataset",
+  "revision": "v5",
+  "files": {
+    "checkpoint": {
+      "in_repo": "checkpoints/wikidata_v5.pt",
+      "local": "training/checkpoints/wikidata_v5.pt",
+      "size_mb": 178.2
+    },
+    "vocab": {
+      "in_repo": "corpus/vocab.json",
+      "local": "training/data/vocab.json",
+      "size_mb": 1.0
+    }
+  },
+  "notes": "Word-level vocab. Trained on the cleaned 5M-triple Wikidata slice (philippesaade/wikidata via tools/wikidata_hf_import.py). Best perplexity to date — see DEVLOG.md for the v3 -> v4 -> v5 history. The v6 (BPE-tokenized, 50K vocab) round is queued but not yet trained; bump this file when v6 ships."
+}
