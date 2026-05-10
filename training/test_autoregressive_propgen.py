@@ -345,29 +345,40 @@ def predict_object(
     return " ".join(out_tokens), sum(out_probs) / len(out_probs)
 
 
-def candidate_predicates(
-    src_subj_iri: str,
+def candidate_pairs(
     context: list[dict],
     labels: dict[str, str],
-    already_emitted_preds: set[str],
-    src_subj_existing_preds: set[str],
-) -> list[tuple[str, int]]:
-    """Rank predicates by frequency in context, excluding already-on-subject ones."""
-    counts: Counter[str] = Counter()
+    already_tried: set[tuple[str, str]],
+) -> list[tuple[str, str, int]]:
+    """Enumerate all (subject_iri, predicate_iri) pairs visible in the context.
+
+    No filter on "already-on-subject" — the source triple is just the seed for
+    the BFS context, not a constraint on what gets generated. Each (S, P)
+    appearing in C is fair game; we let the model say what it wants for O,
+    then accept/reject by confidence and uniqueness downstream.
+
+    Returned ranking: pairs that appear more often in the context first
+    (loose proxy for "more reinforced by neighborhood"), then pairs whose
+    subject and predicate both have labels we can feed the tokenizer.
+    """
+    counts: Counter[tuple[str, str]] = Counter()
     for t in context:
+        if t["s"]["type"] != "uri":
+            continue
         p = t["p"]["value"]
         if p == RDFS_LABEL:
             continue
         if is_reserved_predicate(p):
             continue
-        if p in src_subj_existing_preds:
+        s = t["s"]["value"]
+        if (s, p) in already_tried:
             continue
-        if p in already_emitted_preds:
+        if s not in labels:
             continue
         if p not in labels:
             continue
-        counts[p] += 1
-    return counts.most_common()
+        counts[(s, p)] += 1
+    return [(s, p, c) for (s, p), c in counts.most_common()]
 
 
 # ─── Main test loop ────────────────────────────────────────────────────────
@@ -508,16 +519,26 @@ def main() -> None:
     print(f"\nGenerating from {len(sources)} source triples\n", file=sys.stderr)
 
     out_lines: list[str] = []
+    asym_lines: list[str] = []  # the dropped-asymmetric set, with provenance
     summary_per_source = []
     total_emitted = 0
+
+    def fmt_subj_term(t: dict) -> str:
+        if t["s"]["type"] == "uri":
+            return f"<{t['s']['value']}>"
+        return f"_:{t['s']['value']}"
+
+    def write_triple_line(t: dict) -> str:
+        return f"{fmt_subj_term(t)} <{t['p']['value']}> {fmt_term(t['o'])} ."
 
     for src_idx, src in enumerate(sources, start=1):
         s_iri = src["s"]["value"]
         s_label = labels.get(s_iri, "")
         p_iri = src["p"]["value"]
         p_label = labels.get(p_iri, p_iri)
+        src_short = f"{s_label} | {p_label}"
         print(
-            f"[{src_idx}/{len(sources)}] SRC  {s_label!s} | {p_label!s}",
+            f"[{src_idx}/{len(sources)}] SRC  {src_short}",
             file=sys.stderr,
         )
 
@@ -539,69 +560,85 @@ def main() -> None:
             file=sys.stderr,
         )
 
-        existing_preds = {t["p"]["value"] for t in subj_facts.get(s_iri, [])}
-        emitted_preds: set[str] = set()
+        # Persist the dropped-asymmetric set with provenance back to the
+        # source triple. These are the "would have flooded the context"
+        # triples — kept for analysis even though they don't enter generation.
+        for t in dropped:
+            asym_lines.append(write_triple_line(t))
+            qt_dropped = quoted(
+                fmt_subj_term(t), f"<{t['p']['value']}>", fmt_term(t["o"])
+            )
+            src_qt = quoted(
+                f"<{s_iri}>", f"<{p_iri}>",
+                f"<{src['o']['value']}>" if src["o"]["type"] == "uri" else fmt_term(src["o"]),
+            )
+            asym_lines.append(
+                f'{qt_dropped} <http://loka.dev/provenance/asymmetricDropFor> {src_qt} .'
+            )
+
+        # Track (subject, predicate) we've already attempted *and* (s, p, o)
+        # exact triples we've emitted, so we don't repeat work or emit dupes.
+        already_tried: set[tuple[str, str]] = set()
+        existing_triple_ids: set[tuple] = {triple_id(t) for t in context_pool}
         produced_for_src = 0
+        children_log: list[dict] = []
 
         for child_idx in range(args.children_per_source):
-            ranked = candidate_predicates(
-                s_iri, context_pool, labels, emitted_preds, existing_preds
-            )
+            ranked = candidate_pairs(context_pool, labels, already_tried)
             if not ranked:
+                if args.verbose:
+                    print("      no more (S,P) candidates, stopping", file=sys.stderr)
                 break
 
             chosen = None
-            for cand_p, _ in ranked:
-                p_lbl = labels.get(cand_p, "")
-                if not p_lbl:
-                    if args.verbose:
-                        print(f"        skip (no label): {cand_p}", file=sys.stderr)
-                    continue
+            for c_s_iri, c_p_iri, _count in ranked:
+                already_tried.add((c_s_iri, c_p_iri))
+                c_s_label = labels[c_s_iri]
+                c_p_label = labels[c_p_iri]
                 res = predict_object(
-                    model, s_label, p_lbl, vocab, inv_vocab,
+                    model, c_s_label, c_p_label, vocab, inv_vocab,
                     tokens_per_role, device,
                     repetition_penalty=args.repetition_penalty,
                     encode_fn=encode_fn,
                 )
                 if res is None:
                     if args.verbose:
-                        print(f"        skip (no prediction): {p_lbl}", file=sys.stderr)
+                        print(f"        skip (no prediction): {c_s_label} | {c_p_label}", file=sys.stderr)
                     continue
                 o_label, conf = res
                 if conf < args.confidence:
                     if args.verbose:
-                        print(f"        skip (conf {conf:.3f}<{args.confidence}): {p_lbl} -> {o_label!r}", file=sys.stderr)
+                        print(f"        skip (conf {conf:.3f}<{args.confidence}): {c_s_label} | {c_p_label} -> {o_label!r}", file=sys.stderr)
                     continue
                 if len(o_label) < 2:
                     if args.verbose:
-                        print(f"        skip (too short): {p_lbl} -> {o_label!r}", file=sys.stderr)
+                        print(f"        skip (too short): {c_s_label} | {c_p_label} -> {o_label!r}", file=sys.stderr)
                     continue
-                # Don't re-emit a label the model already produced for this S/P
-                # in the seed.
+                # Reject if we'd reproduce an existing triple verbatim
+                # (same S, same P, same object label).
                 existing_objs = {
                     (parse_literal(t["o"])[0] if t["o"]["type"] == "literal"
                      else labels.get(t["o"]["value"], "")).lower()
-                    for t in subj_facts.get(s_iri, []) if t["p"]["value"] == cand_p
+                    for t in subj_facts.get(c_s_iri, []) if t["p"]["value"] == c_p_iri
                 }
                 if o_label.lower() in existing_objs:
                     if args.verbose:
-                        print(f"        skip (dup): {p_lbl} -> {o_label!r}", file=sys.stderr)
+                        print(f"        skip (dup): {c_s_label} | {c_p_label} -> {o_label!r}", file=sys.stderr)
                     continue
-                chosen = (cand_p, p_lbl, o_label, conf)
+                chosen = (c_s_iri, c_p_iri, c_s_label, c_p_label, o_label, conf)
                 break
             if chosen is None:
                 if args.verbose:
-                    print(f"      no candidate accepted, stopping for this source", file=sys.stderr)
+                    print("      no candidate accepted, stopping for this source", file=sys.stderr)
                 break
-            cand_p, p_lbl, o_label, conf = chosen
-            emitted_preds.add(cand_p)
 
-            s_term = f"<{s_iri}>"
-            p_term = f"<{cand_p}>"
+            c_s_iri, c_p_iri, c_s_label, c_p_label, o_label, conf = chosen
+            s_term = f"<{c_s_iri}>"
+            p_term = f"<{c_p_iri}>"
             o_term = f'"{escape_literal(o_label)}"'
             new_triple = {
-                "s": {"type": "uri", "value": s_iri},
-                "p": {"type": "uri", "value": cand_p},
+                "s": {"type": "uri", "value": c_s_iri},
+                "p": {"type": "uri", "value": c_p_iri},
                 "o": {"type": "literal", "value": o_label},
             }
             qt = quoted(s_term, p_term, o_term)
@@ -609,26 +646,30 @@ def main() -> None:
             out_lines.append(f'{qt} <{LOKA_GENERATED}> "true"^^<{XSD_BOOLEAN}> .')
             out_lines.append(f'{qt} <{LOKA_GENERATED_BY}> "{escape_literal(args.model_version)}" .')
             out_lines.append(f'{qt} <{LOKA_CONFIDENCE}> "{conf:.4f}"^^<{XSD_DECIMAL}> .')
-            # Citations: every triple in the pool at time of emission, capped.
             citations = context_pool[: args.max_citations]
             for ct in citations:
                 cited = quoted(
-                    f"<{ct['s']['value']}>" if ct["s"]["type"] == "uri" else f"_:{ct['s']['value']}",
-                    f"<{ct['p']['value']}>",
-                    fmt_term(ct["o"]),
+                    fmt_subj_term(ct), f"<{ct['p']['value']}>", fmt_term(ct["o"]),
                 )
                 out_lines.append(f"{qt} <{LOKA_INFERRED_FROM}> {cited} .")
 
             print(
-                f"      gen#{child_idx + 1}: {p_lbl!s} -> {o_label!s} "
+                f"      gen#{child_idx + 1}: {c_s_label} | {c_p_label} -> {o_label!s} "
                 f"(conf={conf:.3f}, cites={len(citations)})",
                 file=sys.stderr,
             )
+            children_log.append({
+                "subject": c_s_label,
+                "predicate": c_p_label,
+                "object": o_label,
+                "confidence": round(conf, 4),
+                "citations_at_emit": len(citations),
+            })
             produced_for_src += 1
             total_emitted += 1
-            # Auto-regressive: extend the pool with the just-emitted triple,
-            # so triple #{i+1} sees and may cite triple #{i}.
+            # Auto-regressive: subsequent children see (and may cite) this one.
             context_pool.append(new_triple)
+            existing_triple_ids.add(triple_id(new_triple))
 
         summary_per_source.append({
             "source_subject": s_iri,
@@ -639,11 +680,20 @@ def main() -> None:
             "context_simd": len(simd_extra),
             "context_dropped_asymmetric": len(dropped),
             "children_emitted": produced_for_src,
+            "children": children_log,
         })
 
     out_path = Path(args.output)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text("\n".join(out_lines) + "\n", encoding="utf-8")
+
+    asym_path = out_path.with_name(out_path.stem + "_asymmetric.nt")
+    asym_path.write_text("\n".join(asym_lines) + "\n", encoding="utf-8")
+    print(
+        f"Wrote {len(asym_lines)} N-Triples lines for the dropped-asymmetric set "
+        f"(with provenance back to the source triples) -> {asym_path}",
+        file=sys.stderr,
+    )
 
     summary = {
         "model_version": args.model_version,
