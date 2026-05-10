@@ -1,6 +1,6 @@
 # Loka: Generative Citation in a Neuro-Symbolic World Model over RDF-Star Knowledge Graphs
 
-
+**Code:** <https://github.com/EmmaLeonhart/SutraDB> &middot; **Corpus + checkpoints:** <https://huggingface.co/datasets/EmmaLeonhart/loka> (snapshot tags `v3`, `v4`, `v5`) &middot; **Source dataset:** <https://huggingface.co/datasets/philippesaade/wikidata>
 
 ---
 
