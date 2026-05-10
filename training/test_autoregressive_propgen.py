@@ -269,16 +269,23 @@ def parallel_subgraph_extension(
     subj_facts: dict[str, list[dict]],
     cap_siblings: int = 10,
     min_group_size: int = 3,
+    jaccard_threshold: float = 0.5,
 ) -> list[dict]:
     """Python approximation of pseudotable sibling lookup.
 
-    Group all subjects by their predicate-set; if a context subject is in a
-    group with ≥ min_group_size members, sample up to cap_siblings of the
-    siblings and return their triples.
+    Mirrors the discovery logic in loka-core/src/pseudotable.rs: group
+    subjects by their predicate-set, then for each context subject find
+    *similar* subjects whose predicate-sets overlap by ≥ jaccard_threshold
+    (the Rust version uses 0.8; we default to 0.5 for the Python test
+    because Wikidata seed graphs are heterogeneous and exact matches are
+    almost never present, while 0.5 catches "siblings of the same kind").
+
+    Returns the triples of up to cap_siblings sibling subjects.
     """
-    by_pset: dict[tuple, list[str]] = defaultdict(list)
-    for s in subj_facts:
-        by_pset[predicate_set(s, subj_facts)].append(s)
+    psets: dict[str, frozenset[str]] = {
+        s: frozenset(t["p"]["value"] for t in facts)
+        for s, facts in subj_facts.items()
+    }
 
     extra: list[dict] = []
     seen_subj: set[str] = set()
@@ -286,12 +293,27 @@ def parallel_subgraph_extension(
         if ct["s"]["type"] != "uri":
             continue
         s_iri = ct["s"]["value"]
-        pset = predicate_set(s_iri, subj_facts)
-        group = by_pset.get(pset, [])
-        if len(group) < min_group_size:
+        my_pset = psets.get(s_iri)
+        if not my_pset:
             continue
-        for sib in group:
-            if sib == s_iri or sib in seen_subj:
+        # Candidate siblings: subjects whose predicate-set has high Jaccard
+        # with this one. Sort by overlap descending; take up to cap_siblings.
+        scored: list[tuple[float, str]] = []
+        for cand_s, cand_pset in psets.items():
+            if cand_s == s_iri:
+                continue
+            inter = len(my_pset & cand_pset)
+            if inter == 0:
+                continue
+            union = len(my_pset | cand_pset)
+            j = inter / union
+            if j >= jaccard_threshold:
+                scored.append((j, cand_s))
+        if len(scored) + 1 < min_group_size:
+            continue
+        scored.sort(reverse=True)
+        for _, sib in scored:
+            if sib in seen_subj:
                 continue
             seen_subj.add(sib)
             extra.extend(subj_facts[sib])
@@ -410,6 +432,9 @@ def main() -> None:
     parser.add_argument("--confidence", type=float, default=0.4)
     parser.add_argument("--repetition-penalty", type=float, default=3.0)
     parser.add_argument("--simd-cap", type=int, default=10)
+    parser.add_argument("--simd-jaccard", type=float, default=0.5,
+                        help="Predicate-set Jaccard threshold for sibling subjects "
+                             "(matches loka-core pseudotable merge step; default 0.5)")
     parser.add_argument("--no-simd", action="store_true",
                         help="Disable parallel-subgraph context extension")
     parser.add_argument("--verbose", action="store_true",
@@ -552,6 +577,7 @@ def main() -> None:
         else:
             simd_extra = parallel_subgraph_extension(
                 adj, subj_facts, cap_siblings=args.simd_cap,
+                jaccard_threshold=args.simd_jaccard,
             )
         context_pool: list[dict] = list(adj) + list(simd_extra)
         print(
