@@ -378,18 +378,15 @@ pub extern "C" fn loka_query(db: *const LokaDb, query: *const c_char) -> *mut Lo
 
     loka_sparql::optimize(&mut parsed);
 
-    let result = match loka_sparql::execute_with_vectors(
-        &parsed,
-        &inner.store,
-        &inner.dict,
-        &inner.vectors,
-    ) {
-        Ok(r) => r,
-        Err(e) => {
-            set_error(&format!("SPARQL execution error: {}", e));
-            return std::ptr::null_mut();
-        }
-    };
+    let result =
+        match loka_sparql::execute_with_vectors(&parsed, &inner.store, &inner.dict, &inner.vectors)
+        {
+            Ok(r) => r,
+            Err(e) => {
+                set_error(&format!("SPARQL execution error: {}", e));
+                return std::ptr::null_mut();
+            }
+        };
 
     // Convert to string-resolved rows for easy consumption across FFI
     let columns = result.columns.clone();
@@ -449,11 +446,7 @@ pub extern "C" fn loka_result_column_name(result: *const LokaResult, index: u32)
 ///
 /// Returns a C string that must be freed with `loka_string_free`.
 #[no_mangle]
-pub extern "C" fn loka_result_value(
-    result: *const LokaResult,
-    row: u64,
-    col: u32,
-) -> *mut c_char {
+pub extern "C" fn loka_result_value(result: *const LokaResult, row: u64, col: u32) -> *mut c_char {
     if result.is_null() {
         return std::ptr::null_mut();
     }
