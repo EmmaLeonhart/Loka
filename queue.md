@@ -30,6 +30,11 @@ In strategic order. Top item is the current focus.
 
 8. **Repo rename SutraDB → Loka.** Top of `TODO.md` has the full checklist.
 
+9. **World-model cascade-retraction: remove a generated node and all inferences that cite it.** Today the engine has per-triple `DELETE DATA` only — no entity-level cascade, no RDF-star annotation cleanup, no HNSW tombstone flip on the delete path (rebuild required). For the world model this matters because every generated triple carries `propositionInferredFrom <<S P O>>` pointing at the context that informed it; when the user retracts a generated node X, the right semantics are: drop every triple where X is S/P/O, drop the `<<...>>`-quoted annotation rows whose inner triple involves X, and recursively retract any other generated triple whose `propositionInferredFrom` chain dereferences a now-removed triple. (RDFS/OWL inference is out of scope per CLAUDE.md, so this is *only* about model-emitted provenance chains, not symbolic entailment closures.) Expose this two ways:
+   - **MCP tool** (`retract_generated_node` or similar) so an agent can do it programmatically. Accepts an IRI; returns the count + IRIs of triples removed at each cascade depth.
+   - **Sutra Studio action** so a user inspecting a suspect generated triple can click "retract" and see the affected dependency tree before confirming.
+   Engine-side prerequisites surfaced by the audit: (a) a back-reference from inner-triple ID to annotation rows so RDF-star cleanup is O(deg) not O(N), (b) `VectorRegistry::delete` actually called from `execute_delete_data` so the HNSW tombstone path is live, (c) optional new SPARQL+ verb or REST endpoint that takes the cascade root and returns the dependency tree before the delete commits. Cascade scope must be bounded to the reserved provenance namespace — never traverse a non-`http://sutra.dev/provenance/` predicate as a "dependency" (a regular `wdt:P31` edge is data, not derivation).
+
 ---
 
 ## Done (2026-05-10 session)
