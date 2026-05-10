@@ -5,22 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- Open Graph / Discord / Twitter preview -->
     <meta property="og:type" content="website">
-    <meta property="og:title" content="SutraDB — RDF-star Triplestore with Native Vector Indexing">
-    <meta property="og:description" content="A lean, high-performance RDF-star triplestore with native HNSW vector indexing. Vectors are triples.">
-    <meta name="description" content="A lean, high-performance RDF-star triplestore with native HNSW vector indexing. Vectors are triples.">
+    <meta property="og:title" content="Loka — Neuro-Symbolic World Model on RDF-Star">
+    <meta property="og:description" content="Two systems sharing one query language: an RDF-star triplestore plus a transformer trained on the same triples. Generated facts write back as RDF-star annotations with cited inference chains.">
+    <meta name="description" content="Loka is a neuro-symbolic world model. Explicit memory (RDF-star triplestore, exact answers) + implicit memory (transformer, plausible answers with propositionInferredFrom citation edges).">
     <meta property="og:url" content="https://sutradb.org/">
-    <meta property="og:site_name" content="SutraDB">
+    <meta property="og:site_name" content="Loka">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="SutraDB — RDF-star Triplestore with Native Vector Indexing">
-    <meta name="twitter:description" content="A lean, high-performance RDF-star triplestore with native HNSW vector indexing. Vectors are triples.">
+    <meta name="twitter:title" content="Loka — Neuro-Symbolic World Model on RDF-Star">
+    <meta name="twitter:description" content="Two systems sharing one query language: an RDF-star triplestore plus a transformer trained on the same triples. Generated facts write back with cited inference chains.">
     <meta name="theme-color" content="#58a6ff">
     <link rel="canonical" href="https://sutradb.org/">
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
-        "name": "SutraDB",
-        "description": "A lean, high-performance RDF-star triplestore with native HNSW vector indexing. Vectors are triples.",
+        "name": "Loka",
+        "alternateName": "SutraDB",
+        "description": "A neuro-symbolic world model. RDF-star triplestore (engine) plus a small role-aware transformer trained on the same triples. Generated facts land back in the store as RDF-star annotations with propositionInferredFrom citation edges.",
         "url": "https://sutradb.org/",
         "applicationCategory": "Database",
         "operatingSystem": "Windows, macOS, Linux",
@@ -34,7 +35,7 @@
         }
     }
     </script>
-    <title>SutraDB &mdash; RDF-star Triplestore with Native Vector Indexing</title>
+    <title>Loka &mdash; Neuro-Symbolic World Model on RDF-Star</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f4dc;</text></svg>">
     <style>
         :root {
@@ -271,37 +272,52 @@
 </head>
 <body>
 
-<nav style="padding:12px 24px;border-bottom:1px solid #30363d;display:flex;align-items:center;gap:24px;font-size:0.9em;">
-    <a href="./" style="font-weight:700;font-size:1.1em;color:#e6edf3;text-decoration:none;"><span style="color:#58a6ff;">Sutra</span>DB</a>
-    <a href="./#download" style="color:#8b949e;">Download</a>
+<nav style="padding:12px 24px;border-bottom:1px solid #30363d;display:flex;align-items:center;gap:24px;font-size:0.9em;flex-wrap:wrap;">
+    <a href="./" style="font-weight:700;font-size:1.1em;color:#e6edf3;text-decoration:none;"><span style="color:#58a6ff;">Loka</span></a>
+    <a href="./loka/" style="color:#8b949e;">World Model</a>
+    <a href="./history/" style="color:#8b949e;">History</a>
+    <a href="./#download" style="color:#8b949e;">Engine</a>
     <a href="./graph-vector/" style="color:#8b949e;">Graph+Vector</a>
-    <a href="./sdb-format/" style="color:#8b949e;">Architecture</a>
     <a href="./theory/" style="color:#8b949e;">Theory</a>
     <a href="./benchmarks/" style="color:#8b949e;">Benchmarks</a>
     <a href="./codeofethics/" style="color:#8b949e;">Code of Ethics</a>
+    <a href="https://huggingface.co/datasets/EmmaLeonhart/loka" style="color:#8b949e;">HF: Loka</a>
     <a href="https://github.com/EmmaLeonhart/SutraDB" style="color:#8b949e;">GitHub</a>
 </nav>
 
 <div class="hero">
-    <h1><span>Sutra</span>DB</h1>
+    <h1><span>Loka</span></h1>
     <p class="tagline">
-        A lean RDF-star triplestore with native HNSW vector indexing.
-        Graph traversal and vector similarity in a single SPARQL query.
+        A <strong>neuro-symbolic world model</strong>. Two systems sharing one query language: an RDF-star
+        triplestore (explicit memory, exact answers) plus a transformer trained on the same triples (implicit memory,
+        plausible answers). Generated facts write back into the store as RDF-star annotations with
+        <code>propositionInferredFrom</code> citation edges.
     </p>
     <div class="badges">
-        <span class="badge badge-rust">Written in Rust</span>
+        <span class="badge badge-rust">Engine in Rust</span>
         <span class="badge badge-license">Apache 2.0</span>
-        <span class="badge badge-superset">Superset of W3C Standards</span>
-        <span class="badge badge-preview" id="version-badge">Developer Preview</span>
+        <span class="badge badge-superset">RDF-star &middot; SPARQL+ &middot; SPARQL-star</span>
+        <span class="badge badge-preview" id="version-badge">v0.4.0 — World-model release</span>
     </div>
     <div class="cta">
-        <a href="https://github.com/EmmaLeonhart/SutraDB/releases/latest" class="btn btn-primary" id="download-btn">Download Latest</a>
-        <a href="https://github.com/EmmaLeonhart/SutraDB" class="btn btn-secondary">View on GitHub</a>
+        <a href="./loka/" class="btn btn-primary">Read the world-model deep dive</a>
+        <a href="https://huggingface.co/datasets/EmmaLeonhart/loka" class="btn btn-secondary">Pull from Hugging Face</a>
+        <a href="https://github.com/EmmaLeonhart/SutraDB/releases/latest" class="btn btn-secondary" id="download-btn">Engine release</a>
     </div>
 
-    <div style="margin-top: 32px; padding: 16px 24px; background: #1a2332; border: 1px solid #2d4a6f; border-radius: 10px; max-width: 600px; margin-left: auto; margin-right: auto;">
+    <div style="margin-top: 32px; padding: 16px 24px; background: #1a2332; border: 1px solid #2d4a6f; border-radius: 10px; max-width: 700px; margin-left: auto; margin-right: auto;">
+        <p style="font-size: 1em; color: #79c0ff; margin-bottom: 4px; font-weight: 600;">What is Loka?</p>
+        <p style="font-size: 0.95em; color: #8b949e; margin-bottom: 8px;">
+            <strong>Loka</strong> is the project &mdash; engine + corpus + transformer + inference layer.
+            <strong>SutraDB</strong> is the engine inside it: a lean RDF-star triplestore with native HNSW vector indexing.
+            The engine works fine standalone (serverless by default, like SQLite), but the world-model layer turns it into something
+            that can <em>complete</em> a knowledge graph with cited inferences. <a href="./loka/">More →</a>
+        </p>
+    </div>
+
+    <div style="margin-top: 16px; padding: 16px 24px; background: #1c2128; border: 1px solid #30363d; border-radius: 10px; max-width: 700px; margin-left: auto; margin-right: auto;">
         <p style="font-size: 1em; color: #79c0ff; margin-bottom: 4px; font-weight: 600;">AI Agent?</p>
-        <p style="font-size: 0.95em; color: #8b949e; margin-bottom: 8px;">SutraDB is serverless by default, like SQLite. Just open a <code>.sdb</code> file &mdash; no server needed. Install, configure, and query entirely from the command line.</p>
+        <p style="font-size: 0.95em; color: #8b949e; margin-bottom: 8px;">SutraDB the engine is serverless by default. Open a <code>.sdb</code> file &mdash; no daemon, no config. Install, configure, and query entirely from the command line. The agent installer (<code>sutra install-agent</code>) lets an LLM walk through configuration via structured Markdown prompts.</p>
         <a href="https://github.com/EmmaLeonhart/SutraDB/blob/main/docs/AGENT_SETUP.md" class="btn btn-primary" style="padding: 8px 20px; font-size: 0.9em;">Agent Setup Guide</a>
     </div>
 </div>
