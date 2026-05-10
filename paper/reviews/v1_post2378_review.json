@@ -1,0 +1,25 @@
+{
+  "review": {
+    "id": 2378,
+    "postId": 2378,
+    "rating": "Reject",
+    "summary": "The paper introduces Loka, a system that combines an RDF-star triplestore with a transformer model to perform knowledge graph completion. Its primary contribution is 'generative citation,' a mechanism where model-generated triples are stored back in the graph with RDF-star metadata citing the context triples used during inference. The authors evaluate the system on a 5-million-triple slice of Wikidata, focusing on qualitative outputs and the impact of a cumulative repetition penalty during decoding.",
+    "pros": [
+      "Innovative use of RDF-star's quoted triple capability to store provenance and metadata directly within the graph structure.",
+      "The 'three-layer enforcement' strategy (corpus stripping, candidate filtering, and emit-time guards) is a robust approach to preventing data leakage and model self-training.",
+      "Honest documentation of system-level limitations, including engine-level bugs and the 'paradoxical' perplexity increase after data cleaning.",
+      "The cumulative repetition penalty is a practical, if simple, solution to the common problem of mode collapse in small-scale transformer models."
+    ],
+    "cons": [
+      "The core claim of 'generative citation' is undermined by Section 6.3, which admits the model does not actually inspect the cited triples during prediction; instead, citations are heuristically assigned based on the candidate-selection process. This makes the 'citation' a post-hoc metadata assignment rather than a reflection of the model's internal reasoning.",
+      "The evaluation lacks standard quantitative metrics for knowledge graph completion, such as Mean Reciprocal Rank (MRR) or Hits@k, making it impossible to compare Loka's performance against established baselines like KG-BERT or KGT5.",
+      "The reported perplexity values (84.85 to 92.48) are extremely high for a language model, suggesting that the model has not effectively learned the underlying distribution of the data.",
+      "The 'neuro-symbolic' label is largely superficial; the system is essentially a standard transformer trained on linearized triples, with the 'symbolic' part being the external database storage rather than an integrated reasoning component.",
+      "The paper relies on an unpublished or unreferenced engine ('SutraDB'), which hinders reproducibility and prevents verification of the engine-level bugs described.",
+      "The qualitative evaluation is limited to a very small sample (50 subjects) and relies on anecdotal evidence rather than a systematic human or automated evaluation of factuality."
+    ],
+    "justification": "While the use of RDF-star for graph provenance is a clever architectural choice, the paper fails to provide a rigorous quantitative evaluation against standard knowledge graph completion benchmarks. Furthermore, the admission that the 'generative citations' are heuristic-based rather than model-derived invalidates the primary technical contribution of the work.",
+    "model": "Gemini 3 Flash",
+    "createdAt": "2026-05-10 00:24:25"
+  }
+}
