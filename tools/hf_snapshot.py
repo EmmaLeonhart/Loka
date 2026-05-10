@@ -5,7 +5,7 @@ One repo, dataset type, holds everything:
     ├── corpus/triples.txt
     ├── corpus/vocab.json
     ├── corpus/generated_*.nt
-    ├── sutra-data/   (optional, ~770 MB; the live store)
+    ├── loka-data/   (optional, ~770 MB; the live store)
     └── checkpoints/wikidata_v*.pt
 
 Each upload is a commit; --snapshot-name tags the repo with that name so a
@@ -18,7 +18,7 @@ Usage:
     python tools/hf_snapshot.py --user EmmaLeonhart --snapshot-name v4
 
   Skip the 770 MB store snapshot:
-    python tools/hf_snapshot.py --user EmmaLeonhart --snapshot-name v4-light --no-sutra-data
+    python tools/hf_snapshot.py --user EmmaLeonhart --snapshot-name v4-light --no-loka-data
 
   Make the repo private (requires HF Pro):
     python tools/hf_snapshot.py --user EmmaLeonhart --snapshot-name v4 --private
@@ -50,11 +50,11 @@ MODEL_FILES = [
     ("checkpoints/wikidata_v6.pt", "training/checkpoints/wikidata_v6.pt"),
 ]
 
-# Default folder mappings. The local path is overridable via --sutra-data-path
+# Default folder mappings. The local path is overridable via --loka-data-path
 # so the user can upload from a frozen backup directory instead of the live
-# store (which is locked while sutra serve is running).
+# store (which is locked while loka serve is running).
 DATA_FOLDERS_DEFAULT = [
-    ("sutra-data", "sutra-data"),
+    ("loka-data", "loka-data"),
 ]
 
 
@@ -70,7 +70,7 @@ tags:
 
 # Loka — RDF-star world-model corpus and checkpoints
 
-Snapshots of the [Loka](https://github.com/Emma-Leonhart/SutraDB) world-model
+Snapshots of the [Loka](https://github.com/Emma-Leonhart/Loka) world-model
 corpus + trained transformer checkpoints. Single repo so corpus and checkpoint
 versions stay aligned.
 
@@ -81,7 +81,7 @@ versions stay aligned.
 | `corpus/triples.txt` | Tab-separated label-substituted triples (subject, predicate, object) used as training input. |
 | `corpus/vocab.json` | Word-level vocabulary built from the training file. |
 | `corpus/generated_v*.nt` | RDF-star inferences emitted by the trained model with `propositionInferredFrom` provenance. |
-| `sutra-data/` | The live RDF-star store used by SutraDB. ~770 MB. Pull this and `sutra serve --data-dir sutra-data/` to query directly. |
+| `loka-data/` | The live RDF-star store used by Loka. ~770 MB. Pull this and `loka serve --data-dir loka-data/` to query directly. |
 | `checkpoints/wikidata_v*.pt` | Role-aware transformer checkpoints. v3 = pre-cleanup corpus; v4 = post-cleanup corpus. |
 
 ## Snapshots
@@ -105,13 +105,13 @@ Every triple under `corpus/generated_*.nt` carries RDF-star annotations:
 
 ```
 <S> <P> "value" .
-<<S P "value">> sutra-prov:propositionGenerated   "true"^^xsd:boolean .
-<<S P "value">> sutra-prov:propositionGeneratedBy "wikidata_v4" .
-<<S P "value">> sutra-prov:propositionConfidence  "0.43"^^xsd:decimal .
-<<S P "value">> sutra-prov:propositionInferredFrom <<S existing_p existing_o>> .
+<<S P "value">> loka-prov:propositionGenerated   "true"^^xsd:boolean .
+<<S P "value">> loka-prov:propositionGeneratedBy "wikidata_v4" .
+<<S P "value">> loka-prov:propositionConfidence  "0.43"^^xsd:decimal .
+<<S P "value">> loka-prov:propositionInferredFrom <<S existing_p existing_o>> .
 ```
 
-`sutra-prov:` expands to `http://sutra.dev/provenance/`. Predicates under that
+`loka-prov:` expands to `http://loka.dev/provenance/`. Predicates under that
 namespace are reserved system metadata; the model never trains on them.
 
 ## Versioning
@@ -197,18 +197,18 @@ def main() -> None:
         help="Create the repo as private (HF Pro / paid plan required).",
     )
     parser.add_argument(
-        "--no-sutra-data",
-        dest="include_sutra_data",
+        "--no-loka-data",
+        dest="include_loka_data",
         action="store_false",
         default=True,
-        help="Skip uploading the 770 MB sutra-data/ folder.",
+        help="Skip uploading the 770 MB loka-data/ folder.",
     )
     parser.add_argument(
-        "--sutra-data-path",
-        default="sutra-data",
-        help="Local folder to upload as `sutra-data/` in the repo. Default: "
-             "the live store. Point at a backup (e.g. sutra-data-backup-DATE) "
-             "to avoid file-lock errors while sutra serve is running.",
+        "--loka-data-path",
+        default="loka-data",
+        help="Local folder to upload as `loka-data/` in the repo. Default: "
+             "the live store. Point at a backup (e.g. loka-data-backup-DATE) "
+             "to avoid file-lock errors while loka serve is running.",
     )
     args = parser.parse_args()
 
@@ -240,8 +240,8 @@ def main() -> None:
     print(f"\n=== Uploading corpus + checkpoints to {repo_id} ===")
     upload_files(api, repo_id, CORPUS_FILES)
     upload_files(api, repo_id, MODEL_FILES)
-    if args.include_sutra_data:
-        data_folders = [("sutra-data", args.sutra_data_path)]
+    if args.include_loka_data:
+        data_folders = [("loka-data", args.loka_data_path)]
         upload_folders(api, repo_id, data_folders)
 
     print(f"\n=== Tagging '{args.snapshot_name}' ===")

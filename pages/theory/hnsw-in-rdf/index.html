@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Implementing HNSW in RDF">
-  <meta property="og:description" content="How sutraDB represents vector embeddings as typed literals and HNSW neighbor edges as virtual RDF triples, making vectors a native part of the graph.">
+  <meta property="og:description" content="How Loka represents vector embeddings as typed literals and HNSW neighbor edges as virtual RDF triples, making vectors a native part of the graph.">
   <meta property="og:url" content="https://sutradb.org/theory/hnsw-in-rdf/">
   <meta name="description" content="Interactive visualization of vectors as RDF triples and HNSW topology as virtual graph edges. Three layers of data in one unified RDF graph.">
   <link rel="canonical" href="https://sutradb.org/theory/hnsw-in-rdf/">
@@ -99,7 +99,7 @@
 </head>
 <body>
 <nav style="padding:12px 24px;border-bottom:1px solid #1e1e2a;display:flex;align-items:center;gap:24px;font-size:0.9rem;background:#0a0a0f;flex-shrink:0;width:100%;">
-    <a href="../../" style="font-weight:700;font-size:1.1em;color:#e8e8f0;text-decoration:none;"><span style="color:#7c8cf8;">Sutra</span>DB</a>
+    <a href="../../" style="font-weight:700;font-size:1.1em;color:#e8e8f0;text-decoration:none;"><span style="color:#7c8cf8;">Loka</span></a>
     <a href="../../#download" style="color:#8888a0;text-decoration:none;">Download</a>
     <a href="../../graph-vector/" style="color:#8888a0;text-decoration:none;">Graph+Vector</a>
     <a href="../../sdb-format/" style="color:#8888a0;text-decoration:none;">Architecture</a>
@@ -111,7 +111,7 @@
   <div class="container">
     <a class="back" href="/theory/">&larr; Theory</a>
     <h1>Implementing HNSW in RDF</h1>
-    <p class="subtitle">Most databases treat vectors and graphs as separate systems. sutraDB stores vector embeddings as typed RDF literals (<code>sutra:f32vec</code>) and exposes HNSW neighbor connections as virtual triples &mdash; making the vector index queryable by the same SPARQL engine that traverses relationships.</p>
+    <p class="subtitle">Most databases treat vectors and graphs as separate systems. Loka stores vector embeddings as typed RDF literals (<code>loka:f32vec</code>) and exposes HNSW neighbor connections as virtual triples &mdash; making the vector index queryable by the same SPARQL engine that traverses relationships.</p>
     <div class="main-layout">
       <div class="canvas-wrap">
         <canvas id="canvas"></canvas>
@@ -125,21 +125,21 @@
         <div class="section-label">Three Layers, One Graph</div>
         <div class="explanation">
           <span class="highlight-red">Data triples</span>: regular RDF relationships (<code>:discusses</code>, <code>:author</code>).<br>
-          <span class="highlight">Vector triples</span>: embeddings stored as typed literals (<code>:hasEmbedding "..."^^sutra:f32vec</code>).<br>
-          <span class="highlight-yellow">HNSW triples</span>: neighbor edges generated on-the-fly from the HNSW index (<code>sutra:hnswNeighbor</code>).
+          <span class="highlight">Vector triples</span>: embeddings stored as typed literals (<code>:hasEmbedding "..."^^loka:f32vec</code>).<br>
+          <span class="highlight-yellow">HNSW triples</span>: neighbor edges generated on-the-fly from the HNSW index (<code>loka:hnswNeighbor</code>).
         </div>
         <div class="section-label">Example Triple</div>
         <div class="sparql-box">
-          <span class="sparql-pred">:paper_42</span> <span class="sparql-pred">:hasEmbedding</span> <span class="sparql-literal">"0.23 -0.11 0.87 ..."^^sutra:f32vec</span> .<br><br>
+          <span class="sparql-pred">:paper_42</span> <span class="sparql-pred">:hasEmbedding</span> <span class="sparql-literal">"0.23 -0.11 0.87 ..."^^loka:f32vec</span> .<br><br>
           <span class="sparql-keyword">SELECT</span> <span class="sparql-var">?similar</span> <span class="sparql-var">?topic</span><br>
           <span class="sparql-keyword">WHERE</span> {<br>
-          &nbsp;&nbsp;<span class="sparql-pred">:paper_42</span> <span class="sparql-pred">sutra:hnswNeighbor</span><span class="highlight">+</span> <span class="sparql-var">?similar</span> .<br>
+          &nbsp;&nbsp;<span class="sparql-pred">:paper_42</span> <span class="sparql-pred">loka:hnswNeighbor</span><span class="highlight">+</span> <span class="sparql-var">?similar</span> .<br>
           &nbsp;&nbsp;<span class="sparql-var">?similar</span> <span class="sparql-pred">:discusses</span> <span class="sparql-var">?topic</span> .<br>
           }
         </div>
         <div class="section-label">Why This Matters</div>
         <div class="explanation">
-          The HNSW index is the <span class="highlight-green">4th index type</span> alongside SPO/POS/OSP. SPARQL property paths can traverse <code>sutra:hnswNeighbor+</code> just like <code>:hasFather+</code>. The query planner decides whether to use HNSW or triple indexes based on cost &mdash; no separate vector database API needed.
+          The HNSW index is the <span class="highlight-green">4th index type</span> alongside SPO/POS/OSP. SPARQL property paths can traverse <code>loka:hnswNeighbor+</code> just like <code>:hasFather+</code>. The query planner decides whether to use HNSW or triple indexes based on cost &mdash; no separate vector database API needed.
         </div>
         <div class="section-label">Steps</div>
         <div id="steps-container"></div>

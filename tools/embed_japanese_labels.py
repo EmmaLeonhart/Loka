@@ -1,8 +1,8 @@
-"""Generate embeddings for Japanese labels in SutraDB.
+"""Generate embeddings for Japanese labels in Loka.
 
 Fetches all entities with Japanese rdfs:label values, generates embeddings
 via Ollama (mxbai-embed-large), and inserts them as a dedicated vector
-predicate (sutra:jaEmbedding) for Japanese-specific similarity search.
+predicate (loka:jaEmbedding) for Japanese-specific similarity search.
 
 Usage:
     python tools/embed_japanese_labels.py
@@ -17,10 +17,10 @@ import requests
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
-SUTRA = "http://localhost:3030"
+LOKA = "http://localhost:3030"
 OLLAMA = "http://localhost:11434"
 MODEL = "mxbai-embed-large"
-VECTOR_PRED = "http://sutra.dev/jaEmbedding"
+VECTOR_PRED = "http://loka.dev/jaEmbedding"
 DIMENSIONS = 1024
 
 
@@ -28,7 +28,7 @@ def get_japanese_labels():
     """Fetch all entities with Japanese labels."""
     # Fetch all labels, filter for @ja in Python since LANGMATCHES may not work via HTTP
     resp = requests.post(
-        f"{SUTRA}/sparql",
+        f"{LOKA}/sparql",
         data="SELECT ?s ?label WHERE { ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label } LIMIT 5000",
     )
     results = resp.json()["results"]["bindings"]
@@ -70,7 +70,7 @@ def get_embedding(text):
 def declare_vector_predicate():
     """Declare the Japanese embedding vector predicate."""
     resp = requests.post(
-        f"{SUTRA}/vectors/declare",
+        f"{LOKA}/vectors/declare",
         json={
             "predicate": VECTOR_PRED,
             "dimensions": DIMENSIONS,
@@ -85,7 +85,7 @@ def declare_vector_predicate():
 def insert_vector(subject, vector):
     """Insert a vector embedding."""
     requests.post(
-        f"{SUTRA}/vectors",
+        f"{LOKA}/vectors",
         json={
             "predicate": VECTOR_PRED,
             "subject": subject,
@@ -99,11 +99,11 @@ def main():
 
     # Check services
     try:
-        r = requests.get(f"{SUTRA}/health", timeout=5)
+        r = requests.get(f"{LOKA}/health", timeout=5)
         assert r.status_code == 200
-        print("[OK] SutraDB running")
+        print("[OK] Loka running")
     except Exception:
-        print("[ERROR] SutraDB not running at", SUTRA)
+        print("[ERROR] Loka not running at", LOKA)
         sys.exit(1)
 
     # Declare vector predicate

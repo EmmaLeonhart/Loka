@@ -4,21 +4,21 @@ import {
   DeclareVectorResult,
   DeclareVectorOptions,
   InsertVectorResult,
-  SutraError,
+  LokaError,
 } from "./types";
 
 /**
- * Client for interacting with a SutraDB server.
+ * Client for interacting with a Loka server.
  *
  * Uses the built-in `fetch` API (Node 18+). No external dependencies required.
  */
-export class SutraClient {
+export class LokaClient {
   private readonly endpoint: string;
 
   /**
-   * Create a new SutraDB client.
+   * Create a new Loka client.
    *
-   * @param endpoint - Base URL of the SutraDB HTTP server.
+   * @param endpoint - Base URL of the Loka HTTP server.
    *   Defaults to `http://localhost:3030`.
    */
   constructor(endpoint: string = "http://localhost:3030") {
@@ -51,7 +51,7 @@ export class SutraClient {
     }
 
     const headers: Record<string, string> = {
-      "User-Agent": "sutradb-typescript/0.1.0",
+      "User-Agent": "loka-typescript/0.1.0",
       ...options.headers,
     };
 
@@ -67,14 +67,14 @@ export class SutraClient {
     try {
       response = await fetch(url, { method, headers, body });
     } catch (err) {
-      throw new SutraError(
+      throw new LokaError(
         `Connection error: ${err instanceof Error ? err.message : String(err)}`
       );
     }
 
     if (!response.ok) {
       const text = await response.text().catch(() => "");
-      throw new SutraError(
+      throw new LokaError(
         `HTTP ${response.status}: ${text}`,
         response.status
       );

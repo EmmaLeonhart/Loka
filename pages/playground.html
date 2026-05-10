@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SutraDB Playground</title>
+<title>Loka Playground</title>
 <style>
   :root {
     --bg: #0d1117;
@@ -424,7 +424,7 @@
 <body>
 
 <header>
-  <h1>Sutra<span>DB</span> Playground</h1>
+  <h1>Loka Playground</h1>
   <span class="badge">v0.3.5</span>
   <div class="status">
     <div class="status-dot" id="status-dot"></div>
@@ -433,7 +433,7 @@
   </div>
   <div class="header-actions">
     <button class="header-btn" onclick="openBrowser()">Graph Browser</button>
-    <button class="header-btn studio" onclick="launchStudio()">Sutra Studio</button>
+    <button class="header-btn studio" onclick="launchStudio()">Loka Studio</button>
   </div>
 </header>
 
@@ -721,9 +721,9 @@ SELECT ?shrine ?deity ?src WHERE {
 SELECT ?shrine ?name WHERE {
   ?shrine a ex:Shrine .
   ?shrine ex:name ?name .
-  VECTOR_SIMILAR(?shrine ex:hasEmbedding "0.9 0.3 0.1 0.0"^^<http://sutra.dev/f32vec>, 0.70)
+  VECTOR_SIMILAR(?shrine ex:hasEmbedding "0.9 0.3 0.1 0.0"^^<http://loka.dev/f32vec>, 0.70)
 }
-ORDER BY DESC(VECTOR_SCORE(?shrine ex:hasEmbedding "0.9 0.3 0.1 0.0"^^<http://sutra.dev/f32vec>))`
+ORDER BY DESC(VECTOR_SCORE(?shrine ex:hasEmbedding "0.9 0.3 0.1 0.0"^^<http://loka.dev/f32vec>))`
       },
       {
         title: 'Hybrid: vector + graph traversal',
@@ -732,7 +732,7 @@ SELECT ?shrine ?name ?deity WHERE {
   ?shrine a ex:Shrine .
   ?shrine ex:name ?name .
   ?shrine ex:enshrines ?deity .
-  VECTOR_SIMILAR(?shrine ex:hasEmbedding "0.9 0.3 0.1 0.0"^^<http://sutra.dev/f32vec>, 0.70)
+  VECTOR_SIMILAR(?shrine ex:hasEmbedding "0.9 0.3 0.1 0.0"^^<http://loka.dev/f32vec>, 0.70)
 }`
       },
       {
@@ -741,9 +741,9 @@ SELECT ?shrine ?name ?deity WHERE {
 SELECT ?shrine ?name WHERE {
   ?shrine a ex:Shrine .
   ?shrine ex:name ?name .
-  VECTOR_SIMILAR(?shrine ex:hasEmbedding "0.3 0.2 0.9 0.0"^^<http://sutra.dev/f32vec>, 0.70)
+  VECTOR_SIMILAR(?shrine ex:hasEmbedding "0.3 0.2 0.9 0.0"^^<http://loka.dev/f32vec>, 0.70)
 }
-ORDER BY DESC(VECTOR_SCORE(?shrine ex:hasEmbedding "0.3 0.2 0.9 0.0"^^<http://sutra.dev/f32vec>))`
+ORDER BY DESC(VECTOR_SCORE(?shrine ex:hasEmbedding "0.3 0.2 0.9 0.0"^^<http://loka.dev/f32vec>))`
       },
     ]
   },
@@ -1027,13 +1027,13 @@ document.getElementById('query-editor').addEventListener('keydown', e => {
 
 // ── Studio / Browser launch ──
 function launchStudio() {
-  const msg = `To launch Sutra Studio:
+  const msg = `To launch Loka Studio:
 
 1. If you have it installed, run:
-     sutra studio --endpoint http://localhost:3030
+     loka studio --endpoint http://localhost:3030
 
 2. Or via the CLI MCP server:
-     sutra mcp
+     loka mcp
    Then use the launch_studio tool.
 
 3. Or download from GitHub Releases:

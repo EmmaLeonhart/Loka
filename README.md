@@ -1,18 +1,18 @@
-# SutraDB
+# Loka
 
 A lean, high-performance RDF-star triplestore written in Rust with native HNSW vector indexing, ontochronological temporal queries, and SPARQL+ query language.
 
-[![CI](https://github.com/EmmaLeonhart/SutraDB/actions/workflows/ci.yml/badge.svg)](https://github.com/EmmaLeonhart/SutraDB/actions/workflows/ci.yml)
+[![CI](https://github.com/EmmaLeonhart/Loka/actions/workflows/ci.yml/badge.svg)](https://github.com/EmmaLeonhart/Loka/actions/workflows/ci.yml)
 
 **[sutradb.org](https://sutradb.org)** — Documentation, theory, and interactive visualizations.
 
 > **Status: Developer Preview.** Core engine, SPARQL+, vector indexing, HTTP server, ACID compliance, self-update, and MCP server are fully functional. APIs may evolve before 1.0. See the [Roadmap](https://sutradb.org/roadmap/) for what's done and what's next.
 
-> **AI Agents:** If you are an AI agent setting up a database, see **[Agent Setup Guide](docs/AGENT_SETUP.md)** for complete CLI reference, API endpoints, and step-by-step instructions. SutraDB is designed to be fully operable by AI agents without ever touching a GUI. **Start with serverless mode** (just open a `.sdb` file, no server needed) — only use server mode for multi-client or remote access scenarios.
+> **AI Agents:** If you are an AI agent setting up a database, see **[Agent Setup Guide](docs/AGENT_SETUP.md)** for complete CLI reference, API endpoints, and step-by-step instructions. Loka is designed to be fully operable by AI agents without ever touching a GUI. **Start with serverless mode** (just open a `.sdb` file, no server needed) — only use server mode for multi-client or remote access scenarios.
 
 ## What is this?
 
-SutraDB is a single-purpose database: store triples, answer queries, at any scale. It replaces both a vector database (e.g. Qdrant) and a SPARQL triplestore (e.g. Apache Jena Fuseki) with a single unified system where **vectors are just triples**.
+Loka is a single-purpose database: store triples, answer queries, at any scale. It replaces both a vector database (e.g. Qdrant) and a SPARQL triplestore (e.g. Apache Jena Fuseki) with a single unified system where **vectors are just triples**.
 
 The vector indexing architecture is heavily influenced by [Qdrant](https://github.com/qdrant/qdrant), reimplemented from first principles and unified with a triple store. The RDF/SPARQL semantics draw from Apache Jena's TDB2, but without the JVM overhead.
 
@@ -22,8 +22,8 @@ The vector indexing architecture is heavily influenced by [Qdrant](https://githu
 2. **Vectors are triples.** A vector embedding is an attribute of a node or edge, stored via a typed predicate and indexed by HNSW — not a separate system.
 3. **Full traversal in a single query.** Any traversal of any depth must be expressible in one SPARQL query.
 4. **Lean by default.** Every feature must justify itself. Complexity is the enemy of performance.
-5. **Serverless by default, server when needed.** Like SQLite, SutraDB can be embedded directly — just open a `.sdb` file. No daemon, no config. Server mode (`sutra serve`) is opt-in for when you need HTTP access, concurrent clients, or remote connections.
-6. **Agent-first, GUI-optional.** The CLI is the primary interface. Sutra Studio (GUI) exists for visual diagnostics.
+5. **Serverless by default, server when needed.** Like SQLite, Loka can be embedded directly — just open a `.sdb` file. No daemon, no config. Server mode (`loka serve`) is opt-in for when you need HTTP access, concurrent clients, or remote connections.
+6. **Agent-first, GUI-optional.** The CLI is the primary interface. Loka Studio (GUI) exists for visual diagnostics.
 
 ## Quick Start
 
@@ -33,19 +33,19 @@ No server process needed. Just point at a `.sdb` directory:
 
 ```bash
 # Build
-cargo build --release -p sutra-cli
+cargo build --release -p loka-cli
 
 # Import data directly into a .sdb file
-sutra import data.nt -d ./my-database
+loka import data.nt -d ./my-database
 
 # Query directly — no server needed
-sutra query -d ./my-database "SELECT * WHERE { ?s ?p ?o } LIMIT 10"
+loka query -d ./my-database "SELECT * WHERE { ?s ?p ?o } LIMIT 10"
 
 # Check database health
-sutra health -d ./my-database
+loka health -d ./my-database
 
 # Use with AI agents via MCP (serverless mode)
-sutra mcp --data_dir ./my-database
+loka mcp --data_dir ./my-database
 ```
 
 ### Server mode (for multi-client or remote access)
@@ -54,7 +54,7 @@ Only use server mode when you need HTTP access, concurrent clients, or remote co
 
 ```bash
 # Start server (persistent storage)
-sutra serve
+loka serve
 
 # Insert some data
 curl -X POST http://localhost:3030/triples \
@@ -94,9 +94,9 @@ Full training pipeline, BPE tokenizer, generative-citation loop, and clawRxiv su
 
 ## What's New in v0.3
 
-- **Sutra Studio pre-built binaries** — Windows, Linux, and macOS desktop apps ship with every release. No Flutter SDK required.
-- **MCP Studio tools** — AI agents can download and launch Sutra Studio directly via `download_studio` and `launch_studio` MCP tools.
-- **FFI layer (planned)** — `sutra-ffi` crate will produce a C shared library (`.dll`/`.so`/`.dylib`) so Studio and other apps can open `.sdb` files directly via `dart:ffi` without needing an HTTP server.
+- **Loka Studio pre-built binaries** — Windows, Linux, and macOS desktop apps ship with every release. No Flutter SDK required.
+- **MCP Studio tools** — AI agents can download and launch Loka Studio directly via `download_studio` and `launch_studio` MCP tools.
+- **FFI layer (planned)** — `loka-ffi` crate will produce a C shared library (`.dll`/`.so`/`.dylib`) so Studio and other apps can open `.sdb` files directly via `dart:ffi` without needing an HTTP server.
 - **Studio auto-update** — when the CLI auto-updates, Studio is also updated to match.
 - **12 MCP tools** — added `download_studio`, `launch_studio` alongside existing database tools.
 
@@ -104,33 +104,33 @@ Full training pipeline, BPE tokenizer, generative-citation loop, and clawRxiv su
 
 **v0.2:**
 - ACID compliance — atomic sled transactions, startup consistency verification, durable flushes
-- Self-update — `sutra update`, `sutra --version`, startup version check
+- Self-update — `loka update`, `loka --version`, startup version check
 - MCP server for AI agents — dual-mode (serverless + server), maintenance tools
 - HNSW rebuild HTTP endpoint — `POST /vectors/rebuild`
 - COSINE_SEARCH, EUCLID_SEARCH, DOTPRODUCT_SEARCH — explicit distance metric operators
 
 ## Data Model
 
-All data is **RDF-star** triples. Vectors are stored as `sutra:f32vec` literals:
+All data is **RDF-star** triples. Vectors are stored as `loka:f32vec` literals:
 
 ```turtle
 # Embedding on a node
-:paper_42 :hasEmbedding "0.23 -0.11 0.87 ..."^^sutra:f32vec .
+:paper_42 :hasEmbedding "0.23 -0.11 0.87 ..."^^loka:f32vec .
 
 # Embedding on an edge (RDF-star)
-<< :paper_42 :discusses :TransformerArchitecture >> :hasEmbedding "0.23 -0.11 ..."^^sutra:f32vec .
+<< :paper_42 :discusses :TransformerArchitecture >> :hasEmbedding "0.23 -0.11 ..."^^loka:f32vec .
 ```
 
 ## SPARQL+
 
-SutraDB's query language is **SPARQL+** — a superset of SPARQL 1.1 with vector search, temporal scope operators, and predicate-based exit conditions:
+Loka's query language is **SPARQL+** — a superset of SPARQL 1.1 with vector search, temporal scope operators, and predicate-based exit conditions:
 
 ```sparql
 # Vector search: find semantically similar documents
 SELECT ?doc ?entity WHERE {
   ?entity rdf:type :Person .
   ?doc :mentions ?entity .
-  VECTOR_SIMILAR(?doc :hasEmbedding "..."^^sutra:f32vec, 0.85)
+  VECTOR_SIMILAR(?doc :hasEmbedding "..."^^loka:f32vec, 0.85)
 }
 
 # Temporal: query the world state at a specific time
@@ -156,33 +156,33 @@ SELECT, ASK, CONSTRUCT, DESCRIBE | INSERT DATA, DELETE DATA | FILTER (=, !=, <, 
 
 | Crate | Purpose | Status |
 |---|---|---|
-| `sutra-core` | Triple storage engine, IRI interning, RDF-star IDs, sled persistence | Implemented |
-| `sutra-hnsw` | HNSW vector index with SIMD (AVX2/SSE), multiple distance metrics | Implemented |
-| `sutra-sparql` | SPARQL 1.1 parser, query planner, executor, hybrid extension | Implemented |
-| `sutra-proto` | HTTP server, SPARQL protocol, Graph Store Protocol | Implemented |
-| `sutra-cli` | CLI: serve, query, import, export, health, MCP server | Implemented |
-| `sutra-ffi` | C FFI shared library for embedding in non-Rust apps | Planned |
+| `loka-core` | Triple storage engine, IRI interning, RDF-star IDs, sled persistence | Implemented |
+| `loka-hnsw` | HNSW vector index with SIMD (AVX2/SSE), multiple distance metrics | Implemented |
+| `loka-sparql` | SPARQL 1.1 parser, query planner, executor, hybrid extension | Implemented |
+| `loka-proto` | HTTP server, SPARQL protocol, Graph Store Protocol | Implemented |
+| `loka-cli` | CLI: serve, query, import, export, health, MCP server | Implemented |
+| `loka-ffi` | C FFI shared library for embedding in non-Rust apps | Planned |
 
 ## CLI
 
 ```bash
 # Serverless operations (no server needed)
-sutra query -d ./mydb "SELECT ..." # Run SPARQL query directly
-sutra import -d ./mydb data.nt     # Import N-Triples
-sutra export -d ./mydb -o dump.nt  # Export all triples
-sutra info -d ./mydb               # Show database stats
-sutra health -d ./mydb             # Database health diagnostics
-sutra mcp --data_dir ./mydb        # MCP server (serverless mode)
+loka query -d ./mydb "SELECT ..." # Run SPARQL query directly
+loka import -d ./mydb data.nt     # Import N-Triples
+loka export -d ./mydb -o dump.nt  # Export all triples
+loka info -d ./mydb               # Show database stats
+loka health -d ./mydb             # Database health diagnostics
+loka mcp --data_dir ./mydb        # MCP server (serverless mode)
 
 # Server mode (when you need HTTP/multi-client access)
-sutra serve                        # Start HTTP server (port 3030)
-sutra serve --memory-only          # In-memory only
-sutra mcp --url http://host:3030   # MCP server (server mode)
+loka serve                        # Start HTTP server (port 3030)
+loka serve --memory-only          # In-memory only
+loka mcp --url http://host:3030   # MCP server (server mode)
 
 # Maintenance
-sutra health --rebuild_hnsw        # Rebuild HNSW indexes
-sutra update                       # Check for updates and self-update
-sutra install-agent mydb           # Agent-first database setup
+loka health --rebuild_hnsw        # Rebuild HNSW indexes
+loka update                       # Check for updates and self-update
+loka install-agent mydb           # Agent-first database setup
 ```
 
 See **[CLI Reference](docs/cli-reference.md)** for the full list of commands, flags, and options.
@@ -191,14 +191,14 @@ See **[CLI Reference](docs/cli-reference.md)** for the full list of commands, fl
 
 | Language | Package | Install |
 |----------|---------|---------|
-| Python | [`sutradb`](https://pypi.org/project/sutradb/) | `pip install sutradb` |
-| TypeScript | [`sutradb`](https://www.npmjs.com/package/sutradb) | `npm install sutradb` |
-| Go | [`sutradb`](sdks/go/) | `go get github.com/EmmaLeonhart/SutraDB/sdks/go` |
-| Rust | [`sutradb`](sdks/rust/) | `cargo add sutradb` |
-| Java | [`sutradb-java`](sdks/java/) | Maven dependency |
-| .NET | [`SutraDB.Client`](sdks/dotnet/) | `dotnet add package SutraDB.Client` |
+| Python | [`loka`](https://pypi.org/project/loka/) | `pip install loka` |
+| TypeScript | [`loka`](https://www.npmjs.com/package/loka) | `npm install loka` |
+| Go | [`loka`](sdks/go/) | `go get github.com/EmmaLeonhart/Loka/sdks/go` |
+| Rust | [`loka`](sdks/rust/) | `cargo add loka` |
+| Java | [`loka-java`](sdks/java/) | Maven dependency |
+| .NET | [`Loka.Client`](sdks/dotnet/) | `dotnet add package Loka.Client` |
 
-## Sutra Studio
+## Loka Studio
 
 Flutter desktop/web GUI for visual database management — graph visualization, HNSW health diagnostics, SPARQL query editor, and ontology browsing.
 
@@ -213,15 +213,15 @@ launch_studio      # Opens Studio connected to your database
 
 **Via CLI:**
 ```bash
-sutra install-agent --launch-studio   # Download + launch during setup
+loka install-agent --launch-studio   # Download + launch during setup
 ```
 
 **From source:**
 ```bash
-cd sutra-studio && flutter run -d chrome
+cd loka-studio && flutter run -d chrome
 ```
 
-Studio connects to SutraDB via HTTP (server mode) or will connect directly via FFI (serverless mode, planned). The FFI layer (`sutra-ffi`) will allow Studio to open `.sdb` files without any server process — like how SQLite browsers open database files directly.
+Studio connects to Loka via HTTP (server mode) or will connect directly via FFI (serverless mode, planned). The FFI layer (`loka-ffi`) will allow Studio to open `.sdb` files without any server process — like how SQLite browsers open database files directly.
 
 ## MCP Server
 
@@ -229,10 +229,10 @@ Native Model Context Protocol server for AI agents. Runs over JSON-RPC 2.0 on st
 
 ```bash
 # Serverless mode (recommended — opens .sdb file directly, no server needed)
-sutra mcp --data-dir ./my-database
+loka mcp --data-dir ./my-database
 
 # Server mode (connects to running instance — only if you need multi-client access)
-sutra mcp --url http://localhost:3030
+loka mcp --url http://localhost:3030
 ```
 
 12 tools: `health_report`, `rebuild_hnsw`, `verify_consistency`, `database_info`, `sparql_query`, `insert_triples`, `backup`, `vector_search`, `download_studio`, `launch_studio`, `check_update`, `decline_update`.
@@ -246,7 +246,7 @@ Auto-updates the CLI binary (and Studio if installed) from GitHub releases on st
 | **[Architecture](docs/architecture.md)** | Full technical architecture: data model, storage engine, indexes, SPARQL+, crate structure |
 | **[Query Examples](docs/query-examples.md)** | 70+ SPARQL+ query examples from basic patterns to hybrid vector+temporal+graph queries |
 | **[Temporal Queries](docs/temporal-queries.md)** | Practical guide to AT_TIME, DURING, WORLD_STATE, and TEMPORAL_DIFF operators |
-| **[Ontochronology](docs/ontochronology.md)** | Theory and design of SutraDB's temporal (ontochronological) data model |
+| **[Ontochronology](docs/ontochronology.md)** | Theory and design of Loka's temporal (ontochronological) data model |
 | **[Vector SPARQL](docs/vectorSPARQL.md)** | VECTOR_SIMILAR, VECTOR_SCORE, edge embeddings, query planner heuristics |
 | **[CLI Reference](docs/cli-reference.md)** | All CLI commands, flags, HTTP API endpoints, and MCP tools |
 | **[Agent Setup](docs/AGENT_SETUP.md)** | Quick start guide for AI agents |
@@ -270,8 +270,8 @@ cargo clippy --workspace -- -D warnings
 ## Docker
 
 ```bash
-docker build -t sutradb .
-docker run -p 3030:3030 -v sutra-data:/data sutradb
+docker build -t loka .
+docker run -p 3030:3030 -v loka-data:/data loka
 ```
 
 ## License

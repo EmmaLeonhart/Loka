@@ -1,0 +1,304 @@
+"""Client-side OWL validation for Loka Python SDK.
+
+The database accepts all triples unconditionally. OWL validation
+happens here in the SDK before sending data to the server. This
+follows the "lean store, smart client" principle.
+
+OWL validation is ENABLED by default. Disable it with:
+    client = LokaClient(owl_validation=False)
+
+The validator loads OWL ontology triples from the database on first use,
+caches them locally, and checks inserts against:
+- rdfs:domain (property domain constraints)
+- rdfs:range (property range constraints)
+- rdfs:subClassOf (type hierarchy)
+- owl:FunctionalProperty (max one value)
+- owl:disjointWith (classes that can't overlap)
+"""
+
+from __future__ import annotations
+
+from typing import Optional
+
+RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
+RDFS_DOMAIN = "http://www.w3.org/2000/01/rdf-schema#domain"
+RDFS_RANGE = "http://www.w3.org/2000/01/rdf-schema#range"
+RDFS_SUBCLASS_OF = "http://www.w3.org/2000/01/rdf-schema#subClassOf"
+OWL_FUNCTIONAL = "http://www.w3.org/2002/07/owl#FunctionalProperty"
+OWL_DISJOINT = "http://www.w3.org/2002/07/owl#disjointWith"
+OWL_EQUIVALENT_CLASS = "http://www.w3.org/2002/07/owl#equivalentClass"
+OWL_SAME_AS = "http://www.w3.org/2002/07/owl#sameAs"
+OWL_INVERSE_OF = "http://www.w3.org/2002/07/owl#inverseOf"
+OWL_SOME_VALUES_FROM = "http://www.w3.org/2002/07/owl#someValuesFrom"
+OWL_ALL_VALUES_FROM = "http://www.w3.org/2002/07/owl#allValuesFrom"
+OWL_ON_PROPERTY = "http://www.w3.org/2002/07/owl#onProperty"
+RDFS_SUB_PROPERTY_OF = "http://www.w3.org/2000/01/rdf-schema#subPropertyOf"
+
+
+class OWLViolation(Exception):
+    """Raised when a triple violates an OWL constraint."""
+
+    def __init__(self, message: str, constraint_type: str, triple: tuple):
+        super().__init__(message)
+        self.constraint_type = constraint_type
+        self.triple = triple
+
+
+class OWLValidator:
+    """Client-side OWL constraint validator.
+
+    Loads ontology axioms from Loka and validates triples before insert.
+    """
+
+    def __init__(self):
+        self.domains: dict[str, str] = {}       # property -> domain class
+        self.ranges: dict[str, str] = {}         # property -> range class
+        self.subclass_of: dict[str, set[str]] = {}  # class -> set of parent classes
+        self.sub_property_of: dict[str, set[str]] = {}  # property -> parent properties
+        self.functional: set[str] = set()        # functional properties
+        self.disjoint: dict[str, set[str]] = {}  # class -> disjoint classes
+        self.equivalent_classes: dict[str, set[str]] = {}  # class -> equivalent classes
+        self.same_as: dict[str, set[str]] = {}   # entity -> same-as entities
+        self.inverse_of: dict[str, str] = {}     # property -> inverse property
+        self.restrictions: list[dict] = []      # OWL restrictions (someValues, allValues)
+        self.entity_types: dict[str, set[str]] = {}  # entity -> set of types
+        self._loaded = False
+
+    def load_from_client(self, client) -> None:
+        """Load OWL ontology triples from a Loka client."""
+        # Load domain constraints
+        result = client.sparql(
+            f'SELECT ?p ?d WHERE {{ ?p <{RDFS_DOMAIN}> ?d }}'
+        )
+        for row in result.get("results", {}).get("bindings", []):
+            p = row.get("p", {}).get("value", "")
+            d = row.get("d", {}).get("value", "")
+            if p and d:
+                self.domains[p] = d
+
+        # Load range constraints
+        result = client.sparql(
+            f'SELECT ?p ?r WHERE {{ ?p <{RDFS_RANGE}> ?r }}'
+        )
+        for row in result.get("results", {}).get("bindings", []):
+            p = row.get("p", {}).get("value", "")
+            r = row.get("r", {}).get("value", "")
+            if p and r:
+                self.ranges[p] = r
+
+        # Load subclass hierarchy
+        result = client.sparql(
+            f'SELECT ?c ?parent WHERE {{ ?c <{RDFS_SUBCLASS_OF}> ?parent }}'
+        )
+        for row in result.get("results", {}).get("bindings", []):
+            c = row.get("c", {}).get("value", "")
+            parent = row.get("parent", {}).get("value", "")
+            if c and parent:
+                self.subclass_of.setdefault(c, set()).add(parent)
+
+        # Load functional properties
+        result = client.sparql(
+            f'SELECT ?p WHERE {{ ?p <{RDF_TYPE}> <{OWL_FUNCTIONAL}> }}'
+        )
+        for row in result.get("results", {}).get("bindings", []):
+            p = row.get("p", {}).get("value", "")
+            if p:
+                self.functional.add(p)
+
+        # Load property hierarchy
+        result = client.sparql(
+            f'SELECT ?p ?parent WHERE {{ ?p <{RDFS_SUB_PROPERTY_OF}> ?parent }}'
+        )
+        for row in result.get("results", {}).get("bindings", []):
+            p = row.get("p", {}).get("value", "")
+            parent = row.get("parent", {}).get("value", "")
+            if p and parent:
+                self.sub_property_of.setdefault(p, set()).add(parent)
+
+        # Load equivalent classes
+        result = client.sparql(
+            f'SELECT ?a ?b WHERE {{ ?a <{OWL_EQUIVALENT_CLASS}> ?b }}'
+        )
+        for row in result.get("results", {}).get("bindings", []):
+            a = row.get("a", {}).get("value", "")
+            b = row.get("b", {}).get("value", "")
+            if a and b:
+                self.equivalent_classes.setdefault(a, set()).add(b)
+                self.equivalent_classes.setdefault(b, set()).add(a)
+
+        # Load owl:sameAs
+        result = client.sparql(
+            f'SELECT ?a ?b WHERE {{ ?a <{OWL_SAME_AS}> ?b }}'
+        )
+        for row in result.get("results", {}).get("bindings", []):
+            a = row.get("a", {}).get("value", "")
+            b = row.get("b", {}).get("value", "")
+            if a and b:
+                self.same_as.setdefault(a, set()).add(b)
+                self.same_as.setdefault(b, set()).add(a)
+
+        # Load owl:inverseOf
+        result = client.sparql(
+            f'SELECT ?p ?inv WHERE {{ ?p <{OWL_INVERSE_OF}> ?inv }}'
+        )
+        for row in result.get("results", {}).get("bindings", []):
+            p = row.get("p", {}).get("value", "")
+            inv = row.get("inv", {}).get("value", "")
+            if p and inv:
+                self.inverse_of[p] = inv
+                self.inverse_of[inv] = p
+
+        # Load entity types (for validation)
+        result = client.sparql(
+            f'SELECT ?e ?t WHERE {{ ?e <{RDF_TYPE}> ?t }} LIMIT 10000'
+        )
+        for row in result.get("results", {}).get("bindings", []):
+            e = row.get("e", {}).get("value", "")
+            t = row.get("t", {}).get("value", "")
+            if e and t:
+                self.entity_types.setdefault(e, set()).add(t)
+
+        self._loaded = True
+
+    def is_loaded(self) -> bool:
+        """Whether the ontology has been loaded."""
+        return self._loaded
+
+    def has_constraints(self) -> bool:
+        """Whether any OWL constraints exist in the database."""
+        return bool(
+            self.domains or self.ranges or self.functional or self.disjoint
+        )
+
+    def get_all_types(self, class_iri: str) -> set[str]:
+        """Get a class and all its ancestors via rdfs:subClassOf."""
+        result = {class_iri}
+        queue = [class_iri]
+        while queue:
+            current = queue.pop()
+            for parent in self.subclass_of.get(current, set()):
+                if parent not in result:
+                    result.add(parent)
+                    queue.append(parent)
+        return result
+
+    def validate_triple(
+        self, subject: str, predicate: str, obj: str
+    ) -> Optional[OWLViolation]:
+        """Validate a single triple against OWL constraints.
+
+        Returns None if valid, or an OWLViolation if invalid.
+        """
+        triple = (subject, predicate, obj)
+
+        # Domain check
+        if predicate in self.domains:
+            expected_domain = self.domains[predicate]
+            subject_types = self.entity_types.get(subject, set())
+            if subject_types:
+                all_types = set()
+                for t in subject_types:
+                    all_types |= self.get_all_types(t)
+                if expected_domain not in all_types:
+                    return OWLViolation(
+                        f"Domain violation: {predicate} requires subject of type "
+                        f"{expected_domain}, but {subject} has types {subject_types}",
+                        "domain",
+                        triple,
+                    )
+
+        # Range check
+        if predicate in self.ranges and not obj.startswith('"'):
+            expected_range = self.ranges[predicate]
+            object_types = self.entity_types.get(obj, set())
+            if object_types:
+                all_types = set()
+                for t in object_types:
+                    all_types |= self.get_all_types(t)
+                if expected_range not in all_types:
+                    return OWLViolation(
+                        f"Range violation: {predicate} requires object of type "
+                        f"{expected_range}, but {obj} has types {object_types}",
+                        "range",
+                        triple,
+                    )
+
+        # Disjoint class check (when assigning a type)
+        if predicate == RDF_TYPE:
+            existing_types = self.entity_types.get(subject, set())
+            for existing_type in existing_types:
+                disjoint = self.disjoint.get(existing_type, set())
+                if obj in disjoint:
+                    return OWLViolation(
+                        f"Disjoint violation: {subject} is already type "
+                        f"{existing_type}, which is disjoint with {obj}",
+                        "disjoint",
+                        triple,
+                    )
+
+        return None  # Valid
+
+    def generate_verification_queries(self) -> list[tuple[str, str]]:
+        """Generate SPARQL queries that check for OWL constraint violations.
+
+        Returns a list of (description, sparql_query) tuples.
+        Each query returns rows that represent violations.
+        """
+        queries = []
+
+        # Domain violations
+        for prop, domain_class in self.domains.items():
+            queries.append((
+                f"Domain violation: {prop} requires subject of type {domain_class}",
+                f"SELECT ?s WHERE {{ ?s <{prop}> ?o . "
+                f"FILTER NOT EXISTS {{ ?s <{RDF_TYPE}> <{domain_class}> }} }}"
+            ))
+
+        # Range violations
+        for prop, range_class in self.ranges.items():
+            queries.append((
+                f"Range violation: {prop} requires object of type {range_class}",
+                f"SELECT ?o WHERE {{ ?s <{prop}> ?o . "
+                f"FILTER NOT EXISTS {{ ?o <{RDF_TYPE}> <{range_class}> }} }}"
+            ))
+
+        # Functional property violations (more than one value)
+        for prop in self.functional:
+            queries.append((
+                f"Functional violation: {prop} should have at most one value per subject",
+                f"SELECT ?s WHERE {{ ?s <{prop}> ?o1 . ?s <{prop}> ?o2 . "
+                f"FILTER(?o1 != ?o2) }}"
+            ))
+
+        # Disjoint class violations
+        for cls, disjoint_set in self.disjoint.items():
+            for other in disjoint_set:
+                queries.append((
+                    f"Disjoint violation: {cls} and {other} cannot overlap",
+                    f"SELECT ?x WHERE {{ ?x <{RDF_TYPE}> <{cls}> . "
+                    f"?x <{RDF_TYPE}> <{other}> }}"
+                ))
+
+        return queries
+
+    def validate_ntriples(self, ntriples: str) -> list[OWLViolation]:
+        """Validate a block of N-Triples. Returns list of violations."""
+        violations = []
+        for line in ntriples.splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            # Simple N-Triples parsing (subject predicate object .)
+            parts = line.split(None, 2)
+            if len(parts) < 3:
+                continue
+            s = parts[0].strip("<>")
+            p = parts[1].strip("<>")
+            o_raw = parts[2].rstrip(" .")
+            o = o_raw.strip("<>") if o_raw.startswith("<") else o_raw
+
+            violation = self.validate_triple(s, p, o)
+            if violation:
+                violations.append(violation)
+
+        return violations

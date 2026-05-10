@@ -5,7 +5,7 @@
 on 6.3k triples; user proposal to run fine-tuning alongside the from-scratch path.
 
 This document captures the plan for fine-tuning an existing open-source LLM
-on SutraDB's RDF-star corpus, as a near-term parallel track to the from-scratch
+on Loka's RDF-star corpus, as a near-term parallel track to the from-scratch
 transformer pipeline in `training/`. Both tracks share `infer_with_citations.py`'s
 generative-citation schema; only the model architecture differs.
 
@@ -56,8 +56,8 @@ These remain non-negotiable across both tracks:
 
 - **RDF triples in, RDF triples out** (§5.1). Fine-tune's output format is
   N-Triples-star, same as `infer_with_citations.py` emits.
-- **Self-citing inference** (§5.5). Fine-tune outputs land in SutraDB with
-  `sutra:generated`/`sutra:inferredFrom` provenance, identical to from-scratch.
+- **Self-citing inference** (§5.5). Fine-tune outputs land in Loka with
+  `loka:generated`/`loka:inferredFrom` provenance, identical to from-scratch.
 - **Same SPARQL+ for both** (§5.6). The fine-tuned model is queried the same
   way as the database and as the from-scratch model. Federation stays
   implicit.
@@ -73,7 +73,7 @@ revisited" section in `world-model-thesis.md`. The stated risks of §6.6 are
 mitigated by:
 
 - **Provenance**: every fine-tune output carries
-  `sutra:baseModel "<id>"` so we can audit "was this from your training data
+  `loka:baseModel "<id>"` so we can audit "was this from your training data
   or the base model's pretraining?" Honest answer: we can't fully tell, but
   we record what we know. Closed-form provenance remains a from-scratch
   property.
@@ -82,7 +82,7 @@ mitigated by:
   "always answer" prior is partially redirected by the structural objective.
   We accept that some bias leaks through.
 - **Costs more**: yes. We accept it for the iteration speed.
-- **Hallucinates more**: the citation/confidence/`sutra:generated` schema
+- **Hallucinates more**: the citation/confidence/`loka:generated` schema
   exposes hallucinations rather than hiding them. Caller policy decides what
   to do with low-confidence inferences.
 
@@ -150,7 +150,7 @@ pluggability framing.
 |---|---|
 | `prepare_jsonl.py` | Pull triples (qualifier-aware via SPARQL-star), serialize to JSONL prompts. |
 | `finetune.py` | QLoRA SFT loop. Saves adapter + tokenizer. |
-| `infer.py` | Generate predictions, emit N-Triples-star with `sutra:generated` etc. — same schema as the from-scratch `infer_with_citations.py`. |
+| `infer.py` | Generate predictions, emit N-Triples-star with `loka:generated` etc. — same schema as the from-scratch `infer_with_citations.py`. |
 | `eval.py` | Held-out triple recovery rate; sanity-check coherence. |
 
 ### Evaluation
@@ -160,12 +160,12 @@ Same evaluation surface as from-scratch:
 - **Held-out triple recovery**: mask one slot per triple, top-1 / top-5 match.
 - **Smoke coherence**: hand-pick 10 entities, generate 5 candidates each,
   flag obvious nonsense.
-- **Citation usefulness**: spot-check whether `sutra:inferredFrom` edges actually
+- **Citation usefulness**: spot-check whether `loka:inferredFrom` edges actually
   motivate the prediction, or whether they're decorative.
 
 ## Interaction with the corpus
 
-The current SutraDB corpus has 11,921 triples but no RDF-star qualifiers —
+The current Loka corpus has 11,921 triples but no RDF-star qualifiers —
 the BFS importer dropped them until commit `045f673`. To get a
 qualifier-rich corpus, re-walk the BFS from the seed:
 
@@ -174,11 +174,11 @@ rm wikidata_import_state.json
 python tools/wikidata_bfs_import.py --seed Q11064932 --max-time 18000
 ```
 
-SutraDB's `POST /triples` errors silently on duplicate main triples (the
+Loka's `POST /triples` errors silently on duplicate main triples (the
 proto layer records and continues — `server.rs:989`). Re-walk adds qualifier
 rows to existing entities without a data wipe.
 
-If you'd rather start clean: delete `sutra-data/` first.
+If you'd rather start clean: delete `loka-data/` first.
 
 ## Open questions
 

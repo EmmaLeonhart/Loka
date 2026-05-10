@@ -4,23 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Pseudo-Table Discovery — SutraDB">
-    <meta property="og:description" content="How SutraDB auto-discovers relational structure in RDF graphs using statistical significance testing, zonemaps, and the cliff steepness metric.">
-    <meta name="description" content="How SutraDB auto-discovers relational structure in RDF graphs using statistical significance testing, zonemaps, and the cliff steepness metric.">
+    <meta property="og:title" content="Pseudo-Table Discovery — Loka">
+    <meta property="og:description" content="How Loka auto-discovers relational structure in RDF graphs using statistical significance testing, zonemaps, and the cliff steepness metric.">
+    <meta name="description" content="How Loka auto-discovers relational structure in RDF graphs using statistical significance testing, zonemaps, and the cliff steepness metric.">
     <meta property="og:url" content="https://sutradb.org/theory/pseudo-table-discovery/">
-    <meta property="og:site_name" content="SutraDB">
+    <meta property="og:site_name" content="Loka">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="Pseudo-Table Discovery — SutraDB">
+    <meta name="twitter:title" content="Pseudo-Table Discovery — Loka">
     <meta name="twitter:description" content="Auto-discovering relational structure in RDF using statistical significance and zonemaps.">
     <meta name="theme-color" content="#58a6ff">
     <link rel="canonical" href="https://sutradb.org/theory/pseudo-table-discovery/">
-    <title>Pseudo-Table Discovery &mdash; SutraDB</title>
+    <title>Pseudo-Table Discovery &mdash; Loka</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f4dc;</text></svg>">
     <link rel="stylesheet" href="../../style.css">
 </head>
 <body>
 <nav>
-    <a href="../../" class="logo"><span>Sutra</span>DB</a>
+    <a href="../../" class="logo"><span>Loka</span></a>
     <a href="../../#download">Download</a>
     <a href="../../graph-vector/">Graph+Vector</a>
     <a href="../../sdb-format/">Architecture</a>
@@ -32,14 +32,14 @@
 <div class="container">
     <div class="page-header">
         <h1>Pseudo-Table <span>Discovery</span></h1>
-        <p class="subtitle">RDF has no tables, but relational structure exists. SutraDB finds it automatically.</p>
+        <p class="subtitle">RDF has no tables, but relational structure exists. Loka finds it automatically.</p>
     </div>
 
     <h2>Characteristic Sets</h2>
 
     <p>When many nodes share the same set of predicates &mdash; like all <code>Person</code> nodes having <code>name</code>, <code>age</code>, <code>email</code> &mdash; they form a "characteristic set." This group behaves like rows in a relational table, even though no table was declared.</p>
 
-    <p>SutraDB discovers these groups automatically during the background maintenance cycle and materializes <strong>pseudo-tables</strong>: columnar indexes that accelerate the SQL-like portions of SPARQL execution.</p>
+    <p>Loka discovers these groups automatically during the background maintenance cycle and materializes <strong>pseudo-tables</strong>: columnar indexes that accelerate the SQL-like portions of SPARQL execution.</p>
 
     <h2>Discovery Criteria</h2>
 
@@ -69,7 +69,7 @@
         <li><strong>No cliff (steepness &lt; 1):</strong> No clear core/tail separation. The pseudo-table may not be useful.</li>
     </ul>
 
-    <p>This metric is exposed through the health endpoint and Sutra Studio, making pseudo-table discovery double as a data quality audit.</p>
+    <p>This metric is exposed through the health endpoint and Loka Studio, making pseudo-table discovery double as a data quality audit.</p>
 
     <h2>Mixed Resolution</h2>
 

@@ -1,14 +1,14 @@
-"""Generative-citation inference: predict new triples and write them back to SutraDB.
+"""Generative-citation inference: predict new triples and write them back to Loka.
 
 For each candidate subject, find predicates used by graph-neighbors but missing
 from this subject. Mask the object slot, run the trained transformer, decode
 top-1 tokens. If the prediction is high-confidence, emit:
 
     <S>  <P>  "predicted-label" .
-    << <S> <P> "predicted-label" >>  sutra:generated     "true"^^xsd:boolean .
-    << <S> <P> "predicted-label" >>  sutra:generatedBy   "wikidata_v2" .
-    << <S> <P> "predicted-label" >>  sutra:confidence    "0.87"^^xsd:decimal .
-    << <S> <P> "predicted-label" >>  sutra:inferredFrom  << <S> <p_existing> <o_existing> >> .
+    << <S> <P> "predicted-label" >>  loka:generated     "true"^^xsd:boolean .
+    << <S> <P> "predicted-label" >>  loka:generatedBy   "wikidata_v2" .
+    << <S> <P> "predicted-label" >>  loka:confidence    "0.87"^^xsd:decimal .
+    << <S> <P> "predicted-label" >>  loka:inferredFrom  << <S> <p_existing> <o_existing> >> .
     ...
 
 Generated triples are tagged so they can be (a) hidden from default queries and
@@ -19,7 +19,7 @@ for predicted objects is the HNSW-decoder milestone (world-model thesis §5.7),
 not implemented yet.
 
 Usage:
-    python training/infer_with_citations.py --post     # write to SutraDB
+    python training/infer_with_citations.py --post     # write to Loka
     python training/infer_with_citations.py            # dry-run, file only
 """
 from __future__ import annotations
@@ -57,10 +57,10 @@ from preprocess import (  # noqa: E402
     is_reserved_predicate,
     RDFS_LABEL,
     RESERVED_PROVENANCE_PREFIX,
-    SUTRA_GENERATED,
-    SUTRA_GENERATED_BY,
-    SUTRA_CONFIDENCE,
-    SUTRA_INFERRED_FROM,
+    LOKA_GENERATED,
+    LOKA_GENERATED_BY,
+    LOKA_CONFIDENCE,
+    LOKA_INFERRED_FROM,
 )
 
 XSD_BOOLEAN = "http://www.w3.org/2001/XMLSchema#boolean"
@@ -258,7 +258,7 @@ def main() -> None:
     parser.add_argument(
         "--post",
         action="store_true",
-        help="POST results to SutraDB /triples (in addition to writing the file)",
+        help="POST results to Loka /triples (in addition to writing the file)",
     )
     parser.add_argument(
         "--model-version",
@@ -453,13 +453,13 @@ def main() -> None:
 
             out_lines.append(f"{s_term} {p_term} {o_term} .")
             qt = quoted(s_term, p_term, o_term)
-            out_lines.append(f'{qt} <{SUTRA_GENERATED}> "true"^^<{XSD_BOOLEAN}> .')
-            out_lines.append(f'{qt} <{SUTRA_GENERATED_BY}> "{escape_literal(args.model_version)}" .')
-            out_lines.append(f'{qt} <{SUTRA_CONFIDENCE}> "{confidence:.4f}"^^<{XSD_DECIMAL}> .')
+            out_lines.append(f'{qt} <{LOKA_GENERATED}> "true"^^<{XSD_BOOLEAN}> .')
+            out_lines.append(f'{qt} <{LOKA_GENERATED_BY}> "{escape_literal(args.model_version)}" .')
+            out_lines.append(f'{qt} <{LOKA_CONFIDENCE}> "{confidence:.4f}"^^<{XSD_DECIMAL}> .')
 
             for cp_uri, co_term in subj_facts[s_uri][: args.max_citations]:
                 cited = quoted(s_term, f"<{cp_uri}>", fmt_term(co_term))
-                out_lines.append(f"{qt} <{SUTRA_INFERRED_FROM}> {cited} .")
+                out_lines.append(f"{qt} <{LOKA_INFERRED_FROM}> {cited} .")
 
             n_emitted += 1
             print(

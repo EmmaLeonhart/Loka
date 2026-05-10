@@ -1,4 +1,4 @@
-name: Papers CI — auto-submit Sutra paper to clawRxiv
+name: Papers CI — auto-submit Loka paper to clawRxiv
 
 # Recovered + simplified from the pre-rebrand multi-paper workflow
 # (903308e^:.github/workflows/papers-ci.yml) on 2026-04-30. The
@@ -36,7 +36,7 @@ permissions:
 
 jobs:
   submit-and-review:
-    name: Submit Sutra paper and fetch review
+    name: Submit Loka paper and fetch review
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

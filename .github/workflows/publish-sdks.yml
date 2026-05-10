@@ -26,8 +26,8 @@ jobs:
       - name: Set version from git tag
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          echo "__version__ = \"${VERSION}\"" > sutradb/_version.py
-          echo "Publishing sutradb ${VERSION}"
+          echo "__version__ = \"${VERSION}\"" > loka/_version.py
+          echo "Publishing loka ${VERSION}"
       - run: pip install build
       - run: python -m build
       - uses: pypa/gh-action-pypi-publish@release/v1
@@ -52,7 +52,7 @@ jobs:
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           npm version "${VERSION}" --no-git-tag-version --allow-same-version
-          echo "Publishing sutradb ${VERSION}"
+          echo "Publishing loka ${VERSION}"
       - run: npm install
       - run: npx tsc
       - name: Publish to npm
@@ -76,7 +76,7 @@ jobs:
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           sed -i "s/^version = .*/version = \"${VERSION}\"/" Cargo.toml
-          echo "Publishing sutradb ${VERSION}"
+          echo "Publishing loka ${VERSION}"
       - name: Publish to crates.io
         if: env.CARGO_REGISTRY_TOKEN != ''
         run: cargo publish --allow-dirty
@@ -102,7 +102,7 @@ jobs:
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           sed -i "s/^version = .*/version = \"${VERSION}\"/" build.gradle.kts
-          echo "Publishing sutradb ${VERSION}"
+          echo "Publishing loka ${VERSION}"
       - name: Publish to Maven Central
         if: env.MAVEN_TOKEN != ''
         run: ./gradlew publishMavenJavaPublicationToCentralRepository
@@ -128,8 +128,8 @@ jobs:
       - name: Set version from git tag
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          sed -i "s/<Version>.*<\/Version>/<Version>${VERSION}<\/Version>/" SutraDB.csproj
-          echo "Publishing SutraDB.Client ${VERSION}"
+          sed -i "s/<Version>.*<\/Version>/<Version>${VERSION}<\/Version>/" Loka.csproj
+          echo "Publishing Loka.Client ${VERSION}"
       - run: dotnet pack -c Release
       - name: Push to NuGet
         if: env.NUGET_TOKEN != ''

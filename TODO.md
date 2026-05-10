@@ -1,23 +1,23 @@
-# SutraDB — TODO
+# Loka — TODO
 
 **Status: 228 of 249 items complete (92%)**
 
 # DO THE STUFF IN THE QUEUE.MD
 
-This is very important! Please actually do the stuff in that file! Do all of it. Base it off of the actual Sutra repo's usage of it and its description of it in the CLAUDE.md. The actual Sutra repo for the programming language has one that's relatively well done, although it is a bit messy at the same time.
+This is very important! Please actually do the stuff in that file! Do all of it. Base it off of the actual Loka repo's usage of it and its description of it in the CLAUDE.md. The actual Loka repo for the programming language has one that's relatively well done, although it is a bit messy at the same time.
 
 Also, please, I don't know why it is that this TODO.md is so cluttered, and you will really need to actually work on the clutter here. I'd say, for this particular Q file that we have, it has the stuff that I consider to be kind of most important to do immediately. Add every single thing here, except for the rename into the queue.md, so that we can work on this stuff. 
 
 ---
 
-## ⚠️ Rename: SutraDB → Loka (do soon)
+## ⚠️ Rename: Loka → Loka (do soon)
 
-The project is being rebranded **Loka** on Hugging Face. The GitHub repo and crate names still say `SutraDB`/`sutra-*`. This needs to actually happen, not stay deferred.
+The project is being rebranded **Loka** on Hugging Face. The GitHub repo and crate names still say `Loka`/`loka-*`. This needs to actually happen, not stay deferred.
 
-- [ ] **Repo rename** on GitHub: `EmmaLeonhart/SutraDB` → `EmmaLeonhart/Loka` (GitHub auto-redirects from the old URL, so external links keep working).
+- [ ] **Repo rename** on GitHub: `EmmaLeonhart/Loka` → `EmmaLeonhart/Loka` (GitHub auto-redirects from the old URL, so external links keep working).
 - [ ] Update `Cargo.toml` workspace `description` and `repository` fields.
-- [ ] Decide whether crate names change (`sutra-core` → `loka-core` etc.) or stay (engine retains "sutra" as the *engine* name; the *project* is Loka). Probably the latter — "Loka the project, SutraDB the engine inside it."
-- [ ] Search-replace project-level "SutraDB" → "Loka" in `README.md`, `DEVLOG.md`, `status.md`, paper, website. Leave engine-internal "SutraDB" references alone.
+- [ ] Decide whether crate names change (`loka-core` → `loka-core` etc.) or stay (engine retains "loka" as the *engine* name; the *project* is Loka). Probably the latter — "Loka the project, Loka the engine inside it."
+- [ ] Search-replace project-level "Loka" → "Loka" in `README.md`, `DEVLOG.md`, `status.md`, paper, website. Leave engine-internal "Loka" references alone.
 - [ ] Update website (`pages/index.html` etc.) headers/branding.
 - [ ] Verify HF dataset URLs (`EmmaLeonhart/loka`) keep working — they already do; the rename only affects GitHub.
 
@@ -34,20 +34,20 @@ Merge the Gradle migration (local) and MCP agentic UX work (claude.ai remote ses
 - [ ] Set up Maven Central secrets: `MAVEN_USERNAME`, `MAVEN_TOKEN`, `GPG_PRIVATE_KEY`, `GPG_PASSPHRASE`
 - [ ] Generate GPG key and upload public key to keyserver
 - [ ] Tag `v0.3.1` and push to trigger publish workflow
-- [ ] Verify `io.github.emmaleonhart:sutradb:0.3.1` appears on Maven Central
+- [ ] Verify `io.github.emmaleonhart:loka:0.3.1` appears on Maven Central
 
 ### Java/Kotlin SDK — Maven Central Ready
 The SDK is functionally complete (3 classes, ~400 LOC). Build migrated from Maven to Gradle (Kotlin DSL).
 
-- [x] JUnit 5 test suite: 24 unit tests with HTTP mocking for all SutraClient methods
+- [x] JUnit 5 test suite: 24 unit tests with HTTP mocking for all LokaClient methods
 - [x] Add `rebuildHnsw()` method (calls `POST /vectors/rebuild`)
 - [x] Add `healthReport()` method (calls `GET /health` + `GET /vectors/health`)
 - [x] Bump version to 0.3.0 (match main project)
 - [x] Migrate from Maven (pom.xml) to Gradle (Kotlin DSL)
 - [x] Switch to Sonatype Central Portal (`central-publishing-maven-plugin` → Gradle `maven-publish`)
 - [x] In-memory GPG signing (no GPG binary needed in CI)
-- [x] GroupId: `io.github.emmaleonhart`, artifact: `sutradb`
-- [ ] Integration test: start SutraDB, insert triples, query, verify round-trip
+- [x] GroupId: `io.github.emmaleonhart`, artifact: `loka`
+- [ ] Integration test: start Loka, insert triples, query, verify round-trip
 - [ ] OWL validation (match Python SDK: domain/range/subclass/disjoint/equivalent)
 - [ ] Connection retry logic with configurable timeouts
 - [ ] First publish to Maven Central
@@ -63,7 +63,7 @@ The SDK is functionally complete (3 classes, ~400 LOC). Build migrated from Mave
 
 ### HNSW Traversal via SPARQL Property Paths
 - [ ] Greedy descent + beam search semantics from graph structure and property path evaluation
-- [ ] Test: `sutra:hnswNeighbor+` produces correct ANN results
+- [ ] Test: `loka:hnswNeighbor+` produces correct ANN results
 
 ### Predicate-Based Exit Conditions (UNTIL)
 - [ ] Design UNTIL syntax for exit conditions on property path traversal
@@ -89,9 +89,9 @@ The SDK is functionally complete (3 classes, ~400 LOC). Build migrated from Mave
 
 ### Database Health Dashboard (remaining)
 - [ ] Query performance metrics: per-pattern latency percentiles, planner decision accuracy
-- [ ] `sutra health --json` mode for programmatic agent consumption
+- [ ] `loka health --json` mode for programmatic agent consumption
 - [ ] Iterate CLI health output format based on real agent usage
-- [ ] Sutra Studio health dashboard as Flutter landing page: overall status, per-index cards, action buttons
+- [ ] Loka Studio health dashboard as Flutter landing page: overall status, per-index cards, action buttons
 
 ### SDK Publishing
 - [ ] Python SDK → PyPI
@@ -100,13 +100,13 @@ The SDK is functionally complete (3 classes, ~400 LOC). Build migrated from Mave
 - [ ] C# SDK → NuGet
 - [ ] Go SDK → tag for Go modules
 
-### Sutra Studio
+### Loka Studio
 - [x] Pre-built binaries in release pipeline (Windows, Linux, macOS)
 - [x] MCP download_studio + launch_studio tools
-- [x] SUTRA_ENDPOINT env var for launch-time connection
-- [x] `sutra mcp --studio` flag to launch MCP + Studio together
-- [ ] Remote Studio access: connect Studio to a remote SutraDB over the network
-- [ ] Dart FFI bindings: replace HTTP client with direct sutra_ffi.dll calls
+- [x] LOKA_ENDPOINT env var for launch-time connection
+- [x] `loka mcp --studio` flag to launch MCP + Studio together
+- [ ] Remote Studio access: connect Studio to a remote Loka over the network
+- [ ] Dart FFI bindings: replace HTTP client with direct loka_ffi.dll calls
 - [ ] Studio-embedded MCP server: start MCP on background thread from within Studio
 - [ ] Flutter graph view: remaining browse.html parity
 - [ ] Long-term: absorb core Protege functionality
@@ -163,11 +163,11 @@ Deferred until paying customers.
 - [x] Encode directionality for property path descent/fan-out
 
 ### Database Health Dashboard
-- [x] `sutra health` CLI command with AI-readable structured output
+- [x] `loka health` CLI command with AI-readable structured output
 - [x] HNSW health: tombstone ratio, layer distribution, avg/min/max connectivity, entry point diversity
 - [x] Pseudo-table health: coverage ratio, cliff steepness, segment count, avg tail properties
 - [x] Storage health: triple count, term dictionary size, unique predicate count
-- [x] HNSW rebuild via `sutra health --rebuild-hnsw`
+- [x] HNSW rebuild via `loka health --rebuild-hnsw`
 
 ### Pseudo-Tables & Vectorized Execution
 - [x] Property model: predicate + position (Subject/Object) pairs per node
@@ -184,7 +184,7 @@ Deferred until paying customers.
 - [x] SIMD-accelerated TermId comparison: packed columns (dense u64 + sentinel nulls), AVX2 (4 u64/cycle), SSE2 (2 u64/cycle)
 - [x] Batch scan intersection: sorted merge for multi-column predicate evaluation
 - [x] Query planner integration: recognize pseudo-table-matching SPARQL patterns
-- [x] Expose health metrics via health endpoint / Sutra Studio
+- [x] Expose health metrics via health endpoint / Loka Studio
 
 ### Core Engine
 - [x] Database configuration model, HNSW edges as virtual RDF triples
@@ -221,7 +221,7 @@ Deferred until paying customers.
 - [x] LangChain VectorStore, Jupyter %%sparql magic, MCP server (6 tools)
 - [x] Agent installer CLI (--launch-studio), Protege plugin, Dockerfile
 
-### Sutra Studio (Flutter)
+### Loka Studio (Flutter)
 - [x] Desktop/web scaffold, Dart client, force-directed graph
 - [x] View modes, triple editor, SPARQL editor, ontology viewer
 - [x] HNSW health diagnostics, heatmap, backup management panel
@@ -244,12 +244,12 @@ Deferred until paying customers.
 - [x] GSP DELETE clears persistent store and flushes
 
 ### Native MCP Server
-- [x] `sutra mcp` command: native Rust MCP server built into the binary (no Python needed)
+- [x] `loka mcp` command: native Rust MCP server built into the binary (no Python needed)
 - [x] Dual-mode: `--url` for server mode, `--data-dir` for serverless mode
 - [x] 12 tools: health_report, rebuild_hnsw, verify_consistency, database_info, sparql_query, insert_triples, backup, vector_search, download_studio, launch_studio, check_update, decline_update
 - [x] Auto-update on MCP startup with 2-minute decline window (`--no-auto-update` to disable)
-- [x] Direct library calls in serverless mode (no PATH dependency on `sutra` binary)
-- [x] MCP resources: sutra://connection, sutra://version, sutra://schema
+- [x] Direct library calls in serverless mode (no PATH dependency on `loka` binary)
+- [x] MCP resources: loka://connection, loka://version, loka://schema
 - [x] MCP prompts: explore_graph, find_similar, count_by_type query templates
 - [x] MCP notifications: notifications/message for update progress, HNSW rebuild progress
 - [x] Async stdin loop with tokio::select! for concurrent notification delivery

@@ -1,17 +1,17 @@
 @echo off
-title SutraDB Playground
+title Loka Playground
 echo.
-echo   SutraDB Playground
+echo   Loka Playground
 echo   Building...
 echo.
 
 cd /d "%~dp0"
 
 :: Build release for speed (first run compiles, subsequent runs are instant)
-cargo build --release --example playground_server -p sutra-proto 2>nul
+cargo build --release --example playground_server -p loka-proto 2>nul
 if errorlevel 1 (
     echo   Build failed. Trying debug build...
-    cargo build --example playground_server -p sutra-proto
+    cargo build --example playground_server -p loka-proto
     if errorlevel 1 (
         echo   Build failed. Run 'cargo build' manually to see errors.
         pause

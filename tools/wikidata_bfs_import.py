@@ -1,8 +1,8 @@
-"""Wikidata BFS Import for SutraDB.
+"""Wikidata BFS Import for Loka.
 
 Breadth-first imports entities from Wikidata starting from a seed entity,
 including RDF-star qualifier and reference annotations on each claim.
-All data is sent to a running SutraDB instance via POST /triples.
+All data is sent to a running Loka instance via POST /triples.
 
 Safe to terminate at any time — each entity is committed individually.
 
@@ -32,14 +32,14 @@ if __name__ == "__main__":
 
 # ── Configuration ────────────────────────────────────────────────────────────
 
-SUTRA_ENDPOINT = "http://localhost:3030"
+LOKA_ENDPOINT = "http://localhost:3030"
 WIKIDATA_SPARQL = "https://query.wikidata.org/sparql"
 
-USER_AGENT = "SutraDB-Import/0.1 (https://github.com/EmmaLeonhart/SutraDB)"
+USER_AGENT = "Loka-Import/0.1 (https://github.com/EmmaLeonhart/Loka)"
 
 # Rate limits
 WIKIDATA_DELAY = 1.5  # seconds between Wikidata API calls
-SUTRA_DELAY = 0.05    # seconds between SutraDB calls (local, fast)
+LOKA_DELAY = 0.05    # seconds between Loka calls (local, fast)
 
 # Graceful shutdown
 shutdown_requested = False
@@ -124,7 +124,7 @@ def entity_to_triples(qid: str, entity: dict) -> tuple[list[str], list[str], str
           `<< <entity> <wdt:Pmain> <object> >> <wdt:Pqualifier> <qual_obj> .`
 
     Wikidata's RDF dump uses `pq:` and `pr:` namespaces because it predates
-    RDF-star. SutraDB has RDF-star natively, so we use the same `wdt:`
+    RDF-star. Loka has RDF-star natively, so we use the same `wdt:`
     predicate URI for both main statements and qualifiers — the
     qualifier-vs-statement distinction is structural (subject is a quoted
     triple), not lexical.
@@ -203,21 +203,21 @@ def entity_to_triples(qid: str, entity: dict) -> tuple[list[str], list[str], str
     return triples, linked_qids
 
 
-# ── SutraDB Client ───────────────────────────────────────────────────────────
+# ── Loka Client ───────────────────────────────────────────────────────────
 
-def sutra_health() -> bool:
+def loka_health() -> bool:
     try:
-        resp = requests.get(f"{SUTRA_ENDPOINT}/health", timeout=5)
+        resp = requests.get(f"{LOKA_ENDPOINT}/health", timeout=5)
         return resp.status_code == 200
     except:
         return False
 
 
-def sutra_insert_triples(ntriples: str) -> int:
-    """Insert N-Triples into SutraDB. Returns count inserted."""
+def loka_insert_triples(ntriples: str) -> int:
+    """Insert N-Triples into Loka. Returns count inserted."""
     try:
         resp = requests.post(
-            f"{SUTRA_ENDPOINT}/triples",
+            f"{LOKA_ENDPOINT}/triples",
             data=ntriples.encode("utf-8"),
             headers={"Content-Type": "text/plain; charset=utf-8"},
             timeout=30,
@@ -227,14 +227,14 @@ def sutra_insert_triples(ntriples: str) -> int:
             return result.get("inserted", 0)
         return 0
     except Exception as e:
-        print(f"  [ERROR] SutraDB insert: {e}")
+        print(f"  [ERROR] Loka insert: {e}")
         return 0
 
 
 # ── Main BFS Import ─────────────────────────────────────────────────────────
 
 def main():
-    parser = argparse.ArgumentParser(description="Wikidata BFS Import for SutraDB")
+    parser = argparse.ArgumentParser(description="Wikidata BFS Import for Loka")
     parser.add_argument("--seed", default="Q11064932", help="Starting Wikidata QID")
     parser.add_argument("--max-time", type=int, default=3600, help="Max runtime in seconds")
     parser.add_argument("--max-entities", type=int, default=10000, help="Max entities to import")
@@ -246,12 +246,12 @@ def main():
     print(f"Max entities: {args.max_entities}")
     print()
 
-    # Check SutraDB is running
-    if not sutra_health():
-        print("[ERROR] SutraDB is not running at", SUTRA_ENDPOINT)
+    # Check Loka is running
+    if not loka_health():
+        print("[ERROR] Loka is not running at", LOKA_ENDPOINT)
         print("Start it with: cargo run -- serve")
         sys.exit(1)
-    print("[OK] SutraDB is running")
+    print("[OK] Loka is running")
 
     # BFS state — restore from prior run if present, else start fresh from seed.
     queue: deque = deque()
@@ -327,10 +327,10 @@ def main():
         # Convert to triples
         triples, linked_qids, embed_text = entity_to_triples(qid, entity)
 
-        # Insert triples into SutraDB
+        # Insert triples into Loka
         if triples:
             ntriples_str = "\n".join(triples)
-            inserted = sutra_insert_triples(ntriples_str)
+            inserted = loka_insert_triples(ntriples_str)
             total_triples += inserted
 
         # Generate and insert embedding
@@ -338,7 +338,7 @@ def main():
             embedding = get_embedding(embed_text)
             if embedding and len(embedding) == EMBEDDING_DIM:
                 wd_uri = f"http://www.wikidata.org/entity/{qid}"
-                sutra_insert_vector(wd_uri, embedding)
+                loka_insert_vector(wd_uri, embedding)
                 total_vectors += 1
 
         # Add linked entities to queue

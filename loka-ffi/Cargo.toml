@@ -1,0 +1,17 @@
+[package]
+name = "loka-ffi"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "C-compatible FFI shared library for Loka — used by Loka Studio (Flutter) and other non-Rust consumers"
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+loka-core = { path = "../loka-core" }
+loka-hnsw = { path = "../loka-hnsw" }
+loka-sparql = { path = "../loka-sparql" }
+
+[dev-dependencies]
+tempfile = "3"

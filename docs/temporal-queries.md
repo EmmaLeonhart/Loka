@@ -1,13 +1,13 @@
-# SutraDB — Temporal Query Guide
+# Loka — Temporal Query Guide
 
-> Practical guide to using SutraDB's temporal (ontochronological) query operators.
+> Practical guide to using Loka's temporal (ontochronological) query operators.
 > For the theory and design behind these features, see `docs/ontochronology.md`.
 
 ---
 
 ## Quick Start
 
-SutraDB treats time as a structural axis of the database, not metadata on triples. Four SPARQL+ operators let you query the graph at specific moments or intervals:
+Loka treats time as a structural axis of the database, not metadata on triples. Four SPARQL+ operators let you query the graph at specific moments or intervals:
 
 | Operator | Purpose |
 |---|---|
@@ -24,22 +24,22 @@ Temporal data is stored using RDF-star annotations with three reserved predicate
 
 | Predicate | IRI | Meaning |
 |---|---|---|
-| Assertion time | `sutra:assertedAt` | "Known to be the case at this time" (point attestation) |
-| Start time | `sutra:validFrom` | "Became true at this time" (interval start) |
-| End time | `sutra:validTo` | "Stopped being true at this time" (interval end) |
+| Assertion time | `loka:assertedAt` | "Known to be the case at this time" (point attestation) |
+| Start time | `loka:validFrom` | "Became true at this time" (interval start) |
+| End time | `loka:validTo` | "Stopped being true at this time" (interval end) |
 
 ### Insert temporal triples
 
 ```turtle
 # Full interval: Napoleon was Emperor from 1804-05-18 to 1814-04-11
-<< :napoleon :heldPosition :Emperor >> sutra:validFrom "1804-05-18"^^sutra:temporal .
-<< :napoleon :heldPosition :Emperor >> sutra:validTo "1814-04-11"^^sutra:temporal .
+<< :napoleon :heldPosition :Emperor >> loka:validFrom "1804-05-18"^^loka:temporal .
+<< :napoleon :heldPosition :Emperor >> loka:validTo "1814-04-11"^^loka:temporal .
 
 # Open-ended: Alice works at Acme since 2023 (still employed)
-<< :alice :worksAt :Acme >> sutra:validFrom "2023-01-15"^^sutra:temporal .
+<< :alice :worksAt :Acme >> loka:validFrom "2023-01-15"^^loka:temporal .
 
 # Assertion time: building observed in 1847 (no known start/end)
-<< :building_42 :locatedIn :MainStreet >> sutra:assertedAt "1847"^^sutra:temporal .
+<< :building_42 :locatedIn :MainStreet >> loka:assertedAt "1847"^^loka:temporal .
 
 # Atemporal fact: no temporal predicates needed
 :water :chemicalFormula "H2O" .
@@ -67,23 +67,23 @@ A triple can be valid at multiple disjoint intervals:
 
 ```turtle
 # Alice was Director twice: 2018-2020 and 2022-2024
-<< :alice :jobTitle :Director >> sutra:validFrom "2018-01-01"^^sutra:temporal ;
-                                 sutra:validTo   "2020-06-30"^^sutra:temporal .
+<< :alice :jobTitle :Director >> loka:validFrom "2018-01-01"^^loka:temporal ;
+                                 loka:validTo   "2020-06-30"^^loka:temporal .
 
-<< :alice :jobTitle :Director >> sutra:validFrom "2022-03-01"^^sutra:temporal ;
-                                 sutra:validTo   "2024-01-15"^^sutra:temporal .
+<< :alice :jobTitle :Director >> loka:validFrom "2022-03-01"^^loka:temporal ;
+                                 loka:validTo   "2024-01-15"^^loka:temporal .
 ```
 
 ---
 
 ## 2. The Ordering Axis
 
-The "T" in temporal queries is not always a clock. SutraDB supports three axis types, configured at database creation:
+The "T" in temporal queries is not always a clock. Loka supports three axis types, configured at database creation:
 
 ```bash
-sutra create events.sdb                        # default: UTC timestamps
-sutra create movie.sdb --temporal-axis=integer  # frame/scene numbers
-sutra create scripture.sdb --temporal-axis=float # chapter.verse as float
+loka create events.sdb                        # default: UTC timestamps
+loka create movie.sdb --temporal-axis=integer  # frame/scene numbers
+loka create scripture.sdb --temporal-axis=float # chapter.verse as float
 ```
 
 | Axis | Input format | Use case |
@@ -117,7 +117,7 @@ SELECT ?person ?location WHERE {
 ```sparql
 # Who held which position in 1810?
 SELECT ?person ?position WHERE {
-  AT_TIME("1810"^^sutra:temporal) {
+  AT_TIME("1810"^^loka:temporal) {
     ?person :heldPosition ?position .
   }
 }
@@ -161,7 +161,7 @@ SELECT ?doc ?entity WHERE {
     ?entity rdf:type :Person .
     ?doc :mentions ?entity .
   }
-  VECTOR_SIMILAR(?doc :hasEmbedding "..."^^sutra:f32vec, 0.85)
+  VECTOR_SIMILAR(?doc :hasEmbedding "..."^^loka:f32vec, 0.85)
 }
 ```
 
@@ -203,7 +203,7 @@ SELECT ?person ?location WHERE {
 ```sparql
 # What positions were held during the Napoleonic era (1799-1815)?
 SELECT ?person ?position WHERE {
-  DURING("1799"^^sutra:temporal, "1815"^^sutra:temporal) {
+  DURING("1799"^^loka:temporal, "1815"^^loka:temporal) {
     ?person :heldPosition ?position .
   }
 }
@@ -250,7 +250,7 @@ SELECT ?s ?p ?o WHERE {
 ```sparql
 # All properties of a specific entity at a given time
 SELECT ?property ?value WHERE {
-  WORLD_STATE("1810"^^sutra:temporal) {
+  WORLD_STATE("1810"^^loka:temporal) {
     :napoleon ?property ?value .
   }
 }
@@ -290,7 +290,7 @@ SELECT ?change_type ?s ?p ?o WHERE {
 ```sparql
 # What changed between 1804 and 1814?
 SELECT ?change_type ?person ?position WHERE {
-  TEMPORAL_DIFF("1804"^^sutra:temporal, "1814"^^sutra:temporal) {
+  TEMPORAL_DIFF("1804"^^loka:temporal, "1814"^^loka:temporal) {
     ?person :heldPosition ?position .
   }
 }
@@ -338,7 +338,7 @@ All temporal operators accept timestamps in multiple formats:
 | Format | Example | Notes |
 |---|---|---|
 | `xsd:dateTime` typed literal | `"2024-03-14T10:00:00"^^xsd:dateTime` | Standard XML Schema datetime |
-| `sutra:temporal` typed literal | `"1847"^^sutra:temporal` | Precision derived from format |
+| `loka:temporal` typed literal | `"1847"^^loka:temporal` | Precision derived from format |
 | Plain string literal | `"1847-03-15"` | Parsed as ISO-like date |
 | Integer literal | `42` | Raw integer — frames, scenes, pages |
 | Bound variable | `?timestamp` | Decoded from inline temporal TermId |
@@ -411,9 +411,9 @@ SELECT ?s ?p ?o WHERE {
 ```sparql
 # All positions Napoleon held, with their time intervals
 SELECT ?position ?start ?end WHERE {
-  << :napoleon :heldPosition ?position >> sutra:validFrom ?start .
+  << :napoleon :heldPosition ?position >> loka:validFrom ?start .
   OPTIONAL {
-    << :napoleon :heldPosition ?position >> sutra:validTo ?end .
+    << :napoleon :heldPosition ?position >> loka:validTo ?end .
   }
 }
 ORDER BY ?start
@@ -456,7 +456,7 @@ SELECT ?change_type ?property ?value WHERE {
 
 ## 9. Combining Temporal + Vector + Graph
 
-The real power of SutraDB's temporal operators is that they compose freely with vector search and graph traversal in a single query.
+The real power of Loka's temporal operators is that they compose freely with vector search and graph traversal in a single query.
 
 ### Temporal vector search
 
@@ -467,9 +467,9 @@ SELECT ?doc ?person WHERE {
     ?person rdf:type :Person .
     ?doc :mentions ?person .
   }
-  VECTOR_SIMILAR(?doc :hasEmbedding "..."^^sutra:f32vec, 0.85)
+  VECTOR_SIMILAR(?doc :hasEmbedding "..."^^loka:f32vec, 0.85)
 }
-ORDER BY DESC(VECTOR_SCORE(?doc :hasEmbedding "..."^^sutra:f32vec))
+ORDER BY DESC(VECTOR_SCORE(?doc :hasEmbedding "..."^^loka:f32vec))
 ```
 
 ### Temporal graph traversal + vector
@@ -477,11 +477,11 @@ ORDER BY DESC(VECTOR_SCORE(?doc :hasEmbedding "..."^^sutra:f32vec))
 ```sparql
 # At a specific time, find semantically similar shrines and traverse to their deities
 SELECT ?shrine ?deity ?myth WHERE {
-  AT_TIME("1200"^^sutra:temporal) {
+  AT_TIME("1200"^^loka:temporal) {
     ?shrine :enshrines ?deity .
     ?deity :appearsIn ?myth .
   }
-  VECTOR_SIMILAR(?shrine :descriptionEmbedding "..."^^sutra:f32vec, 0.75)
+  VECTOR_SIMILAR(?shrine :descriptionEmbedding "..."^^loka:f32vec, 0.75)
 }
 ```
 
@@ -495,8 +495,8 @@ SELECT ?s ?p ?o ?score WHERE {
     ?s ?p ?o .
   }
   FILTER(?change_type = "added")
-  VECTOR_SIMILAR(?s :embedding "..."^^sutra:f32vec, 0.60)
-  BIND(VECTOR_SCORE(?s :embedding "..."^^sutra:f32vec) AS ?score)
+  VECTOR_SIMILAR(?s :embedding "..."^^loka:f32vec, 0.60)
+  BIND(VECTOR_SCORE(?s :embedding "..."^^loka:f32vec) AS ?score)
 }
 ORDER BY DESC(?score)
 ```
@@ -511,7 +511,7 @@ All temporal operators use a **post-filter** strategy: inner patterns evaluate a
 
 ### Index usage
 
-- **TSPO index** is built automatically when temporal predicates (`sutra:assertedAt`, `sutra:validFrom`, `sutra:validTo`) are present.
+- **TSPO index** is built automatically when temporal predicates (`loka:assertedAt`, `loka:validFrom`, `loka:validTo`) are present.
 - Databases without temporal data pay zero storage or query cost.
 - The TSPO index is a B-tree with time as the leading key — range scans are O(log n).
 

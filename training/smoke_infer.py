@@ -1,6 +1,6 @@
 """Offline smoke test for infer_with_citations.py.
 
-Skips the SutraDB SPARQL pull. Reads training/data/triples.txt directly
+Skips the Loka SPARQL pull. Reads training/data/triples.txt directly
 (already English labels) to build subject_label -> [(predicate_label, object_label)]
 and exercises the same prediction + emit code path as the real script. Validates:
 - the checkpoint loads
@@ -27,10 +27,10 @@ from infer_with_citations import (  # noqa: E402
     predict_object,
     quoted,
     escape_literal,
-    SUTRA_GENERATED,
-    SUTRA_GENERATED_BY,
-    SUTRA_CONFIDENCE,
-    SUTRA_INFERRED_FROM,
+    LOKA_GENERATED,
+    LOKA_GENERATED_BY,
+    LOKA_CONFIDENCE,
+    LOKA_INFERRED_FROM,
     XSD_BOOLEAN,
     XSD_DECIMAL,
 )
@@ -155,14 +155,14 @@ def main() -> None:
             o_term = f'"{escape_literal(o_lab)}"'
             out_lines.append(f"{s_term} {p_term} {o_term} .")
             qt = quoted(s_term, p_term, o_term)
-            out_lines.append(f'{qt} <{SUTRA_GENERATED}> "true"^^<{XSD_BOOLEAN}> .')
-            out_lines.append(f'{qt} <{SUTRA_GENERATED_BY}> "{escape_literal(MODEL_VERSION)}" .')
-            out_lines.append(f'{qt} <{SUTRA_CONFIDENCE}> "{conf:.4f}"^^<{XSD_DECIMAL}> .')
+            out_lines.append(f'{qt} <{LOKA_GENERATED}> "true"^^<{XSD_BOOLEAN}> .')
+            out_lines.append(f'{qt} <{LOKA_GENERATED_BY}> "{escape_literal(MODEL_VERSION)}" .')
+            out_lines.append(f'{qt} <{LOKA_CONFIDENCE}> "{conf:.4f}"^^<{XSD_DECIMAL}> .')
             for cp, co in subj_facts[s_lab][:MAX_CITATIONS]:
                 cited = quoted(
                     s_term, label_to_urn(cp, "prop"), f'"{escape_literal(co)}"'
                 )
-                out_lines.append(f"{qt} <{SUTRA_INFERRED_FROM}> {cited} .")
+                out_lines.append(f"{qt} <{LOKA_INFERRED_FROM}> {cited} .")
             n_emitted += 1
 
     print(f"\n[smoke] {n_emitted}/{n_attempted} predictions met threshold")

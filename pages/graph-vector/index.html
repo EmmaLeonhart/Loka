@@ -5,23 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- Open Graph / Discord / Twitter preview -->
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Graph + Vector Databases Explained — SutraDB">
-    <meta property="og:description" content="How SutraDB unifies graph databases and vector databases into a single system where vectors are just triples.">
-    <meta name="description" content="How SutraDB unifies graph databases and vector databases into a single system where vectors are just triples.">
+    <meta property="og:title" content="Graph + Vector Databases Explained — Loka">
+    <meta property="og:description" content="How Loka unifies graph databases and vector databases into a single system where vectors are just triples.">
+    <meta name="description" content="How Loka unifies graph databases and vector databases into a single system where vectors are just triples.">
     <meta property="og:url" content="https://sutradb.org/graph-vector/">
-    <meta property="og:site_name" content="SutraDB">
+    <meta property="og:site_name" content="Loka">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="Graph + Vector Databases Explained — SutraDB">
-    <meta name="twitter:description" content="How SutraDB unifies graph databases and vector databases into a single system where vectors are just triples.">
+    <meta name="twitter:title" content="Graph + Vector Databases Explained — Loka">
+    <meta name="twitter:description" content="How Loka unifies graph databases and vector databases into a single system where vectors are just triples.">
     <meta name="theme-color" content="#58a6ff">
     <link rel="canonical" href="https://sutradb.org/graph-vector/">
-    <title>Graph + Vector Databases Explained &mdash; SutraDB</title>
+    <title>Graph + Vector Databases Explained &mdash; Loka</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f4dc;</text></svg>">
     <link rel="stylesheet" href="../style.css">
 </head>
 <body>
 <nav>
-    <a href="../" class="logo"><span>Sutra</span>DB</a>
+    <a href="../" class="logo"><span>Loka</span></a>
     <a href="../#download">Download</a>
     <a href="../graph-vector/">Graph+Vector</a>
     <a href="../sdb-format/">Architecture</a>
@@ -33,7 +33,7 @@
 <div class="container">
     <div class="page-header">
         <h1>Graph + Vector <span>Databases</span></h1>
-        <p class="subtitle">What they are, why they matter, and how SutraDB combines them into one system.</p>
+        <p class="subtitle">What they are, why they matter, and how Loka combines them into one system.</p>
     </div>
 
     <h2>If You're Coming from SQL</h2>
@@ -67,8 +67,8 @@ Bob    type   Person .</code></pre>
         <tr><th>Your data looks like...</th><th>Use</th></tr>
         <tr><td>Spreadsheets, invoices, accounting</td><td>SQL (PostgreSQL, SQLite)</td></tr>
         <tr><td>Documents, nested JSON, catalogs</td><td>Document DB (MongoDB)</td></tr>
-        <tr><td>Relationships, networks, knowledge, ontologies</td><td><strong>Graph DB (SutraDB)</strong></td></tr>
-        <tr><td>Embeddings, similarity search, recommendations</td><td><strong>Vector DB (SutraDB)</strong></td></tr>
+        <tr><td>Relationships, networks, knowledge, ontologies</td><td><strong>Graph DB (Loka)</strong></td></tr>
+        <tr><td>Embeddings, similarity search, recommendations</td><td><strong>Vector DB (Loka)</strong></td></tr>
     </table>
 
     <h2>If You're Coming from MongoDB</h2>
@@ -86,7 +86,7 @@ Bob    type   Person .</code></pre>
             <p style="color:var(--muted);font-size:0.9em;">Data is <strong>denormalized</strong> &mdash; everything about Alice is in one document. Traversing relationships means looking up other documents by reference. No native relationship traversal.</p>
         </div>
         <div class="card">
-            <h4>SutraDB (Graph)</h4>
+            <h4>Loka (Graph)</h4>
 <pre><code>Alice knows Bob .
 Alice knows Carol .
 Alice interest ML .
@@ -133,13 +133,13 @@ Bob interest Databases .</code></pre>
     </ul>
 
     <div class="callout orange">
-        <strong>This is the problem SutraDB solves</strong>
-        Instead of bolting a vector database onto a graph database (or vice versa), SutraDB makes vectors a native part of the graph. One database, one query, one source of truth.
+        <strong>This is the problem Loka solves</strong>
+        Instead of bolting a vector database onto a graph database (or vice versa), Loka makes vectors a native part of the graph. One database, one query, one source of truth.
     </div>
 
-    <h2>SutraDB: One Database for Both</h2>
+    <h2>Loka: One Database for Both</h2>
 
-    <p>In SutraDB, a vector embedding is just another <strong>triple</strong> &mdash; a relationship between an entity and its embedding:</p>
+    <p>In Loka, a vector embedding is just another <strong>triple</strong> &mdash; a relationship between an entity and its embedding:</p>
 
 <pre><code><span class="cmt">-- Regular graph data:</span>
 :paper42  rdf:type     :Paper .
@@ -148,7 +148,7 @@ Bob interest Databases .</code></pre>
 :paper42  :cites       :paper17 .
 
 <span class="cmt">-- The embedding is also a triple:</span>
-:paper42  :hasEmbedding  <span class="str">"0.23 -0.11 0.87 ..."</span>^^sutra:f32vec .</code></pre>
+:paper42  :hasEmbedding  <span class="str">"0.23 -0.11 0.87 ..."</span>^^loka:f32vec .</code></pre>
 
     <p>The vector is stored in the same database, indexed by the same system, and queryable in the same language. No sync, no translation, no second database.</p>
 
@@ -171,13 +171,13 @@ Bob interest Databases .</code></pre>
     </div>
 
     <div class="callout green">
-        <strong>SutraDB (one query):</strong>
+        <strong>Loka (one query):</strong>
 <pre><code>SELECT ?paper ?title WHERE {
-  VECTOR_SIMILAR(?paper :hasEmbedding "..."^^sutra:f32vec, 0.8)
+  VECTOR_SIMILAR(?paper :hasEmbedding "..."^^loka:f32vec, 0.8)
   ?paper :cites ?cited .
   ?cited :author :Vaswani .
   ?paper :title ?title .
-} ORDER BY DESC(VECTOR_SCORE(?paper :hasEmbedding "..."^^sutra:f32vec))
+} ORDER BY DESC(VECTOR_SCORE(?paper :hasEmbedding "..."^^loka:f32vec))
 LIMIT 10</code></pre>
         One query. Graph traversal and vector search interleaved. The query planner decides the optimal execution order.
     </div>
@@ -210,16 +210,16 @@ LIMIT 10</code></pre>
 
     <h2>Entity Resolution via Vectors</h2>
 
-    <p>An important property: in SutraDB, <strong>multiple entities can share the same vector</strong>. This enables automatic entity resolution through vector search.</p>
+    <p>An important property: in Loka, <strong>multiple entities can share the same vector</strong>. This enables automatic entity resolution through vector search.</p>
 
 <pre><code><span class="cmt">-- Two different entities, same word, same embedding:</span>
-:bank_financial  :hasEmbedding  <span class="str">"0.5 0.3 ..."</span>^^sutra:f32vec .
-:bank_river      :hasEmbedding  <span class="str">"0.5 0.3 ..."</span>^^sutra:f32vec .
+:bank_financial  :hasEmbedding  <span class="str">"0.5 0.3 ..."</span>^^loka:f32vec .
+:bank_river      :hasEmbedding  <span class="str">"0.5 0.3 ..."</span>^^loka:f32vec .
 
 <span class="cmt">-- A vector search for "bank" returns BOTH entities.</span>
 <span class="cmt">-- Then graph patterns disambiguate:</span>
 SELECT ?entity ?type WHERE {
-  VECTOR_SIMILAR(?entity :hasEmbedding <span class="str">"..."</span>^^sutra:f32vec, 0.9)
+  VECTOR_SIMILAR(?entity :hasEmbedding <span class="str">"..."</span>^^loka:f32vec, 0.9)
   ?entity rdf:type ?type .
 }
 <span class="cmt">-- Returns: bank_financial (type: FinancialInstitution)</span>
@@ -229,7 +229,7 @@ SELECT ?entity ?type WHERE {
 
     <h2>How HNSW Indexing Works</h2>
 
-    <p>SutraDB uses <strong>HNSW (Hierarchical Navigable Small World)</strong> for vector search. Here's the intuition:</p>
+    <p>Loka uses <strong>HNSW (Hierarchical Navigable Small World)</strong> for vector search. Here's the intuition:</p>
 
     <ol>
         <li>Imagine all your vectors as points in a high-dimensional space</li>

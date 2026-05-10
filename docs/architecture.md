@@ -1,4 +1,4 @@
-# SutraDB — Architecture
+# Loka — Architecture
 
 > A lean, high-performance RDF triplestore with native vector indexing and hybrid SPARQL.
 > Influenced by Qdrant's vector indexing and Oxigraph's storage architecture, unified into a single system.
@@ -8,14 +8,14 @@
 
 ## 1. Design Philosophy
 
-SutraDB is a single-purpose database. Its only job is to store triples and answer queries over them as fast as possible, at any scale. The database is isomorphic with reality — it stores what you put in, nothing more. OWL reasoning is planned as an opt-in query-time layer that never modifies stored data. RDFS inference is out of scope.
+Loka is a single-purpose database. Its only job is to store triples and answer queries over them as fast as possible, at any scale. The database is isomorphic with reality — it stores what you put in, nothing more. OWL reasoning is planned as an opt-in query-time layer that never modifies stored data. RDFS inference is out of scope.
 
 **Four non-negotiable properties:**
 
 1. Any traversal, of any depth, across the entire database, must be expressible in a single query.
 2. Vectors are triples. A vector embedding is just an attribute of a node or an edge — stored, indexed, and queried the same way as any other predicate.
 3. The database stays lean. Complexity is the enemy of performance. Every feature must justify its presence in terms of query throughput or data model expressiveness.
-4. **Serverless by default, server when needed.** Like SQLite, SutraDB can be embedded directly in your application — just open a `.sdb` file. No daemon, no port, no configuration. When you need HTTP access, multi-client concurrency, or a SPARQL endpoint, start it in server mode. Same storage format either way.
+4. **Serverless by default, server when needed.** Like SQLite, Loka can be embedded directly in your application — just open a `.sdb` file. No daemon, no port, no configuration. When you need HTTP access, multi-client concurrency, or a SPARQL endpoint, start it in server mode. Same storage format either way.
 
 ---
 
@@ -25,14 +25,14 @@ SutraDB is a single-purpose database. Its only job is to store triples and answe
 
 All data is stored as RDF-star triples: subject, predicate, object — where any of the three positions can itself be a quoted triple. This gives us statements about statements natively, without reification hacks.
 
-RDF-star is a **superset of RDF 1.2** — any valid RDF 1.2 data (triple terms in object position only) is also valid RDF-star. SutraDB additionally allows triple terms in subject position, which is the natural pattern for annotating edges with vector embeddings.
+RDF-star is a **superset of RDF 1.2** — any valid RDF 1.2 data (triple terms in object position only) is also valid RDF-star. Loka additionally allows triple terms in subject position, which is the natural pattern for annotating edges with vector embeddings.
 
 ```turtle
 # Embedding on a node
-:paper_42 :hasEmbedding "0.23 -0.11 0.87 ..."^^sutra:f32vec .
+:paper_42 :hasEmbedding "0.23 -0.11 0.87 ..."^^loka:f32vec .
 
 # Embedding on a relationship (RDF-star)
-<< :paper_42 :discusses :TransformerArchitecture >> :hasEmbedding "0.23 -0.11 ..."^^sutra:f32vec .
+<< :paper_42 :discusses :TransformerArchitecture >> :hasEmbedding "0.23 -0.11 ..."^^loka:f32vec .
 << :paper_42 :discusses :TransformerArchitecture >> :confidence 0.91 .
 ```
 
@@ -40,7 +40,7 @@ RDF-star means provenance, confidence scores, and vector embeddings on edges are
 
 ### 2.2 Vector Literals
 
-A new literal type, `sutra:f32vec`, stores a fixed-dimension array of 32-bit floats. The database treats this type specially:
+A new literal type, `loka:f32vec`, stores a fixed-dimension array of 32-bit floats. The database treats this type specially:
 
 - At schema declaration time, dimensionality is registered for a given predicate.
 - An HNSW index is automatically built and maintained over all triples with that predicate.
@@ -50,10 +50,10 @@ A new literal type, `sutra:f32vec`, stores a fixed-dimension array of 32-bit flo
 **Schema declaration:**
 
 ```turtle
-sutra:declareVectorPredicate :hasEmbedding ;
-    sutra:dimensions 1536 ;
-    sutra:hnswM 16 ;
-    sutra:hnswEfConstruction 200 .
+loka:declareVectorPredicate :hasEmbedding ;
+    loka:dimensions 1536 ;
+    loka:hnswM 16 ;
+    loka:hnswEfConstruction 200 .
 ```
 
 ---
@@ -64,7 +64,7 @@ sutra:declareVectorPredicate :hasEmbedding ;
 
 All triples are stored across six covering indexes to ensure any SPARQL access pattern hits an index rather than scanning. For RDF-star quoted triples, the quoted triple is assigned a deterministic content-addressed ID and treated as a node internally.
 
-SutraDB maintains **five types of indexes**. The first three are covering indexes over interned u64 IDs that ensure any triple access pattern hits an index rather than scanning. The fourth is a native vector index that the query planner treats as a first-class access path alongside the triple indexes. The fifth is the temporal index that makes SutraDB an ontochronological database — time is a structural axis, not metadata.
+Loka maintains **five types of indexes**. The first three are covering indexes over interned u64 IDs that ensure any triple access pattern hits an index rather than scanning. The fourth is a native vector index that the query planner treats as a first-class access path alongside the triple indexes. The fifth is the temporal index that makes Loka an ontochronological database — time is a structural axis, not metadata.
 
 | Index | Key Order | Purpose |
 |---|---|---|
@@ -72,7 +72,7 @@ SutraDB maintains **five types of indexes**. The first three are covering indexe
 | **POS** | Predicate → Object → Subject | Predicate-first lookups: type queries (`?x rdf:type :Person`), predicate+object reverse lookup for vector resolution. |
 | **OSP** | Object → Subject → Predicate | Object-first reverse traversal: "what points to this entity?" |
 | **VECTOR(p)** | One HNSW graph per vector predicate | Approximate nearest neighbor search over vector embeddings. Keyed by the vector object's TermId. Returns ranked results that join back through POS for entity resolution. |
-| **TSPO** | Time → Subject → Predicate → Object | Temporal queries: "what was the complete world state at time T?" Single range scan on the leading time key. Built automatically when temporal predicates (`sutra:assertedAt`, `sutra:validFrom`, `sutra:validTo`) are present. See `docs/ontochronology.md` for full design. |
+| **TSPO** | Time → Subject → Predicate → Object | Temporal queries: "what was the complete world state at time T?" Single range scan on the leading time key. Built automatically when temporal predicates (`loka:assertedAt`, `loka:validFrom`, `loka:validTo`) are present. See `docs/ontochronology.md` for full design. |
 
 All triple index keys are 24 bytes (3 × u64 in big-endian for correct sort order). Since they are sorted, prefix scans serve multiple access patterns — there is no need for separate SP or PO indexes because they are just prefix scans on SPO and POS respectively.
 
@@ -114,15 +114,15 @@ The HNSW index is a first-class index alongside SPO/POS/OSP — the query planne
 
 ### 4.4 Virtual Triples
 
-HNSW neighbor connections are exposed as **virtual triples** using the `sutra:hnswNeighbor` predicate:
+HNSW neighbor connections are exposed as **virtual triples** using the `loka:hnswNeighbor` predicate:
 
 ```turtle
-:entity_A sutra:hnswNeighbor :entity_B .
+:entity_A loka:hnswNeighbor :entity_B .
 ```
 
 These triples are not stored in SPO/POS/OSP — they exist only in the HNSW graph structure and are generated on-the-fly when queried. This means:
 
-- `SELECT ?neighbor WHERE { :entity sutra:hnswNeighbor ?neighbor }` traverses the HNSW graph like any other triple pattern
+- `SELECT ?neighbor WHERE { :entity loka:hnswNeighbor ?neighbor }` traverses the HNSW graph like any other triple pattern
 - The same SPARQL executor handles both stored triples and virtual HNSW triples — **one unified graph, one traversal process**
 - No special API or query syntax needed to explore the vector index structure
 
@@ -160,7 +160,7 @@ Future work: lock-free HNSW variants using atomic CAS on neighbor lists for writ
 
 ### 4.7 Background Maintenance Cycle
 
-During low-usage periods, SutraDB runs a background optimization cycle that rebuilds indexes without any downtime. The old indexes remain fully operational and in-memory while new ones are constructed — queries continue to hit the old indexes until the rebuild completes, then an atomic swap replaces them.
+During low-usage periods, Loka runs a background optimization cycle that rebuilds indexes without any downtime. The old indexes remain fully operational and in-memory while new ones are constructed — queries continue to hit the old indexes until the rebuild completes, then an atomic swap replaces them.
 
 This cycle handles two things:
 1. **HNSW rebuild** — construct a fresh HNSW graph from current vector triples. Eliminates tombstoned nodes, rebalances layer assignments, produces optimal neighbor connections for the current vector distribution.
@@ -170,7 +170,7 @@ This cycle handles two things:
 
 ## 4.8 Pseudo-Tables (Auto-Discovered Columnar Indexes)
 
-RDF has no tables, but relational structure exists implicitly in the graph. Nodes that share the same predicate-position structure are, in effect, rows of an implicit table. SutraDB auto-discovers these groups and materializes **pseudo-tables** — columnar indexes over groups of structurally similar nodes — to accelerate the SQL-like portions of SPARQL execution (joins, filters, aggregates over uniform data).
+RDF has no tables, but relational structure exists implicitly in the graph. Nodes that share the same predicate-position structure are, in effect, rows of an implicit table. Loka auto-discovers these groups and materializes **pseudo-tables** — columnar indexes over groups of structurally similar nodes — to accelerate the SQL-like portions of SPARQL execution (joins, filters, aggregates over uniform data).
 
 ### 4.8.1 Property Definition
 
@@ -223,13 +223,13 @@ The distribution of properties across a pseudo-table group reveals data quality:
 - **Healthy**: sharp "cliff" between core and tail properties. Example: 10 properties held by 100% of the group, every other property held by ≤10%. This indicates well-structured, consistent data.
 - **Unhealthy**: gradual slope from core to tail. Many properties at 30–40% coverage, no clear separation. This indicates inconsistent schema usage.
 
-The cliff steepness is a quantifiable metric exposed through the health endpoint and Sutra Studio. It measures how "table-like" a group of nodes actually is — the sharper the cliff, the more benefit the pseudo-table provides.
+The cliff steepness is a quantifiable metric exposed through the health endpoint and Loka Studio. It measures how "table-like" a group of nodes actually is — the sharper the cliff, the more benefit the pseudo-table provides.
 
 Note that pseudo-tables also serve as a **data health indicator** beyond query optimization. Well-structured data naturally forms clean pseudo-tables with steep cliffs — the pseudo-table discovery process doubles as a data quality audit. Incomplete or inconsistent data produces shallow cliffs or fails to form pseudo-tables at all. This makes the pseudo-table health metrics a core component of the database health dashboard (see §4.9).
 
 ### 4.8.6 Relationship to Prior Work
 
-The concept of grouping RDF subjects by shared predicate structure is known in the literature as **characteristic sets** (Neumann & Moerkotte, 2011; Pham et al., WWW 2015 — "MonetDB/RDF: Discovering and Exploiting the Emergent Schema"). SutraDB's pseudo-tables extend this with:
+The concept of grouping RDF subjects by shared predicate structure is known in the literature as **characteristic sets** (Neumann & Moerkotte, 2011; Pham et al., WWW 2015 — "MonetDB/RDF: Discovering and Exploiting the Emergent Schema"). Loka's pseudo-tables extend this with:
 - Statistical significance testing (p < 0.05) rather than pure frequency thresholds
 - Per-column statistics (min/max/null_count/distinct_count) following DuckDB's zonemap pattern
 - Segment-level storage (~2048 rows per segment) with per-segment statistics for skip-scan pruning
@@ -242,11 +242,11 @@ Implementation references: DataFusion's `ColumnStatistics` and `Precision<T>` pa
 
 ## 4.9 Database Health Dashboard
 
-SutraDB exposes comprehensive database health diagnostics through two interfaces:
+Loka exposes comprehensive database health diagnostics through two interfaces:
 
-1. **Sutra Studio** (GUI) — visual health dashboard with charts, heatmaps, and interactive exploration. Aimed at human operators who want visual intuition about database state.
+1. **Loka Studio** (GUI) — visual health dashboard with charts, heatmaps, and interactive exploration. Aimed at human operators who want visual intuition about database state.
 
-2. **`sutra health`** (CLI) — text-based health report aimed at AI agents. All metrics are output as structured text that an agent can parse and reason about. No GUI required.
+2. **`loka health`** (CLI) — text-based health report aimed at AI agents. All metrics are output as structured text that an agent can parse and reason about. No GUI required.
 
 Both interfaces expose the same underlying metrics:
 
@@ -264,7 +264,7 @@ The health dashboard is a diagnostic tool, not a monitoring system — it report
 
 ## 5. SPARQL+ Extension
 
-SutraDB's query language is called **SPARQL+** — a superset of SPARQL 1.1. Any valid SPARQL 1.1 query works as-is. SPARQL+ adds three categories of extensions that standard SPARQL cannot express: vector search operators, predicate-based exit conditions on property path traversal, and temporal scope operators.
+Loka's query language is called **SPARQL+** — a superset of SPARQL 1.1. Any valid SPARQL 1.1 query works as-is. SPARQL+ adds three categories of extensions that standard SPARQL cannot express: vector search operators, predicate-based exit conditions on property path traversal, and temporal scope operators.
 
 ### 5.1 VECTOR_SIMILAR Operator
 
@@ -275,18 +275,18 @@ The extensions below add vector search capabilities:
 SELECT ?doc ?entity WHERE {
   ?entity rdf:type :Person .
   ?doc :mentions ?entity .
-  VECTOR_SIMILAR(?doc :hasEmbedding "..."^^sutra:f32vec, 0.85)
+  VECTOR_SIMILAR(?doc :hasEmbedding "..."^^loka:f32vec, 0.85)
 }
 
 # With explicit ef_search hint
-VECTOR_SIMILAR(?doc :hasEmbedding "..."^^sutra:f32vec, 0.85, ef:=200)
+VECTOR_SIMILAR(?doc :hasEmbedding "..."^^loka:f32vec, 0.85, ef:=200)
 
 # Similarity score in ORDER BY
 SELECT ?paper WHERE {
   :TransformerArchitecture :influences+ ?concept .
   ?paper :discusses ?concept .
-  VECTOR_SIMILAR(?paper :hasEmbedding "..."^^sutra:f32vec, 0.80)
-} ORDER BY DESC(VECTOR_SCORE(?paper :hasEmbedding "..."^^sutra:f32vec))
+  VECTOR_SIMILAR(?paper :hasEmbedding "..."^^loka:f32vec, 0.80)
+} ORDER BY DESC(VECTOR_SCORE(?paper :hasEmbedding "..."^^loka:f32vec))
 ```
 
 `VECTOR_SIMILAR` takes a subject variable, a vector predicate, a query vector literal, and a similarity threshold. It returns all subject IRIs whose embedding exceeds the threshold, ranked by cosine similarity.
@@ -360,7 +360,7 @@ SELECT ?change_type ?s ?p ?o WHERE {
 }
 ```
 
-**Timestamp formats:** All temporal operators accept typed literals (`xsd:dateTime`, `sutra:temporal`), plain string literals parsed as ISO dates, integer literals (for frame/scene ordering axes), and bound variables.
+**Timestamp formats:** All temporal operators accept typed literals (`xsd:dateTime`, `loka:temporal`), plain string literals parsed as ISO dates, integer literals (for frame/scene ordering axes), and bound variables.
 
 **Containment model:** AT_TIME and WORLD_STATE use three-valued temporal containment (Definite/Open/Outside/Atemporal). DURING uses interval overlap detection. TEMPORAL_DIFF binds `?change_type` to `"added"`, `"removed"`, or `"unchanged"`.
 
@@ -372,7 +372,7 @@ SELECT ?doc ?entity WHERE {
     ?entity rdf:type :Person .
     ?doc :mentions ?entity .
   }
-  VECTOR_SIMILAR(?doc :hasEmbedding "..."^^sutra:f32vec, 0.85)
+  VECTOR_SIMILAR(?doc :hasEmbedding "..."^^loka:f32vec, 0.85)
 }
 ```
 
@@ -381,26 +381,26 @@ SELECT ?doc ?entity WHERE {
 ## 6. Crate Architecture
 
 ```
-sutra-core/      # Triple storage, LSM indexes, IRI interning, RDF-star IDs
-sutra-hnsw/      # HNSW index, vector literal type, predicate index registry
-sutra-sparql/    # SPARQL 1.1 parser, planner, executor, hybrid extension
-sutra-proto/     # SPARQL HTTP protocol, Graph Store Protocol, REST API
-sutra-cli/       # CLI: serve, query, import, export, health, mcp
-sutra-ffi/       # C-compatible FFI layer for embedding in non-Rust apps
+loka-core/      # Triple storage, LSM indexes, IRI interning, RDF-star IDs
+loka-hnsw/      # HNSW index, vector literal type, predicate index registry
+loka-sparql/    # SPARQL 1.1 parser, planner, executor, hybrid extension
+loka-proto/     # SPARQL HTTP protocol, Graph Store Protocol, REST API
+loka-cli/       # CLI: serve, query, import, export, health, mcp
+loka-ffi/       # C-compatible FFI layer for embedding in non-Rust apps
 ```
 
 **Hard dependency rules:**
-- `sutra-hnsw` → **no dependency on `sutra-sparql`**. Pure data structure crate.
-- `sutra-sparql` → depends on `sutra-core` + `sutra-hnsw`
-- `sutra-proto` → depends on `sutra-sparql`
-- `sutra-cli` → depends on `sutra-proto` + `sutra-sparql`
-- `sutra-ffi` → depends on `sutra-core` + `sutra-hnsw` + `sutra-sparql`. Produces a C shared library (`.dll`/`.so`/`.dylib`).
+- `loka-hnsw` → **no dependency on `loka-sparql`**. Pure data structure crate.
+- `loka-sparql` → depends on `loka-core` + `loka-hnsw`
+- `loka-proto` → depends on `loka-sparql`
+- `loka-cli` → depends on `loka-proto` + `loka-sparql`
+- `loka-ffi` → depends on `loka-core` + `loka-hnsw` + `loka-sparql`. Produces a C shared library (`.dll`/`.so`/`.dylib`).
 
 ---
 
-## 7. Sutra Studio
+## 7. Loka Studio
 
-Sutra Studio is a Flutter desktop/web application that provides a visual interface to SutraDB. It is designed for operations that benefit from visual intuition — graph visualization, HNSW health heatmaps, manual emergency editing — while the CLI and MCP server remain the primary interfaces for agents and automation.
+Loka Studio is a Flutter desktop/web application that provides a visual interface to Loka. It is designed for operations that benefit from visual intuition — graph visualization, HNSW health heatmaps, manual emergency editing — while the CLI and MCP server remain the primary interfaces for agents and automation.
 
 ### 7.1 Single-Process Architecture
 
@@ -408,85 +408,85 @@ Studio, the MCP server, and the database engine all run in a single process:
 
 ```
 ┌─────────────────────────────────────────┐
-│  Sutra Studio (Flutter GUI)             │  ← optional, can be on or off
+│  Loka Studio (Flutter GUI)             │  ← optional, can be on or off
 │  Health │ Graph │ SPARQL │ Ontology      │
 ├─────────────────────────────────────────┤
 │  MCP Server (JSON-RPC stdin/stdout)     │  ← optional, toggleable at runtime
 ├─────────────────────────────────────────┤
-│  sutra-ffi (C ABI shared library)       │  ← the glue layer
+│  loka-ffi (C ABI shared library)       │  ← the glue layer
 │  ┌─────────┬───────────┬──────────────┐ │
-│  │sutra-core│sutra-hnsw│sutra-sparql  │ │  ← the database engine
+│  │loka-core│loka-hnsw│loka-sparql  │ │  ← the database engine
 │  └─────────┴───────────┴──────────────┘ │
 └─────────────────────────────────────────┘
 ```
 
-Flutter loads `sutra_ffi.dll`/`.so`/`.dylib` via `dart:ffi`. The shared library contains the full database engine. The MCP server can run on a background thread within the same process. All three layers share the same database handle — zero serialization overhead.
+Flutter loads `loka_ffi.dll`/`.so`/`.dylib` via `dart:ffi`. The shared library contains the full database engine. The MCP server can run on a background thread within the same process. All three layers share the same database handle — zero serialization overhead.
 
 **Two entry points to the same system:**
 
 | Entry point | What runs |
 |---|---|
-| `sutra mcp` | MCP server + database engine. Headless, no GUI. |
-| Sutra Studio | GUI + database engine + optional MCP server. All one process. |
+| `loka mcp` | MCP server + database engine. Headless, no GUI. |
+| Loka Studio | GUI + database engine + optional MCP server. All one process. |
 
 Studio can open `.sdb` files directly (like SQLite browsers), start/stop the MCP server from within the GUI, and optionally start an HTTP server for remote SDK access — all without separate processes.
 
 The HTTP client mode still exists for connecting to remote or already-running instances.
 
-### 7.2 FFI Layer (`sutra-ffi`)
+### 7.2 FFI Layer (`loka-ffi`)
 
-The `sutra-ffi` crate produces a C-compatible shared library that can be loaded by any language with FFI support (Dart, Python, C, C++, etc.). It wraps the core Rust crates behind a stable C ABI.
+The `loka-ffi` crate produces a C-compatible shared library that can be loaded by any language with FFI support (Dart, Python, C, C++, etc.). It wraps the core Rust crates behind a stable C ABI.
 
 **Exposed functions:**
 
 ```c
 // Database lifecycle
-sutra_db_t* sutra_db_open(const char* path);       // Open or create .sdb file
-void        sutra_db_close(sutra_db_t* db);         // Close and flush
+loka_db_t* loka_db_open(const char* path);       // Open or create .sdb file
+void        loka_db_close(loka_db_t* db);         // Close and flush
 
 // Triple operations
-int      sutra_insert_ntriples(sutra_db_t* db, const char* data);   // Insert N-Triples
-uint64_t sutra_triple_count(sutra_db_t* db);                         // Total triple count
+int      loka_insert_ntriples(loka_db_t* db, const char* data);   // Insert N-Triples
+uint64_t loka_triple_count(loka_db_t* db);                         // Total triple count
 
 // Term dictionary
-uint64_t    sutra_intern(sutra_db_t* db, const char* term);          // String → ID
-const char* sutra_resolve(sutra_db_t* db, uint64_t id);              // ID → string
+uint64_t    loka_intern(loka_db_t* db, const char* term);          // String → ID
+const char* loka_resolve(loka_db_t* db, uint64_t id);              // ID → string
 
 // SPARQL query
-sutra_result_t* sutra_query(sutra_db_t* db, const char* sparql);     // Execute SPARQL+
-void            sutra_result_free(sutra_result_t* result);            // Free result
+loka_result_t* loka_query(loka_db_t* db, const char* sparql);     // Execute SPARQL+
+void            loka_result_free(loka_result_t* result);            // Free result
 
 // Health diagnostics
-const char* sutra_health_report(sutra_db_t* db);                     // Full health text
-void        sutra_string_free(const char* s);                         // Free returned strings
+const char* loka_health_report(loka_db_t* db);                     // Full health text
+void        loka_string_free(const char* s);                         // Free returned strings
 
 // Server management
-int sutra_serve_start(sutra_db_t* db, uint16_t port, const char* passcode);
-int sutra_serve_stop(sutra_db_t* db);
+int loka_serve_start(loka_db_t* db, uint16_t port, const char* passcode);
+int loka_serve_stop(loka_db_t* db);
 ```
 
 **Design principles:**
 - All functions are `extern "C"` with `#[no_mangle]`
-- Opaque pointer types (`sutra_db_t`, `sutra_result_t`) hide Rust internals
-- Strings are passed as `*const c_char` (null-terminated UTF-8) and returned as owned C strings that must be freed with `sutra_string_free`
-- Errors return null pointers or negative integers; last error message available via `sutra_last_error()`
+- Opaque pointer types (`loka_db_t`, `loka_result_t`) hide Rust internals
+- Strings are passed as `*const c_char` (null-terminated UTF-8) and returned as owned C strings that must be freed with `loka_string_free`
+- Errors return null pointers or negative integers; last error message available via `loka_last_error()`
 - Thread-safe: the opaque handle wraps `Arc<Mutex<...>>` internally
 
 **Build output per platform:**
 
 | Platform | Library | Dart FFI loads via |
 |---|---|---|
-| Windows | `sutra_ffi.dll` | `DynamicLibrary.open('sutra_ffi.dll')` |
-| Linux | `libsutra_ffi.so` | `DynamicLibrary.open('libsutra_ffi.so')` |
-| macOS | `libsutra_ffi.dylib` | `DynamicLibrary.open('libsutra_ffi.dylib')` |
+| Windows | `loka_ffi.dll` | `DynamicLibrary.open('loka_ffi.dll')` |
+| Linux | `libloka_ffi.so` | `DynamicLibrary.open('libloka_ffi.so')` |
+| macOS | `libloka_ffi.dylib` | `DynamicLibrary.open('libloka_ffi.dylib')` |
 
 The shared library ships alongside the Studio binary in release archives. Studio loads it at startup from the same directory as its own executable.
 
 ### 7.3 MCP Server as an FFI Capability
 
-The MCP server is not a separate binary — it is a capability exposed by the FFI layer. Studio can start an MCP server on a background thread via `sutra_mcp_start(db, stdin_fd, stdout_fd)`, sharing the same database handle that the GUI is using. This means an AI agent can connect to Studio's MCP server and both the agent and the human see the same database state in real time.
+The MCP server is not a separate binary — it is a capability exposed by the FFI layer. Studio can start an MCP server on a background thread via `loka_mcp_start(db, stdin_fd, stdout_fd)`, sharing the same database handle that the GUI is using. This means an AI agent can connect to Studio's MCP server and both the agent and the human see the same database state in real time.
 
-When running headless (`sutra mcp`), the CLI binary uses the same FFI functions internally.
+When running headless (`loka mcp`), the CLI binary uses the same FFI functions internally.
 
 ### 7.4 MCP Studio Tools
 
@@ -495,7 +495,7 @@ The MCP server provides two tools for Studio management:
 - **`download_studio`** — Downloads the pre-built Studio binary (including the FFI shared library) from GitHub releases for the current platform.
 - **`launch_studio`** — Opens Studio. If not installed, downloads it first. Passes the database path or HTTP endpoint depending on mode.
 
-Auto-update keeps Studio in sync with the CLI version — when the `sutra` binary updates, Studio is also re-downloaded if installed.
+Auto-update keeps Studio in sync with the CLI version — when the `loka` binary updates, Studio is also re-downloaded if installed.
 
 ### 7.5 Studio Screens
 
@@ -512,9 +512,9 @@ Auto-update keeps Studio in sync with the CLI version — when the `sutra` binar
 
 ## 8. MCP Server (Model Context Protocol)
 
-SutraDB includes a native MCP server (`sutra mcp`) that allows AI agents to interact with the database over JSON-RPC 2.0 via stdin/stdout. The MCP server operates in two modes:
+Loka includes a native MCP server (`loka mcp`) that allows AI agents to interact with the database over JSON-RPC 2.0 via stdin/stdout. The MCP server operates in two modes:
 
-- **Server mode**: connects to a running `sutra serve` HTTP endpoint
+- **Server mode**: connects to a running `loka serve` HTTP endpoint
 - **Serverless mode**: opens a `.sdb` file directly via library calls (no server needed)
 
 ### 8.1 MCP Tools
@@ -529,9 +529,9 @@ SutraDB includes a native MCP server (`sutra mcp`) that allows AI agents to inte
 | `insert_triples` | Insert N-Triples data |
 | `backup` | Create database snapshot |
 | `vector_search` | ANN search via VECTOR_SIMILAR |
-| `download_studio` | Download and install Sutra Studio |
-| `launch_studio` | Open Sutra Studio (downloads first if needed) |
-| `check_update` | Check for new SutraDB releases |
+| `download_studio` | Download and install Loka Studio |
+| `launch_studio` | Open Loka Studio (downloads first if needed) |
+| `check_update` | Check for new Loka releases |
 | `decline_update` | Cancel pending auto-update |
 
 ### 8.2 Auto-Update
@@ -540,7 +540,7 @@ On startup, the MCP server checks GitHub releases for a newer version. If found,
 
 ### 8.3 Resources and Prompts
 
-**Resources:** `sutra://connection` (mode/endpoint info), `sutra://version` (build info), `sutra://schema` (predicates, serverless only).
+**Resources:** `loka://connection` (mode/endpoint info), `loka://version` (build info), `loka://schema` (predicates, serverless only).
 
 **Prompts:** `explore_graph` (sample triples + schema), `find_similar` (VECTOR_SIMILAR template), `count_by_type` (GROUP BY rdf:type).
 
@@ -575,18 +575,18 @@ These will not be implemented without explicit instruction. They cannot be handl
 
 ## 11. Reference Architectures
 
-SutraDB draws from multiple open-source databases across two domains: RDF/vector indexing and SQL query optimization.
+Loka draws from multiple open-source databases across two domains: RDF/vector indexing and SQL query optimization.
 
 ### 9.1 RDF & Vector Indexing
 
-- **[Oxigraph](https://github.com/oxigraph/oxigraph)** (Rust) — Closest existing Rust triplestore. Reference for storage (RocksDB), indexing (SPO/POS/OSP), SPARQL pipeline (parser → optimizer → evaluator). SutraDB diverges by adding native HNSW vector indexing and SPARQL+ extensions.
+- **[Oxigraph](https://github.com/oxigraph/oxigraph)** (Rust) — Closest existing Rust triplestore. Reference for storage (RocksDB), indexing (SPO/POS/OSP), SPARQL pipeline (parser → optimizer → evaluator). Loka diverges by adding native HNSW vector indexing and SPARQL+ extensions.
 - **[Qdrant](https://github.com/qdrant/qdrant)** (Rust) — Vector database. Reference for HNSW implementation (immutable GraphLayers, thread-local visited pools, per-node RwLock during construction), vector preprocessing (normalize-at-insert for cosine).
 
 ### 9.2 SQL-Like Query Optimization
 
 Every operation you can do in SQL you can do in SPARQL — triple pattern matching is fundamentally relational joins over a three-column relation (subject, predicate, object). All SQL execution optimization that operates at the relational join layer is fair game for SPARQL. The part unique to SPARQL/graph (property paths, HNSW traversal) has no SQL analogue.
 
-- **[DataFusion](https://github.com/apache/datafusion)** (Apache, Rust) — Most mature Rust query engine. Primary reference for cost-based planning, join ordering, predicate pushdown, and vectorized execution. Embeddable and extensible, which matches SutraDB's architecture.
+- **[DataFusion](https://github.com/apache/datafusion)** (Apache, Rust) — Most mature Rust query engine. Primary reference for cost-based planning, join ordering, predicate pushdown, and vectorized execution. Embeddable and extensible, which matches Loka's architecture.
 - **[GlueSQL](https://github.com/gluesql/gluesql)** (Rust) — Pure Rust, small and readable. Good for understanding query parsing and planning without excessive complexity.
 - **[Limbo](https://github.com/tursodatabase/limbo)** (Turso, Rust) — Rust SQLite reimplementation. Reference for storage layer ideas.
 - **[DuckDB](https://github.com/duckdb/duckdb)** (C++) — Not Rust, but extremely influential. Columnar, vectorized, analytical. Excellent join ordering and cost model work.

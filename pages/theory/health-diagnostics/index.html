@@ -4,23 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Health Diagnostics — SutraDB">
+    <meta property="og:title" content="Health Diagnostics — Loka">
     <meta property="og:description" content="AI-readable health reports with HNSW metrics, pseudo-table coverage, and actionable maintenance recommendations.">
     <meta name="description" content="AI-readable health reports with HNSW metrics, pseudo-table coverage, and actionable maintenance recommendations.">
     <meta property="og:url" content="https://sutradb.org/theory/health-diagnostics/">
-    <meta property="og:site_name" content="SutraDB">
+    <meta property="og:site_name" content="Loka">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="Health Diagnostics — SutraDB">
+    <meta name="twitter:title" content="Health Diagnostics — Loka">
     <meta name="twitter:description" content="AI-readable health reports with actionable maintenance recommendations.">
     <meta name="theme-color" content="#58a6ff">
     <link rel="canonical" href="https://sutradb.org/theory/health-diagnostics/">
-    <title>Health Diagnostics &mdash; SutraDB</title>
+    <title>Health Diagnostics &mdash; Loka</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f4dc;</text></svg>">
     <link rel="stylesheet" href="../../style.css">
 </head>
 <body>
 <nav>
-    <a href="../../" class="logo"><span>Sutra</span>DB</a>
+    <a href="../../" class="logo"><span>Loka</span></a>
     <a href="../../#download">Download</a>
     <a href="../../graph-vector/">Graph+Vector</a>
     <a href="../../sdb-format/">Architecture</a>
@@ -37,9 +37,9 @@
 
     <h2>Agent-First Health Reports</h2>
 
-    <p>SutraDB's health endpoint produces structured text designed for AI agent consumption. Instead of dashboards with charts, it outputs context-rich text that an agent can read, reason about, and act on:</p>
+    <p>Loka's health endpoint produces structured text designed for AI agent consumption. Instead of dashboards with charts, it outputs context-rich text that an agent can read, reason about, and act on:</p>
 
-    <pre><code>$ sutra health --data my_graph.sdb
+    <pre><code>$ loka health --data my_graph.sdb
 
 Overall: HEALTHY
 
@@ -78,7 +78,7 @@ Storage:
         <li><strong>Entry point diversity low:</strong> "Consider adding more entry points" &mdash; searches may get stuck in local optima</li>
     </ul>
 
-    <p>An AI agent can read these recommendations and execute <code>sutra health --rebuild-hnsw</code> without human intervention.</p>
+    <p>An AI agent can read these recommendations and execute <code>loka health --rebuild-hnsw</code> without human intervention.</p>
 
     <h2>Three Severity Levels</h2>
 

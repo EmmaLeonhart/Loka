@@ -1,8 +1,8 @@
-# SutraDB Limitations & Issues — Found During ManuForge Integration
+# Loka Limitations & Issues — Found During ManuForge Integration
 
-> **SutraDB version tested:** v0.3.5 (also v0.3.3)
+> **Loka version tested:** v0.3.5 (also v0.3.3)
 > **Test date:** 2026-03-31
-> **Tested on:** Windows 11, `sutra serve --memory-only`
+> **Tested on:** Windows 11, `loka serve --memory-only`
 > **Test data:** `output/excelsior/graph.nt` — 751 N-Triples-star lines from manuscript extraction
 
 ---
@@ -17,7 +17,7 @@ RDF-star triples in N-Triples format import without errors:
 << <http://example.org/s> <http://example.org/p> "hello" >> <http://example.org/meta> "world" .
 ```
 
-`sutra import` reports these as successfully imported (748/751 lines, only 3 errors on the full Excelsior graph). However, **no SPARQL query syntax can retrieve them**:
+`loka import` reports these as successfully imported (748/751 lines, only 3 errors on the full Excelsior graph). However, **no SPARQL query syntax can retrieve them**:
 
 ```sparql
 -- Returns 0 rows despite data being imported
@@ -42,8 +42,8 @@ SELECT ?mo WHERE { << <http://example.org/s> <http://example.org/p> "val" >> ?mp
 ```
 
 **What was tested:**
-- Import via `sutra import file.nt` — reports success
-- Import via `sutra import` after base triple already exists — reports success
+- Import via `loka import file.nt` — reports success
+- Import via `loka import` after base triple already exists — reports success
 - Query via `<< ?s ?p ?o >> ?mp ?mo` pattern — 0 rows
 - Query via specific subject/predicate/object in `<< >>` — 0 rows
 - Query treating the annotation predicate as a regular triple (`?s <meta:page_source> ?o`) — 0 rows
@@ -54,7 +54,7 @@ SELECT ?mo WHERE { << <http://example.org/s> <http://example.org/p> "val" >> ?mp
 Our entire page citation system depends on RDF-star annotations:
 ```
 << :DanielCarver :hairColor "brown" >> :page_source 3 .
-<< :DanielCarver :hairColor "brown" >> sutra:assertedAt 3 .
+<< :DanielCarver :hairColor "brown" >> loka:assertedAt 3 .
 ```
 Until star triples are queryable, we cannot:
 - Query which page a fact was extracted from
@@ -69,22 +69,22 @@ Until star triples are queryable, we cannot:
 
 **Severity: Low**
 
-`sutra update` on v0.3.3 detects v0.3.5 correctly but downloads the wrong zip:
+`loka update` on v0.3.3 detects v0.3.5 correctly but downloads the wrong zip:
 
 ```
-$ sutra update
-SutraDB v0.3.3
+$ loka update
+Loka v0.3.3
 Checking for updates...
 New version available: v0.3.3 → v0.3.5
-Downloading https://github.com/.../sutra-studio-windows-x64.zip...
+Downloading https://github.com/.../loka-studio-windows-x64.zip...
 Error: Binary 'sutra.exe' not found in archive
 ```
 
-It downloads `sutra-studio-windows-x64.zip` instead of `sutra-windows-x64.zip`. The studio zip contains the GUI app, not the CLI binary.
+It downloads `loka-studio-windows-x64.zip` instead of `sutra-windows-x64.zip`. The studio zip contains the GUI app, not the CLI binary.
 
 **Workaround:** Manually download the correct zip:
 ```
-curl -sL https://github.com/EmmaLeonhart/SutraDB/releases/download/v0.3.5/sutra-windows-x64.zip -o sutra.zip
+curl -sL https://github.com/EmmaLeonhart/Loka/releases/download/v0.3.5/sutra-windows-x64.zip -o sutra.zip
 unzip sutra.zip
 cp sutra.exe ~/.cargo/bin/sutra.exe
 ```
@@ -97,7 +97,7 @@ cp sutra.exe ~/.cargo/bin/sutra.exe
 
 **Severity: Low — 748/751 lines imported successfully**
 
-3 lines out of 751 fail to import with no error detail. The failing lines are not identified in the output — `sutra import` only reports the count.
+3 lines out of 751 fail to import with no error detail. The failing lines are not identified in the output — `loka import` only reports the count.
 
 **Suggested improvement:** Add a `--verbose` or `--show-errors` flag that prints the failing lines and the parse error reason. Currently debugging import failures requires bisecting the file manually.
 
@@ -141,7 +141,7 @@ resp = requests.post("http://localhost:3030/sparql",
 
 **Severity: Unknown — documented but could not verify**
 
-The docs describe `AT_TIME(T)`, `DURING(T1, T2)`, `WORLD_STATE(T)`, and `TEMPORAL_DIFF(T1, T2)` operators, along with `sutra:assertedAt`, `sutra:validFrom`, `sutra:validTo` predicates. These could not be tested because they depend on RDF-star annotations working (Issue #1).
+The docs describe `AT_TIME(T)`, `DURING(T1, T2)`, `WORLD_STATE(T)`, and `TEMPORAL_DIFF(T1, T2)` operators, along with `loka:assertedAt`, `loka:validFrom`, `loka:validTo` predicates. These could not be tested because they depend on RDF-star annotations working (Issue #1).
 
 Once Issue #1 is fixed, these need to be validated with our page-as-narrative-time data model:
 ```sparql
@@ -162,7 +162,7 @@ For reference, these features work correctly:
 - **Regular triple import** — N-Triples files load reliably (748/751)
 - **SPARQL 1.1 queries** — SELECT, FILTER, ORDER BY, COUNT, OPTIONAL all work
 - **Full-text search in literals** — string matching in FILTER works
-- **CLI ergonomics** — `sutra serve`, `sutra query`, `sutra import`, `sutra info` all work as documented
+- **CLI ergonomics** — `loka serve`, `loka query`, `loka import`, `loka info` all work as documented
 - **Memory-only mode** — `--memory-only` flag works for ephemeral testing
 - **Performance** — queries over ~750 triples return instantly
 

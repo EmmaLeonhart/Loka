@@ -4,23 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Client-Side OWL Validation — SutraDB">
-    <meta property="og:description" content="SutraDB accepts all triples. OWL constraints are validated by the SDK before insertion, not by the database. Store first, reason second.">
-    <meta name="description" content="SutraDB accepts all triples. OWL constraints are validated by the SDK before insertion, not by the database. Store first, reason second.">
+    <meta property="og:title" content="Client-Side OWL Validation — Loka">
+    <meta property="og:description" content="Loka accepts all triples. OWL constraints are validated by the SDK before insertion, not by the database. Store first, reason second.">
+    <meta name="description" content="Loka accepts all triples. OWL constraints are validated by the SDK before insertion, not by the database. Store first, reason second.">
     <meta property="og:url" content="https://sutradb.org/theory/client-side-owl/">
-    <meta property="og:site_name" content="SutraDB">
+    <meta property="og:site_name" content="Loka">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="Client-Side OWL Validation — SutraDB">
+    <meta name="twitter:title" content="Client-Side OWL Validation — Loka">
     <meta name="twitter:description" content="Store first, reason second. OWL validation in the SDK, not the database.">
     <meta name="theme-color" content="#58a6ff">
     <link rel="canonical" href="https://sutradb.org/theory/client-side-owl/">
-    <title>Client-Side OWL Validation &mdash; SutraDB</title>
+    <title>Client-Side OWL Validation &mdash; Loka</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f4dc;</text></svg>">
     <link rel="stylesheet" href="../../style.css">
 </head>
 <body>
 <nav>
-    <a href="../../" class="logo"><span>Sutra</span>DB</a>
+    <a href="../../" class="logo"><span>Loka</span></a>
     <a href="../../#download">Download</a>
     <a href="../../graph-vector/">Graph+Vector</a>
     <a href="../../sdb-format/">Architecture</a>
@@ -37,7 +37,7 @@
 
     <h2>The Design Decision</h2>
 
-    <p>SutraDB will never reject a triple for violating an OWL constraint. The database accepts everything. It is a <strong>store</strong>, not a <strong>reasoner</strong>.</p>
+    <p>Loka will never reject a triple for violating an OWL constraint. The database accepts everything. It is a <strong>store</strong>, not a <strong>reasoner</strong>.</p>
 
     <p>OWL validation happens in the <strong>SDKs</strong> (Python, TypeScript, Rust, etc.), not in the database engine. When you insert a triple through an SDK:</p>
 
@@ -74,7 +74,7 @@
     <ul>
         <li>The ontology is queryable via SPARQL like any other data</li>
         <li>The ontology can be updated by inserting/deleting triples</li>
-        <li>Sutra Studio can browse and visualize the ontology (Protege-like functionality)</li>
+        <li>Loka Studio can browse and visualize the ontology (Protege-like functionality)</li>
     </ul>
 
 </div>

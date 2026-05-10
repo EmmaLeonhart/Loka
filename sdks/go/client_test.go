@@ -1,4 +1,4 @@
-package sutradb
+package loka
 
 import (
 	"net/http"
@@ -131,11 +131,11 @@ func TestServerError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for bad request")
 	}
-	sutraErr, ok := err.(*SutraError)
+	lokaErr, ok := err.(*LokaError)
 	if !ok {
-		t.Fatalf("expected *SutraError, got %T", err)
+		t.Fatalf("expected *LokaError, got %T", err)
 	}
-	if sutraErr.StatusCode != 400 {
-		t.Errorf("expected status 400, got %d", sutraErr.StatusCode)
+	if lokaErr.StatusCode != 400 {
+		t.Errorf("expected status 400, got %d", lokaErr.StatusCode)
 	}
 }

@@ -14,7 +14,7 @@ Bi-temporal modeling — database concept distinguishing valid time (when someth
 
 Event calculus / situation calculus — formal logic frameworks for reasoning about what holds at what time, what events change state, etc. Older AI/logic programming stuff but directly relevant.
 
-RDF-star + named graphs with temporal metadata — which is obviously in your wheelhouse given SutraDB.
+RDF-star + named graphs with temporal metadata — which is obviously in your wheelhouse given Loka.
 
 But here's the thing: none of these names capture what you're actually building, which is a queryable model of entity existence across time, not just timestamped facts. The difference matters. You're not just saying "Napoleon was emperor from 1804–1814" — you're modeling the full ontological presence of entities in a scene, which is closer to what stage managers and continuity supervisors do manually.
 
@@ -127,15 +127,15 @@ Temporal relational databases actually have a pretty solid story here — SQL:20
 
 Time-series databases like InfluxDB or TimescaleDB go the other direction — time is the primary index, everything else is a tag. Extremely fast for "what was the value of X over this interval" but essentially useless for relational queries between entities. There's no concept of "who else was in the room."
 
-What's interesting is that columnar stores actually have a latent advantage here that almost nobody exploits for this purpose. If you organize your columns around predicates rather than entities — which is what your adaptive columnar indexing in SutraDB is already doing — then a temporal slice is literally just a range scan across every predicate column simultaneously. The complete world-state at t=3 is the intersection of all predicate columns at that timestamp. That's actually a very natural fit.
+What's interesting is that columnar stores actually have a latent advantage here that almost nobody exploits for this purpose. If you organize your columns around predicates rather than entities — which is what your adaptive columnar indexing in Loka is already doing — then a temporal slice is literally just a range scan across every predicate column simultaneously. The complete world-state at t=3 is the intersection of all predicate columns at that timestamp. That's actually a very natural fit.
 
 The graph model wins for your use case specifically because the schema is the data — you don't need to anticipate entity types or relationship types ahead of time. A deposition might introduce a new kind of relationship that didn't exist in your ontology before. A novel might invent a new category of object mid-story. A relational system makes you migrate; a graph just adds triples.
 
 But the thing that makes knowledge graphs worse than columnar for temporal queries is exactly the adjacency-list structure that makes them flexible. Traversing time in a graph means hopping through edges, and if those edges aren't organized temporally, you're doing a full graph scan filtered by time metadata — which is the qualifier problem again.
 
-The architecture that would actually solve this is something like what SutraDB is already positioned to be: graph topology for relational flexibility, columnar indexing organized by predicate for temporal range scans, HNSW for semantic proximity across the temporal dimension. The temporal query becomes a columnar operation; the cross-entity relational query becomes a graph traversal; the "find me situations semantically similar to this one at a different time" becomes a vector query. Those three query types cover basically everything ontochronology needs and no single existing database handles all three natively.
+The architecture that would actually solve this is something like what Loka is already positioned to be: graph topology for relational flexibility, columnar indexing organized by predicate for temporal range scans, HNSW for semantic proximity across the temporal dimension. The temporal query becomes a columnar operation; the cross-entity relational query becomes a graph traversal; the "find me situations semantically similar to this one at a different time" becomes a vector query. Those three query types cover basically everything ontochronology needs and no single existing database handles all three natively.
 
-You've essentially described the workload that SutraDB is built for, just from a different angle.
+You've essentially described the workload that Loka is built for, just from a different angle.
 
 Oh hmm. I could just index triples by time? lol? That seems easy?
 
@@ -154,7 +154,7 @@ The reason people don't do this isn't that it's hard — it's that it requires y
 
 But for ontochronology specifically, time is structure. The whole point is that you're querying across time, not querying facts that happen to have time attached.
 
-The slightly tricky part is that you probably want both indexes — time-primary for temporal slice queries, and subject-primary for entity history queries ("give me everything that ever happened to the knife"). That's just two index orderings on the same data, which is totally normal. SutraDB's adaptive columnar indexing already does something structurally similar — you're just adding time as an explicit leading dimension to one of the orderings.
+The slightly tricky part is that you probably want both indexes — time-primary for temporal slice queries, and subject-primary for entity history queries ("give me everything that ever happened to the knife"). That's just two index orderings on the same data, which is totally normal. Loka's adaptive columnar indexing already does something structurally similar — you're just adding time as an explicit leading dimension to one of the orderings.
 
 The hard part was always the query semantics, not the indexing. You already solved the harder problem.
 
@@ -187,7 +187,7 @@ HNSW is solving a genuinely hard problem — approximate search in hundreds or t
 
 The overhead is basically just the storage for the additional index, which you'd be paying anyway for any index. The algorithmic complexity is so far below HNSW that it's almost a different category of problem entirely.
 
-What's funny is that this means ontochronology as a SutraDB feature is essentially free — you're already paying the hard tax for vector similarity search. Temporal and spatial indexing are just... also there, almost as a rounding error on the implementation cost. The marketing story writes itself: "time and coordinate indexing included, because why wouldn't they be."
+What's funny is that this means ontochronology as a Loka feature is essentially free — you're already paying the hard tax for vector similarity search. Temporal and spatial indexing are just... also there, almost as a rounding error on the implementation cost. The marketing story writes itself: "time and coordinate indexing included, because why wouldn't they be."
 
 And tbh in GraphRAG you will often want to store things in low dimensional space just for things like where a thing came from too. Like low-dimensional indexing like this even for more abstract things would be very helpful too
 
@@ -231,7 +231,7 @@ Which is almost poetic because conceptually R-trees and HNSW are solving the sam
 
 If embeddings were 3D, R-trees would be the obvious correct answer and HNSW would never have been invented. The whole baroque complexity of HNSW — the probabilistic layer promotion, the graph construction heuristics, the approximate nature of the search — exists entirely because R-trees broke above ~20 dimensions and someone needed something that worked in 768 or 1536.
 
-There's actually a neat continuity there for SutraDB's design space:
+There's actually a neat continuity there for Loka's design space:
 
 1D: B-tree
 2-3D: R-tree

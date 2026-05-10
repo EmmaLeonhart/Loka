@@ -5,23 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- Open Graph / Discord / Twitter preview -->
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Serverless vs Server Mode — SutraDB">
-    <meta property="og:description" content="Serverless vs server mode: use SutraDB as an embedded database or a SPARQL endpoint.">
-    <meta name="description" content="Serverless vs server mode: use SutraDB as an embedded database or a SPARQL endpoint.">
+    <meta property="og:title" content="Serverless vs Server Mode — Loka">
+    <meta property="og:description" content="Serverless vs server mode: use Loka as an embedded database or a SPARQL endpoint.">
+    <meta name="description" content="Serverless vs server mode: use Loka as an embedded database or a SPARQL endpoint.">
     <meta property="og:url" content="https://sutradb.org/serverless/">
-    <meta property="og:site_name" content="SutraDB">
+    <meta property="og:site_name" content="Loka">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="Serverless vs Server Mode — SutraDB">
-    <meta name="twitter:description" content="Serverless vs server mode: use SutraDB as an embedded database or a SPARQL endpoint.">
+    <meta name="twitter:title" content="Serverless vs Server Mode — Loka">
+    <meta name="twitter:description" content="Serverless vs server mode: use Loka as an embedded database or a SPARQL endpoint.">
     <meta name="theme-color" content="#58a6ff">
     <link rel="canonical" href="https://sutradb.org/serverless/">
-    <title>Serverless vs Server Mode &mdash; SutraDB</title>
+    <title>Serverless vs Server Mode &mdash; Loka</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f4dc;</text></svg>">
     <link rel="stylesheet" href="../style.css">
 </head>
 <body>
 <nav>
-    <a href="../" class="logo"><span>Sutra</span>DB</a>
+    <a href="../" class="logo"><span>Loka</span></a>
     <a href="../#download">Download</a>
     <a href="../graph-vector/">Graph+Vector</a>
     <a href="../sdb-format/">Architecture</a>
@@ -38,7 +38,7 @@
 
     <h2>Two Modes, One Database</h2>
 
-    <p>SutraDB can run as an <strong>embedded database</strong> (open a <code>.sdb</code> file directly, like SQLite) or as a <strong>server</strong> (HTTP SPARQL endpoint). Both use the same storage format, the same query engine, and the same indexes. The difference is how you access the data.</p>
+    <p>Loka can run as an <strong>embedded database</strong> (open a <code>.sdb</code> file directly, like SQLite) or as a <strong>server</strong> (HTTP SPARQL endpoint). Both use the same storage format, the same query engine, and the same indexes. The difference is how you access the data.</p>
 
     <div class="comparison">
         <div class="card">
@@ -64,10 +64,10 @@
     </div>
 
 <pre><code><span class="cmt"># Embedded: query a file directly</span>
-sutra query "SELECT ?s WHERE { ?s a :Person }" --data people.sdb
+loka query "SELECT ?s WHERE { ?s a :Person }" --data people.sdb
 
 <span class="cmt"># Server: start an HTTP endpoint on the same file</span>
-sutra serve --port 3030 --data people.sdb
+loka serve --port 3030 --data people.sdb
 <span class="cmt"># Now accessible at http://localhost:3030/sparql</span></code></pre>
 
     <h2>When to Use Each Mode</h2>
@@ -129,7 +129,7 @@ sutra serve --port 3030 --data people.sdb
     <table>
         <tr><th>Database</th><th>Embedded</th><th>Server</th><th>Data Model</th></tr>
         <tr>
-            <td><strong>SutraDB</strong></td>
+            <td><strong>Loka</strong></td>
             <td><span class="badge badge-green">Yes (default)</span></td>
             <td><span class="badge badge-green">Yes</span></td>
             <td>RDF-star + vectors</td>

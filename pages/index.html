@@ -20,7 +20,7 @@
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
         "name": "Loka",
-        "alternateName": "SutraDB",
+        "alternateName": "Loka",
         "description": "A neuro-symbolic world model. RDF-star triplestore (engine) plus a small role-aware transformer trained on the same triples. Generated facts land back in the store as RDF-star annotations with propositionInferredFrom citation edges.",
         "url": "https://sutradb.org/",
         "applicationCategory": "Database",
@@ -309,7 +309,7 @@
         <p style="font-size: 1em; color: #79c0ff; margin-bottom: 4px; font-weight: 600;">What is Loka?</p>
         <p style="font-size: 0.95em; color: #8b949e; margin-bottom: 8px;">
             <strong>Loka</strong> is the project &mdash; engine + corpus + transformer + inference layer.
-            <strong>SutraDB</strong> is the engine inside it: a lean RDF-star triplestore with native HNSW vector indexing.
+            <strong>Loka</strong> is the engine inside it: a lean RDF-star triplestore with native HNSW vector indexing.
             The engine works fine standalone (serverless by default, like SQLite), but the world-model layer turns it into something
             that can <em>complete</em> a knowledge graph with cited inferences. <a href="./loka/">More →</a>
         </p>
@@ -317,7 +317,7 @@
 
     <div style="margin-top: 16px; padding: 16px 24px; background: #1c2128; border: 1px solid #30363d; border-radius: 10px; max-width: 700px; margin-left: auto; margin-right: auto;">
         <p style="font-size: 1em; color: #79c0ff; margin-bottom: 4px; font-weight: 600;">AI Agent?</p>
-        <p style="font-size: 0.95em; color: #8b949e; margin-bottom: 8px;">The SutraDB engine inside Loka is serverless by default. Open a <code>.sdb</code> file &mdash; no daemon, no config. Install, configure, and query entirely from the command line. The agent installer (<code>sutra install-agent</code>) lets an LLM walk through configuration via structured Markdown prompts.</p>
+        <p style="font-size: 0.95em; color: #8b949e; margin-bottom: 8px;">The Loka engine inside Loka is serverless by default. Open a <code>.sdb</code> file &mdash; no daemon, no config. Install, configure, and query entirely from the command line. The agent installer (<code>loka install-agent</code>) lets an LLM walk through configuration via structured Markdown prompts.</p>
         <a href="https://github.com/EmmaLeonhart/Loka/blob/main/docs/AGENT_SETUP.md" class="btn btn-primary" style="padding: 8px 20px; font-size: 0.9em;">Agent Setup Guide</a>
     </div>
 </div>
@@ -362,8 +362,8 @@
             <div class="superset-card">
                 <h3>Data Model</h3>
                 <p class="standard">RDF 1.2: triple terms in object position only</p>
-                <p class="plus">+ SutraDB: triple terms in any position (RDF-star)</p>
-                <p class="plus">+ Native vector literals (sutra:f32vec)</p>
+                <p class="plus">+ Loka: triple terms in any position (RDF-star)</p>
+                <p class="plus">+ Native vector literals (loka:f32vec)</p>
                 <p class="plus">+ HNSW index per vector predicate</p>
             </div>
             <div class="superset-card">
@@ -386,14 +386,14 @@
 <span class="kw">SELECT</span> ?paper ?title <span class="kw">WHERE</span> {
   <span class="cmt"># Jump into vector space: find similar papers</span>
   <span class="fn">VECTOR_SIMILAR</span>(?paper ex:hasEmbedding
-    <span class="str">"0.23 -0.11 0.87 ..."</span>^^sutra:f32vec, 0.85)
+    <span class="str">"0.23 -0.11 0.87 ..."</span>^^loka:f32vec, 0.85)
 
   <span class="cmt"># Back to graph: filter by citation chain</span>
   ?paper ex:cites ?cited .
   ?cited ex:author &lt;http://example.org/Vaswani&gt; .
   ?paper ex:title ?title .
 } <span class="kw">ORDER BY DESC</span>(<span class="fn">VECTOR_SCORE</span>(?paper ex:hasEmbedding
-    <span class="str">"0.23 -0.11 0.87 ..."</span>^^sutra:f32vec))
+    <span class="str">"0.23 -0.11 0.87 ..."</span>^^loka:f32vec))
 <span class="kw">LIMIT</span> 10</pre>
     </div>
 </div>
@@ -406,34 +406,34 @@
             <div class="download-card">
                 <h3>Windows</h3>
                 <p class="os">x86_64</p>
-                <a href="https://github.com/EmmaLeonhart/Loka/releases/latest/download/sutra-windows-x64.zip" class="btn btn-primary">Download .zip</a>
+                <a href="https://github.com/EmmaLeonhart/Loka/releases/latest/download/loka-windows-x64.zip" class="btn btn-primary">Download .zip</a>
             </div>
             <div class="download-card">
                 <h3>macOS</h3>
                 <p class="os">Apple Silicon (ARM64)</p>
-                <a href="https://github.com/EmmaLeonhart/Loka/releases/latest/download/sutra-macos-arm64.tar.gz" class="btn btn-primary">Download .tar.gz</a>
+                <a href="https://github.com/EmmaLeonhart/Loka/releases/latest/download/loka-macos-arm64.tar.gz" class="btn btn-primary">Download .tar.gz</a>
             </div>
             <div class="download-card">
                 <h3>macOS</h3>
                 <p class="os">Intel (x64)</p>
-                <a href="https://github.com/EmmaLeonhart/Loka/releases/latest/download/sutra-macos-x64.tar.gz" class="btn btn-primary">Download .tar.gz</a>
+                <a href="https://github.com/EmmaLeonhart/Loka/releases/latest/download/loka-macos-x64.tar.gz" class="btn btn-primary">Download .tar.gz</a>
             </div>
             <div class="download-card">
                 <h3>Linux</h3>
                 <p class="os">x86_64</p>
-                <a href="https://github.com/EmmaLeonhart/Loka/releases/latest/download/sutra-linux-x64.tar.gz" class="btn btn-primary">Download .tar.gz</a>
+                <a href="https://github.com/EmmaLeonhart/Loka/releases/latest/download/loka-linux-x64.tar.gz" class="btn btn-primary">Download .tar.gz</a>
             </div>
             <div class="download-card">
                 <h3>From Source</h3>
                 <p class="os">Any platform with Rust</p>
-                <code>cargo install --git https://github.com/EmmaLeonhart/Loka sutra-cli</code>
+                <code>cargo install --git https://github.com/EmmaLeonhart/Loka loka-cli</code>
             </div>
         </div>
         <p style="margin-top: 32px; color: var(--text-muted); font-size: 0.9em;">
             File format: <strong>.sdb</strong> &mdash; a superset of RDF containing triples + HNSW vector indexes.<br>
-            Query directly (no server needed): <code style="background: var(--surface); padding: 2px 8px; border-radius: 4px;">sutra query "SELECT * WHERE { ?s ?p ?o } LIMIT 10"</code>
+            Query directly (no server needed): <code style="background: var(--surface); padding: 2px 8px; border-radius: 4px;">loka query "SELECT * WHERE { ?s ?p ?o } LIMIT 10"</code>
             &nbsp;|&nbsp;
-            Optional server: <code style="background: var(--surface); padding: 2px 8px; border-radius: 4px;">sutra serve --port 3030</code>
+            Optional server: <code style="background: var(--surface); padding: 2px 8px; border-radius: 4px;">loka serve --port 3030</code>
         </p>
     </div>
 </div>
@@ -448,7 +448,7 @@
 </div>
 
 <footer>
-    <p>Loka is open source under the Apache 2.0 license. SutraDB is the engine inside Loka.</p>
+    <p>Loka is open source under the Apache 2.0 license. Loka is the engine inside Loka.</p>
     <p style="margin-top: 8px;">
         <a href="https://github.com/EmmaLeonhart/Loka">GitHub</a> &middot;
         <a href="https://github.com/EmmaLeonhart/Loka/blob/main/docs/architecture.md">Architecture</a> &middot;

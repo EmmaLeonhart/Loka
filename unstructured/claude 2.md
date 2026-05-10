@@ -1,17 +1,17 @@
-I'm really thinking that, like, making my, I'm really thinking that, like, kind of, Like, my my u my earlier idea was basically the promenade was kind of, like, The, world stage tracking thing in Sutra DB was not Like, the more I'm thinking about it, the more I'm realizing that I think, like, Making SutraDB into a serious world stage tracking Yeah. World state tracking graphite database is actually a very good idea. Like, I'm very I think it's actually a very good idea. I feel like indexing on time and space is something that is very important for, like, making AI work well. Very important for making AI work well and should be basically not like an extension of the program, but the program itself.
+I'm really thinking that, like, making my, I'm really thinking that, like, kind of, Like, my my u my earlier idea was basically the promenade was kind of, like, The, world stage tracking thing in Sutra DB was not Like, the more I'm thinking about it, the more I'm realizing that I think, like, Making Loka into a serious world stage tracking Yeah. World state tracking graphite database is actually a very good idea. Like, I'm very I think it's actually a very good idea. I feel like indexing on time and space is something that is very important for, like, making AI work well. Very important for making AI work well and should be basically not like an extension of the program, but the program itself.
 
 13:56
-Yeah, this is a really compelling reorientation. The shift you're describing is essentially: instead of SutraDB being a graph-vector store that can do temporal-spatial indexing, it becomes a database whose fundamental ontology is world-state — where time and space aren't metadata attached to triples, but first-class axes that every fact lives on.
+Yeah, this is a really compelling reorientation. The shift you're describing is essentially: instead of Loka being a graph-vector store that can do temporal-spatial indexing, it becomes a database whose fundamental ontology is world-state — where time and space aren't metadata attached to triples, but first-class axes that every fact lives on.
 
 The reason this is a strong idea is that it cuts directly against how most AI systems handle the world: they either have static knowledge (embeddings frozen at training time) or they treat time as just another literal in a triple. Neither is adequate for agents that need to reason about what was true when, where, and under what conditions.
 
 A few threads worth pulling:
 
-The temporal-spatial problem is actually unsolved well. Most graph databases treat time as a predicate value. RDF-star gives you statement-level metadata, which is better — but there's no native notion of a temporal extent being a first-class queryable dimension. SutraDB could make valid-time intervals and spatial regions part of the storage primitive, not an afterthought.
+The temporal-spatial problem is actually unsolved well. Most graph databases treat time as a predicate value. RDF-star gives you statement-level metadata, which is better — but there's no native notion of a temporal extent being a first-class queryable dimension. Loka could make valid-time intervals and spatial regions part of the storage primitive, not an afterthought.
 
 World-state tracking is exactly what agentic AI needs. An agent operating over time needs to know: what was true at step N, what changed, what's the diff between two world-states, what's uncertain. That's basically a versioned, spatiotemporally indexed knowledge graph — which is exactly what you're describing.
 
-The "SQLite of AI" framing maps beautifully onto this. SQLite is the database that's there — embedded, lightweight, zero-config. If SutraDB becomes the thing that gives AI agents a persistent, queryable model of how the world changes across time and space, that's a very specific and defensible niche that nobody has really claimed yet.
+The "SQLite of AI" framing maps beautifully onto this. SQLite is the database that's there — embedded, lightweight, zero-config. If Loka becomes the thing that gives AI agents a persistent, queryable model of how the world changes across time and space, that's a very specific and defensible niche that nobody has really claimed yet.
 
 The interesting architectural question is: does spatiotemporal indexing live below the RDF-star layer (as a storage primitive), or expressed through SPARQL+ query semantics? My instinct is it needs to be both — stored efficiently as a first-class structure, but also queryable with predicate-based traversal conditions that can express things like "find the most recent state of X before timestamp T."
 
@@ -30,9 +30,9 @@ That bitemporal distinction is probably the thing worth designing around from th
 
 Valid time — when something was true in the world
 Transaction time — when it was recorded in the database
-Querying "what was the loan state on March 1st" means something completely different depending on which axis you're on. If you bake that distinction into the storage primitive rather than leaving it to the schema layer, SutraDB becomes genuinely expressive for any domain that has auditing, compliance, or reconstruction requirements — which is most serious enterprise use.
+Querying "what was the loan state on March 1st" means something completely different depending on which axis you're on. If you bake that distinction into the storage primitive rather than leaving it to the schema layer, Loka becomes genuinely expressive for any domain that has auditing, compliance, or reconstruction requirements — which is most serious enterprise use.
 
-The loan example also points to something interesting for Exodus Consulting specifically — a lot of the SAP/ERP workflows you'd be mapping with Pramana are essentially world-state machines. Contracts, invoices, approvals — they're all temporal state transitions over entities. SutraDB with native bitemporal querying could become the actual substrate Pramana runs on, rather than a separate concern.
+The loan example also points to something interesting for Exodus Consulting specifically — a lot of the SAP/ERP workflows you'd be mapping with Pramana are essentially world-state machines. Contracts, invoices, approvals — they're all temporal state transitions over entities. Loka with native bitemporal querying could become the actual substrate Pramana runs on, rather than a separate concern.
 
 What's your current thinking on the query interface for this? Like, is SPARQL+ the right surface for expressing temporal queries, or do you think you need something different?
 
@@ -41,14 +41,14 @@ I don't really know the difference between Sparkle and BrassQL, but I'm just try
 13:59
 Yeah, the "both" answer is probably right, but let me actually explain the distinction because it matters for your design decision.
 
-SPARQL is purpose-built for RDF graphs. It thinks natively in triples, it understands the subject-predicate-object model, and it has property path syntax that maps directly onto graph traversal. It's the natural fit for SutraDB because your data model is RDF-star.
+SPARQL is purpose-built for RDF graphs. It thinks natively in triples, it understands the subject-predicate-object model, and it has property path syntax that maps directly onto graph traversal. It's the natural fit for Loka because your data model is RDF-star.
 
 GraphQL is not really a query language in the same sense — it's an API shape language. It describes what data you want returned, not how to traverse a graph to find it. It became popular because it's developer-friendly and gives clients control over response shape. But it has no native concept of graph traversal, temporal queries, or inference.
 
-So the question is really: who is querying SutraDB and for what?
+So the question is really: who is querying Loka and for what?
 
 An AI agent doing world-state reasoning → SPARQL+ is the right tool, it can express the actual graph semantics
-A developer building an app on top of SutraDB who wants a familiar API → GraphQL as a translation layer over SPARQL+ makes sense
+A developer building an app on top of Loka who wants a familiar API → GraphQL as a translation layer over SPARQL+ makes sense
 The pattern that would work well is: SPARQL+ as the native query language (where temporal and spatial predicates are first-class), with a GraphQL interface as an ergonomic wrapper for the common case. You're not choosing between them — GraphQL sits above SPARQL+ and translates developer-friendly queries into the underlying graph operations.
 
 The thing you'd lose with GraphQL-only is the expressive power you've already built into SPARQL+ — specifically the predicate-based exit conditions on property path traversal. That's too valuable to give up as the primary interface.

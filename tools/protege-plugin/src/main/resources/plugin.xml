@@ -3,21 +3,21 @@
 
 <plugin>
 
-    <extension id="SutraDbView"
+    <extension id="LokaDbView"
                point="org.protege.editor.core.application.ViewComponent">
-        <label value="SutraDB"/>
-        <class value="dev.sutra.protege.SutraDbView"/>
+        <label value="Loka"/>
+        <class value="dev.loka.protege.LokaDbView"/>
         <headerColor value="@org.protege.ontologycolor"/>
         <category value="@org.protege.querycategory"/>
     </extension>
 
-    <extension id="SutraDbTab"
+    <extension id="LokaDbTab"
                point="org.protege.editor.core.application.WorkspaceTab">
-        <label value="SutraDB"/>
+        <label value="Loka"/>
         <class value="org.protege.editor.owl.ui.OWLWorkspaceViewsTab"/>
         <editorKitId value="OWLEditorKit"/>
         <index value="S"/>
-        <defaultViewConfigFileName value="viewconfig-sutradb.xml"/>
+        <defaultViewConfigFileName value="viewconfig-loka.xml"/>
     </extension>
 
 </plugin>

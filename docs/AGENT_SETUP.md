@@ -1,25 +1,25 @@
-# SutraDB — AI Agent Setup Guide
+# Loka — AI Agent Setup Guide
 
-> **For AI agents setting up SutraDB.** If you are an AI agent (Claude, GPT, Gemini, Copilot, etc.), this document tells you everything you need to install, configure, and operate SutraDB programmatically.
+> **For AI agents setting up Loka.** If you are an AI agent (Claude, GPT, Gemini, Copilot, etc.), this document tells you everything you need to install, configure, and operate Loka programmatically.
 
-> **Important: SutraDB is serverless by default.** Like SQLite, you should open a `.sdb` file directly — no server process needed. Only use server mode (`sutra serve`) when you specifically need HTTP access, concurrent multi-client access, or remote connections. **Most use cases should use serverless mode.**
+> **Important: Loka is serverless by default.** Like SQLite, you should open a `.sdb` file directly — no server process needed. Only use server mode (`loka serve`) when you specifically need HTTP access, concurrent multi-client access, or remote connections. **Most use cases should use serverless mode.**
 
 ## Quick Start — Serverless (recommended)
 
 ```bash
 # 1. Clone and build
-git clone https://github.com/EmmaLeonhart/SutraDB.git
-cd SutraDB
-cargo build --release -p sutra-cli
+git clone https://github.com/EmmaLeonhart/Loka.git
+cd Loka
+cargo build --release -p loka-cli
 
 # 2. Import data directly into a .sdb directory (no server needed)
-./target/release/sutra import -d ./my-database data.nt
+./target/release/loka import -d ./my-database data.nt
 
 # 3. Query directly (no server needed)
-./target/release/sutra query -d ./my-database "SELECT * WHERE { ?s ?p ?o } LIMIT 10"
+./target/release/loka query -d ./my-database "SELECT * WHERE { ?s ?p ?o } LIMIT 10"
 
 # 4. Check health
-./target/release/sutra health -d ./my-database
+./target/release/loka health -d ./my-database
 ```
 
 That's it. No daemon, no port, no config. The database lives in `./my-database/`.
@@ -33,24 +33,24 @@ Only start a server if you need one of these:
 
 ```bash
 # Server mode (only when needed)
-./target/release/sutra serve --port 3030
+./target/release/loka serve --port 3030
 curl http://localhost:3030/health
 ```
 
-## What is SutraDB?
+## What is Loka?
 
-SutraDB is a **unified RDF triplestore + vector database** written in Rust. It stores knowledge graphs (RDF triples) and vector embeddings (HNSW index) in the same database, queryable with a single SPARQL query. It works like SQLite — just open a file, no server required.
+Loka is a **unified RDF triplestore + vector database** written in Rust. It stores knowledge graphs (RDF triples) and vector embeddings (HNSW index) in the same database, queryable with a single SPARQL query. It works like SQLite — just open a file, no server required.
 
-**Key concept:** Vectors are triples. An embedding is just `<entity> <hasEmbedding> "0.1 0.2 ..."^^sutra:f32vec .` — stored in the graph, indexed by HNSW.
+**Key concept:** Vectors are triples. An embedding is just `<entity> <hasEmbedding> "0.1 0.2 ..."^^loka:f32vec .` — stored in the graph, indexed by HNSW.
 
 ## Installation
 
 ### Option A: Build from source (recommended)
 ```bash
-git clone https://github.com/EmmaLeonhart/SutraDB.git
-cd SutraDB
-cargo build --release -p sutra-cli
-# Binary at: ./target/release/sutra (or sutra.exe on Windows)
+git clone https://github.com/EmmaLeonhart/Loka.git
+cd Loka
+cargo build --release -p loka-cli
+# Binary at: ./target/release/loka (or loka.exe on Windows)
 ```
 
 ### Option B: Install script
@@ -60,12 +60,12 @@ cargo build --release -p sutra-cli
 # Windows
 install.bat
 ```
-Installs to `~/.sutra/bin/sutra`. Add to PATH.
+Installs to `~/.loka/bin/loka`. Add to PATH.
 
 ### Option C: Docker
 ```bash
-docker build -t sutradb .
-docker run -p 3030:3030 -v sutra-data:/data sutradb
+docker build -t loka .
+docker run -p 3030:3030 -v loka-data:/data loka
 ```
 
 ## CLI Commands
@@ -74,32 +74,32 @@ docker run -p 3030:3030 -v sutra-data:/data sutradb
 
 | Command | Description |
 |---------|-------------|
-| `sutra query -d ./mydb "SELECT ..."` | Run SPARQL query directly on .sdb directory |
-| `sutra import -d ./mydb data.nt` | Import N-Triples file |
-| `sutra import -d ./mydb - < data.nt` | Import from stdin |
-| `sutra export -d ./mydb` | Export all triples to stdout |
-| `sutra export -d ./mydb -o dump.nt` | Export to file |
-| `sutra export -d ./mydb -f ttl` | Export as Turtle |
-| `sutra info -d ./mydb` | Show triple/term counts |
-| `sutra health -d ./mydb` | Database health diagnostics |
-| `sutra mcp --data_dir ./mydb` | MCP server in serverless mode |
+| `loka query -d ./mydb "SELECT ..."` | Run SPARQL query directly on .sdb directory |
+| `loka import -d ./mydb data.nt` | Import N-Triples file |
+| `loka import -d ./mydb - < data.nt` | Import from stdin |
+| `loka export -d ./mydb` | Export all triples to stdout |
+| `loka export -d ./mydb -o dump.nt` | Export to file |
+| `loka export -d ./mydb -f ttl` | Export as Turtle |
+| `loka info -d ./mydb` | Show triple/term counts |
+| `loka health -d ./mydb` | Database health diagnostics |
+| `loka mcp --data_dir ./mydb` | MCP server in serverless mode |
 
 ### Server mode commands (only when you need HTTP/multi-client access)
 
 | Command | Description |
 |---------|-------------|
-| `sutra serve` | Start HTTP server (default port 3030) |
-| `sutra serve --port 8080` | Custom port |
-| `sutra serve --memory-only` | In-memory only, no persistence |
-| `sutra serve --data-dir ./my-db` | Custom data directory |
-| `sutra mcp --url http://host:3030` | MCP server connecting to HTTP instance |
+| `loka serve` | Start HTTP server (default port 3030) |
+| `loka serve --port 8080` | Custom port |
+| `loka serve --memory-only` | In-memory only, no persistence |
+| `loka serve --data-dir ./my-db` | Custom data directory |
+| `loka mcp --url http://host:3030` | MCP server connecting to HTTP instance |
 
 ### General commands
 
 | Command | Description |
 |---------|-------------|
-| `sutra update` | Check for and install updates |
-| `sutra --version` | Print version |
+| `loka update` | Check for and install updates |
+| `loka --version` | Print version |
 
 ## HTTP API Endpoints
 
@@ -165,7 +165,7 @@ curl -X POST http://localhost:3030/sparql \
 ### Vector similarity search
 ```sparql
 SELECT ?doc ?score WHERE {
-  VECTOR_SIMILAR(?doc <http://example.org/hasEmbedding> "0.1 0.2 0.3 ..."^^<http://sutra.dev/f32vec>, 0.85)
+  VECTOR_SIMILAR(?doc <http://example.org/hasEmbedding> "0.1 0.2 0.3 ..."^^<http://loka.dev/f32vec>, 0.85)
 }
 ```
 
@@ -174,7 +174,7 @@ SELECT ?doc ?score WHERE {
 SELECT ?person ?doc WHERE {
   ?person <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/Person> .
   ?doc <http://example.org/mentions> ?person .
-  VECTOR_SIMILAR(?doc <http://example.org/hasEmbedding> "0.1 0.2 ..."^^<http://sutra.dev/f32vec>, 0.8)
+  VECTOR_SIMILAR(?doc <http://example.org/hasEmbedding> "0.1 0.2 ..."^^<http://loka.dev/f32vec>, 0.8)
 }
 ```
 
@@ -202,20 +202,20 @@ Official client libraries:
 
 | Language | Install |
 |----------|---------|
-| Python | `pip install sutradb` (or from `sdks/python/`) |
-| TypeScript | `npm install sutradb` (or from `sdks/typescript/`) |
-| Go | `go get github.com/EmmaLeonhart/SutraDB/sdks/go` |
+| Python | `pip install loka` (or from `sdks/python/`) |
+| TypeScript | `npm install loka` (or from `sdks/typescript/`) |
+| Go | `go get github.com/EmmaLeonhart/Loka/sdks/go` |
 | Rust | From `sdks/rust/` |
 | Java | From `sdks/java/` (Maven) |
 | .NET | From `sdks/dotnet/` (NuGet) |
 
 ## Persistence
 
-SutraDB stores data in a `.sdb` directory using sled (embedded LSM-tree). Data survives restarts.
+Loka stores data in a `.sdb` directory using sled (embedded LSM-tree). Data survives restarts.
 
 - **Serverless mode:** specify the data directory with `-d ./my-database` on any command
-- **Server mode:** `sutra serve` defaults to `./sutra-data/`; use `--data-dir` to customize
-- **In-memory only:** use `sutra serve --memory-only` for ephemeral testing
+- **Server mode:** `loka serve` defaults to `./loka-data/`; use `--data-dir` to customize
+- **In-memory only:** use `loka serve --memory-only` for ephemeral testing
 
 The same `.sdb` directory format works in both modes. You can operate on a database serverlessly and later serve it over HTTP, or vice versa.
 
@@ -234,10 +234,10 @@ AI agents can use the native MCP (Model Context Protocol) server for database op
 
 ```bash
 # Serverless mode (recommended — no server process needed)
-sutra mcp --data_dir ./my-database
+loka mcp --data_dir ./my-database
 
 # Server mode (only if you have a running HTTP instance)
-sutra mcp --url http://localhost:3030
+loka mcp --url http://localhost:3030
 ```
 
 Tools: `health_report`, `rebuild_hnsw`, `verify_consistency`, `database_info`, `sparql_query`, `insert_triples`, `backup`, `vector_search`, `download_studio`, `launch_studio`, `check_update`, `decline_update`.

@@ -1,13 +1,13 @@
-# sutradb
+# loka
 
-Go client for [SutraDB](https://github.com/EmmaLeonhart/SutraDB) — an RDF-star triplestore with native HNSW vector indexing.
+Go client for [Loka](https://github.com/EmmaLeonhart/Loka) — an RDF-star triplestore with native HNSW vector indexing.
 
 Uses only the Go standard library. No external dependencies.
 
 ## Installation
 
 ```sh
-go get github.com/EmmaLeonhart/SutraDB/sdks/go
+go get github.com/EmmaLeonhart/Loka/sdks/go
 ```
 
 ## Usage
@@ -19,11 +19,11 @@ import (
 	"fmt"
 	"log"
 
-	sutradb "github.com/EmmaLeonhart/SutraDB/sdks/go"
+	loka "github.com/EmmaLeonhart/Loka/sdks/go"
 )
 
 func main() {
-	client := sutradb.NewClient("http://localhost:7878")
+	client := loka.NewClient("http://localhost:7878")
 
 	// Health check
 	healthy, err := client.Health()
@@ -49,8 +49,8 @@ func main() {
 
 	// Declare a vector predicate
 	_, err = client.DeclareVector("http://example.org/hasEmbedding", 1536,
-		sutradb.WithHnswM(16),
-		sutradb.WithHnswEfConstruction(200),
+		loka.WithHnswM(16),
+		loka.WithHnswEfConstruction(200),
 	)
 	if err != nil {
 		log.Fatal(err)

@@ -4,20 +4,20 @@ NeurIPS reproducibility-checklist runnable-code map. Pair with `SKILL.md` (the a
 
 ## Working directory
 
-All commands assume the SutraDB repository root as cwd. (`git clone https://github.com/EmmaLeonhart/SutraDB.git && cd SutraDB`.)
+All commands assume the Loka repository root as cwd. (`git clone https://github.com/EmmaLeonhart/Loka.git && cd Loka`.)
 
 ## Quick start
 
 ```bash
 # Build the engine binary.
-cargo build --release -p sutra-cli
+cargo build --release -p loka-cli
 
 # Start the store. Ports 3030 by default.
-./target/release/sutra serve --port 3030 &
+./target/release/loka serve --port 3030 &
 
 # Pull the corpus snapshot from Hugging Face. ~150 MB without the live store; ~940 MB with.
 git clone https://huggingface.co/datasets/EmmaLeonhart/loka
-cp loka/sutra-data/* sutra-data/    # if you want the prebuilt 5M-triple store
+cp loka/loka-data/* loka-data/    # if you want the prebuilt 5M-triple store
                                      # otherwise re-ingest from scratch (next section)
 
 # Python deps
@@ -33,7 +33,7 @@ pip install datasets pyarrow         # for HF parquet streaming
 python tools/wikidata_hf_import.py --max-triples 5000000 --batch-size 500
 ```
 
-Expected: ~1 hour wall-clock to 5M triples on a typical home connection. Two known engine bugs may surface at scale (see §6.1 of the paper); both recover by stop-restart of `sutra serve` with no data loss.
+Expected: ~1 hour wall-clock to 5M triples on a typical home connection. Two known engine bugs may surface at scale (see §6.1 of the paper); both recover by stop-restart of `loka serve` with no data loss.
 
 ## Building the training corpus
 

@@ -5,23 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- Open Graph / Discord / Twitter preview -->
     <meta property="og:type" content="website">
-    <meta property="og:title" content="The .sdb File Format — SutraDB">
-    <meta property="og:description" content="The .sdb file format: SutraDB's serverless storage format powered by sled.">
-    <meta name="description" content="The .sdb file format: SutraDB's serverless storage format powered by sled.">
+    <meta property="og:title" content="The .sdb File Format — Loka">
+    <meta property="og:description" content="The .sdb file format: Loka's serverless storage format powered by sled.">
+    <meta name="description" content="The .sdb file format: Loka's serverless storage format powered by sled.">
     <meta property="og:url" content="https://sutradb.org/sdb-format/">
-    <meta property="og:site_name" content="SutraDB">
+    <meta property="og:site_name" content="Loka">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="The .sdb File Format — SutraDB">
-    <meta name="twitter:description" content="The .sdb file format: SutraDB's serverless storage format powered by sled.">
+    <meta name="twitter:title" content="The .sdb File Format — Loka">
+    <meta name="twitter:description" content="The .sdb file format: Loka's serverless storage format powered by sled.">
     <meta name="theme-color" content="#58a6ff">
     <link rel="canonical" href="https://sutradb.org/sdb-format/">
-    <title>The .sdb File Format &mdash; SutraDB</title>
+    <title>The .sdb File Format &mdash; Loka</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f4dc;</text></svg>">
     <link rel="stylesheet" href="../style.css">
 </head>
 <body>
 <nav>
-    <a href="../" class="logo"><span>Sutra</span>DB</a>
+    <a href="../" class="logo"><span>Loka</span></a>
     <a href="../#download">Download</a>
     <a href="../graph-vector/">Graph+Vector</a>
     <a href="../sdb-format/">Architecture</a>
@@ -143,7 +143,7 @@
     <table>
         <tr><th>Format</th><th>Data Model</th><th>Vectors</th><th>Query Language</th></tr>
         <tr>
-            <td><strong>.sdb (SutraDB)</strong></td>
+            <td><strong>.sdb (Loka)</strong></td>
             <td>RDF-star triples</td>
             <td><span class="badge badge-green">Native HNSW</span></td>
             <td>SPARQL + vector extensions</td>
@@ -170,31 +170,31 @@
 
     <h2>The .sdb Name</h2>
 
-    <p>The extension <code>.sdb</code> stands for <strong>Sutra Database</strong>. We chose a distinct extension rather than reusing <code>.db</code> or <code>.rdf</code> because:</p>
+    <p>The extension <code>.sdb</code> stands for <strong>Loka Database</strong>. We chose a distinct extension rather than reusing <code>.db</code> or <code>.rdf</code> because:</p>
 
     <ul>
         <li>It contains more than standard RDF &mdash; vector indexes, HNSW graphs, and IRI lookup tables</li>
         <li>It should not be confused with SQLite (<code>.db</code>) or RDF serialization (<code>.rdf</code>)</li>
-        <li>File managers and tools can associate <code>.sdb</code> specifically with SutraDB</li>
+        <li>File managers and tools can associate <code>.sdb</code> specifically with Loka</li>
         <li>It signals to users that this is a superset format &mdash; standard RDF data plus native vector infrastructure</li>
     </ul>
 
     <h2>Working with .sdb Files</h2>
 
 <pre><code><span class="cmt"># Create a new database</span>
-sutra import data.nt --data my_graph.sdb
+loka import data.nt --data my_graph.sdb
 
 <span class="cmt"># Query it directly (serverless)</span>
-sutra query "SELECT * WHERE { ?s ?p ?o } LIMIT 10" --data my_graph.sdb
+loka query "SELECT * WHERE { ?s ?p ?o } LIMIT 10" --data my_graph.sdb
 
 <span class="cmt"># Start a server for HTTP access</span>
-sutra serve --port 3030 --data my_graph.sdb
+loka serve --port 3030 --data my_graph.sdb
 
 <span class="cmt"># Copy/backup: it's just a file</span>
 cp my_graph.sdb backup_2024.sdb
 
 <span class="cmt"># Export back to standard RDF</span>
-sutra export --format turtle --data my_graph.sdb > export.ttl</code></pre>
+loka export --format turtle --data my_graph.sdb > export.ttl</code></pre>
 
 </div>
 

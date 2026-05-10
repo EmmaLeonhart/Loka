@@ -4,23 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="RDF-star Edge Annotation — SutraDB">
-    <meta property="og:description" content="How SutraDB uses RDF-star quoted triples for zero-overhead metadata on edges, including vector embeddings on relationships.">
-    <meta name="description" content="How SutraDB uses RDF-star quoted triples for zero-overhead metadata on edges, including vector embeddings on relationships.">
+    <meta property="og:title" content="RDF-star Edge Annotation — Loka">
+    <meta property="og:description" content="How Loka uses RDF-star quoted triples for zero-overhead metadata on edges, including vector embeddings on relationships.">
+    <meta name="description" content="How Loka uses RDF-star quoted triples for zero-overhead metadata on edges, including vector embeddings on relationships.">
     <meta property="og:url" content="https://sutradb.org/theory/rdf-star-edges/">
-    <meta property="og:site_name" content="SutraDB">
+    <meta property="og:site_name" content="Loka">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="RDF-star Edge Annotation — SutraDB">
+    <meta name="twitter:title" content="RDF-star Edge Annotation — Loka">
     <meta name="twitter:description" content="Zero-overhead metadata on edges via RDF-star quoted triples.">
     <meta name="theme-color" content="#58a6ff">
     <link rel="canonical" href="https://sutradb.org/theory/rdf-star-edges/">
-    <title>RDF-star Edge Annotation &mdash; SutraDB</title>
+    <title>RDF-star Edge Annotation &mdash; Loka</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f4dc;</text></svg>">
     <link rel="stylesheet" href="../../style.css">
 </head>
 <body>
 <nav>
-    <a href="../../" class="logo"><span>Sutra</span>DB</a>
+    <a href="../../" class="logo"><span>Loka</span></a>
     <a href="../../#download">Download</a>
     <a href="../../graph-vector/">Graph+Vector</a>
     <a href="../../sdb-format/">Architecture</a>
@@ -40,7 +40,7 @@
     <p>In standard RDF, you can attach metadata to nodes easily:</p>
 
     <pre><code>:paper_42 :confidence 0.91 .
-:paper_42 :hasEmbedding "0.23 -0.11 0.87 ..."^^sutra:f32vec .</code></pre>
+:paper_42 :hasEmbedding "0.23 -0.11 0.87 ..."^^loka:f32vec .</code></pre>
 
     <p>But attaching metadata to an <em>edge</em> (a relationship) requires <strong>reification</strong> &mdash; creating an intermediate node to represent the statement itself:</p>
 
@@ -64,11 +64,11 @@
 
     <h2>Vector Embeddings on Edges</h2>
 
-    <p>This is where RDF-star becomes critical for SutraDB. You can attach a vector embedding to a <em>relationship</em>, not just a node:</p>
+    <p>This is where RDF-star becomes critical for Loka. You can attach a vector embedding to a <em>relationship</em>, not just a node:</p>
 
     <pre><code><span class="cmt"># Embedding on an edge</span>
 &lt;&lt; :paper_42 :discusses :TransformerArchitecture &gt;&gt;
-    :hasEmbedding "0.23 -0.11 0.87 ..."^^sutra:f32vec .
+    :hasEmbedding "0.23 -0.11 0.87 ..."^^loka:f32vec .
 
 <span class="cmt"># Now you can do vector search over relationships:</span>
 <span class="cmt"># "Find edges semantically similar to this one"</span></code></pre>
@@ -77,7 +77,7 @@
 
     <h2>Implementation: Content-Addressed IDs</h2>
 
-    <p>SutraDB assigns each quoted triple a deterministic u64 ID by hashing its three component IDs. This means:</p>
+    <p>Loka assigns each quoted triple a deterministic u64 ID by hashing its three component IDs. This means:</p>
 
     <ul>
         <li>Quoted triples are just another TermId &mdash; they participate in SPO/POS/OSP indexes like any other term</li>

@@ -1,8 +1,8 @@
-# SutraDB Next Release Requirements — From ManuForge Integration Testing
+# Loka Next Release Requirements — From ManuForge Integration Testing
 
-> **Based on:** ManuForge pipeline integration testing against SutraDB v0.3.3, v0.3.5, v0.3.6
+> **Based on:** ManuForge pipeline integration testing against Loka v0.3.3, v0.3.5, v0.3.6
 > **Written:** 2026-04-03
-> **Purpose:** Actionable fix list for the next SutraDB release, prioritized by ManuForge pipeline impact
+> **Purpose:** Actionable fix list for the next Loka release, prioritized by ManuForge pipeline impact
 > **See also:** [Full limitations report](sutradb_limitations.md) for reproduction steps and workarounds
 
 ---
@@ -50,7 +50,7 @@ curl -X POST http://localhost:3030/triples \
 # Reports: {"inserted": 723} but star triples are missing from queries
 ```
 
-**Why it matters:** Server mode is the production deployment path. The CLI `sutra import` works but requires filesystem access to the `.sdb` directory. Any deployment behind an API (Docker, cloud, multi-user) needs HTTP import to work with star triples.
+**Why it matters:** Server mode is the production deployment path. The CLI `loka import` works but requires filesystem access to the `.sdb` directory. Any deployment behind an API (Docker, cloud, multi-user) needs HTTP import to work with star triples.
 
 **Root cause:** The HTTP import handler uses a different N-Triples parser path than the CLI. The CLI parser was updated in v0.3.6 for `<< >>` syntax; the HTTP handler was not.
 
@@ -73,7 +73,7 @@ curl -X POST http://localhost:3030/triples \
 
 ### 4. Temporal operators untestable until #1 is fixed
 
-**What:** `AT_TIME`, `DURING`, `WORLD_STATE`, `TEMPORAL_DIFF` operators are documented and implemented, but they rely on star triple annotations (`sutra:assertedAt`). Since wildcard star queries don't work (#1), temporal operators can't scan annotations across triples.
+**What:** `AT_TIME`, `DURING`, `WORLD_STATE`, `TEMPORAL_DIFF` operators are documented and implemented, but they rely on star triple annotations (`loka:assertedAt`). Since wildcard star queries don't work (#1), temporal operators can't scan annotations across triples.
 
 **ManuForge use case:** Pages as narrative time axis (integer type). We want:
 ```sparql
@@ -119,7 +119,7 @@ These features are solid and ManuForge depends on them:
 - RDF-star via `INSERT DATA` SPARQL
 - SPARQL 1.1: SELECT, FILTER, ORDER BY, COUNT, OPTIONAL
 - Full-text search in literals
-- CLI: `sutra serve`, `sutra query`, `sutra import`, `sutra info`
+- CLI: `loka serve`, `loka query`, `loka import`, `loka info`
 - Serverless mode (direct `.sdb` access)
 - Memory-only mode (`--memory-only`)
 - Performance (instant queries at ~750 triples)

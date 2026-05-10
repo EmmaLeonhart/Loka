@@ -1,7 +1,7 @@
 """Tests for client-side OWL validation."""
 
 import unittest
-from sutradb.owl import OWLValidator, OWLViolation
+from loka.owl import OWLValidator, OWLViolation
 
 
 class TestOWLValidator(unittest.TestCase):

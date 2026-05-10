@@ -5,23 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- Open Graph / Discord / Twitter preview -->
     <meta property="og:type" content="website">
-    <meta property="og:title" content="OWL Reasoning — SutraDB">
-    <meta property="og:description" content="OWL reasoning in SutraDB: client-side validation, ontology browsing, and Protege integration.">
-    <meta name="description" content="OWL reasoning in SutraDB: client-side validation, ontology browsing, and Protege integration.">
+    <meta property="og:title" content="OWL Reasoning — Loka">
+    <meta property="og:description" content="OWL reasoning in Loka: client-side validation, ontology browsing, and Protege integration.">
+    <meta name="description" content="OWL reasoning in Loka: client-side validation, ontology browsing, and Protege integration.">
     <meta property="og:url" content="https://sutradb.org/owl/">
-    <meta property="og:site_name" content="SutraDB">
+    <meta property="og:site_name" content="Loka">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="OWL Reasoning — SutraDB">
-    <meta name="twitter:description" content="OWL reasoning in SutraDB: client-side validation, ontology browsing, and Protege integration.">
+    <meta name="twitter:title" content="OWL Reasoning — Loka">
+    <meta name="twitter:description" content="OWL reasoning in Loka: client-side validation, ontology browsing, and Protege integration.">
     <meta name="theme-color" content="#58a6ff">
     <link rel="canonical" href="https://sutradb.org/owl/">
-    <title>OWL Reasoning &mdash; SutraDB</title>
+    <title>OWL Reasoning &mdash; Loka</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f4dc;</text></svg>">
     <link rel="stylesheet" href="../style.css">
 </head>
 <body>
 <nav>
-    <a href="../" class="logo"><span>Sutra</span>DB</a>
+    <a href="../" class="logo"><span>Loka</span></a>
     <a href="../#download">Download</a>
     <a href="../graph-vector/">Graph+Vector</a>
     <a href="../sdb-format/">Architecture</a>
@@ -55,9 +55,9 @@
 
     <p>When an OWL reasoner processes these declarations, it can <strong>infer</strong> new facts. For example, if you know ":MountEverest rdf:type :Mountain" and ":Mountain rdfs:subClassOf :LandForm", the reasoner infers ":MountEverest rdf:type :LandForm".</p>
 
-    <h2>SutraDB's Approach</h2>
+    <h2>Loka's Approach</h2>
 
-    <p>SutraDB's core philosophy is <strong>"store first, reason second."</strong> The database stores exactly what you put in &mdash; nothing more. OWL reasoning is planned as an <strong>opt-in, query-time layer</strong> that never modifies stored data.</p>
+    <p>Loka's core philosophy is <strong>"store first, reason second."</strong> The database stores exactly what you put in &mdash; nothing more. OWL reasoning is planned as an <strong>opt-in, query-time layer</strong> that never modifies stored data.</p>
 
     <div class="comparison">
         <div class="card">
@@ -71,7 +71,7 @@
             </ul>
         </div>
         <div class="card">
-            <h4>SutraDB's Approach</h4>
+            <h4>Loka's Approach</h4>
             <p>Reasoning happens at query time, on demand:</p>
             <ul>
                 <li>Insert is fast (no reasoning overhead)</li>
@@ -85,7 +85,7 @@
 
     <h3>Configurable reasoning</h3>
 
-    <p>The planned design lets you control reasoning per-query. When reasoning is off (the default), SutraDB behaves as a pure RDF-star store. When on, the query engine expands patterns to include inferred facts:</p>
+    <p>The planned design lets you control reasoning per-query. When reasoning is off (the default), Loka behaves as a pure RDF-star store. When on, the query engine expands patterns to include inferred facts:</p>
 
 <pre><code><span class="cmt">-- Without reasoning: only explicit Mountain instances</span>
 <span class="kw">SELECT</span> ?mountain <span class="kw">WHERE</span> {
@@ -134,7 +134,7 @@
 
     <h2>Why Not RDFS?</h2>
 
-    <p>SutraDB explicitly does <strong>not</strong> implement RDFS inference as a separate layer. RDFS inference (domain/range propagation, subclass/subproperty closure) is a subset of what OWL provides. Rather than implementing two reasoning systems, SutraDB plans to implement the useful subset of OWL that covers all RDFS use cases, with a single toggle.</p>
+    <p>Loka explicitly does <strong>not</strong> implement RDFS inference as a separate layer. RDFS inference (domain/range propagation, subclass/subproperty closure) is a subset of what OWL provides. Rather than implementing two reasoning systems, Loka plans to implement the useful subset of OWL that covers all RDFS use cases, with a single toggle.</p>
 
     <h2>OWL and Vectors</h2>
 
@@ -144,7 +144,7 @@
 <span class="cmt">-- With OWL reasoning on, this includes Mountains, Volcanoes,</span>
 <span class="cmt">-- Plateaus, etc. (all subclasses of LandForm)</span>
 <span class="kw">SELECT</span> ?entity <span class="kw">WHERE</span> {
-  <span class="fn">VECTOR_SIMILAR</span>(?entity ex:hasEmbedding <span class="str">"..."</span>^^sutra:f32vec, 0.8)
+  <span class="fn">VECTOR_SIMILAR</span>(?entity ex:hasEmbedding <span class="str">"..."</span>^^loka:f32vec, 0.8)
   ?entity a ex:LandForm .  <span class="cmt">-- expanded by reasoning</span>
 }</code></pre>
 
@@ -152,11 +152,11 @@
 
     <h2>Prot&eacute;g&eacute; Compatibility</h2>
 
-    <p>SutraDB plans to be compatible with <a href="https://protege.stanford.edu/">Prot&eacute;g&eacute;</a>, the standard OWL ontology editor. This means:</p>
+    <p>Loka plans to be compatible with <a href="https://protege.stanford.edu/">Prot&eacute;g&eacute;</a>, the standard OWL ontology editor. This means:</p>
     <ul>
-        <li>OWL ontologies authored in Prot&eacute;g&eacute; can be loaded into SutraDB</li>
+        <li>OWL ontologies authored in Prot&eacute;g&eacute; can be loaded into Loka</li>
         <li>Class hierarchies, property definitions, and restrictions are recognized</li>
-        <li>Prot&eacute;g&eacute; can connect to SutraDB's SPARQL endpoint for querying</li>
+        <li>Prot&eacute;g&eacute; can connect to Loka's SPARQL endpoint for querying</li>
     </ul>
     <p>This is planned for after the core OWL reasoning layer is implemented.</p>
 

@@ -38,9 +38,9 @@ publishing {
             from(components["java"])
 
             pom {
-                name.set("SutraDB Java Client")
-                description.set("Java client for SutraDB — RDF-star triplestore with native vector indexing")
-                url.set("https://github.com/EmmaLeonhart/SutraDB")
+                name.set("Loka Java Client")
+                description.set("Java client for Loka — RDF-star triplestore with native vector indexing")
+                url.set("https://github.com/EmmaLeonhart/Loka")
 
                 licenses {
                     license {
@@ -51,15 +51,15 @@ publishing {
 
                 developers {
                     developer {
-                        name.set("SutraDB Contributors")
-                        url.set("https://github.com/EmmaLeonhart/SutraDB")
+                        name.set("Loka Contributors")
+                        url.set("https://github.com/EmmaLeonhart/Loka")
                     }
                 }
 
                 scm {
-                    url.set("https://github.com/EmmaLeonhart/SutraDB")
-                    connection.set("scm:git:https://github.com/EmmaLeonhart/SutraDB.git")
-                    developerConnection.set("scm:git:git@github.com:EmmaLeonhart/SutraDB.git")
+                    url.set("https://github.com/EmmaLeonhart/Loka")
+                    connection.set("scm:git:https://github.com/EmmaLeonhart/Loka.git")
+                    developerConnection.set("scm:git:git@github.com:EmmaLeonhart/Loka.git")
                 }
             }
         }

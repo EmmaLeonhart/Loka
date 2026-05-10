@@ -1,19 +1,19 @@
 {
-  "name": "sutradb",
+  "name": "loka",
   "version": "0.1.0",
-  "description": "TypeScript/JavaScript client for SutraDB — RDF-star triplestore with native vector indexing",
+  "description": "TypeScript/JavaScript client for Loka — RDF-star triplestore with native vector indexing",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "test": "jest"
   },
-  "keywords": ["sutradb", "rdf", "sparql", "vector", "graph-database"],
+  "keywords": ["loka", "rdf", "sparql", "vector", "graph-database"],
   "files": ["dist/", "README.md", "LICENSE"],
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/EmmaLeonhart/SutraDB"
+    "url": "https://github.com/EmmaLeonhart/Loka"
   },
   "devDependencies": {
     "typescript": "^5.0.0",

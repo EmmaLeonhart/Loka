@@ -1,17 +1,17 @@
-// Package sutradb provides a Go client for SutraDB, an RDF-star triplestore
+// Package loka provides a Go client for Loka, an RDF-star triplestore
 // with native HNSW vector indexing.
-package sutradb
+package loka
 
 import "fmt"
 
-// SutraError represents an error returned by the SutraDB server.
-type SutraError struct {
+// LokaError represents an error returned by the Loka server.
+type LokaError struct {
 	StatusCode int
 	Message    string
 }
 
-func (e *SutraError) Error() string {
-	return fmt.Sprintf("sutradb: HTTP %d: %s", e.StatusCode, e.Message)
+func (e *LokaError) Error() string {
+	return fmt.Sprintf("loka: HTTP %d: %s", e.StatusCode, e.Message)
 }
 
 // BindingValue is a single value within a SPARQL result binding row.

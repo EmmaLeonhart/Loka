@@ -7,7 +7,7 @@
 <meta property="og:title" content="Loka — Neuro-Symbolic World Model on RDF-Star">
 <meta property="og:description" content="Generative citation in a two-system world model. Explicit memory (RDF-star triplestore) + implicit memory (transformer trained on the same triples) sharing one query language.">
 <meta property="og:url" content="https://sutradb.org/loka/">
-<meta name="description" content="Loka is the world-model layer built on top of the SutraDB engine. A small role-aware transformer trained on label-substituted RDF-star triples, producing predictions that land back in the store as RDF-star annotations with propositionInferredFrom citation edges.">
+<meta name="description" content="Loka is the world-model layer built on top of the Loka engine. A small role-aware transformer trained on label-substituted RDF-star triples, producing predictions that land back in the store as RDF-star annotations with propositionInferredFrom citation edges.">
 <link rel="canonical" href="https://sutradb.org/loka/">
 <title>Loka — Neuro-Symbolic World Model</title>
 <style>
@@ -92,12 +92,12 @@ li { margin-bottom: 6px; }
 
 <h2>The pivot in one paragraph</h2>
 <p>
-  Loka started as <strong>SutraDB</strong>, a lean RDF-star triplestore with native vector indexing. Over time the <em>purpose</em>
+  Loka started as <strong>Loka</strong>, a lean RDF-star triplestore with native vector indexing. Over time the <em>purpose</em>
   shifted: the engine is now one half of a neuro-symbolic world-model engine. The other half is a small role-aware
   transformer trained from scratch on the same triples (with English labels substituted for opaque QIDs/PIDs). Both
   expose the same SPARQL+ interface. A query reaches both systems and the caller doesn't pick which one answered &mdash;
   except via <code>propositionInferredFrom</code> RDF-star edges that thread every model-generated triple back to the
-  context that informed it. The engine retains the SutraDB name; the project as a whole is becoming Loka.
+  context that informed it. The engine retains the Loka name; the project as a whole is becoming Loka.
 </p>
 
 <h2>The two-system loop</h2>
@@ -107,7 +107,7 @@ li { margin-bottom: 6px; }
 └─────────┬─────────┘
           ▼
 ┌───────────────────┐         ┌──────────────────────┐
-│ SutraDB store     │ ──────► │ Training corpus      │
+│ Loka store     │ ──────► │ Training corpus      │
 │   (.sdb file)     │ SPARQL+ │  (label-substituted) │
 │                   │ SPARQL- │                      │
 │                   │  star   │                      │
@@ -157,7 +157,7 @@ li { margin-bottom: 6px; }
 </code></pre>
 
 <p>
-  <code>prov:</code> expands to <code>http://sutra.dev/provenance/</code>. This whole namespace is <strong>reserved</strong>:
+  <code>prov:</code> expands to <code>http://loka.dev/provenance/</code>. This whole namespace is <strong>reserved</strong>:
   the world model never sees, proposes, or emits one of its predicates. Three independent guards enforce that &mdash; corpus
   stripping at extraction time, candidate-predicate filtering during inference, and an emit-time guard before each primary
   triple is written. Verbose names (<code>propositionGeneratedFrom</code>, not <code>generatedFrom</code>) make the rule
@@ -222,8 +222,8 @@ ckpt = hf_hub_download(
 
 <h2>Run the full loop</h2>
 <pre><code># 1. Engine
-cargo build --release -p sutra-cli
-./target/release/sutra serve --port 3030 &
+cargo build --release -p loka-cli
+./target/release/loka serve --port 3030 &
 
 # 2. Pull the prebuilt corpus snapshot (or rebuild via tools/wikidata_hf_import.py)
 git clone https://huggingface.co/datasets/EmmaLeonhart/loka
@@ -249,7 +249,7 @@ python training/infer_with_citations.py \
 </ul>
 
 <p class="meta" style="margin-top: 40px; padding-top: 16px; border-top: 1px solid #21262d;">
-The engine remains <strong>SutraDB</strong> in code (<code>sutra-core</code>, <code>sutra-hnsw</code>, etc.). The project &mdash;
+The engine remains <strong>Loka</strong> in code (<code>loka-core</code>, <code>loka-hnsw</code>, etc.). The project &mdash;
 engine + corpus + transformer + inference layer &mdash; is <strong>Loka</strong>.
 </p>
 

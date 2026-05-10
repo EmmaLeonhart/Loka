@@ -41,18 +41,18 @@ addTriple('paper1', ':author', 'auth1', 'data');
 addTriple('paper3', ':author', 'auth1', 'data');
 addTriple('paper4', ':author', 'auth2', 'data');
 // Vector triples (embedding stored as triple)
-addTriple('paper1', ':hasEmbedding', '"0.23 -0.11 0.87..."^^sutra:f32vec', 'vector');
-addTriple('paper2', ':hasEmbedding', '"0.25 -0.09 0.85..."^^sutra:f32vec', 'vector');
-addTriple('paper3', ':hasEmbedding', '"0.44 0.31 0.22..."^^sutra:f32vec', 'vector');
-addTriple('paper4', ':hasEmbedding', '"0.71 0.52 -0.33..."^^sutra:f32vec', 'vector');
+addTriple('paper1', ':hasEmbedding', '"0.23 -0.11 0.87..."^^loka:f32vec', 'vector');
+addTriple('paper2', ':hasEmbedding', '"0.25 -0.09 0.85..."^^loka:f32vec', 'vector');
+addTriple('paper3', ':hasEmbedding', '"0.44 0.31 0.22..."^^loka:f32vec', 'vector');
+addTriple('paper4', ':hasEmbedding', '"0.71 0.52 -0.33..."^^loka:f32vec', 'vector');
 // HNSW neighbor triples (virtual, generated on-the-fly)
-addTriple('paper1', 'sutra:hnswNeighbor', 'paper2', 'hnsw');
-addTriple('paper2', 'sutra:hnswNeighbor', 'paper3', 'hnsw');
-addTriple('paper2', 'sutra:hnswNeighbor', 'paper5', 'hnsw');
-addTriple('paper3', 'sutra:hnswNeighbor', 'paper5', 'hnsw');
-addTriple('paper4', 'sutra:hnswNeighbor', 'paper3', 'hnsw');
-addTriple('paper5', 'sutra:hnswNeighbor', 'paper6', 'hnsw');
-addTriple('paper6', 'sutra:hnswNeighbor', 'paper1', 'hnsw');
+addTriple('paper1', 'loka:hnswNeighbor', 'paper2', 'hnsw');
+addTriple('paper2', 'loka:hnswNeighbor', 'paper3', 'hnsw');
+addTriple('paper2', 'loka:hnswNeighbor', 'paper5', 'hnsw');
+addTriple('paper3', 'loka:hnswNeighbor', 'paper5', 'hnsw');
+addTriple('paper4', 'loka:hnswNeighbor', 'paper3', 'hnsw');
+addTriple('paper5', 'loka:hnswNeighbor', 'paper6', 'hnsw');
+addTriple('paper6', 'loka:hnswNeighbor', 'paper1', 'hnsw');
 let state = createInitialState();
 function createInitialState() {
     return {
@@ -195,7 +195,7 @@ function draw() {
     const legendItems = [
         ['Data triples (:discusses, :author)', COLORS.graph, state.visibleTypes.has('data')],
         ['Vector triples (:hasEmbedding)', COLORS.vector, state.visibleTypes.has('vector')],
-        ['HNSW triples (sutra:hnswNeighbor)', COLORS.hnsw, state.visibleTypes.has('hnsw')],
+        ['HNSW triples (loka:hnswNeighbor)', COLORS.hnsw, state.visibleTypes.has('hnsw')],
     ];
     for (const [label, col, vis] of legendItems) {
         ctx.fillStyle = vis ? col : col + '44';
@@ -234,7 +234,7 @@ function buildSteps() {
         }
         state.steps.push({
             description: 'Layer 2: Vectors are triples too',
-            detail: ':hasEmbedding "0.23 -0.11 ..."^^sutra:f32vec \u2014 the embedding is a typed literal attached to the node via a regular predicate. Indexed by HNSW, but stored as a triple.',
+            detail: ':hasEmbedding "0.23 -0.11 ..."^^loka:f32vec \u2014 the embedding is a typed literal attached to the node via a regular predicate. Indexed by HNSW, but stored as a triple.',
             active: true, done: false,
         });
         updateStepsUI();
@@ -252,7 +252,7 @@ function buildSteps() {
         }
         state.steps.push({
             description: 'Layer 3: HNSW neighbors as virtual triples',
-            detail: 'sutra:hnswNeighbor edges are generated on-the-fly from the HNSW index \u2014 not stored in SPO/POS/OSP. But they\'re queryable in SPARQL just like any other triple.',
+            detail: 'loka:hnswNeighbor edges are generated on-the-fly from the HNSW index \u2014 not stored in SPO/POS/OSP. But they\'re queryable in SPARQL just like any other triple.',
             active: true, done: false,
         });
         updateStepsUI();
@@ -272,9 +272,9 @@ function buildSteps() {
         // Highlight the HNSW edges used + data edges used
         for (let i = 0; i < triples.length; i++) {
             const t = triples[i];
-            if (t.s === 'paper1' && t.p === 'sutra:hnswNeighbor' && t.o === 'paper2')
+            if (t.s === 'paper1' && t.p === 'loka:hnswNeighbor' && t.o === 'paper2')
                 state.activeTriples.add(i);
-            if (t.s === 'paper6' && t.p === 'sutra:hnswNeighbor' && t.o === 'paper1')
+            if (t.s === 'paper6' && t.p === 'loka:hnswNeighbor' && t.o === 'paper1')
                 state.activeTriples.add(i);
             if (t.s === 'paper2' && t.p === ':discusses' && t.o === 'topic1')
                 state.activeTriples.add(i);
@@ -283,7 +283,7 @@ function buildSteps() {
         }
         state.steps.push({
             description: 'Unified query: HNSW + graph in one SPARQL walk',
-            detail: 'Find papers similar to Paper A (via sutra:hnswNeighbor), then follow :discusses edges to get topics. One query, one graph, no JSON handoff.',
+            detail: 'Find papers similar to Paper A (via loka:hnswNeighbor), then follow :discusses edges to get topics. One query, one graph, no JSON handoff.',
             active: true, done: false,
         });
         updateStepsUI();

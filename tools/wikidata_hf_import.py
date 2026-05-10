@@ -1,4 +1,4 @@
-"""Stream `philippesaade/wikidata` from Hugging Face into SutraDB.
+"""Stream `philippesaade/wikidata` from Hugging Face into Loka.
 
 Each entity row from the parquet stream is converted to N-Triples-star with
 full RDF-star qualifier and reference annotations on each claim. No
@@ -29,7 +29,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="repla
 
 # ── Configuration ────────────────────────────────────────────────────────────
 
-SUTRA_ENDPOINT = "http://localhost:3030"
+LOKA_ENDPOINT = "http://localhost:3030"
 WDT_PREFIX = "http://www.wikidata.org/prop/direct"
 WD_ENTITY_PREFIX = "http://www.wikidata.org/entity"
 STATE_PATH = Path("wikidata_hf_import_state.json")
@@ -227,21 +227,21 @@ def entity_to_triples(row: dict, skip_deprecated: bool = True) -> list[str]:
     return triples
 
 
-# ── SutraDB I/O ──────────────────────────────────────────────────────────────
+# ── Loka I/O ──────────────────────────────────────────────────────────────
 
-def sutra_health() -> bool:
+def loka_health() -> bool:
     try:
-        return requests.get(f"{SUTRA_ENDPOINT}/health", timeout=5).status_code == 200
+        return requests.get(f"{LOKA_ENDPOINT}/health", timeout=5).status_code == 200
     except Exception:
         return False
 
 
-def sutra_insert_triples(ntriples: str) -> tuple[int, int]:
+def loka_insert_triples(ntriples: str) -> tuple[int, int]:
     """POST a batch. Returns (inserted, error_count). Errors are mostly
     duplicates from re-runs and don't matter."""
     try:
         resp = requests.post(
-            f"{SUTRA_ENDPOINT}/triples",
+            f"{LOKA_ENDPOINT}/triples",
             data=ntriples.encode("utf-8"),
             headers={"Content-Type": "text/plain; charset=utf-8"},
             timeout=120,
@@ -288,11 +288,11 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    if not sutra_health():
-        print(f"[ERROR] SutraDB not running at {SUTRA_ENDPOINT}", flush=True)
-        print("Start it with: ./target/release/sutra.exe serve --port 3030", flush=True)
+    if not loka_health():
+        print(f"[ERROR] Loka not running at {LOKA_ENDPOINT}", flush=True)
+        print("Start it with: ./target/release/loka.exe serve --port 3030", flush=True)
         sys.exit(1)
-    print("[OK] SutraDB is running", flush=True)
+    print("[OK] Loka is running", flush=True)
 
     # Restore state so re-runs don't redo work.
     rows_to_skip = 0
@@ -356,7 +356,7 @@ def main() -> None:
         if not triples_buffer:
             return
         body = "\n".join(triples_buffer)
-        ins, errs = sutra_insert_triples(body)
+        ins, errs = loka_insert_triples(body)
         total_triples += ins
         total_errors += errs
         triples_buffer.clear()

@@ -4,23 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="SIMD Acceleration — SutraDB">
-    <meta property="og:description" content="How SutraDB uses AVX2 and SSE SIMD intrinsics for both vector distance computation and columnar TermId scanning.">
-    <meta name="description" content="How SutraDB uses AVX2 and SSE SIMD intrinsics for both vector distance computation and columnar TermId scanning.">
+    <meta property="og:title" content="SIMD Acceleration — Loka">
+    <meta property="og:description" content="How Loka uses AVX2 and SSE SIMD intrinsics for both vector distance computation and columnar TermId scanning.">
+    <meta name="description" content="How Loka uses AVX2 and SSE SIMD intrinsics for both vector distance computation and columnar TermId scanning.">
     <meta property="og:url" content="https://sutradb.org/theory/simd-acceleration/">
-    <meta property="og:site_name" content="SutraDB">
+    <meta property="og:site_name" content="Loka">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="SIMD Acceleration — SutraDB">
+    <meta name="twitter:title" content="SIMD Acceleration — Loka">
     <meta name="twitter:description" content="AVX2 and SSE intrinsics for vector distance and columnar TermId scanning.">
     <meta name="theme-color" content="#58a6ff">
     <link rel="canonical" href="https://sutradb.org/theory/simd-acceleration/">
-    <title>SIMD Acceleration &mdash; SutraDB</title>
+    <title>SIMD Acceleration &mdash; Loka</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f4dc;</text></svg>">
     <link rel="stylesheet" href="../../style.css">
 </head>
 <body>
 <nav>
-    <a href="../../" class="logo"><span>Sutra</span>DB</a>
+    <a href="../../" class="logo"><span>Loka</span></a>
     <a href="../../#download">Download</a>
     <a href="../../graph-vector/">Graph+Vector</a>
     <a href="../../sdb-format/">Architecture</a>
@@ -46,13 +46,13 @@
 
     <p>The key requirement: data must be <strong>contiguous in memory</strong>. SIMD cannot help with pointer-chasing through B-trees or linked lists &mdash; the CPU stalls waiting on cache misses, not arithmetic.</p>
 
-    <h2>Where SutraDB Uses SIMD</h2>
+    <h2>Where Loka Uses SIMD</h2>
 
     <h3>1. Vector Distance Functions (HNSW hot path)</h3>
 
     <p>During HNSW search, every candidate node requires a distance computation against the query vector. For a 1536-dimensional embedding, that is 1536 multiply-add operations per comparison. This is the single hottest loop in vector search.</p>
 
-    <p>SutraDB uses explicit SIMD intrinsics for three distance functions:</p>
+    <p>Loka uses explicit SIMD intrinsics for three distance functions:</p>
 
     <table>
         <tr><th>Function</th><th>AVX2</th><th>SSE</th><th>Use</th></tr>
@@ -65,7 +65,7 @@
 
     <h3>2. Pseudo-Table Column Scanning (columnar hot path)</h3>
 
-    <p>When a SPARQL query hits a pseudo-table, the executor scans columnar arrays of u64 TermIds. SutraDB stores these as packed dense arrays (null values use a sentinel) and scans them with SIMD:</p>
+    <p>When a SPARQL query hits a pseudo-table, the executor scans columnar arrays of u64 TermIds. Loka stores these as packed dense arrays (null values use a sentinel) and scans them with SIMD:</p>
 
     <table>
         <tr><th>Operation</th><th>AVX2</th><th>SSE2</th><th>Use</th></tr>
@@ -86,7 +86,7 @@
 
     <h2>Cosine via Normalized Dot Product</h2>
 
-    <p>Computing cosine similarity directly requires two norms and a dot product per comparison (3 passes over the data). SutraDB follows Qdrant's pattern: <strong>normalize vectors at insert time</strong>, then use dot product for all similarity computations at search time. This is mathematically equivalent but requires only 1 pass instead of 3.</p>
+    <p>Computing cosine similarity directly requires two norms and a dot product per comparison (3 passes over the data). Loka follows Qdrant's pattern: <strong>normalize vectors at insert time</strong>, then use dot product for all similarity computations at search time. This is mathematically equivalent but requires only 1 pass instead of 3.</p>
 
 </div>
 

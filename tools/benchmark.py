@@ -1,6 +1,6 @@
-"""SutraDB Benchmark Suite.
+"""Loka Benchmark Suite.
 
-Runs performance tests against a live SutraDB instance and saves results.
+Runs performance tests against a live Loka instance and saves results.
 
 Usage:
     python tools/benchmark.py [--endpoint http://localhost:3030]
@@ -78,7 +78,7 @@ def main():
     global ENDPOINT
     ENDPOINT = args.endpoint
 
-    print(f"=== SutraDB Benchmark Suite ===")
+    print(f"=== Loka Benchmark Suite ===")
     print(f"Endpoint: {ENDPOINT}")
     print()
 

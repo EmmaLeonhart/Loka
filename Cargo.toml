@@ -1,11 +1,11 @@
 [workspace]
 members = [
-    "sutra-core",
-    "sutra-hnsw",
-    "sutra-sparql",
-    "sutra-proto",
-    "sutra-cli",
-    "sutra-ffi",
+    "loka-core",
+    "loka-hnsw",
+    "loka-sparql",
+    "loka-proto",
+    "loka-cli",
+    "loka-ffi",
 ]
 exclude = ["sdks/rust"]
 resolver = "2"
@@ -15,8 +15,8 @@ version = "0.4.0"
 edition = "2021"
 license = "Apache-2.0"
 authors = []
-repository = "https://github.com/EmmaLeonhart/SutraDB"
-description = "A lean RDF-star triplestore with native HNSW vector indexing and hybrid SPARQL"
+repository = "https://github.com/EmmaLeonhart/Loka"
+description = "Loka — a lean RDF-star triplestore with native HNSW vector indexing and hybrid SPARQL+ (engine for the Loka neuro-symbolic world model)"
 
 [workspace.dependencies]
 # Error handling
@@ -34,7 +34,7 @@ serde_json = "1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
-# HTTP (sutra-proto)
+# HTTP (loka-proto)
 axum = "0.7"
 tower = { version = "0.4", features = ["util"] }
 tower-http = { version = "0.5", features = ["trace", "cors"] }
@@ -60,10 +60,10 @@ clap = { version = "4", features = ["derive"] }
 criterion = { version = "0.5", features = ["html_reports"] }
 
 # Intra-workspace
-sutra-core   = { path = "sutra-core" }
-sutra-hnsw   = { path = "sutra-hnsw" }
-sutra-sparql = { path = "sutra-sparql" }
-sutra-proto  = { path = "sutra-proto" }
+loka-core   = { path = "loka-core" }
+loka-hnsw   = { path = "loka-hnsw" }
+loka-sparql = { path = "loka-sparql" }
+loka-proto  = { path = "loka-proto" }
 
 [profile.release]
 opt-level = 3

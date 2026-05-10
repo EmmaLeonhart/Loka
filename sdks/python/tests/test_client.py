@@ -1,32 +1,32 @@
-"""Unit tests for the SutraDB Python client.
+"""Unit tests for the Loka Python client.
 
 These tests verify client construction and method signatures without
-requiring a running SutraDB server.
+requiring a running Loka server.
 """
 
 import unittest
 
-from sutradb import SutraClient, __version__
-from sutradb.client import SutraError
+from loka import LokaClient, __version__
+from loka.client import LokaError
 
 
 class TestClientConstruction(unittest.TestCase):
     """Verify that the client can be instantiated with various arguments."""
 
     def test_default_endpoint(self) -> None:
-        client = SutraClient()
+        client = LokaClient()
         self.assertEqual(client.endpoint, "http://localhost:3030")
 
     def test_custom_endpoint(self) -> None:
-        client = SutraClient("http://db.example.com:9999")
+        client = LokaClient("http://db.example.com:9999")
         self.assertEqual(client.endpoint, "http://db.example.com:9999")
 
     def test_trailing_slash_stripped(self) -> None:
-        client = SutraClient("http://localhost:3030/")
+        client = LokaClient("http://localhost:3030/")
         self.assertEqual(client.endpoint, "http://localhost:3030")
 
     def test_session_created(self) -> None:
-        client = SutraClient()
+        client = LokaClient()
         self.assertIsNotNone(client._session)
 
 
@@ -34,7 +34,7 @@ class TestMethodSignatures(unittest.TestCase):
     """Verify that all public methods exist with expected signatures."""
 
     def setUp(self) -> None:
-        self.client = SutraClient()
+        self.client = LokaClient()
 
     def test_health_exists(self) -> None:
         self.assertTrue(callable(self.client.health))
@@ -55,20 +55,20 @@ class TestMethodSignatures(unittest.TestCase):
         self.assertTrue(callable(self.client.insert_vectors_batch))
 
 
-class TestSutraError(unittest.TestCase):
+class TestLokaError(unittest.TestCase):
     """Verify the custom exception class."""
 
     def test_basic_error(self) -> None:
-        err = SutraError("something went wrong")
+        err = LokaError("something went wrong")
         self.assertEqual(str(err), "something went wrong")
         self.assertIsNone(err.status_code)
 
     def test_error_with_status_code(self) -> None:
-        err = SutraError("not found", status_code=404)
+        err = LokaError("not found", status_code=404)
         self.assertEqual(err.status_code, 404)
 
     def test_is_exception(self) -> None:
-        self.assertTrue(issubclass(SutraError, Exception))
+        self.assertTrue(issubclass(LokaError, Exception))
 
 
 class TestVersion(unittest.TestCase):

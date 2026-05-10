@@ -1,1 +1,1 @@
-rootProject.name = "sutradb"
+rootProject.name = "loka"

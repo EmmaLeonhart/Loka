@@ -3,7 +3,7 @@ name: Paper PDF — anonymized + named builds
 # Builds two PDFs from paper/paper.tex via the \ifanon switch.
 # Triggered on push to paper/ on master, plus workflow_dispatch.
 # Both PDFs uploaded as workflow artifacts; future extension will
-# also deploy them to the docs site (sutralang.dev).
+# also deploy them to the docs site (lokalang.dev).
 #
 # Per Emma 2026-04-30 (queue sub-items 1d + 1e): single source,
 # four outputs (HTML + named PDF + anonymized PDF + clawRxiv

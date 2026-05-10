@@ -1,14 +1,14 @@
-//! # SutraDB Rust Client
+//! # Loka Rust Client
 //!
-//! A blocking HTTP client for [SutraDB](https://github.com/EmmaLeonhart/SutraDB),
+//! A blocking HTTP client for [Loka](https://github.com/EmmaLeonhart/Loka),
 //! the RDF-star triplestore with native HNSW vector indexing.
 //!
 //! ## Quick Start
 //!
 //! ```no_run
-//! use sutradb::SutraClient;
+//! use loka::LokaClient;
 //!
-//! let client = SutraClient::new("http://localhost:7878");
+//! let client = LokaClient::new("http://localhost:7878");
 //!
 //! // Check health
 //! assert!(client.health().unwrap());
@@ -29,5 +29,5 @@ pub mod client;
 pub mod error;
 pub mod types;
 
-pub use client::SutraClient;
-pub use error::{Result, SutraError};
+pub use client::LokaClient;
+pub use error::{Result, LokaError};

@@ -25,8 +25,8 @@ Example (local):
 
     export CLAWRXIV_API_KEY=...
     python scripts/paper_submit_and_fetch.py \\
-        --paper-dir sutra-paper \\
-        --title "Sutra: A Vector Programming Language for ..." \\
+        --paper-dir loka-paper \\
+        --title "Loka: Generative Citation in a Neuro-Symbolic World Model" \\
         --tags "programming-languages,vsa,embedding-spaces"
 
 Exit code 0 on success (including successful submission with timed-out
@@ -252,7 +252,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--paper-dir", required=True,
-        help="Path to paper directory containing paper.md (e.g. sutra-paper)",
+        help="Path to paper directory containing paper.md (e.g. loka-paper)",
     )
     parser.add_argument(
         "--title", required=False, default=None,

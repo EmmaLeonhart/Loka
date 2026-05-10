@@ -1,6 +1,6 @@
-# SutraDB Query Examples
+# Loka Query Examples
 
-> A comprehensive catalog of SPARQL queries that SutraDB supports or will support,
+> A comprehensive catalog of SPARQL queries that Loka supports or will support,
 > from basic triple patterns to hybrid vector+graph queries.
 
 ---
@@ -307,14 +307,14 @@ Finds deity-domain associations that were established before 500 CE.
 
 ## 8. Vector SPARQL
 
-These queries use SutraDB's hybrid SPARQL extension. See `docs/vectorSPARQL.md` for full design.
+These queries use Loka's hybrid SPARQL extension. See `docs/vectorSPARQL.md` for full design.
 
 ### Basic similarity search
 
 ```sparql
 # Find documents whose embedding is similar to a query vector
 SELECT ?doc WHERE {
-  VECTOR_SIMILAR(?doc :hasEmbedding "0.23 -0.11 0.87 ..."^^sutra:f32vec, 0.85)
+  VECTOR_SIMILAR(?doc :hasEmbedding "0.23 -0.11 0.87 ..."^^loka:f32vec, 0.85)
 }
 ```
 
@@ -328,7 +328,7 @@ PREFIX ex: <http://example.org/>
 SELECT ?paper ?title WHERE {
   ?paper a ex:AcademicPaper .
   ?paper ex:title ?title .
-  VECTOR_SIMILAR(?paper :hasEmbedding "0.1 0.2 ..."^^sutra:f32vec, 0.80)
+  VECTOR_SIMILAR(?paper :hasEmbedding "0.1 0.2 ..."^^loka:f32vec, 0.80)
 }
 ```
 
@@ -343,7 +343,7 @@ PREFIX ex: <http://example.org/>
 SELECT ?similar ?name WHERE {
   ?similar a ex:Shrine .
   ?similar ex:name ?name .
-  VECTOR_SIMILAR(?similar :descriptionEmbedding "0.5 0.3 ..."^^sutra:f32vec, 0.75)
+  VECTOR_SIMILAR(?similar :descriptionEmbedding "0.5 0.3 ..."^^loka:f32vec, 0.75)
   FILTER(?similar != <http://example.org/IseJingu>)
 }
 ```
@@ -357,7 +357,7 @@ Find shrines whose descriptions are semantically similar to Ise Jingu's, excludi
 # The vector search provides the "entry point" into the graph.
 
 SELECT ?entity ?type ?name WHERE {
-  VECTOR_SIMILAR(?entity :embedding "..."^^sutra:f32vec, 0.70)
+  VECTOR_SIMILAR(?entity :embedding "..."^^loka:f32vec, 0.70)
   ?entity a ?type .
   ?entity rdfs:label ?name
 }
@@ -373,7 +373,7 @@ PREFIX ex: <http://example.org/>
 
 # Start from a semantic search, then traverse the graph
 SELECT ?shrine ?deity ?myth WHERE {
-  VECTOR_SIMILAR(?shrine :embedding "..."^^sutra:f32vec, 0.80)
+  VECTOR_SIMILAR(?shrine :embedding "..."^^loka:f32vec, 0.80)
   ?shrine ex:enshrines ?deity .
   ?deity ex:appearsIn ?myth .
   ?myth a ex:Myth
@@ -387,10 +387,10 @@ The vector search finds shrines; SPARQL traverses from those shrines to their de
 ```sparql
 PREFIX ex: <http://example.org/>
 
-SELECT ?doc ?title (VECTOR_SCORE(?doc :embedding "..."^^sutra:f32vec) AS ?relevance) WHERE {
+SELECT ?doc ?title (VECTOR_SCORE(?doc :embedding "..."^^loka:f32vec) AS ?relevance) WHERE {
   ?doc a ex:Document .
   ?doc ex:title ?title .
-  VECTOR_SIMILAR(?doc :embedding "..."^^sutra:f32vec, 0.60)
+  VECTOR_SIMILAR(?doc :embedding "..."^^loka:f32vec, 0.60)
 }
 ORDER BY DESC(?relevance)
 LIMIT 20
@@ -405,13 +405,13 @@ VECTOR_SCORE exposes the actual similarity value so results can be ranked.
 # to "causal influence between concepts"
 SELECT ?s ?p ?o ?score WHERE {
   << ?s ?p ?o >> :relationEmbedding ?v .
-  VECTOR_SIMILAR(<< ?s ?p ?o >> :relationEmbedding "..."^^sutra:f32vec, 0.85)
-  BIND(VECTOR_SCORE(<< ?s ?p ?o >> :relationEmbedding "..."^^sutra:f32vec) AS ?score)
+  VECTOR_SIMILAR(<< ?s ?p ?o >> :relationEmbedding "..."^^loka:f32vec, 0.85)
+  BIND(VECTOR_SCORE(<< ?s ?p ?o >> :relationEmbedding "..."^^loka:f32vec) AS ?score)
 }
 ORDER BY DESC(?score)
 ```
 
-Unique to SutraDB: searching over the semantic meaning of relationships, not just nodes.
+Unique to Loka: searching over the semantic meaning of relationships, not just nodes.
 
 ### Hybrid: vector + graph + filter
 
@@ -428,9 +428,9 @@ SELECT ?paper ?title ?author WHERE {
   ?paper ex:author ?author .
   ?author ex:affiliation ex:Stanford .
   ?paper ex:title ?title .
-  VECTOR_SIMILAR(?paper :abstractEmbedding "..."^^sutra:f32vec, 0.75)
+  VECTOR_SIMILAR(?paper :abstractEmbedding "..."^^loka:f32vec, 0.75)
 }
-ORDER BY DESC(VECTOR_SCORE(?paper :abstractEmbedding "..."^^sutra:f32vec))
+ORDER BY DESC(VECTOR_SCORE(?paper :abstractEmbedding "..."^^loka:f32vec))
 LIMIT 10
 ```
 
@@ -444,8 +444,8 @@ PREFIX ex: <http://example.org/>
 # Find entities that are similar in BOTH text and image embedding spaces
 SELECT ?entity ?name WHERE {
   ?entity ex:name ?name .
-  VECTOR_SIMILAR(?entity :textEmbedding "..."^^sutra:f32vec, 0.80) .
-  VECTOR_SIMILAR(?entity :imageEmbedding "..."^^sutra:f32vec, 0.70)
+  VECTOR_SIMILAR(?entity :textEmbedding "..."^^loka:f32vec, 0.80) .
+  VECTOR_SIMILAR(?entity :imageEmbedding "..."^^loka:f32vec, 0.70)
 }
 ```
 
@@ -461,7 +461,7 @@ PREFIX ex: <http://example.org/>
 SELECT ?protein ?disease WHERE {
   ?protein a ex:Protein .
   ?disease a ex:Disease .
-  VECTOR_SIMILAR(?protein :bioEmbedding "..."^^sutra:f32vec, 0.85) .
+  VECTOR_SIMILAR(?protein :bioEmbedding "..."^^loka:f32vec, 0.85) .
   FILTER NOT EXISTS { ?protein ex:associatedWith ?disease }
 }
 ```
@@ -473,14 +473,14 @@ Uses vector similarity to identify candidate links, then FILTER NOT EXISTS to co
 ```sparql
 # Higher ef = better recall but slower
 SELECT ?doc WHERE {
-  VECTOR_SIMILAR(?doc :embedding "..."^^sutra:f32vec, 0.80, ef:=500)
+  VECTOR_SIMILAR(?doc :embedding "..."^^loka:f32vec, 0.80, ef:=500)
 }
 ```
 
 ```sparql
 # Lower ef = faster but might miss some results
 SELECT ?doc WHERE {
-  VECTOR_SIMILAR(?doc :embedding "..."^^sutra:f32vec, 0.80, ef:=50)
+  VECTOR_SIMILAR(?doc :embedding "..."^^loka:f32vec, 0.80, ef:=50)
 }
 ```
 
@@ -489,7 +489,7 @@ SELECT ?doc WHERE {
 ```sparql
 # Just give me the 10 most similar, regardless of score
 SELECT ?doc WHERE {
-  VECTOR_SIMILAR(?doc :embedding "..."^^sutra:f32vec, k:=10)
+  VECTOR_SIMILAR(?doc :embedding "..."^^loka:f32vec, k:=10)
 }
 ```
 
@@ -523,7 +523,7 @@ SELECT ?ancestor ?name WHERE {
 }
 ```
 
-Uses the `+` (one-or-more) property path operator. SutraDB also supports `*` (zero-or-more), `?` (zero-or-one), and `/` (sequence).
+Uses the `+` (one-or-more) property path operator. Loka also supports `*` (zero-or-more), `?` (zero-or-one), and `/` (sequence).
 
 ### Document corpus exploration
 
@@ -568,8 +568,8 @@ SELECT ?person ?name ?score WHERE {
   ?friend foaf:knows ?person .
   ?person foaf:name ?name .
   FILTER(?person != <http://example.org/Alice>) .
-  VECTOR_SIMILAR(?person :interestEmbedding "..."^^sutra:f32vec, 0.75)
-  BIND(VECTOR_SCORE(?person :interestEmbedding "..."^^sutra:f32vec) AS ?score)
+  VECTOR_SIMILAR(?person :interestEmbedding "..."^^loka:f32vec, 0.75)
+  BIND(VECTOR_SCORE(?person :interestEmbedding "..."^^loka:f32vec) AS ?score)
 }
 ORDER BY DESC(?score)
 LIMIT 10
@@ -581,7 +581,7 @@ Graph traversal finds friends-of-friends; vector search ranks them by semantic i
 
 ## 10. Temporal Queries (Ontochronology)
 
-These queries use SutraDB's temporal (ontochronological) SPARQL+ extensions. See `docs/temporal-queries.md` for the full practical guide and `docs/ontochronology.md` for the theory.
+These queries use Loka's temporal (ontochronological) SPARQL+ extensions. See `docs/temporal-queries.md` for the full practical guide and `docs/ontochronology.md` for the theory.
 
 ### AT_TIME: query at a specific moment
 
@@ -602,7 +602,7 @@ Only triples valid at that exact moment are returned. Atemporal triples (no temp
 ```sparql
 # Who held which position in 1810?
 SELECT ?person ?position WHERE {
-  AT_TIME("1810"^^sutra:temporal) {
+  AT_TIME("1810"^^loka:temporal) {
     ?person :heldPosition ?position .
   }
 }
@@ -649,7 +649,7 @@ SELECT ?s ?p ?o WHERE {
 ```sparql
 # What changed between 1804 and 1814?
 SELECT ?change_type ?person ?position WHERE {
-  TEMPORAL_DIFF("1804"^^sutra:temporal, "1814"^^sutra:temporal) {
+  TEMPORAL_DIFF("1804"^^loka:temporal, "1814"^^loka:temporal) {
     ?person :heldPosition ?position .
   }
 }
@@ -679,7 +679,7 @@ SELECT ?doc ?entity WHERE {
     ?entity rdf:type :Person .
     ?doc :mentions ?entity .
   }
-  VECTOR_SIMILAR(?doc :hasEmbedding "..."^^sutra:f32vec, 0.85)
+  VECTOR_SIMILAR(?doc :hasEmbedding "..."^^loka:f32vec, 0.85)
 }
 ```
 

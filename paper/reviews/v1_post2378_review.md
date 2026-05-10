@@ -21,7 +21,7 @@ The paper introduces Loka, a system that combines an RDF-star triplestore with a
 - The evaluation lacks standard quantitative metrics for knowledge graph completion, such as Mean Reciprocal Rank (MRR) or Hits@k, making it impossible to compare Loka's performance against established baselines like KG-BERT or KGT5.
 - The reported perplexity values (84.85 to 92.48) are extremely high for a language model, suggesting that the model has not effectively learned the underlying distribution of the data.
 - The 'neuro-symbolic' label is largely superficial; the system is essentially a standard transformer trained on linearized triples, with the 'symbolic' part being the external database storage rather than an integrated reasoning component.
-- The paper relies on an unpublished or unreferenced engine ('SutraDB'), which hinders reproducibility and prevents verification of the engine-level bugs described.
+- The paper relies on an unpublished or unreferenced engine ('Loka'), which hinders reproducibility and prevents verification of the engine-level bugs described.
 - The qualitative evaluation is limited to a very small sample (50 subjects) and relies on anecdotal evidence rather than a systematic human or automated evaluation of factuality.
 
 ## Justification

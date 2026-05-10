@@ -1,6 +1,6 @@
 # SPARQL+ — Vector SPARQL Design Notes and Examples
 
-> How SutraDB's SPARQL+ extends SPARQL 1.1 to unify graph traversal, vector similarity search, and predicate-based exit conditions.
+> How Loka's SPARQL+ extends SPARQL 1.1 to unify graph traversal, vector similarity search, and predicate-based exit conditions.
 
 ---
 
@@ -13,34 +13,34 @@ Standard SPARQL operates over discrete triples — exact matches, pattern matchi
 
 Combining them requires application-layer glue: query one, feed results to the other, merge. This is slow, fragile, and loses the ability to express the full query in one shot.
 
-SutraDB eliminates this by making **vectors just another predicate type** and adding vector operators directly to SPARQL.
+Loka eliminates this by making **vectors just another predicate type** and adding vector operators directly to SPARQL.
 
 ---
 
 ## Core Concept: Vectors Are Triples
 
-In SutraDB, a vector embedding is stored as an RDF triple with a special literal type:
+In Loka, a vector embedding is stored as an RDF triple with a special literal type:
 
 ```turtle
 # A node has an embedding
-:paper_42 :hasEmbedding "0.23 -0.11 0.87 ..."^^sutra:f32vec .
+:paper_42 :hasEmbedding "0.23 -0.11 0.87 ..."^^loka:f32vec .
 
 # An edge has an embedding (RDF-star)
-<< :paper_42 :discusses :TransformerArchitecture >> :hasEmbedding "0.12 0.45 ..."^^sutra:f32vec .
+<< :paper_42 :discusses :TransformerArchitecture >> :hasEmbedding "0.12 0.45 ..."^^loka:f32vec .
 ```
 
-The `sutra:f32vec` literal type is a fixed-dimension array of 32-bit floats. When a predicate is declared as a vector predicate, SutraDB automatically builds and maintains an HNSW index over all triples with that predicate. The vector index is a first-class index alongside SPO/POS/OSP — not a foreign system.
+The `loka:f32vec` literal type is a fixed-dimension array of 32-bit floats. When a predicate is declared as a vector predicate, Loka automatically builds and maintains an HNSW index over all triples with that predicate. The vector index is a first-class index alongside SPO/POS/OSP — not a foreign system.
 
 ### Schema Declaration
 
 ```turtle
-sutra:declareVectorPredicate :hasEmbedding ;
-    sutra:dimensions 1536 ;
-    sutra:hnswM 16 ;
-    sutra:hnswEfConstruction 200 .
+loka:declareVectorPredicate :hasEmbedding ;
+    loka:dimensions 1536 ;
+    loka:hnswM 16 ;
+    loka:hnswEfConstruction 200 .
 ```
 
-This tells SutraDB:
+This tells Loka:
 - Any triple with predicate `:hasEmbedding` has a 1536-dimensional vector as its object
 - Build an HNSW index with M=16 and ef_construction=200
 - Inserting a vector of the wrong dimensionality is a hard error
@@ -52,13 +52,13 @@ This tells SutraDB:
 The primary extension to SPARQL. It can appear anywhere a graph pattern can appear:
 
 ```sparql
-VECTOR_SIMILAR(?subject :predicate "query_vector"^^sutra:f32vec, threshold)
+VECTOR_SIMILAR(?subject :predicate "query_vector"^^loka:f32vec, threshold)
 ```
 
 **Parameters:**
 - `?subject` — the variable to bind to matching subjects
 - `:predicate` — which vector predicate to search
-- `"..."^^sutra:f32vec` — the query vector (literal)
+- `"..."^^loka:f32vec` — the query vector (literal)
 - `threshold` — minimum cosine similarity (0.0 to 1.0)
 
 ### Basic Usage
@@ -66,7 +66,7 @@ VECTOR_SIMILAR(?subject :predicate "query_vector"^^sutra:f32vec, threshold)
 ```sparql
 # Find all documents similar to a query embedding
 SELECT ?doc WHERE {
-  VECTOR_SIMILAR(?doc :hasEmbedding "0.23 -0.11 ..."^^sutra:f32vec, 0.85)
+  VECTOR_SIMILAR(?doc :hasEmbedding "0.23 -0.11 ..."^^loka:f32vec, 0.85)
 }
 ```
 
@@ -81,7 +81,7 @@ The real power: mixing vector search with graph traversal in a single query.
 SELECT ?doc ?topic WHERE {
   ?doc :discusses ?topic .
   ?topic rdf:type :MachineLearning .
-  VECTOR_SIMILAR(?doc :hasEmbedding "0.23 -0.11 ..."^^sutra:f32vec, 0.80)
+  VECTOR_SIMILAR(?doc :hasEmbedding "0.23 -0.11 ..."^^loka:f32vec, 0.80)
 }
 ```
 
@@ -91,7 +91,7 @@ SELECT ?doc ?topic WHERE {
 SELECT ?person ?name WHERE {
   ?person :worksAt :Google .
   ?person :name ?name .
-  VECTOR_SIMILAR(?person :profileEmbedding "0.5 0.3 ..."^^sutra:f32vec, 0.90)
+  VECTOR_SIMILAR(?person :profileEmbedding "0.5 0.3 ..."^^loka:f32vec, 0.90)
 }
 ```
 
@@ -101,7 +101,7 @@ SELECT ?person ?name WHERE {
 SELECT ?paper WHERE {
   :TransformerArchitecture :influences+ ?concept .
   ?paper :discusses ?concept .
-  VECTOR_SIMILAR(?paper :hasEmbedding "0.1 0.2 ..."^^sutra:f32vec, 0.75)
+  VECTOR_SIMILAR(?paper :hasEmbedding "0.1 0.2 ..."^^loka:f32vec, 0.75)
 }
 ```
 
@@ -112,9 +112,9 @@ SELECT ?paper WHERE {
 Returns the actual similarity score for use in ORDER BY or SELECT:
 
 ```sparql
-SELECT ?paper (VECTOR_SCORE(?paper :hasEmbedding "..."^^sutra:f32vec) AS ?score) WHERE {
+SELECT ?paper (VECTOR_SCORE(?paper :hasEmbedding "..."^^loka:f32vec) AS ?score) WHERE {
   ?paper rdf:type :AcademicPaper .
-  VECTOR_SIMILAR(?paper :hasEmbedding "..."^^sutra:f32vec, 0.70)
+  VECTOR_SIMILAR(?paper :hasEmbedding "..."^^loka:f32vec, 0.70)
 }
 ORDER BY DESC(?score)
 LIMIT 10
@@ -124,17 +124,17 @@ LIMIT 10
 
 ## Edge Embeddings (RDF-star)
 
-Because SutraDB uses RDF-star, you can embed edges, not just nodes:
+Because Loka uses RDF-star, you can embed edges, not just nodes:
 
 ```sparql
 # Find relationships (edges) similar to "causal influence"
 SELECT ?s ?p ?o WHERE {
   << ?s ?p ?o >> :hasEmbedding ?v .
-  VECTOR_SIMILAR(<< ?s ?p ?o >> :hasEmbedding "..."^^sutra:f32vec, 0.85)
+  VECTOR_SIMILAR(<< ?s ?p ?o >> :hasEmbedding "..."^^loka:f32vec, 0.85)
 }
 ```
 
-This is unique to SutraDB — no other triplestore or vector database can search over relationship embeddings natively.
+This is unique to Loka — no other triplestore or vector database can search over relationship embeddings natively.
 
 ---
 
@@ -152,7 +152,7 @@ The query planner must decide execution order when VECTOR_SIMILAR appears alongs
 ```sparql
 SELECT ?doc WHERE {
   ?doc :author <http://example.org/Alice> .    # Binds ?doc to ~10 results
-  VECTOR_SIMILAR(?doc :hasEmbedding "..."^^sutra:f32vec, 0.85)  # Filter those 10
+  VECTOR_SIMILAR(?doc :hasEmbedding "..."^^loka:f32vec, 0.85)  # Filter those 10
 }
 ```
 
@@ -162,7 +162,7 @@ Here `?doc` is bound by the first pattern to a small set. The planner executes t
 
 ```sparql
 SELECT ?doc WHERE {
-  VECTOR_SIMILAR(?doc :hasEmbedding "..."^^sutra:f32vec, 0.85)  # Top-k from HNSW
+  VECTOR_SIMILAR(?doc :hasEmbedding "..."^^loka:f32vec, 0.85)  # Top-k from HNSW
   ?doc :publishedIn :Nature .                                    # Filter by graph
 }
 ```
@@ -182,7 +182,7 @@ The v0.1 heuristic is static — it decides order before execution begins. The c
 Control the accuracy/speed tradeoff per-query:
 
 ```sparql
-VECTOR_SIMILAR(?doc :hasEmbedding "..."^^sutra:f32vec, 0.85, ef:=200)
+VECTOR_SIMILAR(?doc :hasEmbedding "..."^^loka:f32vec, 0.85, ef:=200)
 ```
 
 Higher `ef` = better recall but slower search. Default is the index's configured `ef_search`.
@@ -192,7 +192,7 @@ Higher `ef` = better recall but slower search. Default is the index's configured
 Instead of a threshold, return the top K results:
 
 ```sparql
-VECTOR_SIMILAR(?doc :hasEmbedding "..."^^sutra:f32vec, k:=10)
+VECTOR_SIMILAR(?doc :hasEmbedding "..."^^loka:f32vec, k:=10)
 ```
 
 ---
@@ -206,7 +206,7 @@ VECTOR_SIMILAR(?doc :hasEmbedding "..."^^sutra:f32vec, k:=10)
 # 1. Semantically similar documents
 # 2. Their structural neighbors in the knowledge graph
 SELECT ?chunk ?related ?relationship WHERE {
-  VECTOR_SIMILAR(?chunk :embedding "..."^^sutra:f32vec, 0.80)
+  VECTOR_SIMILAR(?chunk :embedding "..."^^loka:f32vec, 0.80)
   ?chunk ?relationship ?related .
   ?related rdf:type :Entity .
 }
@@ -221,7 +221,7 @@ LIMIT 50
 SELECT ?entity1 ?entity2 WHERE {
   ?entity1 rdf:type :Protein .
   ?entity2 rdf:type :Disease .
-  VECTOR_SIMILAR(?entity1 :embedding "..."^^sutra:f32vec, 0.90)
+  VECTOR_SIMILAR(?entity1 :embedding "..."^^loka:f32vec, 0.90)
   FILTER NOT EXISTS { ?entity1 :associatedWith ?entity2 }
 }
 ```
@@ -232,10 +232,10 @@ SELECT ?entity1 ?entity2 WHERE {
 # Search for images similar to a text query
 # (both embedded in the same CLIP space)
 SELECT ?image ?caption WHERE {
-  VECTOR_SIMILAR(?image :clipEmbedding "..."^^sutra:f32vec, 0.75)
+  VECTOR_SIMILAR(?image :clipEmbedding "..."^^loka:f32vec, 0.75)
   ?image :hasCaption ?caption .
 }
-ORDER BY DESC(VECTOR_SCORE(?image :clipEmbedding "..."^^sutra:f32vec))
+ORDER BY DESC(VECTOR_SCORE(?image :clipEmbedding "..."^^loka:f32vec))
 LIMIT 20
 ```
 
@@ -250,7 +250,7 @@ PREFIX wdt: <http://www.wikidata.org/prop/direct/>
 SELECT ?shrine ?label WHERE {
   ?shrine wdt:P31 wd:Q135022904 .  # instance of Shikinai Ronsha
   ?shrine rdfs:label ?label .
-  VECTOR_SIMILAR(?shrine :descriptionEmbedding "..."^^sutra:f32vec, 0.80)
+  VECTOR_SIMILAR(?shrine :descriptionEmbedding "..."^^loka:f32vec, 0.80)
 }
 ```
 
@@ -260,7 +260,7 @@ SELECT ?shrine ?label WHERE {
 
 | Feature | Status |
 |---|---|
-| `sutra:f32vec` literal type | Implemented |
+| `loka:f32vec` literal type | Implemented |
 | HNSW index per vector predicate | Implemented |
 | Cosine / Euclidean / DotProduct metrics | Implemented |
 | VECTOR_SIMILAR in SPARQL parser | Implemented |
@@ -282,7 +282,7 @@ The core SPARQL+ vector operators are fully functional. The next phase focuses o
 
 ## The Cold Start Problem
 
-In the Semantic Web and Knowledge Graph world, there's a massive "cold start" problem that traditional SPARQL triplestores cannot solve. SutraDB's vector-first approach eliminates it.
+In the Semantic Web and Knowledge Graph world, there's a massive "cold start" problem that traditional SPARQL triplestores cannot solve. Loka's vector-first approach eliminates it.
 
 ### The Three Cold Start Problems
 
@@ -297,7 +297,7 @@ If two nodes aren't explicitly connected by an edge, they're invisible to each o
 
 ### How Vector-First Solves It
 
-By making vector indexing a first-class citizen, SutraDB creates **semantic on-ramps**:
+By making vector indexing a first-class citizen, Loka creates **semantic on-ramps**:
 
 1. **Warm Entry**: Query with a natural language concept embedding ("electric car pioneer")
 2. **The Hand-off**: The HNSW index finds nearest neighbors (`:ElonMusk`, `:Tesla`, `:Rivian`)
@@ -309,7 +309,7 @@ Even without edges, vector-indexed nodes allow the query engine to "see" relatio
 
 ### Embedding Generation: Application-Side
 
-SutraDB is **model-agnostic**. Embeddings are provided by the application at insert time as raw `f32` arrays. The database does not know or care what model produced them — it just stores and indexes floats.
+Loka is **model-agnostic**. Embeddings are provided by the application at insert time as raw `f32` arrays. The database does not know or care what model produced them — it just stores and indexes floats.
 
 This is a deliberate design choice:
 - No coupling to any specific embedding model
@@ -325,6 +325,6 @@ A middleware layer could handle query-time embedding (converting natural languag
 
 Every existing GraphRAG system is a kludge. Microsoft's GraphRAG flattens the graph into community summaries and retrieves summaries — throwing away most relational structure. LangChain's graph retrievers do two separate queries and merge in Python.
 
-SutraDB makes the full power of both graph traversal AND vector similarity available in a single, declarative query language. No glue code. No result merging. No two-system orchestration. Just one query that says exactly what you want.
+Loka makes the full power of both graph traversal AND vector similarity available in a single, declarative query language. No glue code. No result merging. No two-system orchestration. Just one query that says exactly what you want.
 
 This is what a database should be.

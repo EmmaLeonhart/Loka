@@ -1,10 +1,10 @@
-# SutraDB Benchmark Results
+# Loka Benchmark Results
 
 Run on Windows 11, Rust 2021 edition, `--release` profile (opt-level 3, thin LTO, codegen-units 1).
 
 Date: 2026-03-16
 
-## sutra-core — Triple Storage Engine
+## loka-core — Triple Storage Engine
 
 | Benchmark | Size | Time |
 |---|---|---|
@@ -26,7 +26,7 @@ Date: 2026-03-16
 - Contains: ~17.4M checks/sec
 - Adjacency: ~54.6M lookups/sec (O(1) star query)
 
-## sutra-hnsw — HNSW Vector Index
+## loka-hnsw — HNSW Vector Index
 
 ### Insert Performance
 
@@ -87,7 +87,7 @@ Date: 2026-03-16
 - Search (5K, 128D, ef=100): ~3,750 queries/sec
 - Dot product is ~37% faster than cosine (no normalization overhead)
 
-## sutra-sparql — SPARQL Query Engine
+## loka-sparql — SPARQL Query Engine
 
 ### Parse Performance
 

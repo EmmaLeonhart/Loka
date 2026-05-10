@@ -1,34 +1,34 @@
-# SutraDB World-Model Thesis
+# Loka World-Model Thesis
 
 **Status:** Canonical vision spec — supersedes ad-hoc framings in chats.
 **Date:** 2026-05-07
 **Source material:** `chats/world-models.md`, `chats/ai-bubble.md`.
 
-This document captures the architectural commitments and rejections that define what SutraDB is becoming. It is the contract between the engine work and the model work, and the lens through which feature proposals should be evaluated.
+This document captures the architectural commitments and rejections that define what Loka is becoming. It is the contract between the engine work and the model work, and the lens through which feature proposals should be evaluated.
 
 ---
 
 ## Product vision: Ollama for world models
 
-SutraDB's product positioning in one analogy:
+Loka's product positioning in one analogy:
 
-> **What Ollama is to LLMs, SutraDB is to world models.**
+> **What Ollama is to LLMs, Loka is to world models.**
 
-Ollama lets you `pull` any local model, run it on your machine, swap between models trivially. SutraDB does the same for *world models* — except a world model here is not a pretrained text generator; it is an inference engine over your knowledge graph. The composition has three steps:
+Ollama lets you `pull` any local model, run it on your machine, swap between models trivially. Loka does the same for *world models* — except a world model here is not a pretrained text generator; it is an inference engine over your knowledge graph. The composition has three steps:
 
-1. **Import any database into RDF form.** Source data lives in graph databases, relational databases, document stores, file dumps. SutraDB normalizes everything to RDF triples (RDF-star where edge metadata matters). Graph databases (Neo4j, JanusGraph, RDF triplestores) translate most cleanly; relational and document stores translate via the year-deferred enrollment pipeline (see `planning/enrollment-v1.md`). Bulk one-way RDF imports (Wikidata, DBpedia, OpenAlex, MusicBrainz) are direct: dump in, triples out.
+1. **Import any database into RDF form.** Source data lives in graph databases, relational databases, document stores, file dumps. Loka normalizes everything to RDF triples (RDF-star where edge metadata matters). Graph databases (Neo4j, JanusGraph, RDF triplestores) translate most cleanly; relational and document stores translate via the year-deferred enrollment pipeline (see `planning/enrollment-v1.md`). Bulk one-way RDF imports (Wikidata, DBpedia, OpenAlex, MusicBrainz) are direct: dump in, triples out.
 2. **Pull a world model, or train your own.** A world model is a transformer trained from scratch on RDF triples (see §3 onward). User options:
    - **Pull a pretrained world model** from a shared registry — same UX as `ollama pull`. The model arrives ready to query.
    - **Train your own** on imported data via the local pipeline (`training/`). Useful for private data, domain-specific inference, or validating ideas at small scale.
    - **Mix:** pretrained world model + local fine-on-RDF on top, when those approaches mature.
-3. **Run inference against your data.** Model + database compose at the SPARQL+ layer. A query reaches both systems; SutraDB returns exact answers from stored triples, the world model fills gaps with cited inferences. The caller does not pick which system answers — federation is implicit.
+3. **Run inference against your data.** Model + database compose at the SPARQL+ layer. A query reaches both systems; Loka returns exact answers from stored triples, the world model fills gaps with cited inferences. The caller does not pick which system answers — federation is implicit.
 
 Why this is the right framing:
 
 - **Local-first.** Everything runs on the user's machine. No cloud round-trips, no data egress, no model-API rate limits. Like Ollama, like SQLite.
 - **Pluggable.** Model and data are decoupled. Swap models without re-importing data; swap data without re-training the model.
-- **Honest provenance.** Inferred triples land back in SutraDB with their inference chain (per §5 commitment #5). Inferences are auditable, not opaque outputs.
-- **Agent-first.** An AI agent can `sutra pull <model>`, `sutra import <dataset>`, and `sutra query <sparql+>` without ever touching a GUI. The CLI is the primary interface — already an established SutraDB principle.
+- **Honest provenance.** Inferred triples land back in Loka with their inference chain (per §5 commitment #5). Inferences are auditable, not opaque outputs.
+- **Agent-first.** An AI agent can `loka pull <model>`, `loka import <dataset>`, and `loka query <sparql+>` without ever touching a GUI. The CLI is the primary interface — already an established Loka principle.
 
 This is the user-facing organizing principle for everything below. The architectural commitments (§5), rejections (§6), and the OWL framing (§7) all serve it. The current `training/` pipeline is the local-training half; a future model-registry tool will be the `pull` half.
 
@@ -36,13 +36,13 @@ This is the user-facing organizing principle for everything below. The architect
 
 ## 1. Premise
 
-**SutraDB is one half of a two-system composition. The other half is a transformer trained from scratch on RDF triples. Both expose the same SPARQL+ interface.**
+**Loka is one half of a two-system composition. The other half is a transformer trained from scratch on RDF triples. Both expose the same SPARQL+ interface.**
 
-- SutraDB = explicit memory. Stores what is known. Returns exact answers.
+- Loka = explicit memory. Stores what is known. Returns exact answers.
 - The world-model transformer = implicit memory. Predicts what is plausible. Returns inferred answers with cited inference chains.
 - Same query language. The caller (human or agent) doesn't know which system answered, except via the provenance edges on the result.
 
-The database grows itself: inferred triples are written back into SutraDB with their inference chain as first-class provenance, available for future queries and for re-training.
+The database grows itself: inferred triples are written back into Loka with their inference chain as first-class provenance, available for future queries and for re-training.
 
 RDF is the universal representation. Not because of Semantic Web aesthetics, but because **open-world semantics is load-bearing for masked prediction over knowledge graphs.** A closed-world relational schema would force the model to assume completeness; RDF lets it stay agnostic about gaps.
 
@@ -54,7 +54,7 @@ RDF is the universal representation. Not because of Semantic Web aesthetics, but
 ┌─────────────────────────────────────────────────────────────────┐
 │                                                                 │
 │  data sources       ┌─────────────────────────┐                 │
-│  ──────────►  ETL ►─┤   SutraDB (.sdb)        ├─►  SPARQL+ Q    │
+│  ──────────►  ETL ►─┤   Loka (.sdb)        ├─►  SPARQL+ Q    │
 │  (Wikidata,         │                         │                 │
 │   DBpedia,          │   RDF-star storage      │                 │
 │   enrolled local)   │   SPO/POS/OSP/HNSW      │                 │
@@ -72,7 +72,7 @@ RDF is the universal representation. Not because of Semantic Web aesthetics, but
 │                               │  inference chains               │
 │                               ▼                                 │
 │                     ┌─────────────────────────┐                 │
-│                     │   SutraDB (write back)  │                 │
+│                     │   Loka (write back)  │                 │
 │                     └─────────────────────────┘                 │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
@@ -114,16 +114,16 @@ These are starting positions for the first experiments, **not architectural comm
 
 ---
 
-## 4. How the world-model layer composes with SutraDB internals
+## 4. How the world-model layer composes with Loka internals
 
-| SutraDB component | Role in world-model layer |
+| Loka component | Role in world-model layer |
 |---|---|
-| RDF-star storage | Native reification — every inferred triple carries provenance via `<<s p o>> sutra-prov:propositionInferredFrom <<context_s context_p context_o>>`. (Imported triples use `sutra-prov:propositionImportedFrom`; the generic stance `sutra:supports` from the symbolic layer is a separate concept. The `sutra-prov:` namespace expands to `http://sutra.dev/provenance/` and is reserved — the world model never sees, proposes, or emits predicates in it.) |
+| RDF-star storage | Native reification — every inferred triple carries provenance via `<<s p o>> loka-prov:propositionInferredFrom <<context_s context_p context_o>>`. (Imported triples use `loka-prov:propositionImportedFrom`; the generic stance `loka:supports` from the symbolic layer is a separate concept. The `loka-prov:` namespace expands to `http://loka.dev/provenance/` and is reserved — the world model never sees, proposes, or emits predicates in it.) |
 | SPO/POS/OSP indexes | Training-batch streaming and query-time graph context retrieval. |
 | HNSW vector index | **Output decoder.** Model emits an embedding; HNSW NN resolves to a URI. Vectors are no longer just a search feature — they are the bridge from latent space back to symbolic space. |
-| Struct literals (`sutra:num`, `sutra:date`, `sutra:coord`, `sutra:f32vec`) | Value-space substrate. Numbers, dates, coordinates don't get learned representations — their identity comes from canonical form. See `planning/structural-typing.md`. |
+| Struct literals (`loka:num`, `loka:date`, `loka:coord`, `loka:f32vec`) | Value-space substrate. Numbers, dates, coordinates don't get learned representations — their identity comes from canonical form. See `planning/structural-typing.md`. |
 | Grounding-level metric (BASE / L1..Ln / ORPHAN) | **Confidence gradient.** Layer 1 = raw imports. L2 = first-order inference. L3 = inference-on-inference. Queryable per-triple. |
-| `sutra:sourceExempt` annotation | Stops infinite provenance recursion on inference-chain edges. |
+| `loka:sourceExempt` annotation | Stops infinite provenance recursion on inference-chain edges. |
 | Stance vocabulary (`supports` / `contradicts` / `isAbout` / `isUncertain` / `retracts`) | The connectives between an inferred triple and its evidence. |
 
 ---
@@ -136,7 +136,7 @@ These are starting positions for the first experiments, **not architectural comm
 4. **Open-world.** The model assumes nothing about completeness. Masked prediction is the natural training objective for an open-world graph.
 5. **Self-citing inference.** Every inferred triple carries its inference chain as first-class provenance. "Pramana's original vision but actually working" — Claude's framing in the source chat, accepted.
 6. **Same SPARQL+ for both systems.** The model is queried the same way as the database. Federation is implicit, not a separate API.
-7. **HNSW is the decoder.** Model output → vector → HNSW NN → URI. This makes the existing `sutra-hnsw` crate load-bearing for inference, not just search.
+7. **HNSW is the decoder.** Model output → vector → HNSW NN → URI. This makes the existing `loka-hnsw` crate load-bearing for inference, not just search.
 8. **Common concepts don't need IRIs.** Only proper nouns mint IRIs. Common concepts (`green`, `tree`, `alive`) get consistent embeddings via the model + HNSW. The schema policy follows from this.
 9. **Small model is the default ambition.** Scale up only if the structured-data hypothesis fails empirically.
 10. **Train on human-readable labels, not opaque IDs.** Whatever the source, the preprocessing pipeline replaces opaque identifiers with their human-readable labels (Wikidata QIDs/PIDs → label strings, etc.). Languages and per-source mechanics are working choices, not committed (see §3.1); the principle that the model sees names not IDs is committed. Human-readable = AI-readable.
@@ -157,11 +157,11 @@ OWL has been the persistent open question. The user's framing settles it:
 
 > *"OWL is more of a thing that would give expected triples for something and then the world model will fill them out."*
 
-OWL is **not** a reasoner in SutraDB. OWL is a **prediction template**. An OWL class declaration says "an instance of class C is expected to have properties P1, P2, P3 with values matching constraints X, Y, Z." When the database has a partial entity (e.g., a Person with no birthplace), the world-model layer reads the OWL template, identifies the expected-but-missing predicates, and predicts values for them — citing the OWL template as the prompt for the inference.
+OWL is **not** a reasoner in Loka. OWL is a **prediction template**. An OWL class declaration says "an instance of class C is expected to have properties P1, P2, P3 with values matching constraints X, Y, Z." When the database has a partial entity (e.g., a Person with no birthplace), the world-model layer reads the OWL template, identifies the expected-but-missing predicates, and predicts values for them — citing the OWL template as the prompt for the inference.
 
 This makes OWL a first-class part of the inference pipeline without committing the engine to OWL DL semantics.
 
-| OWL feature | SutraDB engine treatment | World-model treatment |
+| OWL feature | Loka engine treatment | World-model treatment |
 |---|---|---|
 | Class declarations | Stored as triples | Used as expected-triple templates |
 | Property ranges/domains | Stored as triples | Used as constraints on predicted values |
@@ -169,15 +169,15 @@ This makes OWL a first-class part of the inference pipeline without committing t
 | Disjointness | Stored as triples | Used as contradictory-prediction filter |
 | `subClassOf` chains | Stored as triples | Used to propagate expected-triples up the hierarchy |
 
-The engine never reasons about OWL. SDKs validate against OWL client-side (already the SutraDB stance per `CLAUDE.md`). The world model uses OWL as input prompts.
+The engine never reasons about OWL. SDKs validate against OWL client-side (already the Loka stance per `CLAUDE.md`). The world model uses OWL as input prompts.
 
-For value-space classes (`sutra:num`, `sutra:date`, etc.), structural typing replaces OWL entirely. See `planning/structural-typing.md`.
+For value-space classes (`loka:num`, `loka:date`, etc.), structural typing replaces OWL entirely. See `planning/structural-typing.md`.
 
 ## 8. Evaluation criteria — real vs. bubble
 
 From `chats/ai-bubble.md`:
 
-- **Demos must visibly do the loop.** A SutraDB demo without the inference-write-back cycle is bubble-coded. The cautionary tale: JEPA was research-framed but a vibe-coded weekend project matched its results.
+- **Demos must visibly do the loop.** A Loka demo without the inference-write-back cycle is bubble-coded. The cautionary tale: JEPA was research-framed but a vibe-coded weekend project matched its results.
 - **Embeddings are infrastructure, not output.** Anything we ship that has "the output is an embedding" disqualifies us.
 - **No reputation collateral.** Don't claim the system does X because someone famous said RDF/world-models are good.
 - **Working > impressive.** A small slow loop that visibly produces cited inferred triples beats a large model with opaque outputs.
@@ -188,7 +188,7 @@ From `chats/ai-bubble.md`:
 - **Model size and training compute.** Depends on corpus size and tokenization. Estimate after the first scale tests.
 - **High-degree node handling.** Example: a Wikidata node with 60k+ neighbors (e.g., "shrines worshipping Amaterasu"). Context-window assembly needs adjusted BFS, weighted by inference relevance. Hand-wave for now; concrete strategy needed before training at scale.
 - **Multimodal extensions.** RDF→text, text→RDF, RDF→video, video→RDF. Pipelines that route through the symbolic layer for interpretability. Out of scope for v1; design later.
-- **OWL-template-driven inference UI.** When the user asks "what should be true about this entity?" how does that surface in `sutra mcp` / Sutra Studio? Design later.
+- **OWL-template-driven inference UI.** When the user asks "what should be true about this entity?" how does that surface in `loka mcp` / Loka Studio? Design later.
 
 ## 10. Implementation order (rough)
 
@@ -197,10 +197,10 @@ Subject to revision based on what's learned at each step:
 1. **Symbolic layer foundations** — struct literals, source-exempt annotation, stance vocabulary, grounding metric. See `planning/symbolic-layer-and-naming.md`.
 2. **Wikidata + DBpedia ingestion at scale** — already partially in flight; `tools/wikidata_bfs_import.py` is the starting point.
 3. **First training run** — small model, single-GPU, bootstrap on a subset of Wikidata. Goal: produce one cited inferred triple end-to-end.
-4. **Inference write-back** — close the loop. Inferred triples land in SutraDB with provenance.
+4. **Inference write-back** — close the loop. Inferred triples land in Loka with provenance.
 5. **Scale up** — corpus size, model size, evaluation harness.
 6. **Enrollment v1** — non-RDF source ingestion. See `planning/enrollment-v1.md`.
-7. **Model registry** (deferred) — `sutra pull <model-name>` for downloading shared world models, completing the Ollama analogy in the Product Vision section. Out of scope until at least one trained world model is worth sharing.
+7. **Model registry** (deferred) — `loka pull <model-name>` for downloading shared world models, completing the Ollama analogy in the Product Vision section. Out of scope until at least one trained world model is worth sharing.
 
 ## 10.5. Decisions revisited
 
@@ -225,8 +225,8 @@ OWL-as-template, eval harness) exercised on coherent outputs to know what
 works.
 
 **What didn't change:** The from-scratch track in `training/` continues. The
-`infer_with_citations.py` schema (`sutra:generated`, `sutra:generatedBy`,
-`sutra:confidence`, `sutra:inferredFrom`) applies to both tracks. The
+`infer_with_citations.py` schema (`loka:generated`, `loka:generatedBy`,
+`loka:confidence`, `loka:inferredFrom`) applies to both tracks. The
 non-negotiable commitments in §5 remain. The "small model is the default
 ambition" position (§5.9) is upheld — the fine-tuning track defaults to
 1.5B–3B parameters before reaching for 7B+.
@@ -234,7 +234,7 @@ ambition" position (§5.9) is upheld — the fine-tuning track defaults to
 **What we accept as cost:** Fine-tune outputs have weaker provenance
 guarantees than from-scratch (we can't fully tell whether a prediction came
 from our triples or from the base model's pretraining); we record
-`sutra:baseModel` to keep what auditability we can. Closed-world bias from
+`loka:baseModel` to keep what auditability we can. Closed-world bias from
 pretrained priors is partially redirected by the masked-triple objective but
 not eliminated.
 
@@ -246,5 +246,5 @@ not eliminated.
 - `planning/structural-typing.md` — combinatoric namespaces and value-space classes
 - `planning/enrollment-v1.md` — non-RDF source ingestion (deferred)
 - `planning/fine-tuning-track.md` — parallel near-term track using QLoRA on a 1–7B base
-- `docs/architecture.md` — current SutraDB architecture
+- `docs/architecture.md` — current Loka architecture
 - `CLAUDE.md` — workflow rules and core philosophy

@@ -1,4 +1,4 @@
-"""Storage engine benchmark for SutraDB.
+"""Storage engine benchmark for Loka.
 
 Tests sled-backed PersistentStore performance characteristics:
 - Bulk insert throughput
@@ -6,7 +6,7 @@ Tests sled-backed PersistentStore performance characteristics:
 - Range scan performance
 - Write-then-read consistency
 
-Run against a live SutraDB instance to measure end-to-end.
+Run against a live Loka instance to measure end-to-end.
 Results are saved for comparison with future storage backends.
 
 Usage:
@@ -196,7 +196,7 @@ def cleanup_benchmark_data():
 
 
 def main():
-    print("=== SutraDB Storage Engine Benchmark ===\n")
+    print("=== Loka Storage Engine Benchmark ===\n")
 
     all_results = {
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),

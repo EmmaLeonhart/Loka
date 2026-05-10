@@ -1,0 +1,29 @@
+[package]
+name = "loka-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "CLI tools: import, export, query, benchmark"
+
+[[bin]]
+name = "loka"
+path = "src/main.rs"
+
+[dependencies]
+thiserror.workspace = true
+anyhow.workspace = true
+serde = { workspace = true }
+serde_json.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+tokio.workspace = true
+axum.workspace = true
+clap.workspace = true
+loka-core.workspace = true
+loka-hnsw.workspace = true
+loka-sparql.workspace = true
+loka-proto.workspace = true
+reqwest = { version = "0.12", features = ["json"] }
+flate2 = "1"
+tar = "0.4"
+zip = "2"
