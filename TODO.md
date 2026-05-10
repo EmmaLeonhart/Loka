@@ -4,6 +4,19 @@
 
 ---
 
+## ⚠️ Rename: SutraDB → Loka (do soon)
+
+The project is being rebranded **Loka** on Hugging Face. The GitHub repo and crate names still say `SutraDB`/`sutra-*`. This needs to actually happen, not stay deferred.
+
+- [ ] **Repo rename** on GitHub: `EmmaLeonhart/SutraDB` → `EmmaLeonhart/Loka` (GitHub auto-redirects from the old URL, so external links keep working).
+- [ ] Update `Cargo.toml` workspace `description` and `repository` fields.
+- [ ] Decide whether crate names change (`sutra-core` → `loka-core` etc.) or stay (engine retains "sutra" as the *engine* name; the *project* is Loka). Probably the latter — "Loka the project, SutraDB the engine inside it."
+- [ ] Search-replace project-level "SutraDB" → "Loka" in `README.md`, `DEVLOG.md`, `status.md`, paper, website. Leave engine-internal "SutraDB" references alone.
+- [ ] Update website (`pages/index.html` etc.) headers/branding.
+- [ ] Verify HF dataset URLs (`EmmaLeonhart/loka`) keep working — they already do; the rename only affects GitHub.
+
+---
+
 ## Next Release (v0.3.1) — Gradle Migration, MCP Agentic UX, Maven Central
 
 Merge the Gradle migration (local) and MCP agentic UX work (claude.ai remote session) then cut v0.3.1.
