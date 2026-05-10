@@ -27,7 +27,7 @@
         "operatingSystem": "Windows, macOS, Linux",
         "programmingLanguage": "Rust",
         "license": "https://www.apache.org/licenses/LICENSE-2.0",
-        "codeRepository": "https://github.com/EmmaLeonhart/SutraDB",
+        "codeRepository": "https://github.com/EmmaLeonhart/Loka",
         "offers": {
             "@type": "Offer",
             "price": "0",
@@ -282,7 +282,7 @@
     <a href="./benchmarks/" style="color:#8b949e;">Benchmarks</a>
     <a href="./codeofethics/" style="color:#8b949e;">Code of Ethics</a>
     <a href="https://huggingface.co/datasets/EmmaLeonhart/loka" style="color:#8b949e;">HF: Loka</a>
-    <a href="https://github.com/EmmaLeonhart/SutraDB" style="color:#8b949e;">GitHub</a>
+    <a href="https://github.com/EmmaLeonhart/Loka" style="color:#8b949e;">GitHub</a>
 </nav>
 
 <div class="hero">
@@ -302,7 +302,7 @@
     <div class="cta">
         <a href="./loka/" class="btn btn-primary">Read the world-model deep dive</a>
         <a href="https://huggingface.co/datasets/EmmaLeonhart/loka" class="btn btn-secondary">Pull from Hugging Face</a>
-        <a href="https://github.com/EmmaLeonhart/SutraDB/releases/latest" class="btn btn-secondary" id="download-btn">Engine release</a>
+        <a href="https://github.com/EmmaLeonhart/Loka/releases/latest" class="btn btn-secondary" id="download-btn">Engine release</a>
     </div>
 
     <div style="margin-top: 32px; padding: 16px 24px; background: #1a2332; border: 1px solid #2d4a6f; border-radius: 10px; max-width: 700px; margin-left: auto; margin-right: auto;">
@@ -317,14 +317,14 @@
 
     <div style="margin-top: 16px; padding: 16px 24px; background: #1c2128; border: 1px solid #30363d; border-radius: 10px; max-width: 700px; margin-left: auto; margin-right: auto;">
         <p style="font-size: 1em; color: #79c0ff; margin-bottom: 4px; font-weight: 600;">AI Agent?</p>
-        <p style="font-size: 0.95em; color: #8b949e; margin-bottom: 8px;">SutraDB the engine is serverless by default. Open a <code>.sdb</code> file &mdash; no daemon, no config. Install, configure, and query entirely from the command line. The agent installer (<code>sutra install-agent</code>) lets an LLM walk through configuration via structured Markdown prompts.</p>
-        <a href="https://github.com/EmmaLeonhart/SutraDB/blob/main/docs/AGENT_SETUP.md" class="btn btn-primary" style="padding: 8px 20px; font-size: 0.9em;">Agent Setup Guide</a>
+        <p style="font-size: 0.95em; color: #8b949e; margin-bottom: 8px;">The SutraDB engine inside Loka is serverless by default. Open a <code>.sdb</code> file &mdash; no daemon, no config. Install, configure, and query entirely from the command line. The agent installer (<code>sutra install-agent</code>) lets an LLM walk through configuration via structured Markdown prompts.</p>
+        <a href="https://github.com/EmmaLeonhart/Loka/blob/main/docs/AGENT_SETUP.md" class="btn btn-primary" style="padding: 8px 20px; font-size: 0.9em;">Agent Setup Guide</a>
     </div>
 </div>
 
 <div class="features">
     <div class="container">
-        <h2>Why SutraDB?</h2>
+        <h2>What's inside the engine</h2>
         <div class="feature-grid">
             <div class="feature-card">
                 <h3><span class="icon">&#x1f517;</span> Vectors Are Triples</h3>
@@ -400,33 +400,33 @@
 
 <div class="download" id="download">
     <div class="container">
-        <h2>Get SutraDB</h2>
-        <p>SutraDB is in <strong>Developer Preview</strong>. Download the latest build or compile from source.</p>
+        <h2>Get Loka</h2>
+        <p>Loka is in <strong>Developer Preview</strong>. Download the engine, or pull the corpus + model from Hugging Face.</p>
         <div class="download-options">
             <div class="download-card">
                 <h3>Windows</h3>
                 <p class="os">x86_64</p>
-                <a href="https://github.com/EmmaLeonhart/SutraDB/releases/latest/download/sutra-windows-x64.zip" class="btn btn-primary">Download .zip</a>
+                <a href="https://github.com/EmmaLeonhart/Loka/releases/latest/download/sutra-windows-x64.zip" class="btn btn-primary">Download .zip</a>
             </div>
             <div class="download-card">
                 <h3>macOS</h3>
                 <p class="os">Apple Silicon (ARM64)</p>
-                <a href="https://github.com/EmmaLeonhart/SutraDB/releases/latest/download/sutra-macos-arm64.tar.gz" class="btn btn-primary">Download .tar.gz</a>
+                <a href="https://github.com/EmmaLeonhart/Loka/releases/latest/download/sutra-macos-arm64.tar.gz" class="btn btn-primary">Download .tar.gz</a>
             </div>
             <div class="download-card">
                 <h3>macOS</h3>
                 <p class="os">Intel (x64)</p>
-                <a href="https://github.com/EmmaLeonhart/SutraDB/releases/latest/download/sutra-macos-x64.tar.gz" class="btn btn-primary">Download .tar.gz</a>
+                <a href="https://github.com/EmmaLeonhart/Loka/releases/latest/download/sutra-macos-x64.tar.gz" class="btn btn-primary">Download .tar.gz</a>
             </div>
             <div class="download-card">
                 <h3>Linux</h3>
                 <p class="os">x86_64</p>
-                <a href="https://github.com/EmmaLeonhart/SutraDB/releases/latest/download/sutra-linux-x64.tar.gz" class="btn btn-primary">Download .tar.gz</a>
+                <a href="https://github.com/EmmaLeonhart/Loka/releases/latest/download/sutra-linux-x64.tar.gz" class="btn btn-primary">Download .tar.gz</a>
             </div>
             <div class="download-card">
                 <h3>From Source</h3>
                 <p class="os">Any platform with Rust</p>
-                <code>cargo install --git https://github.com/EmmaLeonhart/SutraDB sutra-cli</code>
+                <code>cargo install --git https://github.com/EmmaLeonhart/Loka sutra-cli</code>
             </div>
         </div>
         <p style="margin-top: 32px; color: var(--text-muted); font-size: 0.9em;">
@@ -448,17 +448,17 @@
 </div>
 
 <footer>
-    <p>SutraDB is open source under the Apache 2.0 license.</p>
+    <p>Loka is open source under the Apache 2.0 license. SutraDB is the engine inside Loka.</p>
     <p style="margin-top: 8px;">
-        <a href="https://github.com/EmmaLeonhart/SutraDB">GitHub</a> &middot;
-        <a href="https://github.com/EmmaLeonhart/SutraDB/blob/main/docs/architecture.md">Architecture</a> &middot;
-        <a href="https://github.com/EmmaLeonhart/SutraDB/blob/main/TODO.md">Roadmap</a>
+        <a href="https://github.com/EmmaLeonhart/Loka">GitHub</a> &middot;
+        <a href="https://github.com/EmmaLeonhart/Loka/blob/main/docs/architecture.md">Architecture</a> &middot;
+        <a href="https://github.com/EmmaLeonhart/Loka/blob/main/TODO.md">Roadmap</a>
     </p>
 </footer>
 
 <script>
 (function() {
-    fetch('https://api.github.com/repos/EmmaLeonhart/SutraDB/releases/latest')
+    fetch('https://api.github.com/repos/EmmaLeonhart/Loka/releases/latest')
         .then(function(r) { return r.json(); })
         .then(function(data) {
             var tag = data.tag_name;

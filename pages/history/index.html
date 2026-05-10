@@ -59,7 +59,7 @@ hr { border: none; border-top: 1px solid #21262d; margin: 36px 0; }
   <a href="/rdf/">RDF-star</a>
   <a href="/owl/">OWL</a>
   <a href="https://huggingface.co/datasets/EmmaLeonhart/loka">HF: Loka</a>
-  <a href="https://github.com/EmmaLeonhart/SutraDB">GitHub</a>
+  <a href="https://github.com/EmmaLeonhart/Loka">GitHub</a>
 </nav>
 
 <header class="head">
@@ -102,7 +102,7 @@ hr { border: none; border-top: 1px solid #21262d; margin: 36px 0; }
 </ul>
 <p>
   Both expose the same SPARQL+ interface. The caller doesn't pick which system answered &mdash; federation is implicit, except through provenance edges
-  on the result. Canonical vision: <a href="https://github.com/EmmaLeonhart/SutraDB/blob/main/planning/world-model-thesis.md">world-model-thesis.md</a>.
+  on the result. Canonical vision: <a href="https://github.com/EmmaLeonhart/Loka/blob/main/planning/world-model-thesis.md">world-model-thesis.md</a>.
 </p>
 <p>
   Product framing: <strong>what Ollama is to LLMs, Loka is to world models.</strong> Pull or train a world model locally; pluggable;
@@ -114,7 +114,7 @@ hr { border: none; border-top: 1px solid #21262d; margin: 36px 0; }
   The thesis explicitly <em>rejected</em> fine-tuning a general LLM on RDF (§6.6) for provenance, closed-world, and hallucination reasons.
   That rejection was revisited mid-period and admitted as a parallel near-term track for empirical pragmatism: small from-scratch models on
   small corpora produce word salad, while a fine-tuned 1–7B base could plausibly produce coherent triples within hours. Both tracks share the
-  same <code>propositionInferredFrom</code> output schema. See <a href="https://github.com/EmmaLeonhart/SutraDB/blob/main/planning/fine-tuning-track.md">fine-tuning-track.md</a>.
+  same <code>propositionInferredFrom</code> output schema. See <a href="https://github.com/EmmaLeonhart/Loka/blob/main/planning/fine-tuning-track.md">fine-tuning-track.md</a>.
 </div>
 
 <h3>RDF-star as the citation mechanism</h3>
@@ -447,8 +447,8 @@ ckpt = hf_hub_download(
 <hr>
 
 <p style="color: #6e7681; font-size: 0.85rem; margin-top: 40px; padding-top: 16px; border-top: 1px solid #21262d;">
-  This page is a website-readable rendering of <a href="https://github.com/EmmaLeonhart/SutraDB/blob/main/DEVLOG.md">DEVLOG.md</a>.
-  Per-commit detail lives in <code>git log</code>; the live status of in-flight work lives in <a href="https://github.com/EmmaLeonhart/SutraDB/blob/main/status.md">status.md</a>.
+  This page is a website-readable rendering of <a href="https://github.com/EmmaLeonhart/Loka/blob/main/DEVLOG.md">DEVLOG.md</a>.
+  Per-commit detail lives in <code>git log</code>; the live status of in-flight work lives in <a href="https://github.com/EmmaLeonhart/Loka/blob/main/status.md">status.md</a>.
 </p>
 
 </div>
