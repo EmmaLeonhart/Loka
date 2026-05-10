@@ -2,6 +2,12 @@
 
 **Status: 228 of 249 items complete (92%)**
 
+# DO THE STUFF IN THE QUEUE.MD
+
+This is very important! Please actually do the stuff in that file! Do all of it. Base it off of the actual Sutra repo's usage of it and its description of it in the CLAUDE.md. The actual Sutra repo for the programming language has one that's relatively well done, although it is a bit messy at the same time.
+
+Also, please, I don't know why it is that this TODO.md is so cluttered, and you will really need to actually work on the clutter here. I'd say, for this particular Q file that we have, it has the stuff that I consider to be kind of most important to do immediately. Add every single thing here, except for the rename into the queue.md, so that we can work on this stuff. 
+
 ---
 
 ## ⚠️ Rename: SutraDB → Loka (do soon)
