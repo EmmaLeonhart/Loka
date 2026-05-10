@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="Loka — Development History">
+<meta property="og:description" content="The full narrative of how a lean RDF-star triplestore became a neuro-symbolic world-model engine. Two months of decisions, dead ends, and the things that worked.">
+<meta property="og:url" content="https://sutradb.org/history/">
+<meta name="description" content="Development history of Loka (formerly SutraDB) — from initial scaffold through the world-model pivot, with what worked, what didn't, and why.">
+<link rel="canonical" href="https://sutradb.org/history/">
+<title>Loka — Development History</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0d1117; color: #c9d1d9; line-height: 1.65; padding: 0 0 80px; }
+.container { max-width: 880px; margin: 0 auto; padding: 0 24px; }
+nav.top { background: #161b22; border-bottom: 1px solid #30363d; padding: 14px 24px; }
+nav.top a { color: #8b949e; margin-right: 18px; text-decoration: none; font-size: 0.9rem; }
+nav.top a:hover { color: #79c0ff; }
+nav.top a.brand { color: #58a6ff; font-weight: 600; }
+header.head { padding: 56px 24px 32px; text-align: center; border-bottom: 1px solid #21262d; margin-bottom: 36px; }
+header.head h1 { font-size: 2.1rem; color: #e6edf3; margin-bottom: 10px; letter-spacing: -0.5px; }
+header.head .sub { color: #8b949e; font-size: 1rem; max-width: 600px; margin: 0 auto; }
+.toc { background: #161b22; border: 1px solid #21262d; padding: 18px 24px; border-radius: 6px; margin-bottom: 32px; }
+.toc h3 { color: #79c0ff; margin-bottom: 8px; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 1px; }
+.toc ol { margin-left: 20px; color: #8b949e; }
+.toc a { color: #c9d1d9; text-decoration: none; }
+.toc a:hover { color: #58a6ff; }
+h2 { color: #e6edf3; margin-top: 40px; margin-bottom: 12px; font-size: 1.45rem; padding-bottom: 6px; border-bottom: 1px solid #21262d; }
+h2 .date { color: #6e7681; font-size: 0.75em; font-weight: 400; margin-left: 8px; }
+h3 { color: #79c0ff; margin-top: 22px; margin-bottom: 8px; font-size: 1.05rem; }
+p { margin-bottom: 14px; }
+a { color: #58a6ff; }
+code, pre { font-family: 'Consolas', 'Courier New', monospace; }
+code { background: #161b22; padding: 1px 6px; border-radius: 3px; font-size: 0.92em; color: #d2a8ff; }
+pre { background: #161b22; border: 1px solid #21262d; padding: 14px 18px; border-radius: 6px; overflow-x: auto; margin: 16px 0; font-size: 0.85rem; line-height: 1.5; }
+pre code { background: none; padding: 0; color: #c9d1d9; }
+table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 0.92rem; }
+th, td { padding: 8px 12px; border: 1px solid #30363d; text-align: left; vertical-align: top; }
+th { background: #161b22; color: #79c0ff; font-weight: 600; }
+ul, ol { margin: 0 0 16px 24px; }
+li { margin-bottom: 6px; }
+.callout { background: #1c2128; border-left: 3px solid #58a6ff; padding: 14px 18px; margin: 18px 0; border-radius: 4px; }
+.callout.warn { border-left-color: #d29922; }
+.callout.win  { border-left-color: #3fb950; }
+.callout strong { color: #79c0ff; }
+.callout.warn strong { color: #d29922; }
+.callout.win strong { color: #3fb950; }
+hr { border: none; border-top: 1px solid #21262d; margin: 36px 0; }
+</style>
+</head>
+<body>
+
+<nav class="top">
+  <a href="/" class="brand">Loka</a>
+  <a href="/loka/">World Model</a>
+  <a href="/history/">History</a>
+  <a href="/theory/">Theory</a>
+  <a href="/sparql/">SPARQL+</a>
+  <a href="/rdf/">RDF-star</a>
+  <a href="/owl/">OWL</a>
+  <a href="https://huggingface.co/datasets/EmmaLeonhart/loka">HF: Loka</a>
+  <a href="https://github.com/EmmaLeonhart/SutraDB">GitHub</a>
+</nav>
+
+<header class="head">
+  <h1>Development History</h1>
+  <p class="sub">
+    The full narrative of how a lean RDF-star triplestore became a neuro-symbolic world-model engine.
+    What worked, what didn't, and why each call got made.
+  </p>
+</header>
+
+<div class="container">
+
+<div class="toc">
+  <h3>Contents</h3>
+  <ol>
+    <li><a href="#may-2026-pivot">2026-05 — The neuro-symbolic world-model pivot</a></li>
+    <li><a href="#may-2026-data-rebuild">2026-05 — Data layer rebuild (BFS → Hugging Face parquet)</a></li>
+    <li><a href="#may-2026-training">2026-05 — Training: v0–v5</a></li>
+    <li><a href="#may-2026-decoder">2026-05 — Cumulative repetition penalty</a></li>
+    <li><a href="#may-2026-loka">2026-05 — Loka rebrand and Hugging Face mirror</a></li>
+    <li><a href="#apr-2026">2026-04 — ManuForge integration → v0.3.7</a></li>
+    <li><a href="#mar-2026-late">2026-03 (late) — Ontochronology + Sutra Studio + FFI</a></li>
+    <li><a href="#mar-2026-mid">2026-03 (mid) — v0.2.0 Developer Preview</a></li>
+    <li><a href="#mar-2026-sweep">2026-03-15 — The SPARQL completeness sweep</a></li>
+    <li><a href="#mar-2026-foundation">2026-03 (early) — Foundation + 1M embedding stress test</a></li>
+    <li><a href="#dead-ends">Dead ends — what didn't work</a></li>
+  </ol>
+</div>
+
+<h2 id="may-2026-pivot">2026-05 — The neuro-symbolic world-model pivot <span class="date">(weeks of 2026-05-07 to 2026-05-09)</span></h2>
+
+<p>
+  The earlier framing was "lean RDF-star triplestore that handles vector queries natively." That's still true mechanically, but the
+  <em>purpose</em> moved: the engine is now one half of a two-system composition.
+</p>
+<ul>
+  <li><strong>The store</strong> = explicit memory. Stores what is known. Returns exact answers.</li>
+  <li><strong>A small transformer trained from scratch on the same triples</strong> = implicit memory. Predicts what is plausible. Returns
+  inferred answers with cited inference chains.</li>
+</ul>
+<p>
+  Both expose the same SPARQL+ interface. The caller doesn't pick which system answered &mdash; federation is implicit, except through provenance edges
+  on the result. Canonical vision: <a href="https://github.com/EmmaLeonhart/SutraDB/blob/main/planning/world-model-thesis.md">world-model-thesis.md</a>.
+</p>
+<p>
+  Product framing: <strong>what Ollama is to LLMs, Loka is to world models.</strong> Pull or train a world model locally; pluggable;
+  agent-first; honest provenance. The "agent-first" stance was already baked into SutraDB; the world-model layer is what makes the whole project
+  a thing you'd want to install rather than just a database.
+</p>
+<div class="callout">
+  <strong>Pivot revisited.</strong>
+  The thesis explicitly <em>rejected</em> fine-tuning a general LLM on RDF (§6.6) for provenance, closed-world, and hallucination reasons.
+  That rejection was revisited mid-period and admitted as a parallel near-term track for empirical pragmatism: small from-scratch models on
+  small corpora produce word salad, while a fine-tuned 1–7B base could plausibly produce coherent triples within hours. Both tracks share the
+  same <code>propositionInferredFrom</code> output schema. See <a href="https://github.com/EmmaLeonhart/SutraDB/blob/main/planning/fine-tuning-track.md">fine-tuning-track.md</a>.
+</div>
+
+<h3>RDF-star as the citation mechanism</h3>
+<p>
+  RDF-star moved from "one feature among many" to <strong>load-bearing</strong>. It's how every kind of citation in the system is expressed:
+</p>
+<table>
+  <thead><tr><th>Verb</th><th>Used for</th></tr></thead>
+  <tbody>
+    <tr><td><code>propositionInferredFrom</code></td><td>model-generated triple → context that informed it</td></tr>
+    <tr><td><code>wdt:P854 / wdt:P248 / wdt:P813</code></td><td>external curated references (Wikidata)</td></tr>
+  </tbody>
+</table>
+<p>
+  All use the identical <code>&lt;&lt;S P O&gt;&gt; verb &lt;&lt;source&gt;&gt;</code> shape. Wikidata's API distinguishes "qualifiers" from "references" but Loka collapses both into the
+  same RDF-star annotation form because they're semantically the same thing.
+</p>
+<p>
+  <strong>Reserved namespace.</strong> Every predicate under <code>http://sutra.dev/provenance/</code> is system-internal. The world model
+  <em>never</em> sees, proposes, or emits one. Three layers of enforcement:
+</p>
+<ol>
+  <li>Corpus stripping (<code>preprocess.py</code>) drops every row whose predicate matches the prefix.</li>
+  <li>SPARQL-star <code>FILTER NOT EXISTS &lt;&lt; ?s ?p ?o &gt;&gt; propositionGenerated ?_g</code> excludes inner generated triples at query time.</li>
+  <li>Inference (<code>infer_with_citations.py</code>) refuses to consider reserved-namespace predicates as candidates and refuses to emit one
+  even if a downstream bug allowed it.</li>
+</ol>
+<p>
+  Names are deliberately verbose &mdash; <code>propositionGeneratedFrom</code> rather than <code>generatedFrom</code> &mdash; so a human scanning raw triples spots
+  them at a glance and accidental collision with real-world predicates is vanishingly unlikely.
+</p>
+
+<h2 id="may-2026-data-rebuild">2026-05 — Data layer rebuild <span class="date">(2026-05-07 to 2026-05-09)</span></h2>
+
+<h3>BFS importer learned RDF-star qualifiers + references</h3>
+<p>
+  Before: each Wikidata claim emitted one flat triple, dropping all qualifier and reference data.
+  After: each claim emits the main triple plus an RDF-star annotation per qualifier <em>and</em> per reference snak, all sharing the
+  <code>&lt;&lt;S P O&gt;&gt;</code> quoted-triple subject.
+</p>
+
+<h3>BFS → Hugging Face parquet stream</h3>
+<p>
+  The Wikidata API rate-limit (1.5s per request) made BFS the bottleneck &mdash; 5M triples needed days at that rate.
+  Switched to streaming <a href="https://huggingface.co/datasets/philippesaade/wikidata">philippesaade/wikidata</a>
+  (CC0, ~30M entities, JSON-shaped per-entity rows in parquet) via the HuggingFace <code>datasets</code> library.
+  Local-bandwidth-bound instead of API-bound.
+</p>
+<p>
+  End state: 5,055,385 triples / 1,695,402 RDF-star annotations / 27,780 entities / 770 MB on-disk SutraDB store.
+</p>
+
+<h3>propositionImportedFrom dropped</h3>
+<p>
+  Initially every imported triple got <code>&lt;&lt;S P O&gt;&gt; sutra:propositionImportedFrom &lt;wikidata.org/wiki/Q...&gt;</code>.
+  For a database where every row came from Wikidata, that's redundant noise &mdash; 22,593 rows after the first hour of re-walk (~46% of all annotations).
+  The actual provenance is already in Wikidata's own reference predicates. Dropped.
+</p>
+
+<h3>Multilingual labels</h3>
+<p>
+  Previously hardcoded en/ja/de/fr/zh; now iterates every language in <code>entity.labels</code> and <code>entity.descriptions</code>.
+  The training preprocessor still filters to English, but the database keeps the multilingual richness for future work.
+</p>
+
+<h3>Embeddings: gone</h3>
+<p>
+  The original BFS importer called Ollama (<code>mxbai-embed-large</code>) per entity. The world-model loop tokenizes English labels &mdash; vectors don't enter
+  the training corpus. Stripped from the importer. The HNSW index in <code>sutra-core</code> stays &mdash; that's an engine feature, not specific to import.
+</p>
+
+<div class="callout warn">
+  <strong>Engine bugs surfaced at scale.</strong>
+  <ul style="margin-top: 8px; margin-bottom: 0;">
+    <li><strong>SPARQL <code>?s ?p ?o</code> occasionally returns literal values in the predicate slot.</strong> RDF disallows literal predicates;
+    this is invalid output from the executor. Filtered at preprocess (drops ~1% of rows on a 5M corpus). Real engine bug.</li>
+    <li><strong><code>POST /triples</code> wedges after roughly every 5–6× growth in stored triples.</strong> Hit at ~174k and again at ~1M during the
+    HF ingest. <code>/health</code> keeps responding, but <code>/triples</code> and SPARQL hang indefinitely until restart. Data is intact on disk;
+    recoverable. Real engine bug.</li>
+  </ul>
+</div>
+
+<p>
+  A <strong>separate proto-layer bug was found and fixed</strong> mid-period: <code>POST /triples</code> was returning HTTP 400 for the entire batch when any RDF-star annotation's
+  inner triple already existed in persistent storage. The in-memory branch already discarded <code>DuplicateTriple</code>; only the persistent branch propagated.
+  Fixed at <code>server.rs:935</code> and <code>:962</code> so both branches handle duplicates the same way.
+</p>
+
+<h2 id="may-2026-training">2026-05 — Training: v0–v5</h2>
+
+<p>v0/v1/v2 were the early smoke-test checkpoints on a 6,300-triple shrine-only corpus. v3 onward use the 5M-triple HF-derived corpus.</p>
+
+<table>
+  <thead><tr><th>Model</th><th>Architecture</th><th>Corpus</th><th>Final ppl</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>v3</td><td>16M params (256 / 4 layers)</td><td>779k label-substituted</td><td>53.43</td><td>Pre-cleanup. Misleadingly low ppl from memorising <code>xmlschema decimal</code> URI fragments.</td></tr>
+    <tr><td>v4</td><td>16M params (256 / 4 layers)</td><td>757k cleaned</td><td>92.48</td><td>Higher ppl, <em>better</em> output. Numerical regression masks real-quality improvement.</td></tr>
+    <tr><td><strong>v5</strong></td><td><strong>44M params (512 / 6 layers)</strong></td><td>757k cleaned</td><td><strong>84.85</strong></td><td>Bigger model. Beats v4's final ppl by epoch 4. Picks specific real-world tokens where v4 fell back to common connectors.</td></tr>
+  </tbody>
+</table>
+
+<h3>Two corpus quality fixes between v3 and v4</h3>
+<ol>
+  <li><strong>Strip <code>^^&lt;datatype&gt;</code> suffixes from typed literals.</strong> SutraDB's SPARQL serialization embeds the datatype URI in the literal value
+  string. Without stripping, datatype-URI fragments (<code>xmlschema</code>, <code>decimal</code>, <code>org</code>) reached the tokenizer as if they were entity content
+  and dominated certain predictions.</li>
+  <li><strong>Drop rows with non-URI predicates.</strong> ~1% of rows on a 5M corpus exhibit a SutraDB SPARQL bug where literal values surface in the
+  <code>?p</code> slot. RDF disallows literal predicates, so dropping is safe.</li>
+</ol>
+
+<div class="callout win">
+  <strong>v3 → v4 lesson.</strong>
+  v3 produced predictions like <code>Abbas Mirza | has works in collection | 1 http www w3 org 2001 xmlschema decimal</code> (confidence 0.93) &mdash; a memorization of literal-with-embedded-datatype-URI patterns.
+  After fixing the corpus: <code>metropolitan museum of museum</code> (confidence 0.43). The Met genuinely holds Abbas Mirza pieces.
+</div>
+
+<h3>v4 vs v5 capacity scaling</h3>
+<table>
+  <thead><tr><th>Epoch</th><th>v4 (16M) ppl</th><th>v5 (44M) ppl</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>1150.7</td><td>1528.7</td></tr>
+    <tr><td>2</td><td>196.0</td><td>147.3</td></tr>
+    <tr><td>3</td><td>133.5</td><td>104.2</td></tr>
+    <tr><td>4</td><td>100.7</td><td>90.7</td></tr>
+    <tr><td><strong>5</strong></td><td><strong>92.5</strong></td><td><strong>84.85</strong></td></tr>
+  </tbody>
+</table>
+<p>
+  v5 starts higher (epoch 1) &mdash; more parameters mean a harder optimisation landscape and slower initial convergence. It crosses under v4 at
+  epoch 2 and pulls ahead from there. By epoch 4 it has already passed v4's <em>final</em> perplexity. Wall time on a RTX 4070 Laptop:
+  91 min for v5 vs 42 min for v4 (2.2× compute, 8% better final ppl).
+</p>
+
+<h2 id="may-2026-decoder">2026-05 — Cumulative repetition penalty</h2>
+<p>
+  Masked-S/P/O training produces models that "know" the answer category (university, museum, https-URL) but degenerate during greedy decoding to
+  fillers like <code>of of of of</code> or <code>museum museum</code>.
+</p>
+<p>
+  We <em>didn't</em> retrain. We changed the decoder. Cumulative penalty: divide each repeated token's logit by
+  <code>repetition_penalty<sup>count</sup></code>, where <code>count</code> is the number of prior emissions of that token in this sequence.
+  Three emissions of <code>of</code> at penalty 3.0 multiply its divisor by 27, reliably dropping it below the per-token floor.
+</p>
+<p>
+  Same v4 checkpoint moves from <code>university of of of of of of of</code> (no penalty) to <code>university of halle</code> (cumulative penalty 3.0).
+  The model knew Halle &mdash; the decoder just couldn't stop emitting <code>of</code> long enough to reach it.
+</p>
+
+<h2 id="may-2026-loka">2026-05 — Loka rebrand and Hugging Face mirror</h2>
+<p>
+  "SutraDB" is a name for the engine. The project that's emerging (engine + corpus + trained world model + inference layer) needs its own identity.
+  <strong>Loka</strong> is the name on Hugging Face. The GitHub repo will be renamed to match later.
+</p>
+<p>
+  <code>tools/hf_snapshot.py</code> pushes corpus + checkpoints to a single dataset repo
+  <a href="https://huggingface.co/datasets/EmmaLeonhart/loka">EmmaLeonhart/loka</a> with each upload tagged as a snapshot revision (<code>v3</code>, <code>v4</code>, <code>v5</code>).
+  Each upload is a commit; tagged snapshots are pullable via <code>revision="v4"</code>. LFS is handled transparently by <code>huggingface_hub</code>.
+</p>
+<pre><code>from huggingface_hub import hf_hub_download
+
+ckpt = hf_hub_download(
+    repo_id="EmmaLeonhart/loka",
+    repo_type="dataset",
+    filename="checkpoints/wikidata_v5.pt",
+    revision="v5",
+)
+</code></pre>
+
+<hr>
+
+<h2 id="apr-2026">2026-04 — ManuForge integration → v0.3.7</h2>
+<p>
+  Brief period of production-readiness fixes after testing SutraDB against the ManuForge SDK consumer. Surfaced a small set of real issues:
+</p>
+<ul>
+  <li><strong>RDF-star query support fixes</strong> &mdash; quoted-triple wildcards weren't matching correctly.</li>
+  <li><strong>HTTP star import</strong> &mdash; N-Triples-star payloads via <code>POST /triples</code> had edge cases on parsing.</li>
+  <li><strong>CRLF line endings</strong> &mdash; Windows clients sending CRLF-terminated N-Triples weren't being recognised.</li>
+  <li><strong>Self-update asset bug</strong> &mdash; release-pipeline self-update was downloading the wrong artifact name.</li>
+  <li><strong>Import error reporting</strong> &mdash; the response now lists per-line errors rather than failing the whole batch.</li>
+</ul>
+<p>Bumped to <strong>v0.3.7</strong> at the end of this round. The ManuForge integration also produced <code>docs/AGENT_SETUP.md</code> for AI-agent consumers.</p>
+
+<h2 id="mar-2026-late">2026-03 (late) — Ontochronology + Sutra Studio + FFI</h2>
+
+<h3>Sutra Studio (Flutter desktop/web/mobile client)</h3>
+<p>
+  <code>sutra-ffi</code> crate wraps the engine in a C-compatible shared library so non-Rust consumers (Flutter, in particular) can embed the database in-process.
+  Studio uses <code>dart:ffi</code> to load <code>sutra_ffi.dll</code>/<code>.so</code>/<code>.dylib</code> and runs the engine on a background thread sharing the same handle as the optional MCP server.
+</p>
+<p>
+  Two entry points: <code>sutra mcp</code> (MCP + database, no GUI) and Sutra Studio (GUI + database + optional MCP server, all one process).
+  Studio also auto-starts the server in serverless mode when launched, so the user never has to run <code>sutra serve</code> manually.
+  Includes graph view (D3 then vis-network), HNSW health diagnostics, OWL/Turtle export, dark/light theme, persistent connection settings.
+</p>
+
+<h3>Ontochronology</h3>
+<p>
+  A non-trivial extension: every triple is conceptually contained in a temporal interval, and queries can ask "what was true at time T" or
+  "what changed between T1 and T2" without reifying every statement individually. Implementation phases:
+</p>
+<ul>
+  <li><strong>Phase 1–3</strong> &mdash; temporal literal type, predicates (<code>sutra:assertedAt</code>, <code>sutra:validFrom</code>, <code>sutra:validTo</code>), TSPO index.</li>
+  <li><strong>Phase 4a</strong> &mdash; <code>AT_TIME</code> and <code>DURING</code> query operators.</li>
+  <li><strong>Phase 4b</strong> &mdash; <code>WORLD_STATE</code> and <code>TEMPORAL_DIFF</code>.</li>
+  <li>Temporal-aware property path traversal.</li>
+</ul>
+<p>Containment semantics use three-valued query logic (true / false / unknown). Design lives in <code>docs/ontochronology.md</code>.</p>
+
+<h3>Other March-late items</h3>
+<ul>
+  <li><strong>Pseudo-tables to deep subgraph columnar indexes</strong> &mdash; generalised the columnar shortcut so multi-hop subgraph queries can run vectorised SIMD scans where the structure repeats.</li>
+  <li><strong>Cost-based query planning</strong> &mdash; predicate pushdown, HNSW edge labelling, join-strategy selection, hash join optimization.</li>
+  <li><strong>Vector SPARQL operators</strong> &mdash; <code>COSINE_SEARCH</code>, <code>EUCLID_SEARCH</code>, <code>DOTPRODUCT_SEARCH</code>.</li>
+  <li><strong>ACID compliance</strong> &mdash; atomic transactions, durability, isolation.</li>
+  <li><strong>Self-update + version check + HNSW rebuild endpoint.</strong></li>
+  <li><strong>18+ theory pages</strong> on sutradb.org &mdash; HNSW-in-RDF, four-index architecture, RDF-star edges, SPARQL exit conditions, hybrid databases, traversal indexing, cost-based planning.</li>
+  <li><strong>Code of Ethics page</strong> &mdash; Buddhist/Shinto-techno-animist framing, deadpan style.</li>
+</ul>
+
+<h2 id="mar-2026-mid">2026-03 (mid) — v0.2.0 Developer Preview</h2>
+<p>
+  A consolidating release. Headlines: query planner, agent installer, Java SDK, Sutra Studio first cut. All four SDKs (Go, Rust, Java, .NET) had endpoint mismatches caught and fixed. SDK publish workflow + integration test CI added.
+</p>
+<p>
+  Pseudo-tables landed in this window: columnar indexes with zonemap pruning and vectorized scans, on top of the standard SPO/POS/OSP indexes. Designed to make multi-hop subgraph queries (the kind RDF databases are typically slow at) competitive with property-graph databases.
+</p>
+<p>Released as <strong>v0.2.0</strong> Developer Preview on 2026-03-18.</p>
+
+<h2 id="mar-2026-sweep">2026-03-15 — The SPARQL completeness sweep</h2>
+<p>
+  A single very productive day. Brought SPARQL coverage from "minimum viable" to roughly feature-complete for SPARQL 1.1 over RDF-star.
+</p>
+
+<h3>Core engine</h3>
+<ul>
+  <li><strong>First-query cold-start fix</strong> &mdash; <code>Vec&lt;bool&gt;</code> visited list to <code>HashSet</code>, cut ~2s page-fault overhead at 200K+ HNSW nodes.</li>
+  <li><strong>HNSW cross-cluster search</strong> &mdash; multiple entry points (up to 8). Fixed bias toward first-inserted cluster.</li>
+  <li><strong>Persistence</strong> &mdash; <code>PersistentStore</code> (sled-backed) wired to HTTP server with write-through. Hydrate on startup.</li>
+  <li><strong>SIMD-accelerated distance functions</strong> &mdash; AVX2/FMA + SSE fallback for <code>dot_product</code>, <code>squared_euclidean</code>, <code>l2_norm</code>.</li>
+  <li><strong>HNSW rebuild from stored vector triples on startup</strong> &mdash; vectors persist; the index is reconstructed lazily.</li>
+  <li><strong>HNSW compaction</strong> &mdash; background pass to clean tombstoned nodes, plus <code>/vectors/health</code> for diagnostics.</li>
+  <li><strong>Hash join optimization</strong> for large intermediate result sets.</li>
+  <li><strong>Cardinality estimation</strong> for cost-based planning.</li>
+  <li><strong>Crash recovery</strong> &mdash; <code>verify_consistency()</code> and <code>repair()</code> for index integrity.</li>
+  <li><strong>Adjacency lists</strong> materialized for Neo4j-speed traversal.</li>
+  <li><strong>Parallel HNSW construction</strong> via rayon.</li>
+</ul>
+
+<h3>SPARQL completeness</h3>
+<ul>
+  <li><code>FILTER NOT EXISTS</code> / <code>EXISTS</code></li>
+  <li><code>ASK</code> queries</li>
+  <li><code>GROUP BY</code> + aggregates (<code>COUNT</code>, <code>SUM</code>, <code>AVG</code>, <code>MIN</code>, <code>MAX</code>)</li>
+  <li><code>BIND</code> / <code>VALUES</code></li>
+  <li>Boolean operators (<code>&amp;&amp;</code>, <code>||</code>, <code>!</code>), comparison ops, type checks</li>
+  <li><code>LANG()</code> / <code>LANGMATCHES()</code></li>
+  <li>String functions (<code>CONTAINS</code>, <code>STRSTARTS</code>, <code>STRENDS</code>, <code>REGEX</code>)</li>
+  <li><code>INSERT DATA</code> / <code>DELETE DATA</code> (SPARQL Update)</li>
+  <li><code>CONSTRUCT</code> and <code>DESCRIBE</code></li>
+  <li><code>HAVING</code> for <code>GROUP BY</code> filtering</li>
+  <li>Property paths (<code>+</code>, <code>*</code>, <code>?</code>, <code>/</code>)</li>
+  <li>Subqueries (nested <code>SELECT</code>)</li>
+  <li><code>DATATYPE()</code>, <code>STR()</code>, <code>COALESCE()</code>, <code>IF()</code></li>
+  <li>Arithmetic in <code>FILTER</code></li>
+  <li><strong>RDF-star quoted triple patterns</strong> in SPARQL (<code>&lt;&lt; ?s ?p ?o &gt;&gt;</code>)</li>
+</ul>
+
+<h3>CLI, distribution, ecosystem</h3>
+<ul>
+  <li><code>sutra import</code> / <code>export</code> / <code>info</code> / <code>install-agent</code></li>
+  <li>Install scripts, Dockerfile, GraphStoreProtocol, content negotiation</li>
+  <li><strong>Protégé plugin</strong> (Java OSGi)</li>
+  <li><strong>MCP server</strong> for AI-agent ↔ SutraDB integration</li>
+  <li>Client-side OWL validation, OWL verification query generation</li>
+  <li>Turtle, RDF/XML, JSON-LD, N-Quads parsers</li>
+  <li>LangChain VectorStore integration; Jupyter <code>%%sparql</code> cell magic</li>
+</ul>
+
+<p>First Wikidata BFS import on this day: 439 entities, 16,084 triples, 439 vectors (1024-dim mxbai-embed-large), 0 errors. Later abandoned as the corpus base in favor of the HF parquet stream &mdash; the BFS rate limit made it impractical to scale.</p>
+
+<h2 id="mar-2026-foundation">2026-03 (early) — Foundation + 1M embedding stress test</h2>
+<p>
+  Project began on <strong>2026-03-13</strong> with the cleanvibe scaffold. Within 24 hours: architecture docs, normalised <code>sutra-*</code> workspace structure, <code>sutra-core</code> and <code>sutra-hnsw</code> foundations. Apache 2.0 license. CI workflow.
+  Borrowed patterns explicitly from <a href="https://github.com/qdrant/qdrant">Qdrant</a> (HNSW: immutable <code>GraphLayers</code> for search, thread-local visited pools, per-node <code>RwLock</code> during construction) and <a href="https://github.com/oxigraph/oxigraph">Oxigraph</a> (storage, IRI interning, RDF triplestore baseline).
+</p>
+<p>
+  By the end of the first 48 hours the project had: a working engine, a working SPARQL surface, a working vector layer, persistence, six SDKs, CI, a website, and a stress test passing at 1M scale. That set the pace for everything that came after.
+</p>
+
+<hr>
+
+<h2 id="dead-ends">Dead ends — what didn't work, and why</h2>
+
+<h3>1. BFS-only Wikidata ingest</h3>
+<p>
+  The original ingest crawled Wikidata's API at the 1.5s rate limit. At that rate, 5M triples would take ~3.3 hours per million entries with an exponential queue growth from qualifier-discovered links. We pushed through ~870 entities then switched to the HF parquet stream entirely. <strong>Lesson:</strong> rate-limited APIs are fine for <em>discovery</em>, not for bulk ingest. Streaming a frozen dump is always faster when one exists.
+</p>
+
+<h3>2. propositionImportedFrom on every imported triple</h3>
+<p>
+  When all your data comes from one source, tagging every row with that source is redundant noise. 22,593 rows of <code>propositionImportedFrom &lt;wikidata.org&gt;</code> after one hour of import &mdash; ~46% of all RDF-star annotations. <strong>Lesson:</strong> provenance is most useful when the source is genuinely variable. Wikidata's own reference predicates already capture per-claim provenance; don't shadow them.
+</p>
+
+<h3>3. Set-based (non-cumulative) repetition penalty</h3>
+<p>
+  The first repetition-penalty implementation tracked emitted tokens in a <em>set</em>: each prior emission penalized the token's later probability once, regardless of how many times it had already been emitted. Penalty 1.5 didn't break loops because dominant tokens like <code>of</code> stayed dominant after one division. <strong>Lesson:</strong> for masked-position decoding, cumulative penalty (<code>penalty<sup>count</sup></code>) is the right knob &mdash; it's the only thing that defeats deeply-overweighted single tokens.
+</p>
+
+<h3>4. v3 trained on the unclean corpus</h3>
+<p>
+  We didn't catch the embedded datatype-suffix leak until v3 had finished training. v3's perplexity (53) was <em>numerically</em> better than v4's (92) but <em>qualitatively</em> dramatically worse &mdash; v3 was memorising URI fragments. <strong>Lesson:</strong> perplexity is a proxy for content quality, not a measurement. Always sample-and-eyeball.
+</p>
+
+<h3>5. The token-leak retry loop</h3>
+<p>
+  The user pasted an HF token in chat to enable an upload. The first use worked. The auto-classifier blocked the second use of the same token, correctly &mdash; re-transmitting a leaked credential is the pattern it's designed to stop. <strong>Lesson:</strong> never normalize credential pasting. <code>huggingface-cli login</code> writes to <code>~/.cache/huggingface/token</code> and is the only path that doesn't leak the secret into chat or shell history.
+</p>
+
+<h3>6. Embedded Ollama in the importer</h3>
+<p>
+  The original Wikidata BFS importer called Ollama for a 1024-dim embedding per entity (~2s per call, plus the Wikidata 1.5s = ~3.5s/entity). Vectors didn't enter the training corpus. Removing them roughly doubled effective import throughput and dropped the daemon dependency. <strong>Lesson:</strong> if a side-effect doesn't pay for itself in the loop you're optimizing, take it out.
+</p>
+
+<h3>7. <code>POST /triples</code> wedge</h3>
+<p>
+  The persistent layer wedges after roughly every 5–6× growth in stored triples. We can't fix this in the importer; the workaround is automated stop-restart. <strong>Lesson:</strong> bugs found at ingest scale are real engine bugs that a smaller test suite would never have caught. Keep them documented &mdash; the fix is downstream.
+</p>
+
+<hr>
+
+<p style="color: #6e7681; font-size: 0.85rem; margin-top: 40px; padding-top: 16px; border-top: 1px solid #21262d;">
+  This page is a website-readable rendering of <a href="https://github.com/EmmaLeonhart/SutraDB/blob/main/DEVLOG.md">DEVLOG.md</a>.
+  Per-commit detail lives in <code>git log</code>; the live status of in-flight work lives in <a href="https://github.com/EmmaLeonhart/SutraDB/blob/main/status.md">status.md</a>.
+</p>
+
+</div>
+</body>
+</html>
