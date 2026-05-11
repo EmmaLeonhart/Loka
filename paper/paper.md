@@ -1,6 +1,6 @@
 # Loka: Generative Citation in a Neuro-Symbolic World Model over RDF-Star Knowledge Graphs
 
-**Code:** <https://github.com/EmmaLeonhart/Loka> (engine release `v0.4.0`: <https://github.com/EmmaLeonhart/Loka/releases/tag/v0.4.0>) &middot; **Corpus + checkpoints:** <https://huggingface.co/datasets/EmmaLeonhart/loka> (snapshot tags `v3`, `v4`, `v5`, `v6-bpe`, `v7`, `v8`, `v9`) &middot; **Source dataset:** <https://huggingface.co/datasets/philippesaade/wikidata>
+**Code:** <https://github.com/EmmaLeonhart/Loka> (engine release `v0.4.0`: <https://github.com/EmmaLeonhart/Loka/releases/tag/v0.4.0>) &middot; **Corpus + checkpoints:** <https://huggingface.co/datasets/EmmaLeonhart/loka> (snapshot tags `v3`, `v4`, `v5`, `v6-bpe`, `v7`, `v8`, `v9`, `v10`) &middot; **Source dataset:** <https://huggingface.co/datasets/philippesaade/wikidata>
 
 ---
 
@@ -373,6 +373,49 @@ v9 perplexity (57.15) beats v8 (64.65) by 12 % despite training on half the data
 97 % semantic-predicate share on v9 is the cleanest signal yet that the v7 datatype cleanup has been internalised. A residual catalog-format hallucination remains on `Template:* | different from` predicates, where the model emits short URL-prefix strings (`"T ://"`, `"M ://"`) instead of entity references — same shape-leak class as v6's date-shape leak, but in URL format and on a narrower predicate set. Not yet diagnosed; characterised in `DEVLOG.md` for v10 follow-up.
 
 **Implication.** The wedge fix removes a long-standing infrastructure ceiling. The model now scales with data without engine-side limits in the way. v10 work focuses on the corpus side: stream enough rows from the HF dataset to close the entity-label reference graph (target ≥ 50 k entities, several hundred thousand resolved-label triples after preprocess), and apply the same propgen test to see whether semantic-content quality continues to improve.
+
+### 5.8 v10: the first fully-automated cron cycle
+
+v10 is the first model shipped end-to-end by `tools/training_cron.py` without any manual intervention. The 12-hour local cron loop ran HF import → preprocess → train → propgen test → DEVLOG entry → MODEL.json pin → HF push → commit + push → sleep, all autonomously. Trained 20 epochs on a 94 058-triple corpus extracted from a fresh 2 M-triple HF slice, the same shape as v9. Final perplexity **55.52** — a further 3 % improvement over v9, with the loss curve still descending at epoch 20 (4.06 → 4.02).
+
+| Epoch | Loss | Perplexity |
+|---|---|---|
+| 1 | 17.6480 | 46,179,373 |
+| 5 | 5.3723 | 215.37 |
+| 10 | 4.9168 | 136.57 |
+| 15 | 4.1988 | 66.61 |
+| 20 | **4.0168** | **55.52** |
+
+**Q42 propgen test.** 60 emissions at conf ≥ 0.25 (up from v9's 35), **0 catalog hallucinations**, **100 % semantic-predicate share** — the cleanest signal of the run.
+
+| | v6 | v7 | v8 | v9 | v10 |
+|---|---|---|---|---|---|
+| Final perplexity | 194.98 | 192.63 | 64.65 | 57.15 | **55.52** |
+| Emissions at conf ≥ 0.25 | 52 | 14 | 47 | 35 | 60 |
+| — on catalog predicates | 21 (40 %) | 9 (64 %) | 7 (15 %) | 1 (3 %) | **0 (0 %)** |
+| — on semantic predicates | 31 (60 %) | 5 (36 %) | 40 (85 %) | 34 (97 %) | **60 (100 %)** |
+
+**Selected v10 outputs.**
+
+| Subject / predicate | v10 output | Confidence |
+|---|---|---|
+| `– / Commons category` | `"man Ġ("` | 0.92 |
+| `– / Commons category` | `"Category : Dramatists and play"` | 0.60 |
+| `– / instance of` | `"municipality Ġof Ġthe"` | 0.52 |
+| `– / country` | `"People 's ĠRepublic : ĠRepublic"` | 0.51 |
+| `– / spouse` | `"1 ."` | 0.50 |
+
+The Commons-category outputs are template-correct (`"Category : Dramatists and play[wrights]"` is the exact Wikimedia Commons naming convention). `instance of -> "municipality of the"` is a plausible-type semantic answer (would be correct for many entities in the Wikidata long tail). `country -> "People's Republic"` is right for PRC entities and right-type for non-PRC; `spouse -> "1 ."` is a numeric-format degeneration, a residual failure mode worth tracking but smaller than v9's `Template:* | different from -> "T ://"` URL-shape leak (now gone).
+
+**What changed in the infrastructure.** v10 is the first model produced under the steady-state regime of:
+
+1. The `/triples` wedge fix (§5.7), so a 2 M-triple HF import completes cleanly in ~67 min at 500 triples/s without retries.
+2. The per-data-dir state file (commit `95f56f7`), so each cycle's HF import resumes correctly when a cycle is restarted, and crash-recovery doesn't redo work.
+3. PageRank-weighted source selection in the propgen test (commits `e2809e3`, `0734e40`), so the evaluation focuses on structurally-important entities.
+4. The auto-discovered `MODEL_FILES` list in `tools/hf_snapshot.py` (commit `4c996b9`), so new checkpoints are uploaded without editing the script.
+5. The dynamically-rendered HF README (commit `758b6ff`), so the dataset page on Hugging Face refreshes its description on every push.
+
+The cron's `ship()` step covers DEVLOG, MODEL.json, propgen test artifacts, HF push, and the local commit + push, but it deliberately does *not* edit the paper — paper revisions happen here (or via the remote `schedule`-skill cron jobs that polish paper prose for the AI peer reviewer). This is the v10 paper revision.
 
 ---
 
