@@ -298,11 +298,47 @@ We retrain v7 with the same 44.5 M-parameter BPE architecture as v6 for 5 epochs
 
 The catalog-format hallucinations are *gone*, not muted. The model's failure mode shifts from "confidently wrong with the right shape" to "refuses to emit", which is the correct direction for a generative-citation system. The price is volume: 14 emissions vs 52, because the model no longer confidently produces format-shaped strings. The loss curve says v7 is undertrained (5.36 → 5.26 still descending at epoch 5); we run v8 next.
 
-### 5.6 v8: training to data-saturation on the cleaned corpus
+### 5.6 v8: 20 epochs on the cleaned corpus
 
-[v8 in progress as of writing — placeholder. Same 44.5 M architecture, v7 corpus, 20 epochs from random init. ETA ~88 min on the 4070. We will report final perplexity and the same Q42 generation comparison once training completes, plus an analysis of whether the loss curve has actually flattened by epoch 20 or whether the data-starvation signal is still present.]
+Same 44.5 M-parameter BPE architecture as v6/v7, trained 20 epochs from random init on the v7 corpus. The 5 → 20 epoch jump produced a 3× perplexity improvement at no compute cost beyond more passes:
 
-The wider implication of the v7 numbers is that the corpus is small for the model. At ~600 k tokens after BPE on a 44.5 M-parameter model we are roughly 0.013 tokens per parameter, against a Chinchilla-optimal target of ~20. v8 epochs are a cheap diagnostic for whether more compute on the existing corpus closes the gap or whether we are bottlenecked on data — the next planned step is a much larger HF re-import (target ~5 M useful training triples) followed by v9 from scratch.
+| Epoch | Loss | Perplexity |
+|---|---|---|
+| 1 | 13.0306 | 456,141.98 |
+| 5 | 5.2607 | 192.63 (= v7 final) |
+| 10 | 4.4257 | 83.57 (≈ v5 final) |
+| 15 | 4.2540 | 70.38 |
+| 20 | **4.1691** | **64.65** |
+
+Wall time 88 min on the same 4070 (vs v7's 22 min for 5 epochs — linear in epoch count). Loss was still descending at epoch 20 (4.20 → 4.19 → 4.17), so the v7 corpus is not yet saturated at this model size — strong evidence that the cleanup left signal the 5-epoch v7 had not yet exploited.
+
+**Same Q42 / 30-source generation test, v6 vs v7 vs v8.**
+
+| | v6 | v7 | v8 |
+|---|---|---|---|
+| Final perplexity | 194.98 | 192.63 | **64.65** |
+| Total emissions at conf ≥ 0.25 | 52 | 14 | **47** |
+| — on catalog-shaped predicates | 21 (40 %) | 9 (64 %) | 7 (15 %) |
+| — on semantic predicates | 31 (60 %) | 5 (36 %) | **40 (85 %)** |
+| `instance of -> "+ Ġof - 00 - 03 T 00"` (date-shape leak) | 15 instances | 0 | 0 |
+
+Selected v8 outputs (raw, BPE artifacts left visible — `Ġ` is the BPE space marker, `âĢĵ` is a mis-decoded em-dash):
+
+| Subject / predicate | v8 output | Confidence |
+|---|---|---|
+| `English / different from` | `"English"` | 0.876 |
+| `Adams / different from` | `"Adams"` | 0.960 |
+| `Joan of Arc / Commons category` | `"Joan Ġof ĠAr c Ġ( Ġ("` | 0.654 |
+| `British Broadcasting Corporation / Commons category` | `"British ĠBroadcasting ĠCorporation Ġ( Ġ("` | 0.791 |
+| `myocardial infarction / Commons category` | `"my ocard ial Ġin far"` | 0.639 |
+| `Leonardo da Vinci / country of citizenship` | `"Polish âĢĵ"` | 0.677 |
+| `Leonardo da Vinci / date of birth` | `"- 00 000000 - 00 - 00 T"` | 0.322 |
+
+Three observations. First, the model has discovered the high-frequency Wikipedia Commons-category template for entity X — `"X ( ..."` — and produces it confidently for many subjects. The Commons-category predicate is one of the most common in the v7 corpus, so this is the correct frequency-based behaviour. Second, the `different from` outputs are circular: the model emits the subject as the object. This is a known pathology of the masked-S/P/O setup when the model has learnt that `different from` is reflexive in the corpus (entity ↔ entity disambiguation pages). It is wrong but it is a *consistent* wrong, which is more debuggable than v6's hallucinated formats. Third, the catalog-format leak that defined v6 stays gone — `instance of` no longer produces date-prefix strings on any subject in the test.
+
+The remaining failure modes — circular `different from`, BPE artifact leakage, residual catalog hallucination on the few external-id predicates the seed still includes — are all addressable downstream of the corpus cleanup: the first wants a structural change to the masked-prediction objective, the second is a tokenizer post-decode pass, and the third disappears once the inference layer also drops excluded predicates from its candidate pool. None of them argue for re-introducing catalog noise into training.
+
+The wider implication of v8 is that the v7 corpus is small for the model. At ~600 k tokens after BPE on a 44.5 M-parameter model we are at 0.013 tokens per parameter, against a Chinchilla-optimal target of ~20. The v8 result — that 4× more epochs on the same corpus produces a 3× perplexity improvement — is consistent with a model that still has room to fit. The next step is therefore data scale, not more epochs: a fresh `tools/wikidata_hf_import.py` run targeting ~5 M useful triples after filtering, followed by v9 from scratch on that corpus. `tools/training_cron.py` (a 12-hour local cycle loop) automates the train-test-ship-retrain pipeline so this can run unattended.
 
 ---
 

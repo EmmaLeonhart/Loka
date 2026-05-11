@@ -43,12 +43,24 @@ CORPUS_FILES = [
     ("corpus/generated_v4_repcumul.nt", "training/data/generated_v4_repcumul.nt"),
 ]
 
-MODEL_FILES = [
-    ("checkpoints/wikidata_v3.pt", "training/checkpoints/wikidata_v3.pt"),
-    ("checkpoints/wikidata_v4.pt", "training/checkpoints/wikidata_v4.pt"),
-    ("checkpoints/wikidata_v5.pt", "training/checkpoints/wikidata_v5.pt"),
-    ("checkpoints/wikidata_v6.pt", "training/checkpoints/wikidata_v6.pt"),
-]
+# Auto-discovered: every wikidata_vN.pt that exists locally. The list used to
+# be hardcoded; the cron loop adds v7/v8/v9/... continuously, so we glob.
+def _discover_model_files() -> list[tuple[str, str]]:
+    import re as _re
+    from pathlib import Path as _Path
+    ckpt_dir = _Path(__file__).resolve().parent.parent / "training" / "checkpoints"
+    if not ckpt_dir.exists():
+        return []
+    matches = []
+    for p in ckpt_dir.glob("wikidata_v*.pt"):
+        m = _re.match(r"wikidata_v(\d+)\.pt$", p.name)
+        if m:
+            matches.append((int(m.group(1)), p))
+    matches.sort()
+    return [(f"checkpoints/{p.name}", f"training/checkpoints/{p.name}") for _, p in matches]
+
+
+MODEL_FILES = _discover_model_files()
 
 # Default folder mappings. The local path is overridable via --loka-data-path
 # so the user can upload from a frozen backup directory instead of the live
