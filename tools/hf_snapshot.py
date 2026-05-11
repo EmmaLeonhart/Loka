@@ -73,63 +73,215 @@ DATA_FOLDERS_DEFAULT = [
 README_TEMPLATE = """\
 ---
 license: apache-2.0
+language:
+- en
+- multilingual
 tags:
 - knowledge-graph
+- rdf
 - rdf-star
+- sparql
 - wikidata
 - world-model
+- neuro-symbolic
+- generative-citation
+size_categories:
+- 100K<n<1M
+task_categories:
+- feature-extraction
+- text-generation
+pretty_name: Loka — Neuro-Symbolic World Model
 ---
 
 # Loka — RDF-star world-model corpus and checkpoints
 
-Snapshots of the [Loka](https://github.com/Emma-Leonhart/Loka) world-model
-corpus + trained transformer checkpoints. Single repo so corpus and checkpoint
-versions stay aligned.
+Loka is a neuro-symbolic world model: an RDF-star triplestore engine plus a small
+role-aware transformer trained on the same triples, sharing a single SPARQL+
+query layer. Generated triples write back into the store with
+`propositionInferredFrom` citation edges that point at the curated context the
+prediction was conditioned on, so every model-emitted fact is auditable,
+queryable, and filterable in SPARQL.
+
+This dataset repo holds the **corpus** (label-substituted Wikidata slice) and
+the **trained transformer checkpoints** together so a corpus version and a
+checkpoint version stay aligned. The engine itself lives at
+<https://github.com/EmmaLeonhart/Loka>; the paper is at `paper/paper.md` in
+that repo.
+
+**Latest pinned model: `{{LATEST_VERSION}}`** (revision tag `{{LATEST_REVISION}}`,
+released {{LATEST_DATE}}). See *Snapshots* below for the full version history.
 
 ## Layout
 
 | Path | Contents |
 |---|---|
-| `corpus/triples.txt` | Tab-separated label-substituted triples (subject, predicate, object) used as training input. |
-| `corpus/vocab.json` | Word-level vocabulary built from the training file. |
-| `corpus/generated_v*.nt` | RDF-star inferences emitted by the trained model with `propositionInferredFrom` provenance. |
-| `loka-data/` | The live RDF-star store used by Loka. ~770 MB. Pull this and `loka serve --data-dir loka-data/` to query directly. |
-| `checkpoints/wikidata_v*.pt` | Role-aware transformer checkpoints. v3 = pre-cleanup corpus; v4 = post-cleanup corpus. |
+| `corpus/triples.txt` | Tab-separated label-substituted triples (subject\tpredicate\tobject) used as training input. Wikidata QIDs/PIDs are substituted with English labels at preprocess time; `@lang` and `^^<datatype>` suffixes are stripped from literals. |
+| `corpus/vocab_bpe.json` | 50 K-piece BPE vocabulary used by v6 and later. |
+| `corpus/tokenizer_bpe.json` | `tokenizers` library JSON for the BPE tokenizer. Pass to inference / training scripts via `--bpe-tokenizer`. |
+| `corpus/vocab.json` | Word-level vocabulary used by v3–v5 (kept for reproducibility). |
+| `corpus/generated_v*.nt` | RDF-star inferences emitted by trained models, with `propositionInferredFrom` provenance back to their citation context. |
+| `loka-data/` *(optional, ~770 MB)* | The live RDF-star Loka store used to extract the corpus. Pull this and `loka serve --data-dir loka-data/` to query directly. |
+| `checkpoints/wikidata_v*.pt` | Role-aware transformer checkpoints, PyTorch `.pt` format. Same 44.5 M-parameter architecture from v5 onward (d_model 512, 6 layers, 8 heads, 50 K BPE vocab, 8 tokens per role). |
+
+## Architecture
+
+All current checkpoints (v5 onward) share:
+
+- **Role-aware masked S/P/O transformer.** Input is a concatenation of three
+  fixed-length slots (subject / predicate / object), each tagged with a role
+  embedding. At training time one role is masked and the model predicts the
+  original tokens; at inference the object slot is masked and decoded greedily
+  with a cumulative repetition penalty.
+- **44.5 M parameters.** `d_model=512`, `num_layers=6`, `nhead=8`, `tokens_per_role=8`,
+  `max_len=28`. Approx. 178 MB on disk per checkpoint.
+- **50 K BPE vocabulary** (v6+). v5 and earlier used a word-level regex
+  tokenizer; that tokenizer dropped non-ASCII characters and is preserved only
+  for back-comparison.
+
+## Datatype filtering policy
+
+The training corpus is built from `philippesaade/wikidata` by `training/preprocess.py`
+in the Loka repo. Decisions per Wikidata datatype:
+
+**KEEP** (semantic content; ~2,231 properties):
+
+- `wikibase-item` — entity-to-entity links (label-substituted)
+- `wikibase-property` — property-to-property links
+- `string` — plain string values
+- `quantity` — numeric values; leading `+` stripped (`+1234` → `1234`)
+- `time` — dates; leading `+` stripped, `Z` dropped, `T00:00:00` dropped when
+  zero (`+2012-10-15T00:00:00Z` → `2012-10-15`; BCE keeps the `-`)
+- `monolingualtext` — value with `@lang` tag stripped. **All languages kept** in
+  v7+ (v6 dropped non-English).
+
+**DROP** (catalog cross-references or specialised noise; ~10,525 properties,
+about 82.5 % of all Wikidata property types):
+
+- `external-id` (~10,206) — Freebase, ISNI, GND, LCCN, Dewey, etc. Training on
+  these in v6 produced confident catalog-format hallucinations
+  (`ISNI -> "00000000"`) and a leak of the format shape onto unrelated
+  predicates (`instance of -> "+ Ġof - 00 - 03 T 00"`). v7 onward exclude them.
+- `url` (~120), `commonsMedia` (~91), `math` (~36),
+  `wikibase-sense`/`wikibase-lexeme`/`wikibase-form`/`wikibase-entity-schema`
+  (~47), `globe-coordinate` (~10), `geo-shape`/`musical-notation`/`tabular-data`
+  (~15) — rare or non-transferable.
+
+Full per-datatype spec: `planning/wikidata-datatype-processing.md` in the Loka
+repo. Property list pinned at `training/wikidata_excluded_predicates.json`.
 
 ## Snapshots
 
-Each meaningful checkpoint round is tagged. Pull a specific snapshot with the
-`revision` parameter:
+Each meaningful checkpoint round is tagged. Pull a specific snapshot:
 
 ```python
 from huggingface_hub import hf_hub_download
 ckpt = hf_hub_download(
-    repo_id="<user>/loka",
+    repo_id="EmmaLeonhart/loka",
     repo_type="dataset",
-    filename="checkpoints/wikidata_v4.pt",
-    revision="v4",
+    filename="checkpoints/wikidata_v8.pt",
+    revision="v8",
 )
+# also pull the matching tokenizer + vocab
+tok = hf_hub_download(repo_id="EmmaLeonhart/loka", repo_type="dataset",
+                      filename="corpus/tokenizer_bpe.json", revision="v8")
+vocab = hf_hub_download(repo_id="EmmaLeonhart/loka", repo_type="dataset",
+                        filename="corpus/vocab_bpe.json", revision="v8")
 ```
 
-## Provenance
+| Tag | Date | Final ppl | Corpus | Notes |
+|---|---|---|---|---|
+| `v3` | 2026-05-08 | 53.4 | 757 k noisy | First end-to-end run. Datatype-suffix leakage bug; emitted `xmlschema decimal http www w3 org` as memorised template. |
+| `v4` | 2026-05-09 | 92.5 | 757 k cleaned | 16 M params. Datatype-suffix bug fixed. Mode collapse on common connectors (`of of of of`) addressed with decode-time cumulative repetition penalty. |
+| `v5` | 2026-05-09 | 84.85 | 757 k cleaned | 44.5 M params (3 × scale-up). Bigger model picks specific entities (`halle`, `33`, `kosmos 116`) where v4 fell back to fillers. |
+| `v6-bpe` | 2026-05-10 | 194.98 | 757 k cleaned | BPE tokenizer added. Same 44.5 M architecture. Final ppl not directly comparable to v5 (BPE has more tokens per role). Catalog hallucinations dominant in post-training behavioural tests — diagnosed as corpus composition. |
+| `v7` | 2026-05-10 | 192.63 | 184 k v7-cleaned | Catalog datatypes dropped (~76 % of v6 corpus removed). Same architecture, 5 epochs. Tied ppl with v6 on a 4 ×-smaller corpus, but the catalog-format leak (`instance of -> "+ Ġof - 00 - 03 T 00"`) is gone. |
+| `v8` | 2026-05-10 | **64.65** | 184 k v7-cleaned | Same architecture, 20 epochs from scratch on the v7 corpus. 3 × ppl improvement over v7 — the v7 corpus was undersaturated at 5 epochs. Loss still descending at epoch 20, so the next bottleneck is data scale. |
 
-Every triple under `corpus/generated_*.nt` carries RDF-star annotations:
+For the live latest list, see this dataset's **Files and versions** tab on
+Hugging Face. Tag `main` always tracks the most recent upload.
 
-```
-<S> <P> "value" .
-<<S P "value">> loka-prov:propositionGenerated   "true"^^xsd:boolean .
-<<S P "value">> loka-prov:propositionGeneratedBy "wikidata_v4" .
-<<S P "value">> loka-prov:propositionConfidence  "0.43"^^xsd:decimal .
-<<S P "value">> loka-prov:propositionInferredFrom <<S existing_p existing_o>> .
+## Generated-triple provenance
+
+Every triple under `corpus/generated_*.nt` carries an RDF-star annotation block:
+
+```ttl
+<S> <P> "predicted-value" .
+<<S P "predicted-value">> loka-prov:propositionGenerated   "true"^^xsd:boolean .
+<<S P "predicted-value">> loka-prov:propositionGeneratedBy "loka-wikidata-v8" .
+<<S P "predicted-value">> loka-prov:propositionConfidence  "0.67"^^xsd:decimal .
+<<S P "predicted-value">> loka-prov:propositionInferredFrom <<S P_existing O_existing>> .
+... (one inferredFrom edge per cited context triple)
 ```
 
 `loka-prov:` expands to `http://loka.dev/provenance/`. Predicates under that
-namespace are reserved system metadata; the model never trains on them.
+namespace are **reserved system metadata** — the model never sees them, never
+proposes them as candidate predicates, and never emits them, enforced at
+three layers (corpus stripping in `training/preprocess.py`, candidate
+filtering in `training/infer_with_citations.py`, emit-time guard before each
+primary triple is written).
 
-## Versioning
+The `propositionInferredFrom` edges are auditable like any other RDF: SPARQL
+can query "every generated triple that cites a triple about X" or "remove all
+v6 generations" with a single pattern match. Generated triples are flagged
+out of training corpora automatically (the `FILTER NOT EXISTS << ?s ?p ?o >>
+loka-prov:propositionGenerated` clause in `TRAINING_CORPUS_QUERY`).
 
-`main` always points at the latest upload. Tagged snapshots are stable.
+## Versioning policy
+
+- `main` branch on this dataset always points at the most recent upload.
+- Each numbered checkpoint round (v3, v4, v5, v6-bpe, v7, v8, …) is a stable
+  tag. Pull `revision="vN"` for reproducibility.
+- The local 12-hour cycle loop (`tools/training_cron.py` in the Loka repo)
+  produces a new tagged snapshot each cycle. README is regenerated on every
+  upload so the version history table above stays current.
+
+## License
+
+[Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0). Source data is
+Wikidata under [CC0](https://creativecommons.org/publicdomain/zero/1.0/);
+the upstream `philippesaade/wikidata` snapshot is used unmodified for the
+import step.
+
+## Citation
+
+If you use these checkpoints or the corpus, please cite:
+
+```bibtex
+@misc{loka2026,
+  title = {Loka: Generative Citation in a Neuro-Symbolic World Model over RDF-Star Knowledge Graphs},
+  author = {Leonhart, Emma},
+  year = {2026},
+  url = {https://github.com/EmmaLeonhart/Loka},
+  note = {Paper at \\url{https://github.com/EmmaLeonhart/Loka/blob/main/paper/paper.md}}
+}
+```
 """
+
+
+def render_readme() -> str:
+    """Fill the version placeholders in README_TEMPLATE from MODEL.json.
+
+    Run on every upload so the description on Hugging Face always reflects
+    the latest pinned model. If MODEL.json can't be read, falls back to
+    leaving the placeholders in so the failure is obvious in the rendered
+    README (rather than silently injecting wrong values).
+    """
+    repo_root = Path(__file__).resolve().parent.parent
+    model_json = repo_root / "MODEL.json"
+    text = README_TEMPLATE
+    if model_json.exists():
+        try:
+            import json as _json
+            data = _json.loads(model_json.read_text(encoding="utf-8"))
+            text = (
+                text
+                .replace("{{LATEST_VERSION}}", str(data.get("name", "unknown")))
+                .replace("{{LATEST_REVISION}}", str(data.get("revision", "unknown")))
+                .replace("{{LATEST_DATE}}", str(data.get("released", "unknown")))
+            )
+        except Exception as e:
+            print(f"  [WARN] render_readme: could not parse MODEL.json: {e}")
+    return text
 
 
 def ensure_repo(api, repo_id: str, private: bool) -> None:
@@ -142,20 +294,24 @@ def ensure_repo(api, repo_id: str, private: bool) -> None:
         api.create_repo(repo_id=repo_id, repo_type="dataset", private=private, exist_ok=True)
 
 
-def maybe_upload_readme(api, repo_id: str) -> None:
-    """If the repo has no README.md yet, upload the template."""
-    try:
-        files = api.list_repo_files(repo_id=repo_id, repo_type="dataset")
-    except Exception:
-        files = []
-    if "README.md" not in files:
-        print("  uploading README.md")
-        api.upload_file(
-            path_or_fileobj=README_TEMPLATE.encode("utf-8"),
-            path_in_repo="README.md",
-            repo_id=repo_id,
-            repo_type="dataset",
-        )
+def upload_readme(api, repo_id: str) -> None:
+    """Always overwrite README.md on the dataset with the current rendered
+    version. We *want* the description on Hugging Face to refresh each cycle
+    so the version history table and the pinned-model line stay current —
+    a stale README is worse than no README.
+    """
+    print("  uploading README.md (refresh)")
+    rendered = render_readme().encode("utf-8")
+    api.upload_file(
+        path_or_fileobj=rendered,
+        path_in_repo="README.md",
+        repo_id=repo_id,
+        repo_type="dataset",
+    )
+
+
+# Back-compat alias for any caller still using the old name.
+maybe_upload_readme = upload_readme
 
 
 def upload_files(api, repo_id: str, files: list[tuple[str, str]]) -> None:
@@ -247,7 +403,7 @@ def main() -> None:
 
     repo_id = f"{user}/{REPO_NAME}"
     ensure_repo(api, repo_id, private=args.private)
-    maybe_upload_readme(api, repo_id)
+    upload_readme(api, repo_id)
 
     print(f"\n=== Uploading corpus + checkpoints to {repo_id} ===")
     upload_files(api, repo_id, CORPUS_FILES)
