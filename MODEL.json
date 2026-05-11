@@ -1,14 +1,14 @@
 {
-  "name": "loka-wikidata-v6",
-  "version": "v6",
+  "name": "loka-wikidata-v8",
+  "version": "v8",
   "released": "2026-05-10",
   "repo_id": "EmmaLeonhart/loka",
   "repo_type": "dataset",
-  "revision": "v6-bpe",
+  "revision": "v8",
   "files": {
     "checkpoint": {
-      "in_repo": "checkpoints/wikidata_v6.pt",
-      "local": "training/checkpoints/wikidata_v6.pt",
+      "in_repo": "checkpoints/wikidata_v8.pt",
+      "local": "training/checkpoints/wikidata_v8.pt",
       "size_mb": 178.2
     },
     "vocab": {
@@ -22,5 +22,5 @@
       "size_mb": 1.0
     }
   },
-  "notes": "BPE-tokenized round (50K vocab). Same architecture as v5 (d_model 512, 6 layers, 44M params), trained 5 epochs on the 757k-triple Wikidata slice with the BPE tokenizer added in 8252f13. Final epoch-5 perplexity 194.98 — not directly comparable to v5's 84.85 because BPE has more tokens per role (more mass to predict per position). The point of v6 is qualitative: tokenizer now handles unicode names like 'Saint-Léger' and 'Wikipédia' as proper subword pieces instead of dropping accents. Tag is `v6-bpe` (not `v6`) because an empty `v6` tag was created by an earlier upload run before v6.pt existed; the newer upload uses a fresh tag rather than rewriting the existing one. The vocab pinned here is the BPE vocab; the BPE tokenizer JSON is also pinned so inference scripts can resolve it via `loader._resolve('tokenizer_bpe')`."
+  "notes": "Same 44.5M-parameter BPE architecture as v6/v7 (d_model 512, 6 layers, 50K BPE vocab). Trained 20 epochs from random init on the 184,458-triple v7-cleaned corpus (Wikidata external-id, url, commonsMedia, math, lexeme/sense/form/entity-schema, globe-coordinate, geo-shape, musical-notation, tabular-data datatypes excluded; time and quantity literals normalised; monolingualtext kept across all languages with @lang stripped). Final epoch-20 perplexity 64.65 (v6 was 194.98 on a 4x larger noisy corpus, v7 was 192.63 on the same v7 corpus at 5 epochs). Loss was still descending at epoch 20 — the v7 corpus is not data-saturated yet at this model size. v8 inference qualitatively dominant over v6/v7 on the standard Q42-seed propgen test: 47 emissions, 40 of them on semantic predicates (vs v6's 31 of 52, v7's 5 of 14), and the catalog-format leak that defined v6 (instance of -> '+ Ġof - 00 - 03 T 00') stays at zero. See DEVLOG.md for the full v6 -> v7 -> v8 trajectory and paper §5.5 / §5.6."
 }

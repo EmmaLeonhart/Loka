@@ -1,0 +1,29 @@
+Device: cuda
+Vocabulary: 50,000 tokens
+BPE tokenizer loaded: training/data/tokenizer_bpe.json
+Loading dataset from training/data/triples_v7.txt...
+  examples: 184,458
+C:\Users\Immanuelle\Documents\Github\SutraDB\training\model.py:45: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  self.encoder = nn.TransformerEncoder(layer, num_layers)
+Model parameters: 44,531,712
+epoch   1/20  loss 13.0306  ppl 456141.98  (264.7s, 2883 batches)
+epoch   2/20  loss 6.3701  ppl 584.12  (264.3s, 2883 batches)
+epoch   3/20  loss 5.5479  ppl 256.71  (263.1s, 2883 batches)
+epoch   4/20  loss 5.3712  ppl 215.13  (264.9s, 2883 batches)
+epoch   5/20  loss 5.2607  ppl 192.63  (266.5s, 2883 batches)
+epoch   6/20  loss 5.0116  ppl 150.15  (264.9s, 2883 batches)
+epoch   7/20  loss 4.6701  ppl 106.70  (265.3s, 2883 batches)
+epoch   8/20  loss 4.5496  ppl 94.60  (265.3s, 2883 batches)
+epoch   9/20  loss 4.4737  ppl 87.68  (263.4s, 2883 batches)
+epoch  10/20  loss 4.4257  ppl 83.57  (262.6s, 2883 batches)
+epoch  11/20  loss 4.3753  ppl 79.46  (263.5s, 2883 batches)
+epoch  12/20  loss 4.3329  ppl 76.17  (264.8s, 2883 batches)
+epoch  13/20  loss 4.3191  ppl 75.12  (264.2s, 2883 batches)
+epoch  14/20  loss 4.2854  ppl 72.63  (263.6s, 2883 batches)
+epoch  15/20  loss 4.2540  ppl 70.38  (263.7s, 2883 batches)
+epoch  16/20  loss 4.2465  ppl 69.86  (267.2s, 2883 batches)
+epoch  17/20  loss 4.2143  ppl 67.65  (268.3s, 2883 batches)
+epoch  18/20  loss 4.2125  ppl 67.53  (268.5s, 2883 batches)
+epoch  19/20  loss 4.1831  ppl 65.57  (266.3s, 2883 batches)
+epoch  20/20  loss 4.1691  ppl 64.65  (265.0s, 2883 batches)
+Saved checkpoint to training/checkpoints/wikidata_v8.pt

@@ -8,6 +8,57 @@ The "why" matters more than the "what." Per-commit detail lives in `git log`. Th
 
 ---
 
+## 2026-05-10 (later still) — v8 trained: 20 epochs on cleaned corpus, ppl 64.65
+
+Headline: **the cleaned v7 corpus had a lot more signal in it than 5 epochs surfaced.** v8 is the same 44.5M-parameter BPE architecture trained on the same 184,458-triple v7 corpus, but for 20 epochs from random init instead of 5. Final perplexity **64.65** — well below v5 (84.85), v6 (194.98) and v7 (192.63). Loss was *still descending* at epoch 20 (4.20 → 4.19 → 4.17), so this corpus is not yet saturated even at 20× passes.
+
+| Epoch | Loss | Perplexity |
+|---|---|---|
+| 1 | 13.0306 | 456,141.98 |
+| 5 | 5.2607 | 192.63 (= v7 final) |
+| 10 | 4.4257 | 83.57 (≈ v5 final) |
+| 15 | 4.2540 | 70.38 |
+| 20 | **4.1691** | **64.65** |
+
+Wall time 88 min on the 4070 (matches the 4.4 min/epoch estimate). The 5 → 20 jump from 192.63 → 64.65 is a 3× perplexity improvement at no compute cost beyond more epochs — strong evidence that the v7 cleanup left a corpus the model hadn't yet exploited at 5 epochs.
+
+### Same Q42 / 30-source generation test, v6 vs v7 vs v8
+
+| | v6 | v7 | v8 |
+|---|---|---|---|
+| Final ppl | 194.98 | 192.63 | **64.65** |
+| Total emissions at conf ≥ 0.25 | 52 | 14 | **47** |
+| Of those: catalog-predicate | 21 (40%) | 9 (64%) | 7 (15%) |
+| Of those: semantic predicate | 31 (60%) | 5 (36%) | **40 (85%)** |
+| `instance of -> "+ Ġof - 00 - 03 T 00"` (date-shape leak) | 15 | 0 | 0 |
+
+The shift is real:
+
+- **v6** emitted lots of confident format-shaped garbage on catalog predicates and *also* leaked the catalog format onto semantic predicates (`instance of -> "+ Ġof - 00 - 03 T 00"` 15 times).
+- **v7** had the catalog format un-memorised (the leak is gone) but was so undertrained on the cleaner corpus that it mostly refused to emit anything.
+- **v8** keeps the catalog cleanup and the no-leak property, but with 4× more epochs the model now confidently emits semantic-predicate content. 40 of 47 emissions are on semantic predicates (vs v7's 5 of 14, vs v6's 31 of 52).
+
+### Selected v8 outputs (raw, BPE artifacts left visible)
+
+- `English | different from -> "English"` (conf 0.876) — circular but the predicate type is right
+- `Adams | different from -> "Adams"` (conf 0.960) — same circular pattern
+- `Joan of Arc | Commons category -> "Joan Ġof ĠAr c Ġ( Ġ("` (0.654) — the actual Wikipedia Commons category for Joan of Arc is "Joan of Arc"; format is right, BPE pieces visible
+- `British Broadcasting Corporation | Commons category -> "British ĠBroadcasting ĠCorporation Ġ( Ġ("` (0.791)
+- `myocardial infarction | Commons category -> "my ocard ial Ġin far"` (0.639)
+- `Leonardo da Vinci | country of citizenship -> "Polish âĢĵ"` (0.677) — same wrong answer as v7 (should be Italian) but confidence 0.36 → 0.677
+- `Leonardo da Vinci | date of birth -> "- 00 000000 - 00 - 00 T"` (0.322) — date-shape with the v7 normalisation visible (no leading `+`); content all zeros
+
+The remaining failure modes are: (1) circular `different from` outputs (model emits the subject as the object); (2) BPE artifact leakage (`Ġ`, `âĢĵ` for em-dashes); (3) catalog predicates the seed still includes (ISNI, DiseasesDB) where the v7-trained model has no signal to draw on; (4) date and URL hallucinations on those datatypes.
+
+### Status
+
+- v8 checkpoint: `training/checkpoints/wikidata_v8.pt`. Pushed to HF as `EmmaLeonhart/loka@v8`.
+- `MODEL.json` pinned to v8.
+- Loss curve says we are not data-saturated yet at 184k triples; the next move is data scale, not more epochs. v9 plan: ~3-5× larger corpus from a fresh `tools/wikidata_hf_import.py` run with `--max-triples 5000000`.
+- `tools/training_cron.py` (committed in 65781b7) is the 12h local loop that does this automatically; intended to be started after v8 ship completes.
+
+---
+
 ## 2026-05-10 (later) — v7 trained: catalog-noise discovery + corpus cleanup
 
 Headline: **the v6 corpus was 76% catalog cross-reference noise. After cleaning, the catalog-format hallucinations vanish.**
