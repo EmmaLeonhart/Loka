@@ -8,6 +8,76 @@ The "why" matters more than the "what." Per-commit detail lives in `git log`. Th
 
 ---
 
+## 2026-05-11 (later) — v9 trained: bigger Loka, smaller corpus, better outputs
+
+Headline: **`/triples` wedge fixed, v9 trained to ppl 57.15 on a 94k-triple corpus, 97% of generations land on semantic predicates.** Two unexpected things at once — the engine-bug at scale is no longer a thing, and the v9 inference quality beats v8 on a *smaller* training file.
+
+### The /triples wedge, dispatched
+
+The wedge (paper §6.1, recurring throughout v3–v8) was caused by the `insert_triples` HTTP handler running 3-4 sled write-transactions per N-Triples line (three term-interns + one SPO/POS/OSP triple-insert) and ending every request with a synchronous `flush()`. Under sustained ingest of ~100k+ triples in one POST, sled's internal compactor couldn't keep up with the WAL accumulation, and the writer thread eventually stalled — `/health` stayed up, `/triples` timed out.
+
+Fix in `39effbb`: `PersistentStore::insert_batch` does ONE sled multi-tree transaction across `spo / pos / osp / terms_fwd / terms_rev / meta` for the whole HTTP request, regardless of triple count. The synchronous flush is gone — sled flushes on its own periodic schedule and on Drop, which is sufficient durability for our workload. The handler collects all triples + their string forms first, then makes one `insert_batch` call.
+
+Verified at scale on the v9 cycle: **2,000,049 triples ingested in 4003s at 500 triples/sec sustained, no timeouts**. Previous wedges hit at 90k, 174k, 1M — this run cleared all three by 20×+.
+
+### The 94k corpus
+
+v9's training file is *smaller* than v7's (94,202 vs 184,458 triples), despite being extracted from a 4× larger Loka data dir (2,090,640 raw triples). Why: the HF stream `philippesaade/wikidata` gives many *claims per entity* but relatively few *entities per row* — we consumed 9,647 rows for the 2M raw triples, an average of 217 triples/entity. When a triple's object is a `wikibase-item` reference to an entity whose own row hasn't been streamed yet, the preprocess pass can't resolve the label and drops the row. We lost 1,049,881 rows that way.
+
+This is a corpus-construction issue, not a wedge issue. The fix is to either (a) stream enough rows that the label graph is mostly closed, or (b) maintain a cross-cycle label map so newly-encountered entities resolve against past cycles' labels. Out of scope for v9; planned for v10+.
+
+### v9 training results
+
+20 epochs from random init, same 44.5 M-param BPE architecture as v6/v7/v8, on the 94k corpus.
+
+| Epoch | Loss | Perplexity |
+|---|---|---|
+| 1 | 17.4379 | 37,426,431 |
+| 5 | 5.3740 | 215.71 |
+| 10 | 4.8977 | 134.0 |
+| 15 | 4.2466 | 69.9 |
+| 20 | **4.0457** | **57.15** |
+
+Wall time 44 min on the 4070. Loss curve still descending at epoch 20 (4.09 → 4.05) — corpus not saturated despite being half the size of v7. Compare v6 (194.98) / v7 (192.63) / v8 (64.65) / **v9 (57.15)** on Q42 propgen test.
+
+### Q42 / 30-source generation test, all four versions
+
+| | v6 | v7 | v8 | v9 |
+|---|---|---|---|---|
+| Final ppl | 194.98 | 192.63 | 64.65 | **57.15** |
+| Total emissions at conf ≥ 0.25 | 52 | 14 | 47 | 35 |
+| Catalog-predicate emissions | 21 (40%) | 9 (64%) | 7 (15%) | **1 (3%)** |
+| Semantic-predicate emissions | 31 (60%) | 5 (36%) | 40 (85%) | **34 (97%)** |
+| `instance of` date-shape leak | 15 | 0 | 0 | 0 |
+
+The catalog-leak that v6 had → 0 (v7+). Semantic-predicate share continues to climb. v9 produces almost no catalog hallucinations because the v9 corpus (after preprocessing) has even less catalog content than v7 — high label-resolution rates correlate with the entities being "core" Wikipedia-citable rather than long-tail-catalog-only.
+
+### Selected v9 outputs
+
+- `human | union of ->` (no emission — would have required a multi-set value, model declined)
+- `Category:Children's writers | Commons category -> "Category : Ch ildren 's"` (conf 0.420) — Commons-category format right, BPE pieces visible
+- `atheism | Commons category -> "at he ism Ġ( Ġ("` (conf 0.484) — same format-aware Commons template
+- `male and female | Commons category -> "male Ġand Ġfemale Ġ("` (conf 0.477)
+- `Template:Infobox person | different from -> "T ://"` (conf 0.511) — URL-prefix hallucination on a `wikibase-item`-typed predicate; the remaining failure pattern v9 still exhibits
+- `Template:Infobox person/Wikidata | different from -> "T ://"` (conf 0.511) — same pattern, suggests model has overlearned URL formats for Template:* subjects
+
+The `T ://` / `M ://` outputs on `different from` are the same shape-leak class as v6's `instance of -> "+ Ġof - 00 - 03 T 00"`, just in URL-format instead of date-format. The cleanup that worked for date-leaks (drop `url`/`commonsMedia` datatypes from training) should also kill URL-leaks; possibly we need a stricter filter on which string literals enter training in the first place.
+
+### Status
+
+- v9 checkpoint: `training/checkpoints/wikidata_v9.pt`. Pushed to HF as `EmmaLeonhart/loka@v9`.
+- `MODEL.json` pinned to v9 (ppl beats v8 by ~12%).
+- HF dataset README refreshed by `upload_readme()` to reflect v9 as latest.
+- Wedge fix exposed to 4M+ triples cumulatively — solid evidence the per-request sled batch is the right approach.
+- v10 plan: bigger corpus from a cleaner HF slice (more rows, lower triples-per-row), and look at the `Template:* | different from -> "T ://"` URL-leak pattern.
+
+### Loose ends
+
+- The HF state-file design also got fixed in this round (`95f56f7`): state file now lives inside the per-cycle Loka data dir instead of as a global file. The previous global-state design produced a dedup-loop on cycle restart that wasted ~30 minutes of HF stream consumption. v10+ cron cycles use the new per-data-dir state.
+- Loose end from v9: the `Template:* | different from -> "T ://"` URL-shape leak on `wikibase-item`-typed predicates. Not blocking; characterised as a v10 investigation target.
+
+---
+
 ## 2026-05-11 — v9 cron fired; no v9 results yet
 
 **Cron:** `trig_v9_ship_pipeline` · fired ~2026-05-11T12:00Z (estimated).

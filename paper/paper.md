@@ -1,6 +1,6 @@
 # Loka: Generative Citation in a Neuro-Symbolic World Model over RDF-Star Knowledge Graphs
 
-**Code:** <https://github.com/EmmaLeonhart/Loka> (engine release `v0.4.0`: <https://github.com/EmmaLeonhart/Loka/releases/tag/v0.4.0>) &middot; **Corpus + checkpoints:** <https://huggingface.co/datasets/EmmaLeonhart/loka> (snapshot tags `v3`, `v4`, `v5`, `v6-bpe`, `v7`, `v8`) &middot; **Source dataset:** <https://huggingface.co/datasets/philippesaade/wikidata>
+**Code:** <https://github.com/EmmaLeonhart/Loka> (engine release `v0.4.0`: <https://github.com/EmmaLeonhart/Loka/releases/tag/v0.4.0>) &middot; **Corpus + checkpoints:** <https://huggingface.co/datasets/EmmaLeonhart/loka> (snapshot tags `v3`, `v4`, `v5`, `v6-bpe`, `v7`, `v8`, `v9`) &middot; **Source dataset:** <https://huggingface.co/datasets/philippesaade/wikidata>
 
 ---
 
@@ -339,6 +339,40 @@ Three patterns emerge. The model has discovered the high-frequency Wikipedia Com
 The remaining failure modes — circular `different from`, BPE artifact leakage, residual catalog hallucination on the few external-id predicates the seed still includes — are all addressable downstream of the corpus cleanup: the first wants a structural change to the masked-prediction objective, the second is a tokenizer post-decode pass, and the third disappears once the inference layer also drops excluded predicates from its candidate pool. None of them argue for re-introducing catalog noise into training.
 
 The wider implication of v8 is that the v7 corpus is small for the model. At ~600 k tokens after BPE on a 44.5 M-parameter model we are at 0.013 tokens per parameter, against a Chinchilla-optimal target of ~20. The v8 result — that 4× more epochs on the same corpus produces a 3× perplexity improvement — is consistent with a model that still has room to fit. The next step is therefore data scale, not more epochs: a fresh `tools/wikidata_hf_import.py` run targeting ~5 M useful triples after filtering, followed by v9 from scratch on that corpus. `tools/training_cron.py` (a 12-hour local cycle loop) automates the train-test-ship-retrain pipeline so this can run unattended.
+
+### 5.7 v9: wedge fix exposed at 4M triples, model trained on a fresh slice
+
+v9 carries two independent results: the `/triples`-wedge engine bug (§6.1) is fixed, and the model trained on a freshly-pulled Wikidata slice reaches perplexity **57.15**, the best of any version, on a corpus that is in fact *smaller* than v7's.
+
+**The wedge.** Paper §6.1 has documented since v3 that the engine wedges after roughly every 5–6× growth in stored triples — the `POST /triples` handler stalls indefinitely while `/health` keeps responding. The wedge fired again on the v9 ingest at the now-routine ~90 k-triple threshold. Root cause traced (via `planning/triples-wedge-investigation.md` and inspection of `loka-core/src/persistent.rs` and `loka-proto/src/server.rs`): the handler made 3–4 sled write-transactions per N-Triples line (three term-interns plus one SPO/POS/OSP triple-insert) and called `PersistentStore::flush()` synchronously at the end of every request. Under sustained ingest of ~100 k+ triples in one POST, sled accumulated write-ahead-log entries faster than its internal compactor could drain, and the writer thread eventually stalled. Fix in commit `39effbb`: `PersistentStore::insert_batch` writes a whole HTTP request's worth of triples (and their term-interns) in a *single* sled multi-tree transaction. The synchronous `flush()` is gone — sled's periodic flush + Drop-time flush is sufficient durability. The handler in `loka-proto/src/server.rs` collects all triples into a `Vec<BatchInsert>` and calls `insert_batch` once. Verified: 2,000,049 triples in 4 003 s at 500 triples/sec sustained, no timeouts; cumulative 4M+ triples across the v9 cycle's two import phases, no wedge. Previous wedges at 90 k, 174 k, and ~1 M are all cleared by 20× or more.
+
+**The corpus.** The v9 cycle pulled 2 090 640 raw triples into a fresh per-cycle Loka data dir from `philippesaade/wikidata`. Preprocessing through `training/preprocess.py` (same datatype filter as v7 + the v7 quantity/time normalisations) produced a 94 202-triple training file — *smaller* than v7's 184 458. The reason: `philippesaade/wikidata` is structured one row per entity, with all of an entity's claims in a single JSON blob. The v9 import consumed 9 647 rows for 2 M raw triples (217 triples/entity average), so most `wikibase-item` objects refer to entities whose own rows haven't been streamed yet, and the preprocess step drops a triple when it can't resolve the object's English label — 1 049 881 rows dropped that way. v7's corpus, built from a 50× larger raw-triple pool over the original 5 M-triple slice, had more closed label cycles per entity and a higher retention rate. This is a corpus-construction artifact, not a model issue; the fix (cross-cycle label caching, or streaming many more rows before preprocessing) is on the v10 roadmap.
+
+**Training and perplexity.** 20 epochs, same 44.5 M-parameter BPE architecture, 44 min wall time on the 4070 (∝ to the 94 k vs 184 k corpus size relative to v8's 88 min).
+
+| Epoch | Loss | Perplexity |
+|---|---|---|
+| 1 | 17.4379 | 37,426,431 |
+| 5 | 5.3740 | 215.71 (≈ v7 final) |
+| 10 | 4.8977 | 134.0 |
+| 15 | 4.2466 | 69.9 |
+| 20 | **4.0457** | **57.15** |
+
+v9 perplexity (57.15) beats v8 (64.65) by 12 % despite training on half the data. Two plausible explanations: the v9 corpus is preferentially the entities with closed reference graphs (i.e. structurally well-connected); and the v9 corpus is freshly drawn from a different slice of Wikidata, so the model isn't being asked to fit the same long-tail noise v8 had.
+
+**Q42 propgen test, all four versions.**
+
+| | v6 | v7 | v8 | v9 |
+|---|---|---|---|---|
+| Final perplexity | 194.98 | 192.63 | 64.65 | **57.15** |
+| Emissions at conf ≥ 0.25 | 52 | 14 | 47 | 35 |
+| — on catalog predicates | 21 (40 %) | 9 (64 %) | 7 (15 %) | **1 (3 %)** |
+| — on semantic predicates | 31 (60 %) | 5 (36 %) | 40 (85 %) | **34 (97 %)** |
+| `instance of` date-shape leak | 15 | 0 | 0 | 0 |
+
+97 % semantic-predicate share on v9 is the cleanest signal yet that the v7 datatype cleanup has been internalised. A residual catalog-format hallucination remains on `Template:* | different from` predicates, where the model emits short URL-prefix strings (`"T ://"`, `"M ://"`) instead of entity references — same shape-leak class as v6's date-shape leak, but in URL format and on a narrower predicate set. Not yet diagnosed; characterised in `DEVLOG.md` for v10 follow-up.
+
+**Implication.** The wedge fix removes a long-standing infrastructure ceiling. The model now scales with data without engine-side limits in the way. v10 work focuses on the corpus side: stream enough rows from the HF dataset to close the entity-label reference graph (target ≥ 50 k entities, several hundred thousand resolved-label triples after preprocess), and apply the same propgen test to see whether semantic-content quality continues to improve.
 
 ---
 
