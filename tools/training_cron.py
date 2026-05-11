@@ -205,6 +205,26 @@ def train_version(version: int, corpus: Path, epochs: int) -> Path:
     return ckpt
 
 
+def ensure_seed_pagerank(seed: Path) -> Path:
+    """Compute (or refresh) PageRank scores over the propgen seed file.
+
+    The propgen test uses --rank-file to bias source-triple selection toward
+    structurally-important entities (see planning/pagerank-bootstrapping.md).
+    Recompute whenever the rank file is missing or older than the seed —
+    cheap (<1 s on a 14 k-triple seed) and self-healing if the seed gets
+    re-pulled.
+    """
+    rank_path = seed.with_name(seed.stem.replace("seed_", "pagerank_") + ".json")
+    if rank_path.exists() and rank_path.stat().st_mtime >= seed.stat().st_mtime:
+        log(f"PageRank cache fresh: {rank_path.name}")
+        return rank_path
+    log(f"Computing PageRank over {seed.name} -> {rank_path.name}")
+    run([sys.executable, "tools/compute_pagerank.py",
+         "--nt-file", str(seed),
+         "--output", str(rank_path)])
+    return rank_path
+
+
 def run_propgen_test(version: int) -> Path:
     """Run the auto-regressive propgen test against the new checkpoint."""
     ckpt = CHECKPOINTS / f"wikidata_v{version}.pt"
@@ -215,12 +235,14 @@ def run_propgen_test(version: int) -> Path:
              "--seed", "Q42", "--max-entities", "30",
              "--max-time", "120", "--max-depth", "2",
              "--output-dir", str(DATA)])
+    rank_file = ensure_seed_pagerank(seed)
     output = DATA / f"test_propgen_Q42_v{version}.nt"
     run([sys.executable, "training/test_autoregressive_propgen.py",
          "--seed-file", str(seed),
          "--output", str(output),
          "--checkpoint", str(ckpt),
          "--bpe-tokenizer", "training/data/tokenizer_bpe.json",
+         "--rank-file", str(rank_file),
          "--max-source-triples", "30",
          "--children-per-source", "10",
          "--confidence", "0.25",
