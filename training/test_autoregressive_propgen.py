@@ -439,6 +439,13 @@ def main() -> None:
                         help="Disable parallel-subgraph context extension")
     parser.add_argument("--verbose", action="store_true",
                         help="Print per-candidate prediction outcomes")
+    parser.add_argument("--rank-file", default=None,
+                        help="Path to a JSON file produced by tools/compute_pagerank.py. "
+                             "When supplied, source-triple selection is weighted by the "
+                             "geometric mean of subject and object PageRank scores, so "
+                             "generation is exercised on the structurally-important "
+                             "parts of the graph first. See planning/"
+                             "pagerank-bootstrapping.md.")
     parser.add_argument("--device", default=None)
     parser.add_argument("--seed", type=int, default=7)
     parser.add_argument("--model-version", default=None)
@@ -528,18 +535,54 @@ def main() -> None:
         and t["p"]["value"] != RDFS_LABEL
         and not is_reserved_predicate(t["p"]["value"])
     ]
+    # Optional PageRank weighting. Score a triple by the geometric mean of
+    # its subject and object PageRank — both endpoints matter, but a single
+    # high-rank endpoint shouldn't dominate. Literals contribute a baseline
+    # of `min_score / 10` so URI/literal mixed selection still works.
+    rank_scores: dict[str, float] = {}
+    if args.rank_file:
+        rank_data = json.loads(Path(args.rank_file).read_text(encoding="utf-8"))
+        for iri, score in rank_data.get("scores", []):
+            rank_scores[iri] = float(score)
+        print(
+            f"Loaded {len(rank_scores):,} PageRank scores from {args.rank_file}",
+            file=sys.stderr,
+        )
+
+    def source_weight(t: dict) -> float:
+        if not rank_scores:
+            return 1.0
+        baseline = min(rank_scores.values()) / 10.0 if rank_scores else 1e-9
+        s_score = rank_scores.get(t["s"]["value"], baseline)
+        if t["o"]["type"] == "uri":
+            o_score = rank_scores.get(t["o"]["value"], baseline)
+        else:
+            o_score = baseline
+        return (s_score * o_score) ** 0.5
+
     if args.prefer_uri_objects:
         uri_obj = [t for t in candidate_sources if t["o"]["type"] == "uri"]
         lit_obj = [t for t in candidate_sources if t["o"]["type"] != "uri"]
-        _random.shuffle(uri_obj)
-        _random.shuffle(lit_obj)
+        if rank_scores:
+            # Weighted sample without replacement: sort by weight descending,
+            # take top-N. Deterministic given seed; closer to "pick the most
+            # important sources" than a random draw.
+            uri_obj.sort(key=lambda t: -source_weight(t))
+            lit_obj.sort(key=lambda t: -source_weight(t))
+        else:
+            _random.shuffle(uri_obj)
+            _random.shuffle(lit_obj)
         # 80% URI-object sources, 20% literal-object so we still see how the
         # context routine behaves on both kinds.
         n_uri = int(args.max_source_triples * 0.8)
         sources = uri_obj[:n_uri] + lit_obj[: args.max_source_triples - n_uri]
-        _random.shuffle(sources)
+        if not rank_scores:
+            _random.shuffle(sources)
     else:
-        _random.shuffle(candidate_sources)
+        if rank_scores:
+            candidate_sources.sort(key=lambda t: -source_weight(t))
+        else:
+            _random.shuffle(candidate_sources)
         sources = candidate_sources[: args.max_source_triples]
     print(f"\nGenerating from {len(sources)} source triples\n", file=sys.stderr)
 
