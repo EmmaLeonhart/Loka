@@ -945,7 +945,10 @@ async fn insert_triples(
                 predicate: inner_p.clone(),
                 object: inner_o.clone(),
             });
-            (loka_core::quoted_triple_id(is_id, ip_id, io_id), inner_batch)
+            (
+                loka_core::quoted_triple_id(is_id, ip_id, io_id),
+                inner_batch,
+            )
         } else {
             (dict.intern(&parsed.subject), None)
         };
@@ -969,7 +972,10 @@ async fn insert_triples(
                 predicate: inner_p.clone(),
                 object: inner_o.clone(),
             });
-            (loka_core::quoted_triple_id(is_id, ip_id, io_id), inner_batch)
+            (
+                loka_core::quoted_triple_id(is_id, ip_id, io_id),
+                inner_batch,
+            )
         } else {
             (intern_object(&mut dict, &parsed.object), None)
         };
