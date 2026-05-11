@@ -21,7 +21,7 @@ on:
   # clawRxiv submission and review fetch; ratings can drift either
   # direction without us needing to react.
   push:
-    branches: [master]
+    branches: [main, master]
     paths:
       - 'paper/paper.md'
       - 'paper/supplementary/SKILL.md'
