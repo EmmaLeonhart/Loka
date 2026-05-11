@@ -1,14 +1,14 @@
 {
-  "name": "loka-wikidata-v8",
-  "version": "v8",
-  "released": "2026-05-10",
+  "name": "loka-wikidata-v9",
+  "version": "v9",
+  "released": "2026-05-11",
   "repo_id": "EmmaLeonhart/loka",
   "repo_type": "dataset",
-  "revision": "v8",
+  "revision": "v9",
   "files": {
     "checkpoint": {
-      "in_repo": "checkpoints/wikidata_v8.pt",
-      "local": "training/checkpoints/wikidata_v8.pt",
+      "in_repo": "checkpoints/wikidata_v9.pt",
+      "local": "training/checkpoints/wikidata_v9.pt",
       "size_mb": 178.2
     },
     "vocab": {
@@ -22,5 +22,5 @@
       "size_mb": 1.0
     }
   },
-  "notes": "Same 44.5M-parameter BPE architecture as v6/v7 (d_model 512, 6 layers, 50K BPE vocab). Trained 20 epochs from random init on the 184,458-triple v7-cleaned corpus (Wikidata external-id, url, commonsMedia, math, lexeme/sense/form/entity-schema, globe-coordinate, geo-shape, musical-notation, tabular-data datatypes excluded; time and quantity literals normalised; monolingualtext kept across all languages with @lang stripped). Final epoch-20 perplexity 64.65 (v6 was 194.98 on a 4x larger noisy corpus, v7 was 192.63 on the same v7 corpus at 5 epochs). Loss was still descending at epoch 20 — the v7 corpus is not data-saturated yet at this model size. v8 inference qualitatively dominant over v6/v7 on the standard Q42-seed propgen test: 47 emissions, 40 of them on semantic predicates (vs v6's 31 of 52, v7's 5 of 14), and the catalog-format leak that defined v6 (instance of -> '+ Ġof - 00 - 03 T 00') stays at zero. See DEVLOG.md for the full v6 -> v7 -> v8 trajectory and paper §5.5 / §5.6."
+  "notes": "Same 44.5M-parameter BPE architecture as v6/v7/v8. Trained 20 epochs from random init on a 94,202-triple corpus extracted from a freshly-pulled 2,090,640-triple Loka slice (philippesaade/wikidata, 9,647 entity rows). Final epoch-20 perplexity 57.15 — best of any version, beating v8's 64.65 by 12% despite training on half the data. Two reasons coexisting: (a) the engine-wedge bug documented in paper §6.1 was fixed in commit 39effbb (single sled multi-tree transaction per /triples request instead of 3-4 per N-Triples line, no synchronous flush), unlocking sustained ingest at 500 triples/s without the 90k/174k/1M-triple wedge points; (b) the v9 corpus is preferentially the entities with closed reference graphs — when the HF stream doesn't provide an entity's row, its label-as-object dependencies drop the row at preprocess, leaving only the structurally well-connected core. v9 propgen test on the Q42 seed: 35 emissions, 34 of them on semantic predicates (97%) — best ratio yet. Residual failure mode is a URL-prefix shape leak on `Template:* | different from` predicates (analogous to v6's date-shape leak but in URL format, narrower predicate scope). See DEVLOG.md for the v6 -> v7 -> v8 -> v9 trajectory and paper §5.5 / §5.6 / §5.7."
 }
