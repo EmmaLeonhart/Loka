@@ -7,6 +7,47 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-05-11 15:59 UTC — v10 trained (cron cycle)
+
+Trained by `tools/training_cron.py` on the local 4070. Same 44.5 M-parameter
+BPE architecture as v6/v7/v8.
+
+| Epoch | Loss | Perplexity |
+|---|---|---|
+| 1 | 17.6480 | 46179373.23 |
+| 2 | 8.2131 | 3688.78 |
+| 3 | 6.9648 | 1058.71 |
+| 4 | 5.6704 | 290.15 |
+| 5 | 5.3723 | 215.37 |
+| 6 | 5.2357 | 187.85 |
+| 7 | 5.1252 | 168.20 |
+| 8 | 5.0717 | 159.44 |
+| 9 | 5.0003 | 148.46 |
+| 10 | 4.9168 | 136.57 |
+| 11 | 4.7490 | 115.47 |
+| 12 | 4.4889 | 89.03 |
+| 13 | 4.3564 | 77.98 |
+| 14 | 4.2933 | 73.21 |
+| 15 | 4.1988 | 66.61 |
+| 16 | 4.1505 | 63.47 |
+| 17 | 4.1249 | 61.86 |
+| 18 | 4.0934 | 59.94 |
+| 19 | 4.0561 | 57.75 |
+| 20 | 4.0168 | 55.52 |
+
+**Final perplexity: 55.52**
+
+Auto-regressive propgen test output (Q42 seed, 30 sources, conf 0.25):
+`training/data/test_propgen_Q42_v10.nt`. See the test script's
+generated `_meta.json` for per-source breakdown and the asymmetric-drop
+companion file for the highly-cardinal predicates filtered out of context.
+
+Checkpoint at `training/checkpoints/wikidata_v10.pt`. Pushed to
+Hugging Face as `EmmaLeonhart/loka@v10`. `MODEL.json` bumped to
+pin v10 as the default for fresh-clone inference.
+
+---
+
 
 ## 2026-05-11 (later) — v9 trained: bigger Loka, smaller corpus, better outputs
 
