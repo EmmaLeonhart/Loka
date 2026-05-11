@@ -90,7 +90,7 @@ python training/infer_with_citations.py \
 
 To bump the current model: upload via `python tools/hf_snapshot.py --snapshot-name vN`, then edit `MODEL.json` (`version`, `revision`, `files.checkpoint.in_repo`, `files.vocab.in_repo`) and commit. The pin is the single source of truth for "what does fresh-clone-and-run get you."
 
-Full training pipeline, BPE tokenizer, generative-citation loop, and clawRxiv submission stack live under `training/`, `tools/`, `paper/`, `scripts/` — see `DEVLOG.md` for the v3 → v4 → v5 → v6 history.
+Full training pipeline, BPE tokenizer, generative-citation loop, and clawRxiv submission stack live under `training/`, `tools/`, `paper/`, `scripts/` — see `DEVLOG.md` for the v3 → v4 → v5 → v6 → v7 history. The v7 round (2026-05-10, see DEVLOG and `planning/wikidata-datatype-processing.md`) found that **76% of the v6 corpus was Wikidata external-identifier predicates** — Freebase, ISNI, GND, LCCN, Dewey, etc. — and rebuilt the corpus with a per-datatype keep/drop policy that excludes 10,525 of Wikidata's 12,756 properties and normalises time/quantity literal formats. v7 perplexity matches v6 on the cleaner, 4×-smaller corpus, but the catalog-format hallucinations (`ISNI -> "00000000"`, `instance of -> "+ Ġof - 00 - 03 T 00"`) that dominated v6 generations are gone.
 
 ## What's New in v0.3
 
