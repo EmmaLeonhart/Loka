@@ -153,6 +153,13 @@ def hf_import(port: int, max_triples: int) -> None:
     state_path = REPO_ROOT / "wikidata_hf_import_state.json"
     backup_path = REPO_ROOT / "wikidata_hf_import_state.json.cron-backup"
     if state_path.exists():
+        if backup_path.exists():
+            # Leftover backup from a previously-failed cycle. Trust the
+            # current state more than a stale backup (the backup may be
+            # the v6 import state from before the cron loop existed); the
+            # current file is at worst from the previous cron cycle.
+            log(f"Removing stale {backup_path.name} (current state takes precedence)")
+            backup_path.unlink()
         log(f"Stashing existing state file to {backup_path.name}")
         state_path.rename(backup_path)
     env = os.environ.copy()
