@@ -20,6 +20,104 @@ Full architecture: see `docs/architecture.md`.
 
 ---
 
+## Training & Ship Workflow
+
+Each successive model version (v6 → v7 → v8 → ...) goes through a fixed pipeline. The full cycle is automated by `tools/training_cron.py` for v9+; before that the steps were run by hand. **When a new version finishes training, all of these must happen — half-shipping a checkpoint is worse than not shipping.** This is the canonical checklist.
+
+### 0. Preconditions
+
+- `huggingface-cli login` has been run once with a write-scoped token (HF push uses it).
+- `cargo build --release -p loka-cli` has produced `target/release/loka.exe` (or `.so`/`.dylib`) — the cron's HF-import step needs the Loka binary to stand up a per-cycle data dir.
+- The BPE tokenizer (`training/data/tokenizer_bpe.json`) and BPE vocab (`training/data/vocab_bpe.json`) are present. They have been stable since v6 and are pinned via `MODEL.json`.
+- `MODEL.json` is committed and points at the most-recent shipped checkpoint. If it points at vN-1 when you're shipping vN, that's normal — the workflow below updates it.
+
+### 1. Training corpus
+
+If `--no-data-refresh` is not set, the cron pulls a fresh HF slice into a per-cycle Loka instance, then preprocesses to `training/data/triples_vN.txt` with the v7 datatype filter applied. The `wikidata_hf_import_state.json` is stashed-and-restored per cycle so the importer doesn't think prior runs already filled the new Loka.
+
+Without `--no-data-refresh` (manual run from a populated Loka):
+
+```bash
+python training/preprocess.py --endpoint http://localhost:3030 --output training/data/triples_vN.txt
+```
+
+### 2. Train
+
+```bash
+python training/train.py \
+    --data training/data/triples_vN.txt \
+    --vocab training/data/vocab_bpe.json \
+    --bpe-tokenizer training/data/tokenizer_bpe.json \
+    --checkpoint training/checkpoints/wikidata_vN.pt \
+    --epochs 20 --batch-size 64 --tokens-per-role 8 \
+    --d-model 512 --nhead 8 --layers 6
+```
+
+Always log to `training/logs/vN_train.log`. The log is committed (part of the version record).
+
+### 3. Evaluate — propgen test
+
+```bash
+# Compute PageRank for the seed (cached when fresh)
+python tools/compute_pagerank.py --nt-file training/data/seed_Q42.nt --output training/data/pagerank_Q42.json
+
+# Run the propgen test, rank-biased
+python training/test_autoregressive_propgen.py \
+    --seed-file training/data/seed_Q42.nt \
+    --output training/data/test_propgen_Q42_vN.nt \
+    --checkpoint training/checkpoints/wikidata_vN.pt \
+    --bpe-tokenizer training/data/tokenizer_bpe.json \
+    --rank-file training/data/pagerank_Q42.json \
+    --max-source-triples 30 --children-per-source 10 \
+    --confidence 0.25 --model-version loka-wikidata-vN
+```
+
+Inspect the output. Compare to the previous version's `_meta.json`: catalog vs semantic predicate ratio, emission volume, citation-pool growth, asymmetric-drop count. These are the headline numbers for the DEVLOG entry.
+
+### 4. DEVLOG entry
+
+Append a new top-of-file section to `DEVLOG.md`, mirroring the v7/v8 entry structure:
+
+- Headline one-liner (what changed, what improved/regressed)
+- Per-epoch perplexity table from the training log
+- Generation-comparison table (vN vs vN-1 vs older comparisons that still matter)
+- Selected outputs with raw model emissions (don't hide BPE artifacts — they're real)
+- Status block: where the checkpoint lives, HF tag, MODEL.json state, next planned step
+
+### 5. paper/paper.md
+
+Add `§5.X` for vN under "Experiments", with the same table structure as the DEVLOG entry. Update the abstract to past-tense with the new headline number. Add the new tag to the snapshot list at the top of the paper.
+
+### 6. Push checkpoint to Hugging Face
+
+```bash
+python tools/hf_snapshot.py --user EmmaLeonhart --snapshot-name vN --no-loka-data
+```
+
+This auto-discovers all `wikidata_v*.pt` in `training/checkpoints/`, uploads the new ones, tags `vN`, and **regenerates the dataset README** so the description on https://huggingface.co/datasets/EmmaLeonhart/loka reflects the current pin. The README template lives in `tools/hf_snapshot.py` (`README_TEMPLATE` + `render_readme()`); when fields change, update the template, not just MODEL.json.
+
+### 7. Pin the new version
+
+Edit `MODEL.json`: bump `name`, `version`, `released`, `revision`, and `files.checkpoint.{in_repo,local}`. Rewrite `notes` to describe what's distinctive about this version (architecture changes, corpus changes, headline result). The notes are visible in the HF README via the `{{LATEST_*}}` placeholders.
+
+### 8. Commit + push
+
+One commit covers DEVLOG + paper + MODEL.json + training log. Push triggers `.github/workflows/papers-ci.yml` which submits the paper to clawRxiv for AI peer review. A second push (after the paper-CI cron polishes §5.X for the reviewer) is fine — that's what the remote crons set up via the `schedule` skill are for.
+
+### What goes wrong + recovery
+
+- **HF push uploaded the wrong checkpoint** (the v8 case in commit `4c996b9`'s history): `tools/hf_snapshot.py` was hardcoding the file list to v3–v6 and ignoring v7+. The `_discover_model_files()` helper now globs `wikidata_v*.pt`, so this is fixed.
+- **HF README is stale**: `upload_readme()` (was `maybe_upload_readme`) now always overwrites the dataset README on HF on every push. Was conditional before; the description had drifted to v3/v4-era content for months.
+- **`wikidata_hf_import.py` short-circuits at startup**: it reads `wikidata_hf_import_state.json` and exits if cumulative inserts already exceed `--max-triples`. The training cron stashes that file per-cycle to avoid this.
+- **`/triples` wedges mid-ingest**: was a sled per-triple-transaction problem (3-4 sled transactions per N-Triple line, faster than sled's compactor could drain). Fix in commit-after-this: `PersistentStore::insert_batch` does one transaction per request. No more synchronous `flush()` in the request path.
+- **MODEL.json pinned to a non-existent revision**: the v6 tag confusion (`v6` vs `v6-bpe`). Always confirm the tag exists on HF before committing the MODEL.json bump.
+
+### What `tools/training_cron.py` does for you
+
+The cron loop automates steps 1–8 for v9+ on a 12-hour interval. It uses fresh per-cycle Loka instances (`loka-data-cron-cN`), per-cycle HF import state stashing, free-disk gating, and propgen tests with PageRank biasing. It does *not* polish paper prose — that's what the remote crons created via the `schedule` skill are for (they fire on a separate schedule and run paper edits via `git pull → edit → push`, which triggers `papers-ci.yml`).
+
+---
+
 ## Core Philosophy — Read This First
 
 These are non-negotiable. Do not add features that violate them.

@@ -892,6 +892,16 @@ pub struct InsertTriplesResponse {
 }
 
 /// POST /triples — accepts N-Triples in the request body.
+///
+/// The persistent-store write path uses one sled transaction per request
+/// (via `PersistentStore::insert_batch`) rather than one transaction per
+/// triple. This fixes the engine-bug-at-scale documented in paper §6.1:
+/// the old per-triple transaction loop wedged sled at ~100k-triple POSTs
+/// because it generated 3-4 sled transactions per triple, faster than
+/// sled's internal compactor could drain. Single-transaction batches keep
+/// the WAL bounded; the synchronous `flush()` that used to run at the end
+/// of every request is also gone — sled flushes on its own periodic
+/// schedule and on Drop, which is sufficient durability for our workload.
 async fn insert_triples(
     State(state): State<Arc<AppState>>,
     body: String,
@@ -905,7 +915,13 @@ async fn insert_triples(
         .write()
         .map_err(|e| ProtoError::BadRequest(format!("lock poisoned: {}", e)))?;
 
-    let mut inserted = 0usize;
+    // Collect all rows we'll need to persist so we can hand them to sled
+    // as a single transaction at the end. Each `BatchInsert` carries the
+    // computed Triple plus the string forms of S/P/O — sled needs the
+    // strings inside the transaction so terms_forward/terms_reverse stay
+    // consistent with the SPO/POS/OSP keys.
+    let mut batch: Vec<loka_core::BatchInsert> = Vec::new();
+    let mut inserted_in_memory = 0usize;
     let mut errors = Vec::new();
 
     for (line_no, line) in body.lines().enumerate() {
@@ -916,100 +932,83 @@ async fn insert_triples(
 
         // If the subject is a quoted triple, intern the inner triple
         // and compute a content-addressed ID for it.
-        let s_id = if let Some((inner_s, inner_p, inner_o)) = &parsed.inner_subject {
+        let (s_id, inner_s_batch) = if let Some((inner_s, inner_p, inner_o)) = &parsed.inner_subject
+        {
             let is_id = dict.intern(inner_s);
             let ip_id = dict.intern(inner_p);
             let io_id = intern_object(&mut dict, inner_o);
             let inner_triple = loka_core::Triple::new(is_id, ip_id, io_id);
             let _ = store.insert(inner_triple);
-            if let Some(ref ps_lock) = state.persistent {
-                let ps = ps_lock
-                    .write()
-                    .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?;
-                ps.intern(inner_s)
-                    .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
-                ps.intern(inner_p)
-                    .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
-                ps.intern(inner_o)
-                    .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
-                // The inner triple of an RDF-star annotation is allowed to
-                // already exist — that's the common case when annotations
-                // are added to a fact that's been stored before. Mirror the
-                // in-memory branch above which already discards the result.
-                match ps.insert(inner_triple) {
-                    Ok(()) | Err(loka_core::CoreError::DuplicateTriple) => {}
-                    Err(e) => return Err(ProtoError::BadRequest(format!("persist: {}", e))),
-                }
-            }
-            loka_core::quoted_triple_id(is_id, ip_id, io_id)
+            let inner_batch = state.persistent.as_ref().map(|_| loka_core::BatchInsert {
+                triple: inner_triple,
+                subject: inner_s.clone(),
+                predicate: inner_p.clone(),
+                object: inner_o.clone(),
+            });
+            (loka_core::quoted_triple_id(is_id, ip_id, io_id), inner_batch)
         } else {
-            dict.intern(&parsed.subject)
+            (dict.intern(&parsed.subject), None)
         };
+        if let Some(b) = inner_s_batch {
+            batch.push(b);
+        }
 
         let p_id = dict.intern(&parsed.predicate);
 
         // If the object is a quoted triple, intern it too
-        let o_id = if let Some((inner_s, inner_p, inner_o)) = &parsed.inner_object {
+        let (o_id, inner_o_batch) = if let Some((inner_s, inner_p, inner_o)) = &parsed.inner_object
+        {
             let is_id = dict.intern(inner_s);
             let ip_id = dict.intern(inner_p);
             let io_id = intern_object(&mut dict, inner_o);
             let inner_triple = loka_core::Triple::new(is_id, ip_id, io_id);
             let _ = store.insert(inner_triple);
-            if let Some(ref ps_lock) = state.persistent {
-                let ps = ps_lock
-                    .write()
-                    .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?;
-                ps.intern(inner_s)
-                    .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
-                ps.intern(inner_p)
-                    .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
-                ps.intern(inner_o)
-                    .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
-                match ps.insert(inner_triple) {
-                    Ok(()) | Err(loka_core::CoreError::DuplicateTriple) => {}
-                    Err(e) => return Err(ProtoError::BadRequest(format!("persist: {}", e))),
-                }
-            }
-            loka_core::quoted_triple_id(is_id, ip_id, io_id)
+            let inner_batch = state.persistent.as_ref().map(|_| loka_core::BatchInsert {
+                triple: inner_triple,
+                subject: inner_s.clone(),
+                predicate: inner_p.clone(),
+                object: inner_o.clone(),
+            });
+            (loka_core::quoted_triple_id(is_id, ip_id, io_id), inner_batch)
         } else {
-            intern_object(&mut dict, &parsed.object)
+            (intern_object(&mut dict, &parsed.object), None)
         };
+        if let Some(b) = inner_o_batch {
+            batch.push(b);
+        }
 
         let triple = loka_core::Triple::new(s_id, p_id, o_id);
         match store.insert(triple) {
             Ok(()) => {
-                // Write through to persistent store
-                if let Some(ref ps_lock) = state.persistent {
-                    let ps = ps_lock
-                        .write()
-                        .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?;
-                    ps.intern(&parsed.subject)
-                        .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
-                    ps.intern(&parsed.predicate)
-                        .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
-                    ps.intern(&parsed.object)
-                        .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
-                    ps.insert(triple)
-                        .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
+                if state.persistent.is_some() {
+                    batch.push(loka_core::BatchInsert {
+                        triple,
+                        subject: parsed.subject.clone(),
+                        predicate: parsed.predicate.clone(),
+                        object: parsed.object.clone(),
+                    });
                 }
-                inserted += 1;
+                inserted_in_memory += 1;
             }
             Err(e) => errors.push(format!("line {}: {}", line_no + 1, e)),
         }
     }
 
-    // Flush persistent store to ensure durability
+    // One sled transaction for the whole batch. No synchronous flush.
     if let Some(ref ps_lock) = state.persistent {
-        if inserted > 0 {
+        if !batch.is_empty() {
             let ps = ps_lock
-                .read()
+                .write()
                 .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?;
-            ps.flush()
-                .map_err(|e| ProtoError::BadRequest(format!("flush: {}", e)))?;
+            ps.insert_batch(&batch)
+                .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
         }
     }
 
-    Ok(Json(InsertTriplesResponse { inserted, errors }))
+    Ok(Json(InsertTriplesResponse {
+        inserted: inserted_in_memory,
+        errors,
+    }))
 }
 
 /// Intern an object term, handling typed literals specially.
