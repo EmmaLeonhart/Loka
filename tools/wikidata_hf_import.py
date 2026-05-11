@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import io
 import json
+import os
 import signal
 import sys
 import time
@@ -29,7 +30,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="repla
 
 # ── Configuration ────────────────────────────────────────────────────────────
 
-LOKA_ENDPOINT = "http://localhost:3030"
+LOKA_ENDPOINT = os.environ.get("LOKA_ENDPOINT", "http://localhost:3030")
 WDT_PREFIX = "http://www.wikidata.org/prop/direct"
 WD_ENTITY_PREFIX = "http://www.wikidata.org/entity"
 STATE_PATH = Path("wikidata_hf_import_state.json")
