@@ -1,14 +1,14 @@
 {
-  "name": "loka-wikidata-v9",
-  "version": "v9",
+  "name": "loka-wikidata-v10",
+  "version": "v10",
   "released": "2026-05-11",
   "repo_id": "EmmaLeonhart/loka",
   "repo_type": "dataset",
-  "revision": "v9",
+  "revision": "v10",
   "files": {
     "checkpoint": {
-      "in_repo": "checkpoints/wikidata_v9.pt",
-      "local": "training/checkpoints/wikidata_v9.pt",
+      "in_repo": "checkpoints/wikidata_v10.pt",
+      "local": "training/checkpoints/wikidata_v10.pt",
       "size_mb": 178.2
     },
     "vocab": {
