@@ -138,51 +138,34 @@ def start_loka(port: int, data_dir: Path) -> subprocess.Popen:
     )
 
 
-def hf_import(port: int, max_triples: int) -> None:
+def hf_import(port: int, max_triples: int, data_dir: Path) -> None:
     """Stream from the philippesaade/wikidata HF dataset into the running Loka.
 
-    Each cron cycle uses a fresh Loka instance with an empty data dir, so the
-    persistent `wikidata_import_state.json` from prior runs (which records
-    "5M triples already inserted into a now-vanished Loka") would cause the
-    importer to short-circuit. Clear it for the duration of the cycle and
-    restore it afterward.
+    The import-resume state file lives INSIDE the per-cycle Loka data dir
+    (`<data_dir>/import_state.json`). That ties resume state to the data
+    dir it describes:
+
+      - A killed cycle picks up where it left off when restarted (we point
+        the importer at the same data dir → same state).
+      - Cross-cycle interference is impossible (each cycle's state lives
+        in its own dir).
+      - When the data dir is cleaned, the state file goes with it.
+
+    Replaces the old "stash and restore the global state file" pattern
+    (commits 074ca4c / 440bb55 / a506f87), which had three independent
+    bugs in the same code path and still produced a dedup-loop on the
+    2026-05-11 v9 cycle restart.
     """
     log(f"HF import (max {max_triples:,} triples) into Loka on :{port}")
-    # The HF import uses `wikidata_hf_import_state.json` (note `_hf_`), not
-    # the legacy `wikidata_import_state.json` from the BFS importer.
-    state_path = REPO_ROOT / "wikidata_hf_import_state.json"
-    backup_path = REPO_ROOT / "wikidata_hf_import_state.json.cron-backup"
-    if state_path.exists():
-        if backup_path.exists():
-            # Leftover backup from a previously-failed cycle. Trust the
-            # current state more than a stale backup (the backup may be
-            # the v6 import state from before the cron loop existed); the
-            # current file is at worst from the previous cron cycle.
-            log(f"Removing stale {backup_path.name} (current state takes precedence)")
-            backup_path.unlink()
-        log(f"Stashing existing state file to {backup_path.name}")
-        # os.replace is atomic on Windows AND overwrites existing dest;
-        # Path.rename errors when dest exists on Windows.
-        os.replace(state_path, backup_path)
+    state_path = data_dir / "import_state.json"
     env = os.environ.copy()
     env["LOKA_ENDPOINT"] = f"http://localhost:{port}"
-    try:
-        subprocess.run(
-            [sys.executable, "tools/wikidata_hf_import.py",
-             "--max-triples", str(max_triples)],
-            cwd=REPO_ROOT, env=env, check=True,
-        )
-    finally:
-        # Restore the original state file (or delete the cycle's state if
-        # there wasn't an original). state_path is the right name —
-        # `wikidata_hf_import_state.json` with the `_hf_`. The cron's
-        # per-cycle state file the importer just wrote is uninteresting
-        # once this cycle is done.
-        if backup_path.exists():
-            os.replace(backup_path, state_path)
-            log("Restored original state file.")
-        elif state_path.exists():
-            state_path.unlink()
+    subprocess.run(
+        [sys.executable, "tools/wikidata_hf_import.py",
+         "--max-triples", str(max_triples),
+         "--state-path", str(state_path)],
+        cwd=REPO_ROOT, env=env, check=True,
+    )
 
 
 def preprocess_to_corpus(port: int, output: Path) -> None:
@@ -416,7 +399,7 @@ def cycle(args, cycle_idx: int) -> None:
             else:
                 log("Loka failed to start within 30s; aborting cycle.")
                 return
-            hf_import(port, args.max_triples_per_cycle)
+            hf_import(port, args.max_triples_per_cycle, data_dir)
             corpus = DATA / f"triples_v{next_version}.txt"
             preprocess_to_corpus(port, corpus)
         finally:

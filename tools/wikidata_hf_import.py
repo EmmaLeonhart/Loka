@@ -33,7 +33,10 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="repla
 LOKA_ENDPOINT = os.environ.get("LOKA_ENDPOINT", "http://localhost:3030")
 WDT_PREFIX = "http://www.wikidata.org/prop/direct"
 WD_ENTITY_PREFIX = "http://www.wikidata.org/entity"
-STATE_PATH = Path("wikidata_hf_import_state.json")
+DEFAULT_STATE_PATH = Path("wikidata_hf_import_state.json")
+# Overridable by --state-path or LOKA_HF_IMPORT_STATE env var; mutated at
+# parse time so the rest of the module still references the global.
+STATE_PATH = DEFAULT_STATE_PATH
 
 # Wikidata datatypes whose `datavalue` field is a plain string, not a dict.
 STRING_DATATYPES = {
@@ -287,7 +290,22 @@ def main() -> None:
         action="store_true",
         help="Include rank=deprecated claims (default: skip them).",
     )
+    parser.add_argument(
+        "--state-path",
+        default=os.environ.get("LOKA_HF_IMPORT_STATE", str(DEFAULT_STATE_PATH)),
+        help="Path to the resume-state JSON. Defaults to "
+             "$LOKA_HF_IMPORT_STATE or ./wikidata_hf_import_state.json. "
+             "Use a per-Loka-data-dir path when running multiple imports "
+             "into different stores (e.g. training_cron.py points this at "
+             "the per-cycle data dir so each cycle resumes independently).",
+    )
     args = parser.parse_args()
+
+    # Allow --state-path to override the module-level default. The rest of
+    # the script reads STATE_PATH so we mutate the global rather than
+    # threading the path through every save/restore callsite.
+    global STATE_PATH
+    STATE_PATH = Path(args.state_path)
 
     if not loka_health():
         print(f"[ERROR] Loka not running at {LOKA_ENDPOINT}", flush=True)
