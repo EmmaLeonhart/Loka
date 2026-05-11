@@ -139,15 +139,38 @@ def start_loka(port: int, data_dir: Path) -> subprocess.Popen:
 
 
 def hf_import(port: int, max_triples: int) -> None:
-    """Stream from the philippesaade/wikidata HF dataset into the running Loka."""
+    """Stream from the philippesaade/wikidata HF dataset into the running Loka.
+
+    Each cron cycle uses a fresh Loka instance with an empty data dir, so the
+    persistent `wikidata_import_state.json` from prior runs (which records
+    "5M triples already inserted into a now-vanished Loka") would cause the
+    importer to short-circuit. Clear it for the duration of the cycle and
+    restore it afterward.
+    """
     log(f"HF import (max {max_triples:,} triples) into Loka on :{port}")
+    state_path = REPO_ROOT / "wikidata_import_state.json"
+    backup_path = REPO_ROOT / "wikidata_import_state.json.cron-backup"
+    if state_path.exists():
+        log(f"Stashing existing state file to {backup_path.name}")
+        state_path.rename(backup_path)
     env = os.environ.copy()
     env["LOKA_ENDPOINT"] = f"http://localhost:{port}"
-    subprocess.run(
-        [sys.executable, "tools/wikidata_hf_import.py",
-         "--max-triples", str(max_triples)],
-        cwd=REPO_ROOT, env=env, check=True,
-    )
+    try:
+        subprocess.run(
+            [sys.executable, "tools/wikidata_hf_import.py",
+             "--max-triples", str(max_triples)],
+            cwd=REPO_ROOT, env=env, check=True,
+        )
+    finally:
+        # Replace the cycle's state file with the original (or delete it if
+        # there wasn't one). The cron's per-cycle state is uninteresting once
+        # this cycle is done.
+        cycle_state = REPO_ROOT / "wikidata_import_state.json"
+        if cycle_state.exists():
+            cycle_state.unlink()
+        if backup_path.exists():
+            backup_path.rename(state_path)
+            log("Restored original state file.")
 
 
 def preprocess_to_corpus(port: int, output: Path) -> None:
