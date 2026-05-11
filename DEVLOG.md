@@ -8,6 +8,48 @@ The "why" matters more than the "what." Per-commit detail lives in `git log`. Th
 
 ---
 
+## 2026-05-11 — v9 cron fired; no v9 results yet
+
+**Cron:** `trig_v9_ship_pipeline` · fired ~2026-05-11T12:00Z (estimated).
+
+**Repo state on arrival:**
+
+- `MODEL.json` pinned to **v8** (`loka-wikidata-v8`, final ppl 64.65, 20 epochs on 184k-triple cleaned corpus).
+- No `training/logs/v9_train.log`. No `training/checkpoints/wikidata_v9.pt`. No v9 section in `paper/paper.md`. DEVLOG had no 2026-05-11 v9 entry.
+- `wikidata_hf_import_state.json` absent at repo root — cleared by the previous cron session (commit `074ca4c`, `training_cron: stash + clear HF state file per cycle`).
+- Most recent commits before this cron were maintenance on `tools/training_cron.py` (state-file path fix, per-cycle stash logic) and editorial polish of paper §5.6 — **no new training was kicked off remotely**.
+
+**Why v9 hasn't started:**
+
+The previous cron session (fired ~4.5 h ago, SHA range `6dcb5cc`→`d68d5c0`) spent its cycle debugging `training_cron.py` rather than running a training pass. The script is now fixed, but it only executes on the local laptop — no GPU is available in the remote cron environment. The v9 pipeline requires the local machine to be running `tools/training_cron.py` (or an equivalent manual sequence) so it can:
+
+1. Run `python tools/wikidata_hf_import.py --max-triples 5000000` to pull a 3–5× larger Wikidata slice.
+2. Run `python training/preprocess.py` to rebuild the training file with the v7-era datatype filters.
+3. Train v9 from scratch on the expanded corpus.
+4. Run the Q42-seed propgen test, write DEVLOG + paper §5.7, push checkpoint to HF, commit, push.
+
+**What to do when back at the laptop:**
+
+```bash
+# Confirm training_cron.py is not already running:
+pgrep -af training_cron
+
+# If not running, start it (handles HF import + train + ship automatically):
+python tools/training_cron.py
+```
+
+Alternatively, to run the import and first training pass manually:
+
+```bash
+python tools/wikidata_hf_import.py --max-triples 5000000
+python training/preprocess.py
+python training/train.py  # then test + ship as per DEVLOG §v8 notes
+```
+
+**No v8 loose ends** — v8 checkpoint is on HF (`EmmaLeonhart/loka@v8`), `MODEL.json` is pinned, paper §5.6 is polished.
+
+---
+
 ## 2026-05-10 (later still) — v8 trained: 20 epochs on cleaned corpus, ppl 64.65
 
 Headline: **the cleaned v7 corpus had a lot more signal in it than 5 epochs surfaced.** v8 is the same 44.5M-parameter BPE architecture trained on the same 184,458-triple v7 corpus, but for 20 epochs from random init instead of 5. Final perplexity **64.65** — well below v5 (84.85), v6 (194.98) and v7 (192.63). Loss was *still descending* at epoch 20 (4.20 → 4.19 → 4.17), so this corpus is not yet saturated even at 20× passes.
@@ -477,5 +519,3 @@ By the end of the first 48 hours the project had: a working engine, a working SP
 - **Narrative, not flat lists.** Per-commit detail belongs in `git log`. Devlog entries explain *why*.
 - **Headlines first.** A reader skimming for "what changed in the last month" should be able to get it from the first paragraph of each section.
 - **Rebrand reminder.** "Loka" still appears in code and on the website; "Loka" is the model/data distribution name, currently only on Hugging Face. The repo rename is pending.
-
-Status of in-flight work always lives in `status.md`, not here. This document is the record; `status.md` is the dashboard.
