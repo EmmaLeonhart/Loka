@@ -161,7 +161,9 @@ def hf_import(port: int, max_triples: int) -> None:
             log(f"Removing stale {backup_path.name} (current state takes precedence)")
             backup_path.unlink()
         log(f"Stashing existing state file to {backup_path.name}")
-        state_path.rename(backup_path)
+        # os.replace is atomic on Windows AND overwrites existing dest;
+        # Path.rename errors when dest exists on Windows.
+        os.replace(state_path, backup_path)
     env = os.environ.copy()
     env["LOKA_ENDPOINT"] = f"http://localhost:{port}"
     try:
@@ -171,15 +173,16 @@ def hf_import(port: int, max_triples: int) -> None:
             cwd=REPO_ROOT, env=env, check=True,
         )
     finally:
-        # Replace the cycle's state file with the original (or delete it if
-        # there wasn't one). The cron's per-cycle state is uninteresting once
-        # this cycle is done.
-        cycle_state = REPO_ROOT / "wikidata_import_state.json"
-        if cycle_state.exists():
-            cycle_state.unlink()
+        # Restore the original state file (or delete the cycle's state if
+        # there wasn't an original). state_path is the right name —
+        # `wikidata_hf_import_state.json` with the `_hf_`. The cron's
+        # per-cycle state file the importer just wrote is uninteresting
+        # once this cycle is done.
         if backup_path.exists():
-            backup_path.rename(state_path)
+            os.replace(backup_path, state_path)
             log("Restored original state file.")
+        elif state_path.exists():
+            state_path.unlink()
 
 
 def preprocess_to_corpus(port: int, output: Path) -> None:
