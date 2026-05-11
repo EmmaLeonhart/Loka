@@ -148,8 +148,10 @@ def hf_import(port: int, max_triples: int) -> None:
     restore it afterward.
     """
     log(f"HF import (max {max_triples:,} triples) into Loka on :{port}")
-    state_path = REPO_ROOT / "wikidata_import_state.json"
-    backup_path = REPO_ROOT / "wikidata_import_state.json.cron-backup"
+    # The HF import uses `wikidata_hf_import_state.json` (note `_hf_`), not
+    # the legacy `wikidata_import_state.json` from the BFS importer.
+    state_path = REPO_ROOT / "wikidata_hf_import_state.json"
+    backup_path = REPO_ROOT / "wikidata_hf_import_state.json.cron-backup"
     if state_path.exists():
         log(f"Stashing existing state file to {backup_path.name}")
         state_path.rename(backup_path)
