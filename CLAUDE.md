@@ -12,6 +12,7 @@ Full architecture: see `docs/architecture.md`.
 
 ## Workflow Rules
 
+- **Quiet windows.** Sometimes the user explicitly requests a no-commit / no-push window — for example, "do not commit and push anything until 8 hours from now" while a downstream review pipeline catches up. Respect the window exactly. The default "commit early and often" rule below is suspended during quiet windows. The user will declare the window verbally; record the declared end-time in DEVLOG.md so a future session can see it. The 2026-05-11 declaration was: "no commits/pushes for 8 h after 22:35 UTC; then a post-eval cron fires every 6 h starting +12 h, for up to 48 h total." See `tools/post_eval_cron.py`.
 - **Commit early and often.** Every meaningful change gets a commit with a clear message explaining *why*, not just what.
 - **Do not enter planning-only modes.** All thinking must produce files and commits. If scope is unclear, create a `planning/` directory and write `.md` files there instead of using an internal planning mode.
 - **Keep this file up to date.** As the project takes shape, record architectural decisions, conventions, and anything needed to work effectively in this repo.
