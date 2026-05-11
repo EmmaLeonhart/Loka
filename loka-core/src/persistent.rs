@@ -17,6 +17,18 @@ use crate::id::TermId;
 use crate::temporal::{decode_tspo_key, tspo_key, TemporalSignifier};
 use crate::triple::Triple;
 
+/// One row for `PersistentStore::insert_batch`. The caller provides the
+/// pre-computed `Triple` (so SPO/POS/OSP keys can be derived) plus the
+/// string forms of subject / predicate / object so we can intern them
+/// inside the same sled transaction.
+#[derive(Debug, Clone)]
+pub struct BatchInsert {
+    pub triple: Triple,
+    pub subject: String,
+    pub predicate: String,
+    pub object: String,
+}
+
 /// A persistent triple store backed by sled.
 ///
 /// Three sled trees provide SPO/POS/OSP indexes with the same semantics
@@ -119,6 +131,90 @@ impl PersistentStore {
                 sled::transaction::TransactionError::Abort(()) => CoreError::DuplicateTriple,
                 sled::transaction::TransactionError::Storage(e) => CoreError::Sled(e),
             })
+    }
+
+    /// Insert a batch of triples + their string terms in a single sled
+    /// transaction across all 5 trees (spo, pos, osp, terms_forward,
+    /// terms_reverse).
+    ///
+    /// Why this exists: the naive `insert` + `intern` loop calls sled
+    /// transactions per triple (≥ 4 transactions per N-Triple line:
+    /// 3 interns + 1 insert). Under sustained ingest of ~100k+ triples in
+    /// one POST request, sled accumulates uncommitted write-ahead-log work
+    /// faster than its internal compactor can drain, and the writer thread
+    /// eventually wedges (`POST /triples` times out, `/health` keeps
+    /// responding) — the engine-bug-at-scale documented in paper §6.1.
+    ///
+    /// One transaction per batch (rather than per triple) reduces sled
+    /// internal book-keeping by 3–4 orders of magnitude on bulk ingest and
+    /// keeps the WAL bounded.
+    ///
+    /// Each `BatchInsert` is one row to ingest. The caller is responsible
+    /// for in-memory ID assignment; we just need to know the string forms
+    /// of subject/predicate/object plus the corresponding pre-computed
+    /// `Triple` so we can write the SPO/POS/OSP keys atomically.
+    ///
+    /// Returns the number of triples that were *newly* inserted (duplicates
+    /// silently skipped — they're not errors at batch scale).
+    pub fn insert_batch(&self, items: &[BatchInsert]) -> Result<usize> {
+        // sled transactions take `Fn` (not `FnMut`) closures and may be
+        // re-invoked on optimistic-concurrency conflict, so we can't mutate
+        // captured variables. The counter and "inserted" count are local
+        // to each closure invocation; we read the persisted counter from
+        // `meta` at the start of each attempt and return the new count.
+        let inserted = (
+            &self.spo,
+            &self.pos,
+            &self.osp,
+            &self.terms_forward,
+            &self.terms_reverse,
+            &self.meta,
+        )
+            .transaction(
+                |(spo, pos, osp, terms_fwd, terms_rev, meta)| -> sled::transaction::ConflictableTransactionResult<usize, ()> {
+                    let mut next_id_counter = match meta.get(NEXT_ID_KEY)? {
+                        Some(b) if b.len() == 8 => {
+                            let mut arr = [0u8; 8];
+                            arr.copy_from_slice(&b);
+                            u64::from_le_bytes(arr)
+                        }
+                        _ => 1u64,
+                    };
+                    let mut inserted_this_attempt = 0usize;
+
+                    for item in items {
+                        for term in [
+                            item.subject.as_str(),
+                            item.predicate.as_str(),
+                            item.object.as_str(),
+                        ] {
+                            if terms_fwd.get(term.as_bytes())?.is_none() {
+                                let id_bytes = next_id_counter.to_le_bytes();
+                                terms_fwd.insert(term.as_bytes(), &id_bytes)?;
+                                terms_rev.insert(&id_bytes, term.as_bytes())?;
+                                next_id_counter += 1;
+                            }
+                        }
+
+                        let spo_key = item.triple.spo_key();
+                        if spo.get(spo_key)?.is_none() {
+                            spo.insert(spo_key.as_ref(), &[] as &[u8])?;
+                            pos.insert(item.triple.pos_key().as_ref(), &[] as &[u8])?;
+                            osp.insert(item.triple.osp_key().as_ref(), &[] as &[u8])?;
+                            inserted_this_attempt += 1;
+                        }
+                    }
+
+                    meta.insert(NEXT_ID_KEY, &next_id_counter.to_le_bytes())?;
+                    Ok(inserted_this_attempt)
+                },
+            )
+            .map_err(|e| match e {
+                sled::transaction::TransactionError::Abort(()) => CoreError::DuplicateTriple,
+                sled::transaction::TransactionError::Storage(e) => CoreError::Sled(e),
+            })?;
+
+        Ok(inserted)
     }
 
     /// Remove a triple atomically across all three indexes.

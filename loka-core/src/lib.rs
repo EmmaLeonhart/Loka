@@ -24,7 +24,7 @@ pub use ntriples::{
     parse_nquads_line, parse_ntriples_line, parse_ntriples_star_line, ParsedTriple,
     QUOTED_TRIPLE_MARKER,
 };
-pub use persistent::PersistentStore;
+pub use persistent::{BatchInsert, PersistentStore};
 pub use pseudotable::{
     batch_gather, batch_gather_multi, batch_gather_nodes, compute_fan_in,
     discover_deep_pseudo_tables, discover_pseudo_tables, extract_node_properties,
