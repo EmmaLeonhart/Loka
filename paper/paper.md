@@ -1,6 +1,6 @@
 # Loka: Generative Citation in a Neuro-Symbolic World Model over RDF-Star Knowledge Graphs
 
-**Code:** <https://github.com/EmmaLeonhart/Loka> (engine release `v0.4.0`: <https://github.com/EmmaLeonhart/Loka/releases/tag/v0.4.0>) &middot; **Corpus + checkpoints:** <https://huggingface.co/datasets/EmmaLeonhart/loka> (snapshot tags `v3`, `v4`, `v5`, `v6-bpe`) &middot; **Source dataset:** <https://huggingface.co/datasets/philippesaade/wikidata>
+**Code:** <https://github.com/EmmaLeonhart/Loka> (engine release `v0.4.0`: <https://github.com/EmmaLeonhart/Loka/releases/tag/v0.4.0>) &middot; **Corpus + checkpoints:** <https://huggingface.co/datasets/EmmaLeonhart/loka> (snapshot tags `v3`, `v4`, `v5`, `v6-bpe`, `v7`, `v8`) &middot; **Source dataset:** <https://huggingface.co/datasets/philippesaade/wikidata>
 
 ---
 
@@ -11,6 +11,8 @@
 The technical contribution is **generative citation**: a closed loop in which the transformer's predicted triples are written back into the triplestore as RDF-star annotations whose subject is the *quoted* generated triple and whose object is *another* quoted triple — a directly cited piece of context the prediction was conditioned on. A reserved system namespace (`http://loka.dev/provenance/`) marks every system-emitted predicate, which is enforced at three layers (corpus stripping, candidate filtering, emit-time guard) so the model never sees, learns to predict, or hallucinates a citation predicate. Hallucinated *citations* (the model picking the wrong context triple as the support) are auditable and filterable like any other generated triple — they degrade like other RDF rather than vanishing into opaque embeddings.
 
 We demonstrate the end-to-end loop on a 5,055,385-triple slice of Wikidata (philippesaade/wikidata, streamed from Hugging Face), with role-aware masked-S/P/O training producing models from 16M to 44M parameters that reach final perplexities of 92.5 and 84.85 respectively over five epochs. Predictions emerge that are not memorized templates (e.g., `Comtesse de Die | educated at | university of halle` correctly identifies Halle, where she studied; `Abbas Mirza | has works in the collection | metropolitan museum of museum` correctly identifies the Met). We characterize the failure modes — mode collapse on common connector tokens, mitigated at decode time by a *cumulative* repetition penalty rather than at training time — and document two engine-level bugs surfaced by the data scale.
+
+We then trace a substantial corpus-quality finding from a post-training behavioural test (§5.5): the v6 model produced confident catalog-format hallucinations (`ISNI -> 00000000`, `Freebase -> /m/0c__9`) on identifier predicates, and worse, the catalog-format shape *leaked onto unrelated predicates* (`instance of -> + Ġof - 00 - 03 T 00`, a Wikidata date-prefix string, on 15 different subjects in a single 30-source run). Investigation showed that 49.6 % of the v6 corpus was Wikidata `external-id` predicates (Freebase, ISNI, GND, LCCN, Dewey, etc.) — there are 10,206 such properties on Wikidata, ~80 % of all property *types*. We rebuild the corpus with these removed, drop a further 319 properties of other catalog-shaped datatypes (`url`, `commonsMedia`, lexeme/sense/form, math, geo-shape), and normalise time and quantity literals (strip `+` era prefix, drop `T00:00:00Z` on date-only values). The resulting v7 corpus is 184,458 triples (24 % of v6 by volume) and trains to a comparable perplexity (192.63 vs v6's 194.98) but with the catalog-format hallucinations *vanished* — the model's failure mode shifts from "confidently wrong" to "refuses to emit", which is what we want from a generative-citation system.
 
 ---
 
@@ -265,6 +267,42 @@ v5 picks specific, correct entity tokens (`halle`, `33`, `kosmos 116`) where v4 
 ### 5.4 Pass rate
 
 At threshold 0.4, v4 emits 32/250 candidate predictions; v5 emits a comparable rate. The interesting metric is not pass rate but the *quality of the passing predictions* — and §5.3 carries the qualitative weight.
+
+### 5.5 Catalog-noise discovery and corpus cleanup (v6 → v7)
+
+A post-training behavioural test surfaced a corpus-level finding that reframes everything before it. We ran an auto-regressive proposition-generation protocol on the v6 model: pull a fresh BFS-depth-3 Wikidata neighborhood (183 entities, 14,586 triples, seeded at Q42), and for every source triple in the neighborhood generate up to 10 child triples whose context is the BFS-adjacent set after an asymmetric-cardinality filter, with parallel-subgraph extension. (Protocol details in `planning/autoregressive-propgen-test.md`.)
+
+v6 emitted 52 triples on a 30-source run. The qualitative content is the finding:
+
+- **Confident catalog-format hallucinations.** `British Broadcasting Corporation | ISNI -> "00000000"` (conf 0.754); `Joan of Arc | Library of Congress authority ID -> "n 85 - 8"` (LCCN-shaped, wrong content); `Douglas Adams | Freebase ID -> "/ m / 0 c _ _ 9"` (Freebase format `/m/...`, wrong content). The model has memorised the *shape* of these identifiers and emits format-shaped strings on prompt.
+- **Catalog format leaking onto unrelated predicates.** `instance of -> "+ Ġof - 00 - 03 T 00"` appeared on 15 different subjects in the same 30-source run. This string is a Wikidata date-prefix shape (`+YYYY-MM-DDTHH:MM:SS`) being hallucinated for a predicate (`P31 instance of`) whose objects are entities, not dates. The model has so saturated on catalog/structured-literal patterns that it defaults to format strings on uncertain prompts.
+
+The diagnosis is corpus composition. Wikidata defines an `external-id` datatype for properties whose objects are catalog cross-references (Freebase, ISNI, GND, LCCN, Dewey, etc.). A fresh SPARQL query against `wikibase:propertyType wikibase:ExternalId` returns **10,206** properties — roughly 80 % of all Wikidata property *types*. In the Q42 seed they are 49.6 % of triples by *volume*. On the v6 training corpus the share was similar: 75.7 % of the 757,592-triple file was external-id rows after re-filtering by predicate label. We had been training on a corpus that was three-quarters catalog cross-reference noise.
+
+We rebuild the corpus as v7. The exclusion list is broadened beyond external IDs to include other Wikidata datatypes whose values have no transferable semantic content (`url`, `commonsMedia`, `math`, lexeme/sense/form, `globe-coordinate`, `geo-shape`, `musical-notation`, `tabular-data`, `wikibase-entity-schema`) — 10,525 properties total dropped, against a kept set of `wikibase-item`, `wikibase-property`, `quantity`, `string`, `time`, and `monolingualtext` (2,231 properties). Two other normalisations land at the same time:
+
+1. **Time and quantity literals.** Wikidata serialises positive years as `+YYYY` and dates with a trailing `T00:00:00Z` regardless of precision. The leading `+` is a high-frequency BPE token implicated in the date-shape leak. v7 strips the `+` for positive years (BCE keeps the `-`), drops the `T00:00:00Z` suffix on date-only times, and drops the trailing `Z`. `+2012-10-15T00:00:00Z` → `2012-10-15`; `+1234` → `1234`.
+2. **Monolingual text.** v6 dropped non-English `monolingualtext` values; v7 keeps them in all languages with the `@lang` tag stripped. The model now sees `Tokyo` and `東京` as plain string values (the language information is lost — see §6.2).
+
+The full per-datatype processing spec, with kept/dropped decisions and normalisation rules, is in `planning/wikidata-datatype-processing.md` and in `training/wikidata_excluded_predicates.json`.
+
+We retrain v7 with the same 44.5 M-parameter BPE architecture as v6 for 5 epochs on the cleaned 184,458-triple corpus. Final perplexity 192.63 (v6 was 194.98, statistically tied); wall time 22 min on the same 4070 (v6 took 91 min on the larger noisy corpus). The same 30-source / Q42 seed test:
+
+| | v6 (noisy corpus) | v7 (cleaned) |
+|---|---|---|
+| Total emissions at conf ≥ 0.25 | 52 | 14 |
+| `instance of -> "+ Ġof - 00 - 03 T 00"` (date-shape leak) | 15 instances | **0 instances** |
+| `ISNI ->` confident hallucination | `"00000000"` (0.75) | `"0 ."` (0.71) |
+| `Freebase ID ->` confident hallucination | `"/ m / 0 c _ _ 9"` (0.43) | below threshold |
+| `country of citizenship ->` (semantic predicate) | did not pass | `"Polish âĢĵ Ġof -"` (0.36, da Vinci; right *type* — nationality adjective — wrong content) |
+
+The catalog-format hallucinations are *gone*, not muted. The model's failure mode shifts from "confidently wrong with the right shape" to "refuses to emit", which is the correct direction for a generative-citation system. The price is volume: 14 emissions vs 52, because the model no longer confidently produces format-shaped strings. The loss curve says v7 is undertrained (5.36 → 5.26 still descending at epoch 5); we run v8 next.
+
+### 5.6 v8: training to data-saturation on the cleaned corpus
+
+[v8 in progress as of writing — placeholder. Same 44.5 M architecture, v7 corpus, 20 epochs from random init. ETA ~88 min on the 4070. We will report final perplexity and the same Q42 generation comparison once training completes, plus an analysis of whether the loss curve has actually flattened by epoch 20 or whether the data-starvation signal is still present.]
+
+The wider implication of the v7 numbers is that the corpus is small for the model. At ~600 k tokens after BPE on a 44.5 M-parameter model we are roughly 0.013 tokens per parameter, against a Chinchilla-optimal target of ~20. v8 epochs are a cheap diagnostic for whether more compute on the existing corpus closes the gap or whether we are bottlenecked on data — the next planned step is a much larger HF re-import (target ~5 M useful training triples) followed by v9 from scratch.
 
 ---
 
