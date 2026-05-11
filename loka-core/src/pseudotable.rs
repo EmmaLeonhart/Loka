@@ -1366,7 +1366,7 @@ pub fn discover_pseudo_tables(
         .collect();
 
     // Sort by group size descending so large groups absorb smaller ones.
-    exact_vec.sort_by(|a, b| b.1.len().cmp(&a.1.len()));
+    exact_vec.sort_by_key(|x| std::cmp::Reverse(x.1.len()));
 
     let mut absorbed = vec![false; exact_vec.len()];
 
@@ -1761,7 +1761,7 @@ fn mine_depth2_paths(store: &TripleStore) -> Vec<SubgraphPattern> {
         })
         .collect();
 
-    groups.sort_by(|a, b| b.1.len().cmp(&a.1.len()));
+    groups.sort_by_key(|x| std::cmp::Reverse(x.1.len()));
 
     let mut absorbed = vec![false; groups.len()];
     let mut merged: Vec<(Vec<SubgraphPath>, Vec<TermId>)> = Vec::new();
