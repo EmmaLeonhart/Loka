@@ -240,7 +240,7 @@ def fetch_all_triples(endpoint: str, exclude_generated: bool = True) -> list[dic
             "Content-Type": "application/sparql-query",
             "Accept": "application/sparql-results+json",
         },
-        timeout=300,
+        timeout=3600,  # raised from 300 — at 33M+ triples a full SPARQL dump can take 10-30 min
     )
     resp.raise_for_status()
     return resp.json()["results"]["bindings"]
