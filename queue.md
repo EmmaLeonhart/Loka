@@ -6,6 +6,78 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ---
 
+## 🚨 v11 cycle is staged — read this if you're picking up after a restart
+
+**Date this was written:** 2026-05-13, ~11:30 PT, about 30 min before the v11 training cycle fires.
+
+**Where we are:** the bigger-corpus ingest is **done**. `loka-data-cron-c1/` holds **50,000,521 triples**. v11 has not started training yet. A Windows scheduled task is staged to fire it at noon PT. The user is about to reboot (Windows update); this section is so a fresh session can pick up cleanly.
+
+### What survives the reboot vs what doesn't
+
+| Item | Survives reboot? | Notes |
+|---|---|---|
+| `loka-data-cron-c1/` data dir (5+ GB sled state) | ✅ | The corpus. Don't touch it. |
+| Scheduled task `loka-v11-kickoff` | ✅ | OS-level (`schtasks`), persists across reboot. Trigger: 2026-05-13 12:00:00 PT one-shot. |
+| `tools/v11_kickoff.py` | ✅ | Committed to git. |
+| `target/release/loka.exe` | ✅ | Pre-built binary. |
+| `loka serve` process (port 3030) | ❌ | Killed by reboot. **Must be restarted before `v11_kickoff.py` runs.** |
+| Background HF-importer process | N/A | Already exited cleanly at the 50M cap. |
+
+### Restart steps (do these in order)
+
+1. **Confirm the scheduled task is still registered.** If it was wiped by the update, re-register.
+   ```powershell
+   Get-ScheduledTask -TaskName 'loka-v11-kickoff' | Select State, @{n='NextRun';e={(Get-ScheduledTaskInfo $_).NextRunTime}}
+   ```
+   Expected: `State=Ready, NextRun=2026-05-13 12:00:00`. If missing, re-register — full PowerShell block is in commit `c7f5d68`'s diff (search history for "Register-ScheduledTask -TaskName 'loka-v11-kickoff'").
+
+2. **Restart Loka against the data dir.** Run this in a separate PowerShell window or as a background process:
+   ```powershell
+   target\release\loka.exe serve --data-dir loka-data-cron-c1 --port 3030
+   ```
+   Sled WAL replay on the 5 GB store takes ~30–60 s; `/health` returns 200 only after it finishes.
+
+3. **Verify Loka is up and holds the corpus.** Both must be true before the scheduled task fires:
+   ```powershell
+   Invoke-WebRequest http://localhost:3030/health -TimeoutSec 60
+   # 200 ok
+
+   $body = "SELECT (COUNT(*) AS ?n) WHERE { ?s ?p ?o }"
+   Invoke-WebRequest http://localhost:3030/sparql -Method POST -Body $body `
+     -ContentType "application/sparql-query" -TimeoutSec 1800
+   # Expected: 50,000,521
+   ```
+   The count query takes 5–10 min on 50M triples — that's normal, not a wedge.
+
+4. **Either wait for noon or fire manually.**
+   - **Wait:** at 12:00 PT the scheduled task fires `cmd /c python tools\v11_kickoff.py > training\logs\v11_kickoff_task.log 2>&1` automatically.
+   - **Fire now:** `Start-ScheduledTask -TaskName 'loka-v11-kickoff'` (uses the registered action), or run directly: `python tools\v11_kickoff.py`.
+
+### What v11_kickoff.py does
+
+(Self-contained — re-uses `training_cron.py`'s helpers via direct import.)
+
+1. Stop any running `wikidata_hf_import.py` (no-op now — it exited at 50M).
+2. Verify `/health` and triple count ≥ 33M. Aborts with non-zero exit if either fails.
+3. Preprocess: SPARQL-fetch the corpus, paged at 100k rows/page, write `training/data/triples_v11.txt`. ~30–120 min at 50M scale.
+4. Train v11, **4 epochs**, batch 64, ~52 min/epoch on the 4070 → ~3.5 h total. Per-epoch perplexity in `training/logs/v11_train.log`.
+5. Ship: propgen test (Q42, conf 0.25, 30 sources) → DEVLOG entry → MODEL.json bump → `tools/hf_snapshot.py` push as `v11` tag on `EmmaLeonhart/loka` → `git add` paper/DEVLOG/MODEL.json/train.log → `git commit -m "v11 cron cycle: trained, tested, shipped to HF"` → `git push origin main`.
+
+Completion marker (success): the last line of `training/logs/v11_kickoff.log` is
+```
+=== v11 kickoff DONE — v11 shipped ===
+```
+and `git log -1` shows the v11 commit.
+
+### What to do if something is wrong
+
+- **`v11_kickoff_task.log` empty after noon** → scheduled task didn't run. Check `Get-ScheduledTaskInfo loka-v11-kickoff` for `LastTaskResult`. Common cause: user wasn't logged in; right-click the task in Task Scheduler → Properties → Security options → "Run whether user is logged on or not".
+- **kickoff fails at step 2 (triple count too low)** → Loka didn't reopen the data dir correctly. Stop the loka process, re-run step 2 above, watch `/health` until 200.
+- **kickoff fails at step 4 (training)** → see `training/logs/v11_train.log` for the actual error. Most likely cause: GPU out of memory. Retry with smaller batch (edit `train_version` call site, `--batch-size 32`).
+- **kickoff fails at step 5 (ship)** → checkpoint exists; just re-run `python tools/v11_kickoff.py` skipping training is not currently supported. Manual recovery: call `tc.ship(11)` from a Python REPL.
+
+---
+
 ## Active
 
 In strategic order. Top item is the current focus.
