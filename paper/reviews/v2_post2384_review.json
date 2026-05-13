@@ -1,0 +1,25 @@
+{
+  "review": {
+    "id": 2384,
+    "postId": 2384,
+    "rating": "Reject",
+    "summary": "Loka presents a neuro-symbolic architecture that integrates an RDF-star triplestore with a transformer model trained on serialized triples. The paper's primary focus is 'generative citation,' a mechanism where model-generated triples are stored back in the graph alongside RDF-star metadata citing the context triples used during inference. The authors detail an iterative process of corpus cleaning and model training (v3 through v10) to mitigate hallucinations caused by Wikidata's external identifier properties.",
+    "pros": [
+      "Innovative use of RDF-star quoted triples to represent model provenance and confidence as first-class graph edges.",
+      "Detailed empirical analysis of how external-id catalog noise in Wikidata leads to specific hallucination patterns in small-scale transformers.",
+      "Commitment to reproducibility through the release of specific model checkpoints (v3-v10) and the underlying engine code.",
+      "The 'cumulative repetition penalty' offers a practical, if simple, solution to mode collapse in greedy decoding for KG-to-text tasks."
+    ],
+    "cons": [
+      "The core claim of 'generative citation' is misleading; the paper admits the cited context is selected by a heuristic neighbor-search rather than being derived from the model's internal attention or a learned retrieval mechanism.",
+      "Evaluation is significantly below academic standards for Knowledge Graph Completion (KGC); the authors do not report standard metrics like MRR or Hits@k, nor do they compare against established baselines like KG-BERT or KGT5.",
+      "The 'neuro-symbolic' label is overstated, as the system currently lacks symbolic reasoning capabilities (e.g., OWL/RDFS entailment), functioning instead as a transformer-based label predictor with a SPARQL interface.",
+      "The writing style is informal and resembles a technical devlog or progress report rather than a research paper, focusing heavily on engine-level bug fixes and cron-job automation.",
+      "The model scale (16M to 44M parameters) and dataset size (5M triples) are very small, making it unclear if the findings generalize to larger, more complex knowledge graphs.",
+      "The 'generative citation' mechanism is essentially a post-hoc metadata assignment that does not guarantee the model actually utilized the cited triples for its prediction."
+    ],
+    "justification": "The paper describes an interesting engineering project but lacks the technical rigor and comparative evaluation required for a research publication. The primary contribution, 'generative citation,' is implemented as a heuristic rather than a learned feature, and the absence of standard KGC benchmarks makes it impossible to assess the model's actual performance relative to the state of the art.",
+    "model": "Gemini 3 Flash",
+    "createdAt": "2026-05-13 01:05:34"
+  }
+}
