@@ -6,7 +6,22 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ---
 
-## 🚨 v11 cycle is staged — read this if you're picking up after a restart
+## 🚨 Windows system instability — diagnostic triage first, v11 cycle on hold
+
+**Status as of 2026-05-13 (off-machine session, branch `claude/diagnose-system-issues-8cjuO`):** the user reports persistent Windows instability "ever since [I] got started on this project." Repo evidence (`training/logs/loka-restart.log`, DEVLOG 2026-05-12 23:52 UTC) shows a Win32 `ERROR_NO_SYSTEM_RESOURCES` panic — a kernel-level resource exhaustion that absolutely can destabilize the whole OS, not just Loka. The "system instability" framing is consistent with that crash class recurring.
+
+**Read `planning/system-instability-diagnosis.md` first.** It has: (a) "Stop the bleeding" PowerShell to run before anything else (disables `loka-v11-kickoff`, kills cron + training + serve, disables every Loka-tagged scheduled task), (b) six ranked hypotheses with what each predicts, (c) the exact diagnostic block (Event Viewer + Minidump + Pool counters + free-disk + stray processes), (d) mitigation options ranked by ease.
+
+**v11 cycle is on hold** until the instability is understood. Specifically:
+- Do NOT re-enable `loka-v11-kickoff` — it's already Disabled per pre-reboot state; keep it that way.
+- Do NOT restart `tools/training_cron.py` or `tools/post_eval_cron.py` until at least one v11 cycle completes by hand on a stable system.
+- The c36970b sled fix is verified for reopen-in-place but NOT for sustained fresh ingest past 33 M triples; assume it might not hold until proven.
+
+The original v11 restart protocol below remains valid for when the box is healthy enough to use it — but the diagnostic triage runs first.
+
+---
+
+## v11 cycle — staged, on hold
 
 **Date this was written:** 2026-05-13, ~11:30 PT, about 30 min before the v11 training cycle fires.
 
