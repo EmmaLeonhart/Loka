@@ -46,7 +46,8 @@ The verdict made it clear that a 50M-triple raw-Wikidata training run on this la
    - **Wikidata API step (optional, `--fetch-missing-from-wikidata`)**: for QIDs/PIDs the corpus mentions but doesn't have a label for, query the public Wikidata SPARQL endpoint in batches of 50, write results into the SQLite cache. Polite rate-limit (`--api-rate-seconds`).
    - **Pass 2 ("emit")**: stream every triple again, resolve via SQLite, apply the same normalization rules as the canonical `preprocess.py` (which is imported, not duplicated), write the flat tab-separated corpus.
    - Cache lives at `training/data/wikidata_labels.sqlite` and **persists across runs**. The same script can be re-run incrementally as the corpus grows.
-   - Not yet executed against the 50M corpus — that needs `loka serve` against `loka-data-cron-c1/` which is a sustained query load. Hold for user go-ahead given today's thermal events. Smoke test with `--max-pages 1` is safe to run anytime.
+   - **Running 2026-05-13 ~15:00 PT** — `loka serve` is up against `loka-data-cron-c1/` (PID 26992, port 3030, 50,002,600 triples confirmed). Background task `b9o8jondd` is executing the full streaming preprocess (scan → cache → emit). Log: `training/logs/preprocess_streaming.log`. Output: `training/data/triples_normalized.txt`. Estimated wall-clock 6–12 h at 50M scale, two passes × ~500 100k-row pages each. Wikidata API step deferred until we see the unresolved count from this run (in-corpus rdfs:label rows should cover the majority).
+   - Smoke test against the small `sutra-data` store confirmed the pipeline structurally works (commits `c516276` + `308ae90` for engine-bug-#2 + URL-object guards).
 
 4. **Stage 3 — normalization pass (NEW Python script).**
    - Reads the corpus + the label DB.
