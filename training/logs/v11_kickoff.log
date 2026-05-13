@@ -1,0 +1,6 @@
+[2026-05-12 21:17 Pacific Summer Time] === v11 kickoff start ===
+[2026-05-12 21:17 Pacific Summer Time] port=3030 epochs=4 min_triples=33,000,000 dry_run=True
+[2026-05-12 21:17 Pacific Summer Time] Step 1: stop ingest if running
+[2026-05-12 21:17 Pacific Summer Time] Step 2: verify Loka health + triple count
+[2026-05-12 21:22 Pacific Summer Time] Loka /health green; triple count: 34,976,458
+[2026-05-12 21:22 Pacific Summer Time] dry-run: would now preprocess → train → ship. Exiting cleanly.
