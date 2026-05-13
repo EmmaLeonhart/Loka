@@ -54,8 +54,32 @@ const NEXT_ID_KEY: &[u8] = b"next_term_id";
 
 impl PersistentStore {
     /// Open or create a persistent store at the given path.
+    ///
+    /// Sled is configured explicitly (not via `sled::open`) so we can
+    /// constrain its memory + fsync footprint. Defaults (1 GB cache,
+    /// 500 ms fsync interval, `LowSpaceUsage` mode) panic the periodic
+    /// flusher with Win32 `ERROR_NO_SYSTEM_RESOURCES` (os error 1450)
+    /// at ~33 M triples / 5 GB on Windows — observed on the 2026-05-12
+    /// big-corpus ingest. The combination is too much in-flight write
+    /// activity for the OS I/O manager.
+    ///
+    /// The tuning here cuts both ends of the pressure:
+    /// - `cache_capacity(256 MB)` — quarter of the default. The hot SPO
+    ///   prefix is small; we don't need a gigabyte cached.
+    /// - `flush_every_ms(2000)` — fsync every 2s instead of every 500ms.
+    ///   Quarters the fsync rate. Durability window grows from 0.5s to
+    ///   2s, which is fine for our workload (bulk ingest is replayable
+    ///   from the HF import state file).
+    /// - `mode(HighThroughput)` — sled's "batch more writes before
+    ///   committing" mode. Trades some space-amplification for far less
+    ///   per-fsync work.
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
-        let db = sled::open(path)?;
+        let db = sled::Config::new()
+            .path(path.as_ref())
+            .cache_capacity(256 * 1024 * 1024)
+            .flush_every_ms(Some(2000))
+            .mode(sled::Mode::HighThroughput)
+            .open()?;
         let spo = db.open_tree("spo")?;
         let pos = db.open_tree("pos")?;
         let osp = db.open_tree("osp")?;
