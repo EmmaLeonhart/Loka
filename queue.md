@@ -10,7 +10,7 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 **Date this was written:** 2026-05-13, ~11:30 PT, about 30 min before the v11 training cycle fires.
 
-**Where we are:** the bigger-corpus ingest is **done**. `loka-data-cron-c1/` holds **50,000,521 triples**. v11 has not started training yet. A Windows scheduled task is staged to fire it at noon PT. The user is about to reboot (Windows update); this section is so a fresh session can pick up cleanly.
+**Where we are:** the bigger-corpus ingest is **done**. `loka-data-cron-c1/` holds **50,000,521 triples**. v11 has not started training yet. A Windows scheduled task `loka-v11-kickoff` is registered to fire at noon PT 2026-05-13 — **it was Disabled before the reboot** so it wouldn't fire mid-update and leave a partially-trained checkpoint. **Re-enable or fire it manually when you're ready** (see step 4 below). The user rebooted for a Windows update; this section is so a fresh session can pick up cleanly.
 
 ### What survives the reboot vs what doesn't
 
@@ -25,11 +25,11 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ### Restart steps (do these in order)
 
-1. **Confirm the scheduled task is still registered.** If it was wiped by the update, re-register.
+1. **Confirm the scheduled task is still registered.** It was Disabled pre-reboot — that's expected.
    ```powershell
    Get-ScheduledTask -TaskName 'loka-v11-kickoff' | Select State, @{n='NextRun';e={(Get-ScheduledTaskInfo $_).NextRunTime}}
    ```
-   Expected: `State=Ready, NextRun=2026-05-13 12:00:00`. If missing, re-register — full PowerShell block is in commit `c7f5d68`'s diff (search history for "Register-ScheduledTask -TaskName 'loka-v11-kickoff'").
+   Expected: `State=Disabled, NextRun=2026-05-13 12:00:00`. If the task is **missing entirely** (update wiped it), re-register — full PowerShell block is in commit `c7f5d68`'s diff (search history for "Register-ScheduledTask -TaskName 'loka-v11-kickoff'"). Don't enable yet; do that in step 4 after Loka is back up.
 
 2. **Restart Loka against the data dir.** Run this in a separate PowerShell window or as a background process:
    ```powershell
@@ -49,9 +49,13 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
    ```
    The count query takes 5–10 min on 50M triples — that's normal, not a wedge.
 
-4. **Either wait for noon or fire manually.**
-   - **Wait:** at 12:00 PT the scheduled task fires `cmd /c python tools\v11_kickoff.py > training\logs\v11_kickoff_task.log 2>&1` automatically.
-   - **Fire now:** `Start-ScheduledTask -TaskName 'loka-v11-kickoff'` (uses the registered action), or run directly: `python tools\v11_kickoff.py`.
+4. **Re-enable and either wait or fire manually.** Task is currently Disabled (see step 1).
+   ```powershell
+   Enable-ScheduledTask -TaskName 'loka-v11-kickoff'
+   ```
+   Then either:
+   - **Wait** for noon (if you re-enable before 12:00 PT, it'll auto-fire at the registered trigger time and run `cmd /c python tools\v11_kickoff.py > training\logs\v11_kickoff_task.log 2>&1`).
+   - **Fire now** (recommended if it's already past noon, or if you just want to go): `Start-ScheduledTask -TaskName 'loka-v11-kickoff'` (uses the registered action — logs land in `training\logs\v11_kickoff_task.log`), or run directly without the scheduler: `python tools\v11_kickoff.py`.
 
 ### What v11_kickoff.py does
 
