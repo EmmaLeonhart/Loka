@@ -1,0 +1,1575 @@
+[2026-05-11 07:07 Pacific Summer Time] training_cron starting. interval=43200s max_cycles=unlimited epochs=20
+[2026-05-11 07:07 Pacific Summer Time] === CYCLE 1 START ===
+[2026-05-11 07:07 Pacific Summer Time] $ git pull --rebase origin main
+From https://github.com/EmmaLeonhart/Loka
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+[2026-05-11 07:07 Pacific Summer Time] Free disk: 810.2 GB (min 10.0 GB required)
+[2026-05-11 07:07 Pacific Summer Time] Training v10 next.
+[2026-05-11 07:07 Pacific Summer Time] Starting Loka: C:\Users\Immanuelle\Documents\Github\SutraDB\target\release\loka.exe serve --port 3031 --data-dir C:\Users\Immanuelle\Documents\Github\SutraDB\loka-data-cron-c1
+[2026-05-11 07:07 Pacific Summer Time] HF import (max 2,000,000 triples) into Loka on :3031
+[OK] Loka is running
+Loading dataset 'philippesaade/wikidata' (split=train, streaming)...
+
+--- Streaming entities; target 2,000,000 triples ---
+
+  rows=1  triples=0  (0 ent/s, 0 triples/s, errors=0)
+  rows=6  triples=4,285  (0 ent/s, 66 triples/s, errors=86)
+  rows=15  triples=10,701  (0 ent/s, 150 triples/s, errors=186)
+  rows=21  triples=14,991  (0 ent/s, 193 triples/s, errors=201)
+  rows=27  triples=21,397  (0 ent/s, 254 triples/s, errors=275)
+  rows=33  triples=27,044  (0 ent/s, 297 triples/s, errors=297)
+  rows=37  triples=32,210  (0 ent/s, 331 triples/s, errors=355)
+  rows=43  triples=35,973  (0 ent/s, 347 triples/s, errors=405)
+  rows=52  triples=40,547  (0 ent/s, 368 triples/s, errors=439)
+  rows=58  triples=51,045  (0 ent/s, 435 triples/s, errors=1148)
+  rows=67  triples=54,771  (1 ent/s, 443 triples/s, errors=1165)
+  rows=75  triples=58,913  (1 ent/s, 453 triples/s, errors=1208)
+  rows=81  triples=64,676  (1 ent/s, 473 triples/s, errors=1303)
+  rows=89  triples=69,460  (1 ent/s, 485 triples/s, errors=1328)
+  rows=99  triples=74,390  (1 ent/s, 497 triples/s, errors=1389)
+  rows=108  triples=78,596  (1 ent/s, 503 triples/s, errors=1445)
+  rows=115  triples=82,212  (1 ent/s, 505 triples/s, errors=1464)
+  rows=122  triples=86,587  (1 ent/s, 512 triples/s, errors=1526)
+  rows=128  triples=91,798  (1 ent/s, 523 triples/s, errors=1566)
+  rows=138  triples=95,943  (1 ent/s, 527 triples/s, errors=1604)
+  rows=147  triples=99,534  (1 ent/s, 528 triples/s, errors=1691)
+  rows=158  triples=104,027  (1 ent/s, 534 triples/s, errors=1753)
+  rows=167  triples=108,811  (1 ent/s, 540 triples/s, errors=1834)
+  rows=175  triples=112,205  (1 ent/s, 540 triples/s, errors=1837)
+  rows=186  triples=116,192  (1 ent/s, 542 triples/s, errors=1849)
+  rows=197  triples=120,284  (1 ent/s, 545 triples/s, errors=1878)
+  rows=207  triples=123,539  (1 ent/s, 544 triples/s, errors=1885)
+  rows=216  triples=127,788  (1 ent/s, 547 triples/s, errors=1948)
+  rows=224  triples=131,769  (1 ent/s, 549 triples/s, errors=1980)
+  rows=237  triples=135,336  (1 ent/s, 549 triples/s, errors=1990)
+  rows=246  triples=138,851  (1 ent/s, 550 triples/s, errors=2029)
+  rows=256  triples=142,575  (1 ent/s, 550 triples/s, errors=2035)
+  rows=266  triples=146,498  (1 ent/s, 552 triples/s, errors=2113)
+  rows=275  triples=150,231  (1 ent/s, 553 triples/s, errors=2133)
+  rows=288  triples=153,753  (1 ent/s, 553 triples/s, errors=2182)
+  rows=300  triples=157,247  (1 ent/s, 553 triples/s, errors=2197)
+  rows=311  triples=160,445  (1 ent/s, 552 triples/s, errors=2197)
+  rows=323  triples=163,960  (1 ent/s, 552 triples/s, errors=2218)
+  rows=338  triples=167,966  (1 ent/s, 553 triples/s, errors=2245)
+  rows=349  triples=171,753  (1 ent/s, 554 triples/s, errors=2261)
+  rows=359  triples=175,901  (1 ent/s, 556 triples/s, errors=2328)
+  rows=370  triples=179,240  (1 ent/s, 555 triples/s, errors=2351)
+  rows=385  triples=182,841  (1 ent/s, 555 triples/s, errors=2351)
+  rows=401  triples=186,315  (1 ent/s, 555 triples/s, errors=2383)
+  rows=414  triples=189,782  (1 ent/s, 555 triples/s, errors=2384)
+  rows=427  triples=193,248  (1 ent/s, 555 triples/s, errors=2420)
+  rows=439  triples=196,812  (1 ent/s, 555 triples/s, errors=2447)
+  rows=454  triples=200,175  (1 ent/s, 554 triples/s, errors=2448)
+  rows=465  triples=203,439  (1 ent/s, 554 triples/s, errors=2451)
+  rows=478  triples=207,083  (1 ent/s, 554 triples/s, errors=2457)
+  rows=494  triples=210,218  (1 ent/s, 553 triples/s, errors=2495)
+  rows=513  triples=213,876  (1 ent/s, 553 triples/s, errors=2501)
+  rows=533  triples=217,549  (1 ent/s, 554 triples/s, errors=2522)
+  rows=543  triples=221,510  (1 ent/s, 555 triples/s, errors=2560)
+  rows=556  triples=224,996  (1 ent/s, 555 triples/s, errors=2592)
+  rows=569  triples=228,628  (1 ent/s, 555 triples/s, errors=2593)
+  rows=583  triples=231,875  (1 ent/s, 554 triples/s, errors=2594)
+  rows=596  triples=234,980  (1 ent/s, 553 triples/s, errors=2598)
+  rows=605  triples=238,407  (1 ent/s, 553 triples/s, errors=2622)
+  rows=622  triples=241,900  (1 ent/s, 553 triples/s, errors=2624)
+  rows=636  triples=245,434  (1 ent/s, 553 triples/s, errors=2625)
+  rows=649  triples=249,109  (1 ent/s, 554 triples/s, errors=2633)
+  rows=660  triples=252,677  (1 ent/s, 554 triples/s, errors=2705)
+  rows=672  triples=256,041  (1 ent/s, 553 triples/s, errors=2709)
+  rows=685  triples=260,731  (1 ent/s, 556 triples/s, errors=2787)
+  rows=698  triples=263,986  (1 ent/s, 555 triples/s, errors=2791)
+  rows=711  triples=267,249  (1 ent/s, 555 triples/s, errors=2795)
+  rows=722  triples=270,508  (1 ent/s, 554 triples/s, errors=2802)
+  rows=737  triples=274,171  (1 ent/s, 554 triples/s, errors=2804)
+  rows=753  triples=277,489  (2 ent/s, 554 triples/s, errors=2810)
+  rows=767  triples=281,177  (2 ent/s, 554 triples/s, errors=2812)
+  rows=778  triples=284,711  (2 ent/s, 554 triples/s, errors=2815)
+  rows=788  triples=288,299  (2 ent/s, 555 triples/s, errors=2869)
+  rows=798  triples=291,889  (2 ent/s, 555 triples/s, errors=2934)
+  rows=810  triples=294,640  (2 ent/s, 553 triples/s, errors=2934)
+  rows=823  triples=297,793  (2 ent/s, 553 triples/s, errors=2957)
+  rows=841  triples=302,410  (2 ent/s, 554 triples/s, errors=2983)
+  rows=854  triples=306,311  (2 ent/s, 555 triples/s, errors=2988)
+  rows=871  triples=310,053  (2 ent/s, 555 triples/s, errors=3025)
+  rows=884  triples=313,861  (2 ent/s, 556 triples/s, errors=3091)
+  rows=893  triples=316,987  (2 ent/s, 555 triples/s, errors=3103)
+  rows=907  triples=320,239  (2 ent/s, 555 triples/s, errors=3105)
+  rows=922  triples=323,822  (2 ent/s, 555 triples/s, errors=3108)
+  rows=932  triples=328,546  (2 ent/s, 557 triples/s, errors=3117)
+  rows=945  triples=331,863  (2 ent/s, 556 triples/s, errors=3124)
+  rows=957  triples=335,343  (2 ent/s, 556 triples/s, errors=3199)
+  rows=969  triples=338,815  (2 ent/s, 556 triples/s, errors=3203)
+  rows=981  triples=342,216  (2 ent/s, 556 triples/s, errors=3242)
+  rows=993  triples=345,819  (2 ent/s, 556 triples/s, errors=3244)
+  rows=1,005  triples=348,920  (2 ent/s, 555 triples/s, errors=3255)
+  rows=1,017  triples=352,432  (2 ent/s, 555 triples/s, errors=3266)
+  rows=1,029  triples=355,697  (2 ent/s, 555 triples/s, errors=3285)
+  rows=1,045  triples=359,364  (2 ent/s, 555 triples/s, errors=3287)
+  rows=1,058  triples=362,975  (2 ent/s, 555 triples/s, errors=3302)
+  rows=1,072  triples=366,114  (2 ent/s, 554 triples/s, errors=3308)
+  rows=1,083  triples=369,208  (2 ent/s, 554 triples/s, errors=3311)
+  rows=1,095  triples=373,442  (2 ent/s, 555 triples/s, errors=3315)
+  rows=1,108  triples=376,790  (2 ent/s, 554 triples/s, errors=3333)
+  rows=1,125  triples=380,110  (2 ent/s, 554 triples/s, errors=3336)
+  rows=1,140  triples=383,795  (2 ent/s, 554 triples/s, errors=3346)
+  rows=1,158  triples=387,047  (2 ent/s, 554 triples/s, errors=3349)
+  rows=1,176  triples=391,901  (2 ent/s, 555 triples/s, errors=3369)
+  rows=1,191  triples=395,426  (2 ent/s, 555 triples/s, errors=3373)
+  rows=1,201  triples=397,843  (2 ent/s, 554 triples/s, errors=3414)
+  rows=1,216  triples=401,289  (2 ent/s, 554 triples/s, errors=3422)
+  rows=1,232  triples=404,547  (2 ent/s, 553 triples/s, errors=3429)
+  rows=1,246  triples=407,913  (2 ent/s, 553 triples/s, errors=3441)
+  rows=1,262  triples=411,643  (2 ent/s, 553 triples/s, errors=3456)
+  rows=1,277  triples=415,733  (2 ent/s, 554 triples/s, errors=3471)
+  rows=1,292  triples=418,937  (2 ent/s, 554 triples/s, errors=3481)
+  rows=1,303  triples=422,014  (2 ent/s, 553 triples/s, errors=3507)
+  rows=1,316  triples=426,269  (2 ent/s, 554 triples/s, errors=3554)
+  rows=1,328  triples=429,475  (2 ent/s, 554 triples/s, errors=3575)
+  rows=1,341  triples=433,015  (2 ent/s, 554 triples/s, errors=3606)
+  rows=1,352  triples=436,014  (2 ent/s, 553 triples/s, errors=3615)
+  rows=1,366  triples=439,413  (2 ent/s, 553 triples/s, errors=3635)
+  rows=1,380  triples=442,838  (2 ent/s, 553 triples/s, errors=3650)
+  rows=1,391  triples=446,585  (2 ent/s, 553 triples/s, errors=3694)
+  rows=1,403  triples=449,192  (2 ent/s, 552 triples/s, errors=3703)
+  rows=1,416  triples=452,797  (2 ent/s, 552 triples/s, errors=3711)
+  rows=1,429  triples=456,565  (2 ent/s, 552 triples/s, errors=3732)
+  rows=1,442  triples=459,895  (2 ent/s, 552 triples/s, errors=3799)
+  rows=1,454  triples=463,353  (2 ent/s, 552 triples/s, errors=3859)
+  rows=1,467  triples=467,308  (2 ent/s, 552 triples/s, errors=3905)
+  rows=1,481  triples=471,219  (2 ent/s, 553 triples/s, errors=3962)
+  rows=1,492  triples=474,300  (2 ent/s, 552 triples/s, errors=3991)
+  rows=1,505  triples=477,828  (2 ent/s, 552 triples/s, errors=3997)
+  rows=1,518  triples=481,391  (2 ent/s, 552 triples/s, errors=4011)
+  rows=1,531  triples=484,754  (2 ent/s, 552 triples/s, errors=4053)
+  rows=1,542  triples=488,177  (2 ent/s, 552 triples/s, errors=4067)
+  rows=1,553  triples=491,859  (2 ent/s, 552 triples/s, errors=4100)
+  rows=1,565  triples=495,404  (2 ent/s, 552 triples/s, errors=4146)
+  rows=1,578  triples=498,810  (2 ent/s, 552 triples/s, errors=4158)
+  rows=1,590  triples=502,245  (2 ent/s, 552 triples/s, errors=4264)
+  rows=1,603  triples=504,986  (2 ent/s, 551 triples/s, errors=4304)
+  rows=1,616  triples=508,581  (2 ent/s, 551 triples/s, errors=4365)
+  rows=1,626  triples=511,827  (2 ent/s, 551 triples/s, errors=4393)
+  rows=1,641  triples=515,143  (2 ent/s, 550 triples/s, errors=4419)
+  rows=1,658  triples=518,662  (2 ent/s, 550 triples/s, errors=4485)
+  rows=1,672  triples=522,301  (2 ent/s, 551 triples/s, errors=4703)
+  rows=1,688  triples=526,044  (2 ent/s, 551 triples/s, errors=4711)
+  rows=1,702  triples=529,849  (2 ent/s, 551 triples/s, errors=4736)
+  rows=1,716  triples=533,354  (2 ent/s, 551 triples/s, errors=4757)
+  rows=1,732  triples=536,584  (2 ent/s, 551 triples/s, errors=4775)
+  rows=1,745  triples=539,913  (2 ent/s, 550 triples/s, errors=4797)
+  rows=1,754  triples=543,285  (2 ent/s, 550 triples/s, errors=4811)
+  rows=1,768  triples=546,834  (2 ent/s, 550 triples/s, errors=4885)
+  rows=1,788  triples=550,062  (2 ent/s, 550 triples/s, errors=4888)
+  rows=1,801  triples=552,361  (2 ent/s, 549 triples/s, errors=4896)
+  rows=1,815  triples=555,702  (2 ent/s, 549 triples/s, errors=4920)
+  rows=1,819  triples=556,913  (2 ent/s, 531 triples/s, errors=4935)
+  rows=1,835  triples=560,251  (2 ent/s, 531 triples/s, errors=4939)
+  rows=1,852  triples=563,787  (2 ent/s, 531 triples/s, errors=4964)
+  rows=1,864  triples=567,215  (2 ent/s, 531 triples/s, errors=5000)
+  rows=1,882  triples=570,635  (2 ent/s, 531 triples/s, errors=5012)
+  rows=1,901  triples=574,395  (2 ent/s, 531 triples/s, errors=5048)
+  rows=1,912  triples=578,241  (2 ent/s, 532 triples/s, errors=5124)
+  rows=1,927  triples=581,635  (2 ent/s, 532 triples/s, errors=5400)
+  rows=1,944  triples=585,020  (2 ent/s, 532 triples/s, errors=5405)
+  rows=1,958  triples=589,455  (2 ent/s, 533 triples/s, errors=5425)
+  rows=1,976  triples=593,140  (2 ent/s, 533 triples/s, errors=5450)
+  rows=1,988  triples=596,421  (2 ent/s, 533 triples/s, errors=5475)
+  rows=2,001  triples=599,104  (2 ent/s, 532 triples/s, errors=5505)
+  rows=2,019  triples=602,384  (2 ent/s, 532 triples/s, errors=5510)
+  rows=2,037  triples=605,873  (2 ent/s, 532 triples/s, errors=5535)
+  rows=2,048  triples=608,842  (2 ent/s, 532 triples/s, errors=5751)
+  rows=2,063  triples=612,544  (2 ent/s, 532 triples/s, errors=5759)
+  rows=2,079  triples=615,911  (2 ent/s, 532 triples/s, errors=5762)
+  rows=2,095  triples=619,156  (2 ent/s, 532 triples/s, errors=5793)
+  rows=2,115  triples=622,396  (2 ent/s, 532 triples/s, errors=5801)
+  rows=2,140  triples=626,510  (2 ent/s, 532 triples/s, errors=5869)
+  rows=2,158  triples=630,012  (2 ent/s, 532 triples/s, errors=6069)
+  rows=2,171  triples=633,393  (2 ent/s, 532 triples/s, errors=6101)
+  rows=2,197  triples=636,753  (2 ent/s, 532 triples/s, errors=6105)
+  rows=2,215  triples=639,436  (2 ent/s, 532 triples/s, errors=6113)
+  rows=2,234  triples=642,595  (2 ent/s, 532 triples/s, errors=6152)
+  rows=2,257  triples=646,161  (2 ent/s, 532 triples/s, errors=6177)
+  rows=2,277  triples=649,512  (2 ent/s, 532 triples/s, errors=6192)
+  rows=2,292  triples=652,807  (2 ent/s, 532 triples/s, errors=6213)
+  rows=2,311  triples=656,191  (2 ent/s, 532 triples/s, errors=6219)
+  rows=2,325  triples=659,301  (2 ent/s, 531 triples/s, errors=6248)
+  rows=2,348  triples=662,718  (2 ent/s, 531 triples/s, errors=6266)
+  rows=2,363  triples=665,926  (2 ent/s, 531 triples/s, errors=6276)
+  rows=2,386  triples=669,407  (2 ent/s, 531 triples/s, errors=6283)
+  rows=2,401  triples=672,355  (2 ent/s, 531 triples/s, errors=6287)
+  rows=2,420  triples=675,637  (2 ent/s, 531 triples/s, errors=6305)
+  rows=2,437  triples=679,059  (2 ent/s, 531 triples/s, errors=6345)
+  rows=2,453  triples=682,788  (2 ent/s, 531 triples/s, errors=6355)
+  rows=2,470  triples=686,300  (2 ent/s, 531 triples/s, errors=6377)
+  rows=2,482  triples=689,448  (2 ent/s, 531 triples/s, errors=6405)
+  rows=2,501  triples=692,717  (2 ent/s, 531 triples/s, errors=6438)
+  rows=2,520  triples=696,309  (2 ent/s, 531 triples/s, errors=6467)
+  rows=2,536  triples=700,039  (2 ent/s, 531 triples/s, errors=6498)
+  rows=2,553  triples=703,618  (2 ent/s, 531 triples/s, errors=6568)
+  rows=2,569  triples=707,218  (2 ent/s, 532 triples/s, errors=6614)
+  rows=2,584  triples=710,373  (2 ent/s, 531 triples/s, errors=6660)
+  rows=2,598  triples=713,887  (2 ent/s, 531 triples/s, errors=6699)
+  rows=2,607  triples=716,815  (2 ent/s, 531 triples/s, errors=6734)
+  rows=2,622  triples=720,148  (2 ent/s, 531 triples/s, errors=6741)
+  rows=2,636  triples=723,559  (2 ent/s, 531 triples/s, errors=6758)
+  rows=2,649  triples=726,702  (2 ent/s, 531 triples/s, errors=6813)
+  rows=2,665  triples=730,428  (2 ent/s, 531 triples/s, errors=6833)
+  rows=2,679  triples=734,109  (2 ent/s, 531 triples/s, errors=6963)
+  rows=2,693  triples=737,322  (2 ent/s, 531 triples/s, errors=6991)
+  rows=2,708  triples=740,804  (2 ent/s, 531 triples/s, errors=7013)
+  rows=2,725  triples=744,268  (2 ent/s, 531 triples/s, errors=7045)
+  rows=2,740  triples=747,803  (2 ent/s, 531 triples/s, errors=7074)
+  rows=2,754  triples=751,201  (2 ent/s, 531 triples/s, errors=7107)
+  rows=2,769  triples=754,621  (2 ent/s, 531 triples/s, errors=7123)
+  rows=2,784  triples=757,820  (2 ent/s, 531 triples/s, errors=7144)
+  rows=2,798  triples=761,063  (2 ent/s, 531 triples/s, errors=7161)
+  rows=2,811  triples=763,999  (2 ent/s, 531 triples/s, errors=7172)
+  rows=2,827  triples=767,516  (2 ent/s, 531 triples/s, errors=7193)
+  rows=2,843  triples=770,985  (2 ent/s, 531 triples/s, errors=7197)
+  rows=2,858  triples=774,302  (2 ent/s, 531 triples/s, errors=7216)
+  rows=2,874  triples=778,183  (2 ent/s, 531 triples/s, errors=7274)
+  rows=2,893  triples=781,608  (2 ent/s, 531 triples/s, errors=7301)
+  rows=2,912  triples=785,302  (2 ent/s, 531 triples/s, errors=7318)
+  rows=2,923  triples=789,061  (2 ent/s, 532 triples/s, errors=7372)
+  rows=2,939  triples=793,032  (2 ent/s, 532 triples/s, errors=7432)
+  rows=2,960  triples=796,390  (2 ent/s, 532 triples/s, errors=7456)
+  rows=2,975  triples=799,808  (2 ent/s, 532 triples/s, errors=7488)
+  rows=2,991  triples=802,902  (2 ent/s, 532 triples/s, errors=7505)
+  rows=3,008  triples=805,223  (2 ent/s, 531 triples/s, errors=7508)
+  rows=3,023  triples=808,662  (2 ent/s, 531 triples/s, errors=7510)
+  rows=3,046  triples=813,016  (2 ent/s, 532 triples/s, errors=7564)
+  rows=3,058  triples=817,262  (2 ent/s, 532 triples/s, errors=7685)
+  rows=3,077  triples=820,992  (2 ent/s, 532 triples/s, errors=7689)
+  rows=3,097  triples=824,059  (2 ent/s, 532 triples/s, errors=7707)
+  rows=3,125  triples=827,156  (2 ent/s, 532 triples/s, errors=7722)
+  rows=3,139  triples=830,395  (2 ent/s, 532 triples/s, errors=7750)
+  rows=3,161  triples=833,822  (2 ent/s, 532 triples/s, errors=7775)
+  rows=3,179  triples=837,722  (2 ent/s, 532 triples/s, errors=7784)
+  rows=3,200  triples=840,996  (2 ent/s, 532 triples/s, errors=7809)
+  rows=3,220  triples=845,001  (2 ent/s, 533 triples/s, errors=7852)
+  rows=3,242  triples=848,415  (2 ent/s, 533 triples/s, errors=7860)
+  rows=3,264  triples=851,596  (2 ent/s, 532 triples/s, errors=7862)
+  rows=3,278  triples=855,411  (2 ent/s, 533 triples/s, errors=7874)
+  rows=3,293  triples=859,019  (2 ent/s, 533 triples/s, errors=7929)
+  rows=3,315  triples=862,498  (2 ent/s, 533 triples/s, errors=7939)
+  rows=3,336  triples=865,515  (2 ent/s, 533 triples/s, errors=7953)
+  rows=3,352  triples=869,091  (2 ent/s, 533 triples/s, errors=7989)
+  rows=3,365  triples=872,244  (2 ent/s, 533 triples/s, errors=8008)
+  rows=3,380  triples=875,919  (2 ent/s, 533 triples/s, errors=8036)
+  rows=3,401  triples=878,641  (2 ent/s, 532 triples/s, errors=8050)
+  rows=3,423  triples=882,451  (2 ent/s, 533 triples/s, errors=8057)
+  rows=3,444  triples=885,886  (2 ent/s, 533 triples/s, errors=8066)
+  rows=3,468  triples=889,073  (2 ent/s, 532 triples/s, errors=8075)
+  rows=3,493  triples=892,559  (2 ent/s, 532 triples/s, errors=8080)
+  rows=3,509  triples=895,777  (2 ent/s, 532 triples/s, errors=8084)
+  rows=3,530  triples=899,369  (2 ent/s, 532 triples/s, errors=8091)
+  rows=3,547  triples=903,159  (2 ent/s, 533 triples/s, errors=8121)
+  rows=3,571  triples=906,533  (2 ent/s, 533 triples/s, errors=8132)
+  rows=3,590  triples=909,786  (2 ent/s, 533 triples/s, errors=8135)
+  rows=3,603  triples=912,622  (2 ent/s, 532 triples/s, errors=8155)
+  rows=3,628  triples=915,817  (2 ent/s, 532 triples/s, errors=8180)
+  rows=3,637  triples=916,914  (2 ent/s, 523 triples/s, errors=8180)
+  rows=3,658  triples=920,441  (2 ent/s, 523 triples/s, errors=8188)
+  rows=3,676  triples=923,946  (2 ent/s, 523 triples/s, errors=8189)
+  rows=3,691  triples=927,208  (2 ent/s, 523 triples/s, errors=8202)
+  rows=3,710  triples=930,421  (2 ent/s, 523 triples/s, errors=8202)
+  rows=3,729  triples=933,990  (2 ent/s, 523 triples/s, errors=8212)
+  rows=3,750  triples=937,412  (2 ent/s, 523 triples/s, errors=8214)
+  rows=3,773  triples=940,697  (2 ent/s, 523 triples/s, errors=8228)
+  rows=3,794  triples=944,461  (2 ent/s, 523 triples/s, errors=8237)
+  rows=3,818  triples=947,369  (2 ent/s, 523 triples/s, errors=8243)
+  rows=3,839  triples=950,841  (2 ent/s, 523 triples/s, errors=8245)
+  rows=3,855  triples=954,722  (2 ent/s, 523 triples/s, errors=8260)
+  rows=3,876  triples=958,245  (2 ent/s, 523 triples/s, errors=8267)
+  rows=3,893  triples=961,884  (2 ent/s, 523 triples/s, errors=8271)
+  rows=3,916  triples=965,181  (2 ent/s, 523 triples/s, errors=8272)
+  rows=3,944  triples=968,315  (2 ent/s, 523 triples/s, errors=8282)
+  rows=3,963  triples=971,637  (2 ent/s, 523 triples/s, errors=8288)
+  rows=3,975  triples=975,055  (2 ent/s, 523 triples/s, errors=8299)
+  rows=3,994  triples=978,598  (2 ent/s, 523 triples/s, errors=8302)
+  rows=4,013  triples=981,737  (2 ent/s, 523 triples/s, errors=8311)
+  rows=4,035  triples=985,039  (2 ent/s, 523 triples/s, errors=8311)
+  rows=4,051  triples=988,612  (2 ent/s, 523 triples/s, errors=8343)
+  rows=4,070  triples=992,006  (2 ent/s, 523 triples/s, errors=8348)
+  rows=4,091  triples=995,112  (2 ent/s, 523 triples/s, errors=8348)
+  rows=4,109  triples=998,384  (2 ent/s, 523 triples/s, errors=8358)
+  rows=4,123  triples=1,001,787  (2 ent/s, 523 triples/s, errors=8387)
+  rows=4,142  triples=1,005,541  (2 ent/s, 523 triples/s, errors=8431)
+  rows=4,163  triples=1,008,720  (2 ent/s, 523 triples/s, errors=8433)
+  rows=4,183  triples=1,011,943  (2 ent/s, 523 triples/s, errors=8444)
+  rows=4,211  triples=1,014,894  (2 ent/s, 523 triples/s, errors=8444)
+  rows=4,227  triples=1,018,195  (2 ent/s, 523 triples/s, errors=8513)
+  rows=4,251  triples=1,021,724  (2 ent/s, 523 triples/s, errors=8521)
+  rows=4,269  triples=1,024,941  (2 ent/s, 523 triples/s, errors=8524)
+  rows=4,289  triples=1,028,724  (2 ent/s, 523 triples/s, errors=8557)
+  rows=4,307  triples=1,032,349  (2 ent/s, 523 triples/s, errors=8585)
+  rows=4,335  triples=1,035,859  (2 ent/s, 524 triples/s, errors=8594)
+  rows=4,360  triples=1,039,156  (2 ent/s, 524 triples/s, errors=8598)
+  rows=4,376  triples=1,042,297  (2 ent/s, 523 triples/s, errors=8625)
+  rows=4,401  triples=1,044,740  (2 ent/s, 523 triples/s, errors=8625)
+  rows=4,418  triples=1,048,341  (2 ent/s, 523 triples/s, errors=8649)
+  rows=4,439  triples=1,051,597  (2 ent/s, 523 triples/s, errors=8686)
+  rows=4,463  triples=1,054,790  (2 ent/s, 523 triples/s, errors=8725)
+  rows=4,492  triples=1,058,113  (2 ent/s, 523 triples/s, errors=8726)
+  rows=4,522  triples=1,061,400  (2 ent/s, 523 triples/s, errors=8735)
+  rows=4,548  triples=1,064,522  (2 ent/s, 523 triples/s, errors=8765)
+  rows=4,568  triples=1,067,595  (2 ent/s, 523 triples/s, errors=8776)
+  rows=4,590  triples=1,070,836  (2 ent/s, 523 triples/s, errors=8784)
+  rows=4,613  triples=1,073,780  (2 ent/s, 522 triples/s, errors=8847)
+  rows=4,641  triples=1,076,899  (2 ent/s, 522 triples/s, errors=8851)
+  rows=4,661  triples=1,080,331  (2 ent/s, 522 triples/s, errors=8858)
+  rows=4,679  triples=1,083,944  (2 ent/s, 522 triples/s, errors=8878)
+  rows=4,700  triples=1,087,673  (2 ent/s, 523 triples/s, errors=8881)
+  rows=4,723  triples=1,091,284  (2 ent/s, 523 triples/s, errors=8889)
+  rows=4,746  triples=1,094,642  (2 ent/s, 523 triples/s, errors=8909)
+  rows=4,760  triples=1,097,764  (2 ent/s, 523 triples/s, errors=8928)
+  rows=4,776  triples=1,101,209  (2 ent/s, 523 triples/s, errors=8933)
+  rows=4,794  triples=1,104,548  (2 ent/s, 523 triples/s, errors=8967)
+  rows=4,814  triples=1,107,841  (2 ent/s, 523 triples/s, errors=9004)
+  rows=4,829  triples=1,111,240  (2 ent/s, 523 triples/s, errors=9061)
+  rows=4,850  triples=1,114,536  (2 ent/s, 523 triples/s, errors=9064)
+  rows=4,864  triples=1,117,842  (2 ent/s, 523 triples/s, errors=9166)
+  rows=4,883  triples=1,121,353  (2 ent/s, 523 triples/s, errors=9183)
+  rows=4,895  triples=1,124,744  (2 ent/s, 523 triples/s, errors=9234)
+  rows=4,906  triples=1,127,928  (2 ent/s, 523 triples/s, errors=9274)
+  rows=4,915  triples=1,131,282  (2 ent/s, 523 triples/s, errors=9295)
+  rows=4,935  triples=1,135,676  (2 ent/s, 523 triples/s, errors=9437)
+  rows=4,948  triples=1,139,138  (2 ent/s, 523 triples/s, errors=9447)
+  rows=4,964  triples=1,142,986  (2 ent/s, 523 triples/s, errors=9484)
+  rows=4,981  triples=1,146,729  (2 ent/s, 524 triples/s, errors=9493)
+  rows=4,997  triples=1,150,292  (2 ent/s, 524 triples/s, errors=9519)
+  rows=5,009  triples=1,153,811  (2 ent/s, 524 triples/s, errors=9603)
+  rows=5,025  triples=1,157,304  (2 ent/s, 524 triples/s, errors=9663)
+  rows=5,040  triples=1,160,679  (2 ent/s, 524 triples/s, errors=9694)
+  rows=5,060  triples=1,163,964  (2 ent/s, 524 triples/s, errors=9696)
+  rows=5,075  triples=1,167,060  (2 ent/s, 524 triples/s, errors=9712)
+  rows=5,094  triples=1,170,428  (2 ent/s, 524 triples/s, errors=9723)
+  rows=5,116  triples=1,173,621  (2 ent/s, 524 triples/s, errors=9723)
+  rows=5,129  triples=1,176,853  (2 ent/s, 524 triples/s, errors=9754)
+  rows=5,145  triples=1,180,279  (2 ent/s, 524 triples/s, errors=9776)
+  rows=5,160  triples=1,183,570  (2 ent/s, 524 triples/s, errors=9794)
+  rows=5,176  triples=1,186,645  (2 ent/s, 523 triples/s, errors=9841)
+  rows=5,196  triples=1,190,157  (2 ent/s, 524 triples/s, errors=9867)
+  rows=5,207  triples=1,194,095  (2 ent/s, 524 triples/s, errors=9871)
+  rows=5,225  triples=1,197,803  (2 ent/s, 524 triples/s, errors=9890)
+  rows=5,241  triples=1,201,348  (2 ent/s, 524 triples/s, errors=9908)
+  rows=5,257  triples=1,204,649  (2 ent/s, 524 triples/s, errors=9925)
+  rows=5,279  triples=1,207,791  (2 ent/s, 524 triples/s, errors=9950)
+  rows=5,295  triples=1,211,078  (2 ent/s, 524 triples/s, errors=9978)
+  rows=5,321  triples=1,214,639  (2 ent/s, 524 triples/s, errors=9991)
+  rows=5,339  triples=1,217,756  (2 ent/s, 524 triples/s, errors=10079)
+  rows=5,350  triples=1,220,890  (2 ent/s, 524 triples/s, errors=10221)
+  rows=5,371  triples=1,224,336  (2 ent/s, 524 triples/s, errors=10257)
+  rows=5,391  triples=1,227,591  (2 ent/s, 524 triples/s, errors=10308)
+  rows=5,408  triples=1,230,186  (2 ent/s, 523 triples/s, errors=10331)
+  rows=5,426  triples=1,233,606  (2 ent/s, 523 triples/s, errors=10371)
+  rows=5,446  triples=1,236,989  (2 ent/s, 523 triples/s, errors=10389)
+  rows=5,455  triples=1,236,989  (2 ent/s, 515 triples/s, errors=10389)
+  rows=5,468  triples=1,240,319  (2 ent/s, 515 triples/s, errors=10407)
+  rows=5,491  triples=1,243,678  (2 ent/s, 515 triples/s, errors=10419)
+  rows=5,510  triples=1,247,000  (2 ent/s, 515 triples/s, errors=10430)
+  rows=5,532  triples=1,250,059  (2 ent/s, 515 triples/s, errors=10460)
+  rows=5,548  triples=1,253,272  (2 ent/s, 515 triples/s, errors=10484)
+  rows=5,570  triples=1,256,604  (2 ent/s, 515 triples/s, errors=10486)
+  rows=5,590  triples=1,259,865  (2 ent/s, 515 triples/s, errors=10494)
+  rows=5,607  triples=1,262,928  (2 ent/s, 515 triples/s, errors=10511)
+  rows=5,622  triples=1,266,269  (2 ent/s, 515 triples/s, errors=10516)
+  rows=5,640  triples=1,269,532  (2 ent/s, 515 triples/s, errors=10526)
+  rows=5,655  triples=1,273,282  (2 ent/s, 515 triples/s, errors=10578)
+  rows=5,671  triples=1,276,678  (2 ent/s, 515 triples/s, errors=10606)
+  rows=5,690  triples=1,280,310  (2 ent/s, 515 triples/s, errors=10650)
+  rows=5,711  triples=1,283,747  (2 ent/s, 515 triples/s, errors=10665)
+  rows=5,729  triples=1,287,326  (2 ent/s, 515 triples/s, errors=10685)
+  rows=5,748  triples=1,291,085  (2 ent/s, 515 triples/s, errors=10733)
+  rows=5,760  triples=1,294,359  (2 ent/s, 515 triples/s, errors=10773)
+  rows=5,780  triples=1,297,472  (2 ent/s, 515 triples/s, errors=10795)
+  rows=5,801  triples=1,300,667  (2 ent/s, 515 triples/s, errors=10820)
+  rows=5,823  triples=1,303,901  (2 ent/s, 515 triples/s, errors=10841)
+  rows=5,844  triples=1,307,078  (2 ent/s, 515 triples/s, errors=10853)
+  rows=5,863  triples=1,310,549  (2 ent/s, 515 triples/s, errors=10885)
+  rows=5,886  triples=1,313,803  (2 ent/s, 515 triples/s, errors=10902)
+  rows=5,904  triples=1,317,036  (2 ent/s, 515 triples/s, errors=10964)
+  rows=5,923  triples=1,320,566  (2 ent/s, 515 triples/s, errors=11018)
+  rows=5,942  triples=1,323,978  (2 ent/s, 515 triples/s, errors=11046)
+  rows=5,964  triples=1,327,276  (2 ent/s, 515 triples/s, errors=11092)
+  rows=5,982  triples=1,330,543  (2 ent/s, 515 triples/s, errors=11118)
+  rows=6,001  triples=1,333,542  (2 ent/s, 515 triples/s, errors=11126)
+  rows=6,023  triples=1,336,945  (2 ent/s, 515 triples/s, errors=11159)
+  rows=6,044  triples=1,340,480  (2 ent/s, 515 triples/s, errors=11174)
+  rows=6,059  triples=1,343,631  (2 ent/s, 515 triples/s, errors=11247)
+  rows=6,081  triples=1,346,708  (2 ent/s, 515 triples/s, errors=11255)
+  rows=6,100  triples=1,350,073  (2 ent/s, 515 triples/s, errors=11277)
+  rows=6,119  triples=1,353,401  (2 ent/s, 515 triples/s, errors=11284)
+  rows=6,135  triples=1,356,701  (2 ent/s, 515 triples/s, errors=11311)
+  rows=6,154  triples=1,360,104  (2 ent/s, 515 triples/s, errors=11320)
+  rows=6,171  triples=1,363,384  (2 ent/s, 515 triples/s, errors=11333)
+  rows=6,190  triples=1,366,910  (2 ent/s, 515 triples/s, errors=11346)
+  rows=6,205  triples=1,369,441  (2 ent/s, 515 triples/s, errors=11356)
+  rows=6,226  triples=1,372,673  (2 ent/s, 515 triples/s, errors=11361)
+  rows=6,245  triples=1,375,840  (2 ent/s, 515 triples/s, errors=11369)
+  rows=6,263  triples=1,378,991  (2 ent/s, 515 triples/s, errors=11386)
+  rows=6,285  triples=1,382,676  (2 ent/s, 515 triples/s, errors=11419)
+  rows=6,304  triples=1,386,035  (2 ent/s, 515 triples/s, errors=11426)
+  rows=6,319  triples=1,389,316  (2 ent/s, 515 triples/s, errors=11464)
+  rows=6,337  triples=1,392,503  (2 ent/s, 515 triples/s, errors=11482)
+  rows=6,355  triples=1,395,654  (2 ent/s, 515 triples/s, errors=11486)
+  rows=6,373  triples=1,398,988  (2 ent/s, 515 triples/s, errors=11502)
+  rows=6,387  triples=1,402,162  (2 ent/s, 515 triples/s, errors=11508)
+  rows=6,401  triples=1,404,627  (2 ent/s, 515 triples/s, errors=11522)
+  rows=6,425  triples=1,408,108  (2 ent/s, 515 triples/s, errors=11527)
+  rows=6,442  triples=1,411,250  (2 ent/s, 515 triples/s, errors=11541)
+  rows=6,456  triples=1,414,371  (2 ent/s, 514 triples/s, errors=11551)
+  rows=6,472  triples=1,417,560  (2 ent/s, 514 triples/s, errors=11574)
+  rows=6,488  triples=1,420,902  (2 ent/s, 514 triples/s, errors=11584)
+  rows=6,505  triples=1,424,266  (2 ent/s, 514 triples/s, errors=11626)
+  rows=6,524  triples=1,427,894  (2 ent/s, 515 triples/s, errors=11682)
+  rows=6,546  triples=1,431,508  (2 ent/s, 515 triples/s, errors=11697)
+  rows=6,565  triples=1,434,821  (2 ent/s, 515 triples/s, errors=11708)
+  rows=6,592  triples=1,437,998  (2 ent/s, 515 triples/s, errors=11713)
+  rows=6,608  triples=1,441,085  (2 ent/s, 515 triples/s, errors=11731)
+  rows=6,628  triples=1,444,450  (2 ent/s, 515 triples/s, errors=11760)
+  rows=6,643  triples=1,448,349  (2 ent/s, 515 triples/s, errors=11803)
+  rows=6,664  triples=1,451,894  (2 ent/s, 515 triples/s, errors=11815)
+  rows=6,683  triples=1,455,212  (2 ent/s, 515 triples/s, errors=11845)
+  rows=6,704  triples=1,458,789  (2 ent/s, 515 triples/s, errors=11928)
+  rows=6,722  triples=1,462,483  (2 ent/s, 515 triples/s, errors=12014)
+  rows=6,740  triples=1,465,778  (2 ent/s, 515 triples/s, errors=12115)
+  rows=6,758  triples=1,469,107  (2 ent/s, 515 triples/s, errors=12159)
+  rows=6,772  triples=1,472,226  (2 ent/s, 515 triples/s, errors=12199)
+  rows=6,792  triples=1,475,665  (2 ent/s, 515 triples/s, errors=12255)
+  rows=6,809  triples=1,478,788  (2 ent/s, 515 triples/s, errors=12292)
+  rows=6,829  triples=1,482,214  (2 ent/s, 515 triples/s, errors=12356)
+  rows=6,846  triples=1,485,508  (2 ent/s, 515 triples/s, errors=12413)
+  rows=6,866  triples=1,488,650  (2 ent/s, 515 triples/s, errors=12492)
+  rows=6,884  triples=1,491,801  (2 ent/s, 515 triples/s, errors=12558)
+  rows=6,903  triples=1,495,363  (2 ent/s, 515 triples/s, errors=12616)
+  rows=6,917  triples=1,498,787  (2 ent/s, 515 triples/s, errors=12655)
+  rows=6,936  triples=1,501,946  (2 ent/s, 515 triples/s, errors=12664)
+  rows=6,951  triples=1,505,005  (2 ent/s, 515 triples/s, errors=12688)
+  rows=6,968  triples=1,508,431  (2 ent/s, 515 triples/s, errors=12775)
+  rows=6,989  triples=1,511,853  (2 ent/s, 515 triples/s, errors=12857)
+  rows=7,005  triples=1,515,379  (2 ent/s, 515 triples/s, errors=12933)
+  rows=7,025  triples=1,518,566  (2 ent/s, 515 triples/s, errors=13169)
+  rows=7,043  triples=1,521,749  (2 ent/s, 515 triples/s, errors=13220)
+  rows=7,057  triples=1,524,995  (2 ent/s, 515 triples/s, errors=13315)
+  rows=7,078  triples=1,528,773  (2 ent/s, 515 triples/s, errors=13445)
+  rows=7,099  triples=1,532,197  (2 ent/s, 515 triples/s, errors=13488)
+  rows=7,117  triples=1,535,623  (2 ent/s, 515 triples/s, errors=13508)
+  rows=7,132  triples=1,538,711  (2 ent/s, 515 triples/s, errors=13571)
+  rows=7,148  triples=1,542,535  (2 ent/s, 515 triples/s, errors=13635)
+  rows=7,166  triples=1,545,662  (2 ent/s, 515 triples/s, errors=13689)
+  rows=7,185  triples=1,548,991  (2 ent/s, 515 triples/s, errors=13757)
+  rows=7,201  triples=1,551,774  (2 ent/s, 515 triples/s, errors=13793)
+  rows=7,217  triples=1,555,393  (2 ent/s, 515 triples/s, errors=13853)
+  rows=7,237  triples=1,558,797  (2 ent/s, 515 triples/s, errors=13888)
+  rows=7,254  triples=1,561,928  (2 ent/s, 515 triples/s, errors=13955)
+  rows=7,271  triples=1,565,491  (2 ent/s, 515 triples/s, errors=13996)
+  rows=7,273  triples=1,565,491  (2 ent/s, 508 triples/s, errors=13996)
+  rows=7,288  triples=1,569,054  (2 ent/s, 508 triples/s, errors=14042)
+  rows=7,305  triples=1,572,361  (2 ent/s, 508 triples/s, errors=14132)
+  rows=7,324  triples=1,575,815  (2 ent/s, 508 triples/s, errors=14153)
+  rows=7,348  triples=1,579,649  (2 ent/s, 509 triples/s, errors=14190)
+  rows=7,364  triples=1,583,004  (2 ent/s, 509 triples/s, errors=14226)
+  rows=7,383  triples=1,586,343  (2 ent/s, 509 triples/s, errors=14304)
+  rows=7,400  triples=1,589,650  (2 ent/s, 509 triples/s, errors=14329)
+  rows=7,416  triples=1,593,090  (2 ent/s, 509 triples/s, errors=14394)
+  rows=7,431  triples=1,596,445  (2 ent/s, 509 triples/s, errors=14436)
+  rows=7,446  triples=1,599,486  (2 ent/s, 509 triples/s, errors=14601)
+  rows=7,464  triples=1,602,791  (2 ent/s, 509 triples/s, errors=14739)
+  rows=7,482  triples=1,606,357  (2 ent/s, 509 triples/s, errors=14770)
+  rows=7,499  triples=1,609,747  (2 ent/s, 509 triples/s, errors=14829)
+  rows=7,518  triples=1,613,041  (2 ent/s, 509 triples/s, errors=14871)
+  rows=7,534  triples=1,616,331  (2 ent/s, 509 triples/s, errors=15038)
+  rows=7,554  triples=1,619,601  (2 ent/s, 509 triples/s, errors=15075)
+  rows=7,574  triples=1,623,337  (2 ent/s, 509 triples/s, errors=15094)
+  rows=7,592  triples=1,626,415  (2 ent/s, 509 triples/s, errors=15108)
+  rows=7,608  triples=1,628,961  (2 ent/s, 509 triples/s, errors=15121)
+  rows=7,623  triples=1,632,178  (2 ent/s, 509 triples/s, errors=15187)
+  rows=7,641  triples=1,635,414  (2 ent/s, 509 triples/s, errors=15212)
+  rows=7,660  triples=1,638,568  (2 ent/s, 508 triples/s, errors=15240)
+  rows=7,681  triples=1,641,801  (2 ent/s, 508 triples/s, errors=15286)
+  rows=7,701  triples=1,645,037  (2 ent/s, 508 triples/s, errors=15305)
+  rows=7,720  triples=1,648,107  (2 ent/s, 508 triples/s, errors=15347)
+  rows=7,739  triples=1,651,357  (2 ent/s, 508 triples/s, errors=15381)
+  rows=7,763  triples=1,654,612  (2 ent/s, 508 triples/s, errors=15413)
+  rows=7,779  triples=1,658,107  (2 ent/s, 508 triples/s, errors=15495)
+  rows=7,797  triples=1,661,339  (2 ent/s, 508 triples/s, errors=15528)
+  rows=7,811  triples=1,663,815  (2 ent/s, 508 triples/s, errors=15536)
+  rows=7,830  triples=1,667,115  (2 ent/s, 508 triples/s, errors=15586)
+  rows=7,846  triples=1,670,604  (2 ent/s, 508 triples/s, errors=15649)
+  rows=7,864  triples=1,674,283  (2 ent/s, 508 triples/s, errors=15684)
+  rows=7,883  triples=1,677,470  (2 ent/s, 508 triples/s, errors=15692)
+  rows=7,902  triples=1,680,862  (2 ent/s, 508 triples/s, errors=15742)
+  rows=7,919  triples=1,683,972  (2 ent/s, 508 triples/s, errors=15772)
+  rows=7,936  triples=1,687,528  (2 ent/s, 508 triples/s, errors=15828)
+  rows=7,956  triples=1,690,746  (2 ent/s, 508 triples/s, errors=15837)
+  rows=7,972  triples=1,694,132  (2 ent/s, 508 triples/s, errors=16052)
+  rows=7,995  triples=1,697,564  (2 ent/s, 508 triples/s, errors=16072)
+  rows=8,014  triples=1,700,634  (2 ent/s, 508 triples/s, errors=16093)
+  rows=8,033  triples=1,703,742  (2 ent/s, 508 triples/s, errors=16107)
+  rows=8,051  triples=1,707,075  (2 ent/s, 508 triples/s, errors=16165)
+  rows=8,070  triples=1,710,232  (2 ent/s, 508 triples/s, errors=16225)
+  rows=8,089  triples=1,713,381  (2 ent/s, 508 triples/s, errors=16257)
+  rows=8,112  triples=1,716,713  (2 ent/s, 508 triples/s, errors=16297)
+  rows=8,133  triples=1,720,029  (2 ent/s, 508 triples/s, errors=16320)
+  rows=8,157  triples=1,723,251  (2 ent/s, 508 triples/s, errors=16360)
+  rows=8,174  triples=1,726,706  (2 ent/s, 508 triples/s, errors=16387)
+  rows=8,191  triples=1,730,065  (2 ent/s, 508 triples/s, errors=16416)
+  rows=8,206  triples=1,732,849  (2 ent/s, 508 triples/s, errors=16444)
+  rows=8,225  triples=1,736,205  (2 ent/s, 508 triples/s, errors=16476)
+  rows=8,247  triples=1,739,660  (2 ent/s, 508 triples/s, errors=16537)
+  rows=8,267  triples=1,742,777  (2 ent/s, 508 triples/s, errors=16613)
+  rows=8,284  triples=1,746,021  (2 ent/s, 508 triples/s, errors=16672)
+  rows=8,304  triples=1,749,543  (2 ent/s, 508 triples/s, errors=16698)
+  rows=8,326  triples=1,752,824  (2 ent/s, 508 triples/s, errors=16713)
+  rows=8,347  triples=1,756,243  (2 ent/s, 508 triples/s, errors=16739)
+  rows=8,362  triples=1,759,608  (2 ent/s, 508 triples/s, errors=16782)
+  rows=8,385  triples=1,762,858  (2 ent/s, 508 triples/s, errors=16811)
+  rows=8,401  triples=1,765,566  (2 ent/s, 508 triples/s, errors=16824)
+  rows=8,420  triples=1,768,646  (2 ent/s, 508 triples/s, errors=16859)
+  rows=8,438  triples=1,772,349  (2 ent/s, 508 triples/s, errors=16906)
+  rows=8,456  triples=1,775,799  (2 ent/s, 508 triples/s, errors=16980)
+  rows=8,481  triples=1,779,015  (2 ent/s, 508 triples/s, errors=16986)
+  rows=8,501  triples=1,782,448  (2 ent/s, 508 triples/s, errors=17022)
+  rows=8,519  triples=1,785,874  (2 ent/s, 508 triples/s, errors=17099)
+  rows=8,536  triples=1,789,118  (2 ent/s, 508 triples/s, errors=17125)
+  rows=8,553  triples=1,792,189  (2 ent/s, 508 triples/s, errors=17189)
+  rows=8,575  triples=1,795,584  (2 ent/s, 508 triples/s, errors=17214)
+  rows=8,595  triples=1,799,201  (2 ent/s, 508 triples/s, errors=17243)
+  rows=8,610  triples=1,802,082  (2 ent/s, 508 triples/s, errors=17292)
+  rows=8,628  triples=1,805,547  (2 ent/s, 508 triples/s, errors=17352)
+  rows=8,650  triples=1,808,811  (2 ent/s, 508 triples/s, errors=17392)
+  rows=8,671  triples=1,812,190  (2 ent/s, 508 triples/s, errors=17426)
+  rows=8,691  triples=1,815,294  (2 ent/s, 508 triples/s, errors=17454)
+  rows=8,708  triples=1,818,383  (2 ent/s, 508 triples/s, errors=17491)
+  rows=8,728  triples=1,821,774  (2 ent/s, 508 triples/s, errors=17534)
+  rows=8,746  triples=1,824,967  (2 ent/s, 508 triples/s, errors=17713)
+  rows=8,765  triples=1,828,123  (2 ent/s, 508 triples/s, errors=17768)
+  rows=8,793  triples=1,831,284  (2 ent/s, 508 triples/s, errors=17789)
+  rows=8,812  triples=1,834,081  (2 ent/s, 508 triples/s, errors=17831)
+  rows=8,836  triples=1,837,589  (2 ent/s, 508 triples/s, errors=18322)
+  rows=8,860  triples=1,840,974  (2 ent/s, 508 triples/s, errors=18365)
+  rows=8,881  triples=1,844,221  (2 ent/s, 508 triples/s, errors=18411)
+  rows=8,899  triples=1,847,470  (2 ent/s, 508 triples/s, errors=18437)
+  rows=8,926  triples=1,850,796  (2 ent/s, 508 triples/s, errors=18496)
+  rows=8,944  triples=1,854,306  (2 ent/s, 508 triples/s, errors=18570)
+  rows=8,961  triples=1,857,646  (2 ent/s, 508 triples/s, errors=18604)
+  rows=8,978  triples=1,860,895  (2 ent/s, 508 triples/s, errors=18669)
+  rows=8,993  triples=1,864,005  (2 ent/s, 508 triples/s, errors=18716)
+  rows=9,006  triples=1,866,219  (2 ent/s, 508 triples/s, errors=18778)
+  rows=9,024  triples=1,869,593  (2 ent/s, 508 triples/s, errors=18837)
+  rows=9,041  triples=1,873,155  (2 ent/s, 508 triples/s, errors=18896)
+  rows=9,057  triples=1,876,344  (2 ent/s, 508 triples/s, errors=19040)
+  rows=9,076  triples=1,879,729  (2 ent/s, 508 triples/s, errors=19091)
+  rows=9,091  triples=1,881,845  (2 ent/s, 503 triples/s, errors=19113)
+  rows=9,106  triples=1,885,225  (2 ent/s, 503 triples/s, errors=19153)
+  rows=9,116  triples=1,888,591  (2 ent/s, 503 triples/s, errors=19232)
+  rows=9,131  triples=1,891,734  (2 ent/s, 503 triples/s, errors=19273)
+  rows=9,145  triples=1,894,880  (2 ent/s, 503 triples/s, errors=19323)
+  rows=9,159  triples=1,898,000  (2 ent/s, 503 triples/s, errors=19392)
+  rows=9,175  triples=1,901,283  (2 ent/s, 503 triples/s, errors=19485)
+  rows=9,188  triples=1,904,787  (2 ent/s, 503 triples/s, errors=19604)
+  rows=9,201  triples=1,907,617  (2 ent/s, 503 triples/s, errors=19663)
+  rows=9,215  triples=1,910,890  (2 ent/s, 503 triples/s, errors=19746)
+  rows=9,227  triples=1,914,133  (2 ent/s, 503 triples/s, errors=19791)
+  rows=9,243  triples=1,917,754  (2 ent/s, 503 triples/s, errors=19861)
+  rows=9,258  triples=1,920,881  (2 ent/s, 503 triples/s, errors=19911)
+  rows=9,274  triples=1,924,082  (2 ent/s, 503 triples/s, errors=19984)
+  rows=9,293  triples=1,927,409  (2 ent/s, 503 triples/s, errors=20037)
+  rows=9,311  triples=1,930,637  (2 ent/s, 503 triples/s, errors=20057)
+  rows=9,327  triples=1,933,966  (2 ent/s, 503 triples/s, errors=20118)
+  rows=9,345  triples=1,937,528  (2 ent/s, 503 triples/s, errors=20155)
+  rows=9,361  triples=1,940,972  (2 ent/s, 503 triples/s, errors=20221)
+  rows=9,379  triples=1,944,573  (2 ent/s, 503 triples/s, errors=20263)
+  rows=9,394  triples=1,948,279  (2 ent/s, 503 triples/s, errors=20313)
+  rows=9,409  triples=1,951,535  (2 ent/s, 503 triples/s, errors=20368)
+  rows=9,427  triples=1,954,969  (2 ent/s, 503 triples/s, errors=20388)
+  rows=9,437  triples=1,958,198  (2 ent/s, 503 triples/s, errors=20480)
+  rows=9,453  triples=1,961,269  (2 ent/s, 503 triples/s, errors=20551)
+  rows=9,469  triples=1,964,597  (2 ent/s, 503 triples/s, errors=20700)
+  rows=9,483  triples=1,967,690  (2 ent/s, 503 triples/s, errors=20742)
+  rows=9,503  triples=1,970,941  (2 ent/s, 503 triples/s, errors=20799)
+  rows=9,521  triples=1,974,222  (2 ent/s, 503 triples/s, errors=20833)
+  rows=9,538  triples=1,977,404  (2 ent/s, 503 triples/s, errors=20845)
+  rows=9,555  triples=1,980,812  (2 ent/s, 503 triples/s, errors=20872)
+  rows=9,572  triples=1,984,143  (2 ent/s, 503 triples/s, errors=20912)
+  rows=9,589  triples=1,987,720  (2 ent/s, 503 triples/s, errors=20981)
+  rows=9,601  triples=1,990,118  (2 ent/s, 503 triples/s, errors=20991)
+  rows=9,614  triples=1,993,329  (2 ent/s, 503 triples/s, errors=20993)
+  rows=9,633  triples=1,997,100  (2 ent/s, 503 triples/s, errors=21025)
+  rows=9,647  triples=2,000,191  (2 ent/s, 503 triples/s, errors=21043)
+
+[TARGET] Reached 2,000,000 triples. Stopping.
+
+=== Import complete ===
+Rows consumed:       9,647
+Triples inserted:    2,000,191
+Per-line errors:     21,043  (mostly duplicates on resume)
+Time:                3976s
+State saved to C:\Users\Immanuelle\Documents\Github\SutraDB\loka-data-cron-c1\import_state.json
+[2026-05-11 08:14 Pacific Summer Time] Building training corpus -> C:\Users\Immanuelle\Documents\Github\SutraDB\training\data\triples_v10.txt
+[2026-05-11 08:14 Pacific Summer Time] $ C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\python.exe training/preprocess.py --endpoint http://localhost:3031 --output C:\Users\Immanuelle\Documents\Github\SutraDB\training\data\triples_v10.txt
+Fetching triples from http://localhost:3031...
+  got 2,000,191 triples
+Building QID \u2192 label map from rdfs:label triples...
+  resolved 9,630 entity labels
+Resolving Wikidata property labels...
+  fetching 14 property labels from Wikidata...
+  resolved 7,312 property labels (total 16,942)
+Excluding Wikidata catalog/noise-datatype predicates (10,525 property IRIs)
+Wrote 92,785 triples to C:\Users\Immanuelle\Documents\Github\SutraDB\training\data\triples_v10.txt; skipped 1,019,675 (unresolved labels), 0 (loka-internal provenance annotations), 358,420 (Wikidata catalog/noise-datatype predicates), 0 (non-URI predicate; Loka SPARQL quirk)
+[2026-05-11 08:14 Pacific Summer Time] Stopping Loka.
+[2026-05-11 08:14 Pacific Summer Time] Training v10 (20 epochs) -> C:\Users\Immanuelle\Documents\Github\SutraDB\training\checkpoints\wikidata_v10.pt
+[2026-05-11 08:58 Pacific Summer Time] PageRank cache fresh: pagerank_Q42.json
+[2026-05-11 08:58 Pacific Summer Time] $ C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\python.exe training/test_autoregressive_propgen.py --seed-file C:\Users\Immanuelle\Documents\Github\SutraDB\training\data\seed_Q42.nt --output C:\Users\Immanuelle\Documents\Github\SutraDB\training\data\test_propgen_Q42_v10.nt --checkpoint C:\Users\Immanuelle\Documents\Github\SutraDB\training\checkpoints\wikidata_v10.pt --bpe-tokenizer training/data/tokenizer_bpe.json --rank-file C:\Users\Immanuelle\Documents\Github\SutraDB\training\data\pagerank_Q42.json --max-source-triples 30 --children-per-source 10 --confidence 0.25 --model-version loka-wikidata-v10
+C:\Users\Immanuelle\Documents\Github\SutraDB\training\model.py:45: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  self.encoder = nn.TransformerEncoder(layer, num_layers)
+Loaded C:\Users\Immanuelle\Documents\Github\SutraDB\training\checkpoints\wikidata_v10.pt (44,531,712 params, 50,000 vocab)
+Using BPE tokenizer: training/data/tokenizer_bpe.json
+Loaded 14,586 triples from C:\Users\Immanuelle\Documents\Github\SutraDB\training\data\seed_Q42.nt
+  indexed 183 subjects, 179 labels
+  fetching 2 property labels from Wikidata...
+  resolved 7312 extra property labels
+Loaded 3,446 PageRank scores from C:\Users\Immanuelle\Documents\Github\SutraDB\training\data\pagerank_Q42.json
+
+Generating from 30 source triples
+
+[1/30] SRC  Douglas Adams | instance of
+      ctx: 10 adj + 0 simd (dropped 6 asymmetric)
+[2/30] SRC  human | model item
+      ctx: 10 adj + 77 simd (dropped 0 asymmetric)
+      gen#1: Jane Belson | country of citizenship -> People 's ĠRepublic Ġthe 's (conf=0.313, cites=20)
+      gen#2: Janet Adams | spouse -> 1 . (conf=0.495, cites=20)
+      gen#3: Janet Adams | instance of -> municipality Ġof Ġthe (conf=0.421, cites=20)
+      gen#4: Jane Belson | instance of -> municipality Ġof Ġthe Ġthe (conf=0.409, cites=20)
+      gen#5: Category:Children's writers | instance of -> municipality Ġof Ġthe Ġof (conf=0.352, cites=20)
+      gen#6: Category:Novelists | instance of -> municipality Ġof Ġthe (conf=0.407, cites=20)
+      gen#7: Category:Science fiction people | instance of -> municipality Ġof Ġthe (conf=0.327, cites=20)
+      gen#8: Category:Dramatists and playwrights | instance of -> municipality Ġof Ġthe Ġof at Ġin (conf=0.282, cites=20)
+      gen#9: Category:Dramatists and playwrights | category's main topic -> Category : D (conf=0.301, cites=20)
+      gen#10: Category:Dramatists and playwrights | Commons category -> Category : D ram at ists Ġand Ġplay (conf=0.602, cites=20)
+[3/30] SRC  human | on focus list of Wikimedia project
+      ctx: 10 adj + 0 simd (dropped 32 asymmetric)
+      gen#1: man | Commons category -> man Ġ( (conf=0.924, cites=10)
+[4/30] SRC  human | described by source
+      ctx: 10 adj + 0 simd (dropped 26 asymmetric)
+[5/30] SRC  human | described by source
+      ctx: 10 adj + 0 simd (dropped 27 asymmetric)
+      gen#1: man | Commons category -> man Ġ( (conf=0.924, cites=10)
+[6/30] SRC  human | described by source
+      ctx: 10 adj + 0 simd (dropped 28 asymmetric)
+[7/30] SRC  human | described by source
+      ctx: 10 adj + 0 simd (dropped 18 asymmetric)
+[8/30] SRC  Douglas Adams | sex or gender
+      ctx: 10 adj + 29 simd (dropped 0 asymmetric)
+      gen#1: Jane Belson | country of citizenship -> People 's ĠRepublic Ġthe 's (conf=0.313, cites=20)
+      gen#2: Janet Adams | spouse -> 1 . (conf=0.495, cites=20)
+      gen#3: Janet Adams | instance of -> municipality Ġof Ġthe (conf=0.421, cites=20)
+      gen#4: Jane Belson | instance of -> municipality Ġof Ġthe Ġthe (conf=0.409, cites=20)
+[9/30] SRC  human | topic has template
+      ctx: 10 adj + 35 simd (dropped 0 asymmetric)
+      gen#1: Template:Infobox person | different from -> T Ġof n : (conf=0.269, cites=20)
+      gen#2: Template:Infobox person | permanent duplicated item -> 0 . (conf=0.484, cites=20)
+      gen#3: Template:Infobox Biography2 | different from -> T Ġof n : (conf=0.258, cites=20)
+      gen#4: Template:Infobox person/Wikidata | different from -> T Ġof n : (conf=0.269, cites=20)
+      gen#5: Template:Infobox Biography2 | instance of -> municipality Ġof Ġthe : municipality Ġin (conf=0.331, cites=20)
+      gen#6: Template:Infobox Biography2 | topic's main category -> T . n : (conf=0.312, cites=20)
+      gen#7: Template:Infobox person/Wikidata | instance of -> municipality Ġof Ġthe : (conf=0.486, cites=20)
+      gen#8: male and female | instance of -> municipality Ġof Ġthe Ġthe (conf=0.519, cites=20)
+      gen#9: Template:Infobox person | instance of -> municipality Ġof Ġthe : (conf=0.486, cites=20)
+[10/30] SRC  Template:Infobox person | template has topic
+      ctx: 10 adj + 0 simd (dropped 7 asymmetric)
+[11/30] SRC  human | part of
+      ctx: 10 adj + 0 simd (dropped 0 asymmetric)
+      gen#1: Footlights | instance of -> municipality Ġof Ġthe Ġthe (conf=0.409, cites=10)
+      gen#2: humanity | instance of -> municipality Ġof Ġthe (conf=0.404, cites=11)
+[12/30] SRC  group of humans | has part(s)
+      ctx: 10 adj + 0 simd (dropped 7 asymmetric)
+[13/30] SRC  human | has characteristic
+      ctx: 10 adj + 0 simd (dropped 0 asymmetric)
+      gen#1: person | has characteristic -> à¤ (conf=0.344, cites=10)
+[14/30] SRC  human | described by source
+      ctx: 10 adj + 0 simd (dropped 25 asymmetric)
+      gen#1: Cambridge | country -> People 's ĠRepublic : ĠRepublic (conf=0.514, cites=10)
+[15/30] SRC  Category:Dramatists and playwrights | instance of
+      ctx: 10 adj + 39 simd (dropped 14 asymmetric)
+      gen#1: Category:Novelists by nationality | category combines topics -> Category : (conf=0.274, cites=20)
+      gen#2: Category:Wikipedia categories named after comedians | instance of -> municipality Ġof Ġthe Ġof (conf=0.303, cites=20)
+      gen#3: Category:Wikipedia categories named after dramatists and playwrights | instance of -> municipality Ġof Ġthe Ġof (conf=0.303, cites=20)
+      gen#4: Category:Dramatists and playwrights | category's main topic -> Category : D (conf=0.301, cites=20)
+      gen#5: Category:Dramatists and playwrights | Commons category -> Category : D ram at ists Ġand Ġplay (conf=0.602, cites=20)
+      gen#6: Category:Films with screenplays by Douglas Adams | instance of -> municipality Ġof Ġthe (conf=0.339, cites=20)
+      gen#7: Category:Novelists by nationality | Commons category -> Category : Ġof el ists Ġby Ġnational ity (conf=0.386, cites=20)
+      gen#8: Category:Novelists by nationality | instance of -> municipality Ġof Ġthe (conf=0.416, cites=20)
+      gen#9: Category:Wikipedia categories named after screenwriters | instance of -> municipality Ġof Ġthe Ġof (conf=0.303, cites=20)
+      gen#10: Category:Categories named after science fiction writers | instance of -> municipality Ġof Ġthe Ġof Ġin (conf=0.261, cites=20)
+[16/30] SRC  human | topic has template
+      ctx: 10 adj + 35 simd (dropped 0 asymmetric)
+      gen#1: Template:Infobox person | different from -> T Ġof n : (conf=0.269, cites=20)
+      gen#2: Template:Infobox person | permanent duplicated item -> 0 . (conf=0.484, cites=20)
+      gen#3: Template:Infobox Biography2 | instance of -> municipality Ġof Ġthe : municipality Ġin (conf=0.331, cites=20)
+      gen#4: Template:Infobox Biography2 | different from -> T Ġof n : (conf=0.258, cites=20)
+      gen#5: Template:Infobox Biography2 | topic's main category -> T . n : (conf=0.312, cites=20)
+      gen#6: male and female | instance of -> municipality Ġof Ġthe Ġthe (conf=0.519, cites=20)
+      gen#7: Template:Infobox person/Wikidata | instance of -> municipality Ġof Ġthe : (conf=0.486, cites=20)
+      gen#8: Template:Infobox person/Wikidata | different from -> T Ġof n : (conf=0.269, cites=20)
+      gen#9: Template:Infobox person | instance of -> municipality Ġof Ġthe : (conf=0.486, cites=20)
+[17/30] SRC  human | topic has template
+      ctx: 10 adj + 35 simd (dropped 0 asymmetric)
+      gen#1: Template:Infobox person | different from -> T Ġof n : (conf=0.269, cites=20)
+      gen#2: Template:Infobox person/Wikidata | instance of -> municipality Ġof Ġthe : (conf=0.486, cites=20)
+      gen#3: Template:Infobox person | permanent duplicated item -> 0 . (conf=0.484, cites=20)
+      gen#4: Template:Infobox Biography2 | instance of -> municipality Ġof Ġthe : municipality Ġin (conf=0.331, cites=20)
+      gen#5: Template:Infobox Biography2 | different from -> T Ġof n : (conf=0.258, cites=20)
+      gen#6: Template:Infobox Biography2 | topic's main category -> T . n : (conf=0.312, cites=20)
+      gen#7: male and female | instance of -> municipality Ġof Ġthe Ġthe (conf=0.519, cites=20)
+      gen#8: Template:Infobox person/Wikidata | different from -> T Ġof n : (conf=0.269, cites=20)
+      gen#9: Template:Infobox person | instance of -> municipality Ġof Ġthe : (conf=0.486, cites=20)
+[18/30] SRC  Template:Infobox Biography2 | template has topic
+      ctx: 10 adj + 0 simd (dropped 7 asymmetric)
+[19/30] SRC  Template:Infobox person/Wikidata | template has topic
+      ctx: 10 adj + 0 simd (dropped 7 asymmetric)
+[20/30] SRC  human | union of
+      ctx: 10 adj + 0 simd (dropped 0 asymmetric)
+      gen#1: full name | disjoint union of -> C . . . (conf=0.315, cites=10)
+      gen#2: man | disjoint union of -> C . . . ( (conf=0.255, cites=11)
+[21/30] SRC  Janet Adams | instance of
+      ctx: 10 adj + 0 simd (dropped 6 asymmetric)
+[22/30] SRC  Category:Dramatists and playwrights | category contains
+      ctx: 10 adj + 0 simd (dropped 7 asymmetric)
+[23/30] SRC  Susan Adams | instance of
+      ctx: 10 adj + 0 simd (dropped 6 asymmetric)
+[24/30] SRC  human | on focus list of Wikimedia project
+      ctx: 10 adj + 0 simd (dropped 17 asymmetric)
+[25/30] SRC  human | OmegaWiki Defined Meaning
+      ctx: 10 adj + 0 simd (dropped 0 asymmetric)
+[26/30] SRC  human | GND ID
+      ctx: 10 adj + 0 simd (dropped 0 asymmetric)
+      gen#1: Homo sapiens | instance of -> municipality Ġof Ġthe (conf=0.520, cites=10)
+[27/30] SRC  human | Encyclopædia Britannica Online ID
+      ctx: 10 adj + 0 simd (dropped 0 asymmetric)
+[28/30] SRC  human | NE.se ID
+      ctx: 10 adj + 0 simd (dropped 0 asymmetric)
+[29/30] SRC  human | Quora topic ID
+      ctx: 10 adj + 0 simd (dropped 0 asymmetric)
+[30/30] SRC  human | National Library of Israel ID (old)
+      ctx: 10 adj + 0 simd (dropped 0 asymmetric)
+Wrote 480 N-Triples lines for the dropped-asymmetric set (with provenance back to the source triples) -> C:\Users\Immanuelle\Documents\Github\SutraDB\training\data\test_propgen_Q42_v10_asymmetric.nt
+
+Wrote 60 generated triples (1352 N-Triples lines incl. citations) -> C:\Users\Immanuelle\Documents\Github\SutraDB\training\data\test_propgen_Q42_v10.nt
+Summary -> C:\Users\Immanuelle\Documents\Github\SutraDB\training\data\test_propgen_Q42_v10.meta.json
+[2026-05-11 08:59 Pacific Summer Time] DEVLOG entry written for v10 (final ppl 55.52)
+[2026-05-11 08:59 Pacific Summer Time] MODEL.json pinned to v10
+[2026-05-11 08:59 Pacific Summer Time] Pushing v10 snapshot to Hugging Face
+[2026-05-11 08:59 Pacific Summer Time] $ C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\python.exe tools/hf_snapshot.py --user EmmaLeonhart --snapshot-name v10 --no-loka-data
+[OK] dataset repo exists: EmmaLeonhart/loka
+  uploading README.md (refresh)
+
+=== Uploading corpus + checkpoints to EmmaLeonhart/loka ===
+  uploading training/data/triples.txt (36.9 MB) -> corpus/triples.txt
+Processing Files (0 / 0)      : |          |  0.00B /  0.00B            
+New Data Upload               : |          |  0.00B /  0.00B            [A
+
+  training/data/triples.txt   : 100%|##########| 36.9MB / 36.9MB            [A[A
+
+  training/data/triples.txt   : 100%|##########| 36.9MB / 36.9MB            [A[AProcessing Files (1 / 1)      : 100%|##########| 36.9MB / 36.9MB,   ???B/s  
+
+  training/data/triples.txt   : 100%|##########| 36.9MB / 36.9MB            [A[A
+
+  training/data/triples.txt   : 100%|##########| 36.9MB / 36.9MB            [A[A
+
+  training/data/triples.txt   : 100%|##########| 36.9MB / 36.9MB            [A[A
+
+  training/data/triples.txt   : 100%|##########| 36.9MB / 36.9MB            [A[A
+
+  training/data/triples.txt   : 100%|##########| 36.9MB / 36.9MB            [A[A
+
+  training/data/triples.txt   : 100%|##########| 36.9MB / 36.9MB            [A[AProcessing Files (1 / 1)      : 100%|##########| 36.9MB / 36.9MB,  0.00B/s  
+New Data Upload               : |          |  0.00B /  0.00B,  0.00B/s  
+  training/data/triples.txt   : 100%|##########| 36.9MB / 36.9MB            
+No files have been modified since last commit. Skipping to prevent empty commit.
+No files have been modified since last commit. Skipping to prevent empty commit.
+No files have been modified since last commit. Skipping to prevent empty commit.
+No files have been modified since last commit. Skipping to prevent empty commit.
+No files have been modified since last commit. Skipping to prevent empty commit.
+No files have been modified since last commit. Skipping to prevent empty commit.
+  uploading training/data/vocab.json (1.0 MB) -> corpus/vocab.json
+  uploading training/data/vocab_bpe.json (1.0 MB) -> corpus/vocab_bpe.json
+  uploading training/data/tokenizer_bpe.json (3.5 MB) -> corpus/tokenizer_bpe.json
+  uploading training/data/generated_v4_test.nt (0.1 MB) -> corpus/generated_v4_test.nt
+  uploading training/data/generated_v4_repcumul.nt (0.1 MB) -> corpus/generated_v4_repcumul.nt
+  uploading training/checkpoints/wikidata_v0.pt (4.5 MB) -> checkpoints/wikidata_v0.pt
+Processing Files (0 / 0)      : |          |  0.00B /  0.00B            
+New Data Upload               : |          |  0.00B /  0.00B            [A
+
+  ...heckpoints/wikidata_v0.pt: 100%|##########| 4.54MB / 4.54MB            [A[A
+
+  ...heckpoints/wikidata_v0.pt: 100%|##########| 4.54MB / 4.54MB            [A[AProcessing Files (1 / 1)      : 100%|##########| 4.54MB / 4.54MB,   ???B/s  
+
+  ...heckpoints/wikidata_v0.pt: 100%|##########| 4.54MB / 4.54MB            [A[A
+
+  ...heckpoints/wikidata_v0.pt: 100%|##########| 4.54MB / 4.54MB            [A[A
+
+  ...heckpoints/wikidata_v0.pt: 100%|##########| 4.54MB / 4.54MB            [A[AProcessing Files (1 / 1)      : 100%|##########| 4.54MB / 4.54MB,  0.00B/s  
+New Data Upload               : |          |  0.00B /  0.00B,  0.00B/s  
+  ...heckpoints/wikidata_v0.pt: 100%|##########| 4.54MB / 4.54MB            
+No files have been modified since last commit. Skipping to prevent empty commit.
+  uploading training/checkpoints/wikidata_v1.pt (16.9 MB) -> checkpoints/wikidata_v1.pt
+Processing Files (0 / 0)      : |          |  0.00B /  0.00B            
+New Data Upload               : |          |  0.00B /  0.00B            [A
+
+  ...heckpoints/wikidata_v1.pt: 100%|##########| 16.9MB / 16.9MB            [A[A
+
+  ...heckpoints/wikidata_v1.pt: 100%|##########| 16.9MB / 16.9MB            [A[AProcessing Files (1 / 1)      : 100%|##########| 16.9MB / 16.9MB,   ???B/s  
+
+  ...heckpoints/wikidata_v1.pt: 100%|##########| 16.9MB / 16.9MB            [A[A
+
+  ...heckpoints/wikidata_v1.pt: 100%|##########| 16.9MB / 16.9MB            [A[A
+
+  ...heckpoints/wikidata_v1.pt: 100%|##########| 16.9MB / 16.9MB            [A[A
+
+  ...heckpoints/wikidata_v1.pt: 100%|##########| 16.9MB / 16.9MB            [A[AProcessing Files (1 / 1)      : 100%|##########| 16.9MB / 16.9MB,  0.00B/s  
+New Data Upload               : |          |  0.00B /  0.00B,  0.00B/s  
+  ...heckpoints/wikidata_v1.pt: 100%|##########| 16.9MB / 16.9MB            
+No files have been modified since last commit. Skipping to prevent empty commit.
+  uploading training/checkpoints/wikidata_v2.pt (49.1 MB) -> checkpoints/wikidata_v2.pt
+Processing Files (0 / 0)      : |          |  0.00B /  0.00B            
+New Data Upload               : |          |  0.00B /  0.00B            [A
+
+  ...heckpoints/wikidata_v2.pt: 100%|##########| 49.1MB / 49.1MB            [A[A
+
+  ...heckpoints/wikidata_v2.pt: 100%|##########| 49.1MB / 49.1MB            [A[AProcessing Files (1 / 1)      : 100%|##########| 49.1MB / 49.1MB,   ???B/s  
+
+  ...heckpoints/wikidata_v2.pt: 100%|##########| 49.1MB / 49.1MB            [A[A
+
+  ...heckpoints/wikidata_v2.pt: 100%|##########| 49.1MB / 49.1MB            [A[A
+
+  ...heckpoints/wikidata_v2.pt: 100%|##########| 49.1MB / 49.1MB            [A[A
+
+  ...heckpoints/wikidata_v2.pt: 100%|##########| 49.1MB / 49.1MB            [A[A
+
+  ...heckpoints/wikidata_v2.pt: 100%|##########| 49.1MB / 49.1MB            [A[AProcessing Files (1 / 1)      : 100%|##########| 49.1MB / 49.1MB,  0.00B/s  
+New Data Upload               : |          |  0.00B /  0.00B,  0.00B/s  
+  ...heckpoints/wikidata_v2.pt: 100%|##########| 49.1MB / 49.1MB            
+No files have been modified since last commit. Skipping to prevent empty commit.
+  uploading training/checkpoints/wikidata_v3.pt (63.9 MB) -> checkpoints/wikidata_v3.pt
+Processing Files (0 / 0)      : |          |  0.00B /  0.00B            
+New Data Upload               : |          |  0.00B /  0.00B            [A
+
+  ...heckpoints/wikidata_v3.pt: 100%|##########| 63.9MB / 63.9MB            [A[A
+
+  ...heckpoints/wikidata_v3.pt: 100%|##########| 63.9MB / 63.9MB            [A[AProcessing Files (1 / 1)      : 100%|##########| 63.9MB / 63.9MB,   ???B/s  
+
+  ...heckpoints/wikidata_v3.pt: 100%|##########| 63.9MB / 63.9MB            [A[A
+
+  ...heckpoints/wikidata_v3.pt: 100%|##########| 63.9MB / 63.9MB            [A[A
+
+  ...heckpoints/wikidata_v3.pt: 100%|##########| 63.9MB / 63.9MB            [A[A
+
+  ...heckpoints/wikidata_v3.pt: 100%|##########| 63.9MB / 63.9MB            [A[AProcessing Files (1 / 1)      : 100%|##########| 63.9MB / 63.9MB,  0.00B/s  
+New Data Upload               : |          |  0.00B /  0.00B,  0.00B/s  
+  ...heckpoints/wikidata_v3.pt: 100%|##########| 63.9MB / 63.9MB            
+No files have been modified since last commit. Skipping to prevent empty commit.
+  uploading training/checkpoints/wikidata_v4.pt (63.9 MB) -> checkpoints/wikidata_v4.pt
+Processing Files (0 / 0)      : |          |  0.00B /  0.00B            
+New Data Upload               : |          |  0.00B /  0.00B            [A
+
+  ...heckpoints/wikidata_v4.pt: 100%|##########| 63.9MB / 63.9MB            [A[A
+
+  ...heckpoints/wikidata_v4.pt: 100%|##########| 63.9MB / 63.9MB            [A[AProcessing Files (1 / 1)      : 100%|##########| 63.9MB / 63.9MB,   ???B/s  
+
+  ...heckpoints/wikidata_v4.pt: 100%|##########| 63.9MB / 63.9MB            [A[A
+
+  ...heckpoints/wikidata_v4.pt: 100%|##########| 63.9MB / 63.9MB            [A[A
+
+  ...heckpoints/wikidata_v4.pt: 100%|##########| 63.9MB / 63.9MB            [A[A
+
+  ...heckpoints/wikidata_v4.pt: 100%|##########| 63.9MB / 63.9MB            [A[A
+
+  ...heckpoints/wikidata_v4.pt: 100%|##########| 63.9MB / 63.9MB            [A[AProcessing Files (1 / 1)      : 100%|##########| 63.9MB / 63.9MB,  0.00B/s  
+New Data Upload               : |          |  0.00B /  0.00B,  0.00B/s  
+  ...heckpoints/wikidata_v4.pt: 100%|##########| 63.9MB / 63.9MB            
+No files have been modified since last commit. Skipping to prevent empty commit.
+  uploading training/checkpoints/wikidata_v5.pt (178.2 MB) -> checkpoints/wikidata_v5.pt
+Processing Files (0 / 0)      : |          |  0.00B /  0.00B            
+New Data Upload               : |          |  0.00B /  0.00B            [A
+
+  ...heckpoints/wikidata_v5.pt: 100%|##########|  178MB /  178MB            [A[A
+
+  ...heckpoints/wikidata_v5.pt: 100%|##########|  178MB /  178MB            [A[AProcessing Files (1 / 1)      : 100%|##########|  178MB /  178MB,   ???B/s  
+
+  ...heckpoints/wikidata_v5.pt: 100%|##########|  178MB /  178MB            [A[A
+
+  ...heckpoints/wikidata_v5.pt: 100%|##########|  178MB /  178MB            [A[A
+
+  ...heckpoints/wikidata_v5.pt: 100%|##########|  178MB /  178MB            [A[A
+
+  ...heckpoints/wikidata_v5.pt: 100%|##########|  178MB /  178MB            [A[AProcessing Files (1 / 1)      : 100%|##########|  178MB /  178MB,  0.00B/s  
+New Data Upload               : |          |  0.00B /  0.00B,  0.00B/s  
+  ...heckpoints/wikidata_v5.pt: 100%|##########|  178MB /  178MB            
+No files have been modified since last commit. Skipping to prevent empty commit.
+  uploading training/checkpoints/wikidata_v6.pt (178.2 MB) -> checkpoints/wikidata_v6.pt
+Processing Files (0 / 0)      : |          |  0.00B /  0.00B            
+New Data Upload               : |          |  0.00B /  0.00B            [A
+
+  ...heckpoints/wikidata_v6.pt: 100%|##########|  178MB /  178MB            [A[A
+
+  ...heckpoints/wikidata_v6.pt: 100%|##########|  178MB /  178MB            [A[AProcessing Files (1 / 1)      : 100%|##########|  178MB /  178MB,   ???B/s  
+
+  ...heckpoints/wikidata_v6.pt: 100%|##########|  178MB /  178MB            [A[A
+
+  ...heckpoints/wikidata_v6.pt: 100%|##########|  178MB /  178MB            [A[A
+
+  ...heckpoints/wikidata_v6.pt: 100%|##########|  178MB /  178MB            [A[A
+
+  ...heckpoints/wikidata_v6.pt: 100%|##########|  178MB /  178MB            [A[A
+
+  ...heckpoints/wikidata_v6.pt: 100%|##########|  178MB /  178MB            [A[AProcessing Files (1 / 1)      : 100%|##########|  178MB /  178MB,  0.00B/s  
+New Data Upload               : |          |  0.00B /  0.00B,  0.00B/s  
+  ...heckpoints/wikidata_v6.pt: 100%|##########|  178MB /  178MB            
+No files have been modified since last commit. Skipping to prevent empty commit.
+  uploading training/checkpoints/wikidata_v7.pt (178.2 MB) -> checkpoints/wikidata_v7.pt
+Processing Files (0 / 0)      : |          |  0.00B /  0.00B            
+New Data Upload               : |          |  0.00B /  0.00B            [A
+
+  ...heckpoints/wikidata_v7.pt: 100%|##########|  178MB /  178MB            [A[A
+
+  ...heckpoints/wikidata_v7.pt: 100%|##########|  178MB /  178MB            [A[AProcessing Files (1 / 1)      : 100%|##########|  178MB /  178MB,   ???B/s  
+
+  ...heckpoints/wikidata_v7.pt: 100%|##########|  178MB /  178MB            [A[A
+
+  ...heckpoints/wikidata_v7.pt: 100%|##########|  178MB /  178MB            [A[A
+
+  ...heckpoints/wikidata_v7.pt: 100%|##########|  178MB /  178MB            [A[A
+
+  ...heckpoints/wikidata_v7.pt: 100%|##########|  178MB /  178MB            [A[A
+
+  ...heckpoints/wikidata_v7.pt: 100%|##########|  178MB /  178MB            [A[AProcessing Files (1 / 1)      : 100%|##########|  178MB /  178MB,  0.00B/s  
+New Data Upload               : |          |  0.00B /  0.00B,  0.00B/s  
+  ...heckpoints/wikidata_v7.pt: 100%|##########|  178MB /  178MB            
+No files have been modified since last commit. Skipping to prevent empty commit.
+  uploading training/checkpoints/wikidata_v8.pt (178.2 MB) -> checkpoints/wikidata_v8.pt
+Processing Files (0 / 0)      : |          |  0.00B /  0.00B            
+New Data Upload               : |          |  0.00B /  0.00B            [A
+
+  ...heckpoints/wikidata_v8.pt: 100%|##########|  178MB /  178MB            [A[A
+
+  ...heckpoints/wikidata_v8.pt: 100%|##########|  178MB /  178MB            [A[AProcessing Files (1 / 1)      : 100%|##########|  178MB /  178MB,   ???B/s  
+
+  ...heckpoints/wikidata_v8.pt: 100%|##########|  178MB /  178MB            [A[A
+
+  ...heckpoints/wikidata_v8.pt: 100%|##########|  178MB /  178MB            [A[A
+
+  ...heckpoints/wikidata_v8.pt: 100%|##########|  178MB /  178MB            [A[A
+
+  ...heckpoints/wikidata_v8.pt: 100%|##########|  178MB /  178MB            [A[A
+
+  ...heckpoints/wikidata_v8.pt: 100%|##########|  178MB /  178MB            [A[AProcessing Files (1 / 1)      : 100%|##########|  178MB /  178MB,  0.00B/s  
+New Data Upload               : |          |  0.00B /  0.00B,  0.00B/s  
+  ...heckpoints/wikidata_v8.pt: 100%|##########|  178MB /  178MB            
+No files have been modified since last commit. Skipping to prevent empty commit.
+  uploading training/checkpoints/wikidata_v9.pt (178.2 MB) -> checkpoints/wikidata_v9.pt
+Processing Files (0 / 0)      : |          |  0.00B /  0.00B            
+New Data Upload               : |          |  0.00B /  0.00B            [A
+
+  ...heckpoints/wikidata_v9.pt: 100%|##########|  178MB /  178MB            [A[A
+
+  ...heckpoints/wikidata_v9.pt: 100%|##########|  178MB /  178MB            [A[AProcessing Files (1 / 1)      : 100%|##########|  178MB /  178MB,   ???B/s  
+
+  ...heckpoints/wikidata_v9.pt: 100%|##########|  178MB /  178MB            [A[A
+
+  ...heckpoints/wikidata_v9.pt: 100%|##########|  178MB /  178MB            [A[A
+
+  ...heckpoints/wikidata_v9.pt: 100%|##########|  178MB /  178MB            [A[A
+
+  ...heckpoints/wikidata_v9.pt: 100%|##########|  178MB /  178MB            [A[A
+
+  ...heckpoints/wikidata_v9.pt: 100%|##########|  178MB /  178MB            [A[AProcessing Files (1 / 1)      : 100%|##########|  178MB /  178MB,  0.00B/s  
+New Data Upload               : |          |  0.00B /  0.00B,  0.00B/s  
+  ...heckpoints/wikidata_v9.pt: 100%|##########|  178MB /  178MB            
+No files have been modified since last commit. Skipping to prevent empty commit.
+  uploading training/checkpoints/wikidata_v10.pt (178.2 MB) -> checkpoints/wikidata_v10.pt
+Processing Files (0 / 0)      : |          |  0.00B /  0.00B            
+New Data Upload               : |          |  0.00B /  0.00B            [A
+
+  ...eckpoints/wikidata_v10.pt:   0%|          |  555kB /  178MB            [A[A
+
+  ...eckpoints/wikidata_v10.pt:   0%|          |  555kB /  178MB            [A[AProcessing Files (0 / 1)      :   0%|          |  555kB /  178MB,  917kB/s  
+New Data Upload               :   0%|          |  555kB /  134MB,  917kB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:   2%|1         | 2.77MB /  178MB            [A[AProcessing Files (0 / 1)      :   2%|1         | 2.77MB /  178MB, 3.45MB/s  
+New Data Upload               :   2%|2         | 2.77MB /  134MB, 3.45MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:   2%|2         | 3.88MB /  178MB            [A[AProcessing Files (0 / 1)      :   2%|2         | 3.88MB /  178MB, 3.87MB/s  
+New Data Upload               :   3%|2         | 3.88MB /  134MB, 3.87MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:   2%|2         | 3.88MB /  178MB            [A[A
+
+  ...eckpoints/wikidata_v10.pt:   3%|2         | 4.99MB /  178MB            [A[AProcessing Files (0 / 1)      :   3%|2         | 4.99MB /  178MB, 3.55MB/s  
+New Data Upload               :   4%|3         | 4.99MB /  134MB, 3.55MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:   3%|3         | 5.55MB /  178MB            [A[AProcessing Files (0 / 1)      :   3%|3         | 5.55MB /  178MB, 3.46MB/s  
+New Data Upload               :   4%|4         | 5.55MB /  134MB, 3.46MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:   3%|3         | 5.55MB /  178MB            [A[A
+
+  ...eckpoints/wikidata_v10.pt:   3%|3         | 6.10MB /  178MB            [A[AProcessing Files (0 / 1)      :   3%|3         | 6.10MB /  178MB, 3.05MB/s  
+New Data Upload               :   5%|4         | 6.10MB /  134MB, 3.05MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:   4%|3         | 6.66MB /  178MB            [A[AProcessing Files (0 / 1)      :   4%|3         | 6.66MB /  178MB, 3.02MB/s  
+New Data Upload               :   5%|4         | 6.66MB /  134MB, 3.02MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:   4%|4         | 7.21MB /  178MB            [A[AProcessing Files (0 / 1)      :   4%|4         | 7.21MB /  178MB, 3.00MB/s  
+New Data Upload               :   5%|5         | 7.21MB /  134MB, 3.00MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:   4%|4         | 7.21MB /  178MB            [A[A
+
+  ...eckpoints/wikidata_v10.pt:   5%|4         | 8.32MB /  178MB            [A[AProcessing Files (0 / 1)      :   5%|4         | 8.32MB /  178MB, 2.97MB/s  
+New Data Upload               :   6%|6         | 8.32MB /  134MB, 2.97MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:   5%|4         | 8.88MB /  178MB            [A[AProcessing Files (0 / 1)      :   5%|4         | 8.88MB /  178MB, 2.96MB/s  
+New Data Upload               :   7%|6         | 8.88MB /  134MB, 2.96MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:   6%|5         | 9.99MB /  178MB            [A[AProcessing Files (0 / 1)      :   6%|5         | 9.99MB /  178MB, 3.12MB/s  
+New Data Upload               :   7%|7         | 9.99MB /  134MB, 3.12MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:   6%|6         | 11.1MB /  178MB            [A[AProcessing Files (0 / 1)      :   6%|6         | 11.1MB /  178MB, 3.26MB/s  
+New Data Upload               :   8%|8         | 11.1MB /  134MB, 3.26MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:   7%|6         | 11.7MB /  178MB            [A[AProcessing Files (0 / 1)      :   7%|6         | 11.7MB /  178MB, 3.23MB/s  
+New Data Upload               :   9%|8         | 11.7MB /  134MB, 3.23MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:   7%|7         | 12.8MB /  178MB            [A[AProcessing Files (0 / 1)      :   7%|7         | 12.8MB /  178MB, 3.35MB/s  
+New Data Upload               :  10%|9         | 12.8MB /  134MB, 3.35MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:   8%|7         | 13.9MB /  178MB            [A[AProcessing Files (0 / 1)      :   8%|7         | 13.9MB /  178MB, 3.46MB/s  
+New Data Upload               :  10%|#         | 13.9MB /  134MB, 3.46MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:   8%|8         | 14.4MB /  178MB            [A[AProcessing Files (0 / 1)      :   8%|8         | 14.4MB /  178MB, 3.43MB/s  
+New Data Upload               :  11%|#         | 14.4MB /  134MB, 3.43MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:   9%|8         | 15.5MB /  178MB            [A[AProcessing Files (0 / 1)      :   9%|8         | 15.5MB /  178MB, 3.52MB/s  
+New Data Upload               :  12%|#1        | 15.5MB /  134MB, 3.52MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:   9%|9         | 16.1MB /  178MB            [A[AProcessing Files (0 / 1)      :   9%|9         | 16.1MB /  178MB, 3.49MB/s  
+New Data Upload               :  12%|#1        | 16.1MB /  134MB, 3.49MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  10%|9         | 17.2MB /  178MB            [A[AProcessing Files (0 / 1)      :  10%|9         | 17.2MB /  178MB, 3.58MB/s  
+New Data Upload               :  13%|#2        | 17.2MB /  134MB, 3.58MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  10%|#         | 18.3MB /  178MB            [A[AProcessing Files (0 / 1)      :  10%|#         | 18.3MB /  178MB, 3.66MB/s  
+New Data Upload               :  14%|#3        | 18.3MB /  134MB, 3.66MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  11%|#         | 18.9MB /  178MB            [A[AProcessing Files (0 / 1)      :  11%|#         | 18.9MB /  178MB, 3.62MB/s  
+New Data Upload               :  14%|#4        | 18.9MB /  134MB, 3.62MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  11%|#1        | 20.0MB /  178MB            [A[AProcessing Files (0 / 1)      :  11%|#1        | 20.0MB /  178MB, 3.69MB/s  
+New Data Upload               :  15%|#4        | 20.0MB /  134MB, 3.69MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  12%|#1        | 21.1MB /  178MB            [A[AProcessing Files (0 / 1)      :  12%|#1        | 21.1MB /  178MB, 3.76MB/s  
+New Data Upload               :  16%|#5        | 21.1MB /  134MB, 3.76MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  12%|#2        | 22.2MB /  178MB            [A[AProcessing Files (0 / 1)      :  12%|#2        | 22.2MB /  178MB, 3.82MB/s  
+New Data Upload               :  17%|#6        | 22.2MB /  134MB, 3.82MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  13%|#3        | 23.3MB /  178MB            [A[AProcessing Files (0 / 1)      :  13%|#3        | 23.3MB /  178MB, 3.88MB/s  
+New Data Upload               :  17%|#7        | 23.3MB /  134MB, 3.88MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  13%|#3        | 23.9MB /  178MB            [A[AProcessing Files (0 / 1)      :  13%|#3        | 23.9MB /  178MB, 3.85MB/s  
+New Data Upload               :  18%|#7        | 23.9MB /  134MB, 3.85MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  14%|#4        | 25.0MB /  178MB            [A[AProcessing Files (0 / 1)      :  14%|#4        | 25.0MB /  178MB, 3.90MB/s  
+New Data Upload               :  19%|#8        | 25.0MB /  134MB, 3.90MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  14%|#4        | 25.5MB /  178MB            [A[AProcessing Files (0 / 1)      :  14%|#4        | 25.5MB /  178MB, 3.87MB/s  
+New Data Upload               :  19%|#9        | 25.5MB /  134MB, 3.87MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  15%|#4        | 26.1MB /  178MB            [A[AProcessing Files (0 / 1)      :  15%|#4        | 26.1MB /  178MB, 3.84MB/s  
+New Data Upload               :  19%|#9        | 26.1MB /  134MB, 3.84MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  15%|#5        | 27.2MB /  178MB            [A[AProcessing Files (0 / 1)      :  15%|#5        | 27.2MB /  178MB, 3.88MB/s  
+New Data Upload               :  20%|##        | 27.2MB /  134MB, 3.88MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  16%|#5        | 27.7MB /  178MB            [A[AProcessing Files (0 / 1)      :  16%|#5        | 27.7MB /  178MB, 3.85MB/s  
+New Data Upload               :  21%|##        | 27.7MB /  134MB, 3.85MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  16%|#5        | 28.3MB /  178MB            [A[AProcessing Files (0 / 1)      :  16%|#5        | 28.3MB /  178MB, 3.82MB/s  
+New Data Upload               :  21%|##1       | 28.3MB /  134MB, 3.82MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  17%|#6        | 29.4MB /  178MB            [A[AProcessing Files (0 / 1)      :  17%|#6        | 29.4MB /  178MB, 3.86MB/s  
+New Data Upload               :  22%|##1       | 29.4MB /  134MB, 3.86MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  17%|#7        | 30.5MB /  178MB            [A[AProcessing Files (0 / 1)      :  17%|#7        | 30.5MB /  178MB, 3.91MB/s  
+New Data Upload               :  23%|##2       | 30.5MB /  134MB, 3.91MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  17%|#7        | 31.1MB /  178MB            [A[AProcessing Files (0 / 1)      :  17%|#7        | 31.1MB /  178MB, 3.88MB/s  
+New Data Upload               :  23%|##3       | 31.1MB /  134MB, 3.88MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  18%|#8        | 32.2MB /  178MB            [A[AProcessing Files (0 / 1)      :  18%|#8        | 32.2MB /  178MB, 3.92MB/s  
+New Data Upload               :  24%|##3       | 32.2MB /  134MB, 3.92MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  18%|#8        | 32.7MB /  178MB            [A[AProcessing Files (0 / 1)      :  18%|#8        | 32.7MB /  178MB, 3.89MB/s  
+New Data Upload               :  24%|##4       | 32.7MB /  134MB, 3.89MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  19%|#8        | 33.3MB /  178MB            [A[AProcessing Files (0 / 1)      :  19%|#8        | 33.3MB /  178MB, 3.87MB/s  
+New Data Upload               :  25%|##4       | 33.3MB /  134MB, 3.87MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  19%|#8        | 33.8MB /  178MB            [A[AProcessing Files (0 / 1)      :  19%|#8        | 33.8MB /  178MB, 3.84MB/s  
+New Data Upload               :  25%|##5       | 33.8MB /  134MB, 3.84MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  19%|#9        | 34.4MB /  178MB            [A[AProcessing Files (0 / 1)      :  19%|#9        | 34.4MB /  178MB, 3.82MB/s  
+New Data Upload               :  26%|##5       | 34.4MB /  134MB, 3.82MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  20%|#9        | 35.0MB /  178MB            [A[AProcessing Files (0 / 1)      :  20%|#9        | 35.0MB /  178MB, 3.80MB/s  
+New Data Upload               :  26%|##6       | 35.0MB /  134MB, 3.80MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  20%|#9        | 35.5MB /  178MB            [A[AProcessing Files (0 / 1)      :  20%|#9        | 35.5MB /  178MB, 3.77MB/s  
+New Data Upload               :  26%|##6       | 35.5MB /  134MB, 3.77MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  20%|##        | 36.1MB /  178MB            [A[AProcessing Files (0 / 1)      :  20%|##        | 36.1MB /  178MB, 3.75MB/s  
+New Data Upload               :  27%|##6       | 36.1MB /  134MB, 3.75MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  21%|##        | 36.6MB /  178MB            [A[AProcessing Files (0 / 1)      :  21%|##        | 36.6MB /  178MB, 3.73MB/s  
+New Data Upload               :  27%|##7       | 36.6MB /  134MB, 3.73MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  21%|##        | 37.2MB /  178MB            [A[AProcessing Files (0 / 1)      :  21%|##        | 37.2MB /  178MB, 3.72MB/s  
+New Data Upload               :  28%|##7       | 37.2MB /  134MB, 3.72MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  21%|##1       | 37.7MB /  178MB            [A[AProcessing Files (0 / 1)      :  21%|##1       | 37.7MB /  178MB, 3.70MB/s  
+New Data Upload               :  28%|##8       | 37.7MB /  134MB, 3.70MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  22%|##1       | 38.8MB /  178MB            [A[AProcessing Files (0 / 1)      :  22%|##1       | 38.8MB /  178MB, 3.81MB/s  
+New Data Upload               :  29%|##8       | 38.8MB /  134MB, 3.81MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  22%|##2       | 39.4MB /  178MB            [A[AProcessing Files (0 / 1)      :  22%|##2       | 39.4MB /  178MB, 3.86MB/s  
+New Data Upload               :  29%|##9       | 39.4MB /  134MB, 3.86MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  23%|##2       | 40.5MB /  178MB            [A[AProcessing Files (0 / 1)      :  23%|##2       | 40.5MB /  178MB, 3.92MB/s  
+New Data Upload               :  30%|###       | 40.5MB /  134MB, 3.92MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  23%|##3       | 41.1MB /  178MB            [A[AProcessing Files (0 / 1)      :  23%|##3       | 41.1MB /  178MB, 3.75MB/s  
+New Data Upload               :  31%|###       | 41.1MB /  134MB, 3.75MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  24%|##3       | 42.7MB /  178MB            [A[AProcessing Files (0 / 1)      :  24%|##3       | 42.7MB /  178MB, 3.81MB/s  
+New Data Upload               :  32%|###1      | 42.7MB /  134MB, 3.81MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  25%|##4       | 43.8MB /  178MB            [A[AProcessing Files (0 / 1)      :  25%|##4       | 43.8MB /  178MB, 3.92MB/s  
+New Data Upload               :  33%|###2      | 43.8MB /  134MB, 3.92MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  25%|##5       | 44.9MB /  178MB            [A[AProcessing Files (0 / 1)      :  25%|##5       | 44.9MB /  178MB, 3.92MB/s  
+New Data Upload               :  33%|###3      | 44.9MB /  134MB, 3.92MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  26%|##5       | 45.5MB /  178MB            [A[AProcessing Files (0 / 1)      :  26%|##5       | 45.5MB /  178MB, 3.92MB/s  
+New Data Upload               :  34%|###3      | 45.5MB /  134MB, 3.92MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  26%|##6       | 46.6MB /  178MB            [A[AProcessing Files (0 / 1)      :  26%|##6       | 46.6MB /  178MB, 4.03MB/s  
+New Data Upload               :  35%|###4      | 46.6MB /  134MB, 4.03MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  27%|##6       | 47.7MB /  178MB            [A[AProcessing Files (0 / 1)      :  27%|##6       | 47.7MB /  178MB, 4.08MB/s  
+New Data Upload               :  36%|###5      | 47.7MB /  134MB, 4.08MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  27%|##7       | 48.8MB /  178MB            [A[AProcessing Files (0 / 1)      :  27%|##7       | 48.8MB /  178MB, 4.14MB/s  
+New Data Upload               :  36%|###6      | 48.8MB /  134MB, 4.14MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  28%|##8       | 49.9MB /  178MB            [A[AProcessing Files (0 / 1)      :  28%|##8       | 49.9MB /  178MB, 4.19MB/s  
+New Data Upload               :  37%|###7      | 49.9MB /  134MB, 4.19MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  29%|##8       | 51.0MB /  178MB            [A[AProcessing Files (0 / 1)      :  29%|##8       | 51.0MB /  178MB, 4.30MB/s  
+New Data Upload               :  38%|###8      | 51.0MB /  134MB, 4.30MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  29%|##9       | 52.2MB /  178MB            [A[AProcessing Files (0 / 1)      :  29%|##9       | 52.2MB /  178MB, 4.30MB/s  
+New Data Upload               :  39%|###8      | 52.2MB /  134MB, 4.30MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  30%|##9       | 52.7MB /  178MB            [A[AProcessing Files (0 / 1)      :  30%|##9       | 52.7MB /  178MB, 4.30MB/s  
+New Data Upload               :  39%|###9      | 52.7MB /  134MB, 4.30MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  30%|###       | 53.8MB /  178MB            [A[AProcessing Files (0 / 1)      :  30%|###       | 53.8MB /  178MB, 4.30MB/s  
+New Data Upload               :  40%|####      | 53.8MB /  134MB, 4.30MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  31%|###       | 54.4MB /  178MB            [A[AProcessing Files (0 / 1)      :  31%|###       | 54.4MB /  178MB, 4.24MB/s  
+New Data Upload               :  41%|####      | 54.4MB /  134MB, 4.24MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  31%|###1      | 55.5MB /  178MB            [A[AProcessing Files (0 / 1)      :  31%|###1      | 55.5MB /  178MB, 4.30MB/s  
+New Data Upload               :  41%|####1     | 55.5MB /  134MB, 4.30MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  32%|###1      | 56.6MB /  178MB            [A[AProcessing Files (0 / 1)      :  32%|###1      | 56.6MB /  178MB, 4.30MB/s  
+New Data Upload               :  42%|####2     | 56.6MB /  134MB, 4.30MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  32%|###2      | 57.7MB /  178MB            [A[AProcessing Files (0 / 1)      :  32%|###2      | 57.7MB /  178MB, 4.30MB/s  
+New Data Upload               :  43%|####2     | 57.7MB /  134MB, 4.30MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  33%|###3      | 58.8MB /  178MB            [A[AProcessing Files (0 / 1)      :  33%|###3      | 58.8MB /  178MB, 4.35MB/s  
+New Data Upload               :  44%|####3     | 58.8MB /  134MB, 4.35MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  34%|###3      | 59.9MB /  178MB            [A[AProcessing Files (0 / 1)      :  34%|###3      | 59.9MB /  178MB, 4.35MB/s  
+New Data Upload               :  45%|####4     | 59.9MB /  134MB, 4.35MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  34%|###4      | 61.0MB /  178MB            [A[AProcessing Files (0 / 1)      :  34%|###4      | 61.0MB /  178MB, 4.40MB/s  
+New Data Upload               :  45%|####5     | 61.0MB /  134MB, 4.40MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  35%|###5      | 62.7MB /  178MB            [A[AProcessing Files (0 / 1)      :  35%|###5      | 62.7MB /  178MB, 4.46MB/s  
+New Data Upload               :  47%|####6     | 62.7MB /  134MB, 4.46MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  36%|###5      | 63.8MB /  178MB            [A[AProcessing Files (0 / 1)      :  36%|###5      | 63.8MB /  178MB, 4.46MB/s  
+New Data Upload               :  48%|####7     | 63.8MB /  134MB, 4.46MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  36%|###6      | 64.9MB /  178MB            [A[AProcessing Files (0 / 1)      :  36%|###6      | 64.9MB /  178MB, 4.51MB/s  
+New Data Upload               :  48%|####8     | 64.9MB /  134MB, 4.51MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  37%|###7      | 66.0MB /  178MB            [A[AProcessing Files (0 / 1)      :  37%|###7      | 66.0MB /  178MB, 4.52MB/s  
+New Data Upload               :  49%|####9     | 66.0MB /  134MB, 4.52MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  37%|###7      | 66.6MB /  178MB            [A[AProcessing Files (0 / 1)      :  37%|###7      | 66.6MB /  178MB, 4.46MB/s  
+New Data Upload               :  50%|####9     | 66.6MB /  134MB, 4.46MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  37%|###7      | 66.6MB /  178MB            [A[A
+
+  ...eckpoints/wikidata_v10.pt:  37%|###7      | 66.6MB /  178MB            [A[A
+
+  ...eckpoints/wikidata_v10.pt:  37%|###7      | 66.6MB /  178MB            [A[A
+
+  ...eckpoints/wikidata_v10.pt:  37%|###7      | 66.6MB /  178MB            [A[A
+
+  ...eckpoints/wikidata_v10.pt:  38%|###8      | 68.2MB /  178MB            [A[AProcessing Files (0 / 1)      :  38%|###8      | 68.2MB /  178MB, 4.18MB/s  
+New Data Upload               :  38%|###8      | 68.2MB /  178MB, 4.18MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  39%|###8      | 69.3MB /  178MB            [A[AProcessing Files (0 / 1)      :  39%|###8      | 69.3MB /  178MB, 4.24MB/s  
+New Data Upload               :  39%|###8      | 69.3MB /  178MB, 4.24MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  40%|####      | 71.5MB /  178MB            [A[AProcessing Files (0 / 1)      :  40%|####      | 71.5MB /  178MB, 4.35MB/s  
+New Data Upload               :  40%|####      | 71.5MB /  178MB, 4.35MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  41%|####1     | 73.2MB /  178MB            [A[AProcessing Files (0 / 1)      :  41%|####1     | 73.2MB /  178MB, 4.46MB/s  
+New Data Upload               :  41%|####1     | 73.2MB /  178MB, 4.46MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  43%|####2     | 76.0MB /  178MB            [A[AProcessing Files (0 / 1)      :  43%|####2     | 76.0MB /  178MB, 4.68MB/s  
+New Data Upload               :  43%|####2     | 76.0MB /  178MB, 4.68MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  43%|####3     | 77.1MB /  178MB            [A[AProcessing Files (0 / 1)      :  43%|####3     | 77.1MB /  178MB, 4.68MB/s  
+New Data Upload               :  43%|####3     | 77.1MB /  178MB, 4.68MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  44%|####4     | 78.8MB /  178MB            [A[AProcessing Files (0 / 1)      :  44%|####4     | 78.8MB /  178MB, 4.73MB/s  
+New Data Upload               :  44%|####4     | 78.8MB /  178MB, 4.73MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  45%|####4     | 79.9MB /  178MB            [A[AProcessing Files (0 / 1)      :  45%|####4     | 79.9MB /  178MB, 4.79MB/s  
+New Data Upload               :  45%|####4     | 79.9MB /  178MB, 4.79MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  45%|####5     | 81.0MB /  178MB            [A[AProcessing Files (0 / 1)      :  45%|####5     | 81.0MB /  178MB, 4.79MB/s  
+New Data Upload               :  45%|####5     | 81.0MB /  178MB, 4.79MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  46%|####6     | 82.1MB /  178MB            [A[AProcessing Files (0 / 1)      :  46%|####6     | 82.1MB /  178MB, 4.85MB/s  
+New Data Upload               :  46%|####6     | 82.1MB /  178MB, 4.85MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  47%|####6     | 83.2MB /  178MB            [A[AProcessing Files (0 / 1)      :  47%|####6     | 83.2MB /  178MB, 4.90MB/s  
+New Data Upload               :  47%|####6     | 83.2MB /  178MB, 4.90MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  47%|####7     | 84.3MB /  178MB            [A[AProcessing Files (0 / 1)      :  47%|####7     | 84.3MB /  178MB, 4.96MB/s  
+New Data Upload               :  47%|####7     | 84.3MB /  178MB, 4.96MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  48%|####7     | 84.9MB /  178MB            [A[AProcessing Files (0 / 1)      :  48%|####7     | 84.9MB /  178MB, 4.95MB/s  
+New Data Upload               :  48%|####7     | 84.9MB /  178MB, 4.95MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  49%|####8     | 86.6MB /  178MB            [A[AProcessing Files (0 / 1)      :  49%|####8     | 86.6MB /  178MB, 5.06MB/s  
+New Data Upload               :  49%|####8     | 86.6MB /  178MB, 5.06MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  49%|####9     | 87.7MB /  178MB            [A[AProcessing Files (0 / 1)      :  49%|####9     | 87.7MB /  178MB, 5.11MB/s  
+New Data Upload               :  49%|####9     | 87.7MB /  178MB, 5.11MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  50%|####9     | 88.8MB /  178MB            [A[AProcessing Files (0 / 1)      :  50%|####9     | 88.8MB /  178MB, 5.17MB/s  
+New Data Upload               :  50%|####9     | 88.8MB /  178MB, 5.17MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  50%|#####     | 89.9MB /  178MB            [A[AProcessing Files (0 / 1)      :  50%|#####     | 89.9MB /  178MB, 5.23MB/s  
+New Data Upload               :  50%|#####     | 89.9MB /  178MB, 5.23MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  51%|#####1    | 91.0MB /  178MB            [A[AProcessing Files (0 / 1)      :  51%|#####1    | 91.0MB /  178MB, 5.28MB/s  
+New Data Upload               :  51%|#####1    | 91.0MB /  178MB, 5.28MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  52%|#####1    | 92.1MB /  178MB            [A[AProcessing Files (0 / 1)      :  52%|#####1    | 92.1MB /  178MB, 5.34MB/s  
+New Data Upload               :  52%|#####1    | 92.1MB /  178MB, 5.34MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  52%|#####2    | 92.7MB /  178MB            [A[AProcessing Files (0 / 1)      :  52%|#####2    | 92.7MB /  178MB, 5.28MB/s  
+New Data Upload               :  52%|#####2    | 92.7MB /  178MB, 5.28MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  53%|#####2    | 93.8MB /  178MB            [A[AProcessing Files (0 / 1)      :  53%|#####2    | 93.8MB /  178MB, 5.33MB/s  
+New Data Upload               :  53%|#####2    | 93.8MB /  178MB, 5.33MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  53%|#####3    | 94.9MB /  178MB            [A[AProcessing Files (0 / 1)      :  53%|#####3    | 94.9MB /  178MB, 5.33MB/s  
+New Data Upload               :  53%|#####3    | 94.9MB /  178MB, 5.33MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  54%|#####3    | 96.0MB /  178MB            [A[AProcessing Files (0 / 1)      :  54%|#####3    | 96.0MB /  178MB, 5.39MB/s  
+New Data Upload               :  54%|#####3    | 96.0MB /  178MB, 5.39MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  55%|#####4    | 97.1MB /  178MB            [A[AProcessing Files (0 / 1)      :  55%|#####4    | 97.1MB /  178MB, 5.34MB/s  
+New Data Upload               :  55%|#####4    | 97.1MB /  178MB, 5.34MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  55%|#####4    | 97.1MB /  178MB            [A[A
+
+  ...eckpoints/wikidata_v10.pt:  55%|#####5    | 98.2MB /  178MB            [A[AProcessing Files (0 / 1)      :  55%|#####5    | 98.2MB /  178MB, 5.22MB/s  
+New Data Upload               :  55%|#####5    | 98.2MB /  178MB, 5.22MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  56%|#####5    | 99.3MB /  178MB            [A[AProcessing Files (0 / 1)      :  56%|#####5    | 99.3MB /  178MB, 5.27MB/s  
+New Data Upload               :  56%|#####5    | 99.3MB /  178MB, 5.27MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  57%|#####6    |  101MB /  178MB            [A[AProcessing Files (0 / 1)      :  57%|#####6    |  101MB /  178MB, 5.34MB/s  
+New Data Upload               :  57%|#####6    |  101MB /  178MB, 5.34MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  57%|#####7    |  102MB /  178MB            [A[AProcessing Files (0 / 1)      :  57%|#####7    |  102MB /  178MB, 5.28MB/s  
+New Data Upload               :  57%|#####7    |  102MB /  178MB, 5.28MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  58%|#####7    |  103MB /  178MB            [A[AProcessing Files (0 / 1)      :  58%|#####7    |  103MB /  178MB, 5.28MB/s  
+New Data Upload               :  58%|#####7    |  103MB /  178MB, 5.28MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  58%|#####8    |  104MB /  178MB            [A[AProcessing Files (0 / 1)      :  58%|#####8    |  104MB /  178MB, 5.28MB/s  
+New Data Upload               :  58%|#####8    |  104MB /  178MB, 5.28MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  59%|#####8    |  105MB /  178MB            [A[AProcessing Files (0 / 1)      :  59%|#####8    |  105MB /  178MB, 5.28MB/s  
+New Data Upload               :  59%|#####8    |  105MB /  178MB, 5.28MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  59%|#####9    |  105MB /  178MB            [A[AProcessing Files (0 / 1)      :  59%|#####9    |  105MB /  178MB, 5.22MB/s  
+New Data Upload               :  59%|#####9    |  105MB /  178MB, 5.22MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  60%|#####9    |  107MB /  178MB            [A[AProcessing Files (0 / 1)      :  60%|#####9    |  107MB /  178MB, 5.28MB/s  
+New Data Upload               :  60%|#####9    |  107MB /  178MB, 5.28MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  60%|######    |  108MB /  178MB            [A[AProcessing Files (0 / 1)      :  60%|######    |  108MB /  178MB, 5.28MB/s  
+New Data Upload               :  60%|######    |  108MB /  178MB, 5.28MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  61%|######1   |  109MB /  178MB            [A[AProcessing Files (0 / 1)      :  61%|######1   |  109MB /  178MB, 5.34MB/s  
+New Data Upload               :  61%|######1   |  109MB /  178MB, 5.34MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  62%|######1   |  110MB /  178MB            [A[AProcessing Files (0 / 1)      :  62%|######1   |  110MB /  178MB, 5.34MB/s  
+New Data Upload               :  62%|######1   |  110MB /  178MB, 5.34MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  62%|######2   |  111MB /  178MB            [A[AProcessing Files (0 / 1)      :  62%|######2   |  111MB /  178MB, 5.34MB/s  
+New Data Upload               :  62%|######2   |  111MB /  178MB, 5.34MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  63%|######2   |  112MB /  178MB            [A[AProcessing Files (0 / 1)      :  63%|######2   |  112MB /  178MB, 5.29MB/s  
+New Data Upload               :  63%|######2   |  112MB /  178MB, 5.29MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  64%|######3   |  113MB /  178MB            [A[AProcessing Files (0 / 1)      :  64%|######3   |  113MB /  178MB, 5.34MB/s  
+New Data Upload               :  64%|######3   |  113MB /  178MB, 5.34MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  65%|######4   |  115MB /  178MB            [A[AProcessing Files (0 / 1)      :  65%|######4   |  115MB /  178MB, 5.39MB/s  
+New Data Upload               :  65%|######4   |  115MB /  178MB, 5.39MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  65%|######5   |  116MB /  178MB            [A[AProcessing Files (0 / 1)      :  65%|######5   |  116MB /  178MB, 5.39MB/s  
+New Data Upload               :  65%|######5   |  116MB /  178MB, 5.39MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  66%|######5   |  117MB /  178MB            [A[AProcessing Files (0 / 1)      :  66%|######5   |  117MB /  178MB, 5.33MB/s  
+New Data Upload               :  66%|######5   |  117MB /  178MB, 5.33MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  66%|######6   |  118MB /  178MB            [A[AProcessing Files (0 / 1)      :  66%|######6   |  118MB /  178MB, 5.34MB/s  
+New Data Upload               :  66%|######6   |  118MB /  178MB, 5.34MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  67%|######7   |  120MB /  178MB            [A[AProcessing Files (0 / 1)      :  67%|######7   |  120MB /  178MB, 5.39MB/s  
+New Data Upload               :  67%|######7   |  120MB /  178MB, 5.39MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  68%|######8   |  122MB /  178MB            [A[AProcessing Files (0 / 1)      :  68%|######8   |  122MB /  178MB, 5.44MB/s  
+New Data Upload               :  68%|######8   |  122MB /  178MB, 5.44MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  69%|######8   |  123MB /  178MB            [A[AProcessing Files (0 / 1)      :  69%|######8   |  123MB /  178MB, 5.50MB/s  
+New Data Upload               :  69%|######8   |  123MB /  178MB, 5.50MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  70%|######9   |  124MB /  178MB            [A[AProcessing Files (0 / 1)      :  70%|######9   |  124MB /  178MB, 5.67MB/s  
+New Data Upload               :  70%|######9   |  124MB /  178MB, 5.67MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  70%|#######   |  125MB /  178MB            [A[AProcessing Files (0 / 1)      :  70%|#######   |  125MB /  178MB, 5.78MB/s  
+New Data Upload               :  70%|#######   |  125MB /  178MB, 5.78MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  71%|#######1  |  127MB /  178MB            [A[AProcessing Files (0 / 1)      :  71%|#######1  |  127MB /  178MB, 5.94MB/s  
+New Data Upload               :  71%|#######1  |  127MB /  178MB, 5.94MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  72%|#######1  |  128MB /  178MB            [A[AProcessing Files (0 / 1)      :  72%|#######1  |  128MB /  178MB, 6.05MB/s  
+New Data Upload               :  72%|#######1  |  128MB /  178MB, 6.05MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  72%|#######2  |  129MB /  178MB            [A[AProcessing Files (0 / 1)      :  72%|#######2  |  129MB /  178MB, 5.94MB/s  
+New Data Upload               :  72%|#######2  |  129MB /  178MB, 5.94MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  73%|#######2  |  130MB /  178MB            [A[AProcessing Files (0 / 1)      :  73%|#######2  |  130MB /  178MB, 5.94MB/s  
+New Data Upload               :  73%|#######2  |  130MB /  178MB, 5.94MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  74%|#######3  |  131MB /  178MB            [A[AProcessing Files (0 / 1)      :  74%|#######3  |  131MB /  178MB, 5.83MB/s  
+New Data Upload               :  74%|#######3  |  131MB /  178MB, 5.83MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  74%|#######4  |  132MB /  178MB            [A[AProcessing Files (0 / 1)      :  74%|#######4  |  132MB /  178MB, 5.77MB/s  
+New Data Upload               :  74%|#######4  |  132MB /  178MB, 5.77MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  75%|#######5  |  134MB /  178MB            [A[AProcessing Files (0 / 1)      :  75%|#######5  |  134MB /  178MB, 5.67MB/s  
+New Data Upload               :  75%|#######5  |  134MB /  178MB, 5.67MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  76%|#######5  |  135MB /  178MB            [A[AProcessing Files (0 / 1)      :  76%|#######5  |  135MB /  178MB, 5.67MB/s  
+New Data Upload               :  76%|#######5  |  135MB /  178MB, 5.67MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  76%|#######6  |  136MB /  178MB            [A[AProcessing Files (0 / 1)      :  76%|#######6  |  136MB /  178MB, 5.61MB/s  
+New Data Upload               :  76%|#######6  |  136MB /  178MB, 5.61MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  77%|#######6  |  137MB /  178MB            [A[AProcessing Files (0 / 1)      :  77%|#######6  |  137MB /  178MB, 5.61MB/s  
+New Data Upload               :  77%|#######6  |  137MB /  178MB, 5.61MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  78%|#######7  |  138MB /  178MB            [A[AProcessing Files (0 / 1)      :  78%|#######7  |  138MB /  178MB, 5.62MB/s  
+New Data Upload               :  78%|#######7  |  138MB /  178MB, 5.62MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  79%|#######8  |  140MB /  178MB            [A[AProcessing Files (0 / 1)      :  79%|#######8  |  140MB /  178MB, 5.67MB/s  
+New Data Upload               :  79%|#######8  |  140MB /  178MB, 5.67MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  79%|#######9  |  141MB /  178MB            [A[AProcessing Files (0 / 1)      :  79%|#######9  |  141MB /  178MB, 5.66MB/s  
+New Data Upload               :  79%|#######9  |  141MB /  178MB, 5.66MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  80%|#######9  |  142MB /  178MB            [A[AProcessing Files (0 / 1)      :  80%|#######9  |  142MB /  178MB, 5.66MB/s  
+New Data Upload               :  80%|#######9  |  142MB /  178MB, 5.66MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  80%|########  |  143MB /  178MB            [A[AProcessing Files (0 / 1)      :  80%|########  |  143MB /  178MB, 5.67MB/s  
+New Data Upload               :  80%|########  |  143MB /  178MB, 5.67MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  80%|########  |  143MB /  178MB            [A[AProcessing Files (0 / 1)      :  80%|########  |  143MB /  178MB, 5.56MB/s  
+New Data Upload               :  80%|########  |  143MB /  178MB, 5.56MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  81%|########1 |  144MB /  178MB            [A[AProcessing Files (0 / 1)      :  81%|########1 |  144MB /  178MB, 5.56MB/s  
+New Data Upload               :  81%|########1 |  144MB /  178MB, 5.56MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  82%|########1 |  145MB /  178MB            [A[AProcessing Files (0 / 1)      :  82%|########1 |  145MB /  178MB, 5.56MB/s  
+New Data Upload               :  82%|########1 |  145MB /  178MB, 5.56MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  82%|########1 |  146MB /  178MB            [A[AProcessing Files (0 / 1)      :  82%|########1 |  146MB /  178MB, 5.50MB/s  
+New Data Upload               :  82%|########1 |  146MB /  178MB, 5.50MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  82%|########2 |  147MB /  178MB            [A[AProcessing Files (0 / 1)      :  82%|########2 |  147MB /  178MB, 5.45MB/s  
+New Data Upload               :  82%|########2 |  147MB /  178MB, 5.45MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  83%|########2 |  148MB /  178MB            [A[AProcessing Files (0 / 1)      :  83%|########2 |  148MB /  178MB, 5.45MB/s  
+New Data Upload               :  83%|########2 |  148MB /  178MB, 5.45MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  84%|########3 |  149MB /  178MB            [A[AProcessing Files (0 / 1)      :  84%|########3 |  149MB /  178MB, 5.50MB/s  
+New Data Upload               :  84%|########3 |  149MB /  178MB, 5.50MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  84%|########4 |  150MB /  178MB            [A[AProcessing Files (0 / 1)      :  84%|########4 |  150MB /  178MB, 5.51MB/s  
+New Data Upload               :  84%|########4 |  150MB /  178MB, 5.51MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  85%|########4 |  151MB /  178MB            [A[AProcessing Files (0 / 1)      :  85%|########4 |  151MB /  178MB, 5.50MB/s  
+New Data Upload               :  85%|########4 |  151MB /  178MB, 5.50MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  86%|########5 |  153MB /  178MB            [A[AProcessing Files (0 / 1)      :  86%|########5 |  153MB /  178MB, 5.56MB/s  
+New Data Upload               :  86%|########5 |  153MB /  178MB, 5.56MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  86%|########6 |  154MB /  178MB            [A[AProcessing Files (0 / 1)      :  86%|########6 |  154MB /  178MB, 5.56MB/s  
+New Data Upload               :  86%|########6 |  154MB /  178MB, 5.56MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  87%|########6 |  155MB /  178MB            [A[AProcessing Files (0 / 1)      :  87%|########6 |  155MB /  178MB, 5.67MB/s  
+New Data Upload               :  87%|########6 |  155MB /  178MB, 5.67MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  88%|########7 |  157MB /  178MB            [A[AProcessing Files (0 / 1)      :  88%|########7 |  157MB /  178MB, 5.73MB/s  
+New Data Upload               :  88%|########7 |  157MB /  178MB, 5.73MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  89%|########8 |  158MB /  178MB            [A[AProcessing Files (0 / 1)      :  89%|########8 |  158MB /  178MB, 5.78MB/s  
+New Data Upload               :  89%|########8 |  158MB /  178MB, 5.78MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  89%|########9 |  159MB /  178MB            [A[AProcessing Files (0 / 1)      :  89%|########9 |  159MB /  178MB, 5.67MB/s  
+New Data Upload               :  89%|########9 |  159MB /  178MB, 5.67MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  90%|########9 |  160MB /  178MB            [A[AProcessing Files (0 / 1)      :  90%|########9 |  160MB /  178MB, 5.73MB/s  
+New Data Upload               :  90%|########9 |  160MB /  178MB, 5.73MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  90%|######### |  161MB /  178MB            [A[AProcessing Files (0 / 1)      :  90%|######### |  161MB /  178MB, 5.67MB/s  
+New Data Upload               :  90%|######### |  161MB /  178MB, 5.67MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  91%|######### |  162MB /  178MB            [A[AProcessing Files (0 / 1)      :  91%|######### |  162MB /  178MB, 5.67MB/s  
+New Data Upload               :  91%|######### |  162MB /  178MB, 5.67MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  91%|#########1|  162MB /  178MB            [A[AProcessing Files (0 / 1)      :  91%|#########1|  162MB /  178MB, 5.61MB/s  
+New Data Upload               :  91%|#########1|  162MB /  178MB, 5.61MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  92%|#########1|  163MB /  178MB            [A[AProcessing Files (0 / 1)      :  92%|#########1|  163MB /  178MB, 5.67MB/s  
+New Data Upload               :  92%|#########1|  163MB /  178MB, 5.67MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  92%|#########2|  164MB /  178MB            [A[AProcessing Files (0 / 1)      :  92%|#########2|  164MB /  178MB, 5.66MB/s  
+New Data Upload               :  92%|#########2|  164MB /  178MB, 5.66MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  93%|#########2|  165MB /  178MB            [A[AProcessing Files (0 / 1)      :  93%|#########2|  165MB /  178MB, 5.61MB/s  
+New Data Upload               :  93%|#########2|  165MB /  178MB, 5.61MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  93%|#########3|  166MB /  178MB            [A[AProcessing Files (0 / 1)      :  93%|#########3|  166MB /  178MB, 5.62MB/s  
+New Data Upload               :  93%|#########3|  166MB /  178MB, 5.62MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  94%|#########3|  167MB /  178MB            [A[AProcessing Files (0 / 1)      :  94%|#########3|  167MB /  178MB, 5.61MB/s  
+New Data Upload               :  94%|#########3|  167MB /  178MB, 5.61MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  95%|#########4|  169MB /  178MB            [A[AProcessing Files (0 / 1)      :  95%|#########4|  169MB /  178MB, 5.67MB/s  
+New Data Upload               :  95%|#########4|  169MB /  178MB, 5.67MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  95%|#########5|  170MB /  178MB            [A[AProcessing Files (0 / 1)      :  95%|#########5|  170MB /  178MB, 5.73MB/s  
+New Data Upload               :  95%|#########5|  170MB /  178MB, 5.73MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  96%|#########6|  172MB /  178MB            [A[AProcessing Files (0 / 1)      :  96%|#########6|  172MB /  178MB, 5.72MB/s  
+New Data Upload               :  96%|#########6|  172MB /  178MB, 5.72MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  97%|#########7|  173MB /  178MB            [A[AProcessing Files (0 / 1)      :  97%|#########7|  173MB /  178MB, 5.73MB/s  
+New Data Upload               :  97%|#########7|  173MB /  178MB, 5.73MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  98%|#########7|  174MB /  178MB            [A[AProcessing Files (0 / 1)      :  98%|#########7|  174MB /  178MB, 5.73MB/s  
+New Data Upload               :  98%|#########7|  174MB /  178MB, 5.73MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  99%|#########8|  176MB /  178MB            [A[AProcessing Files (0 / 1)      :  99%|#########8|  176MB /  178MB, 5.73MB/s  
+New Data Upload               :  99%|#########8|  176MB /  178MB, 5.73MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  99%|#########8|  176MB /  178MB            [A[AProcessing Files (0 / 1)      :  99%|#########8|  176MB /  178MB, 5.67MB/s  
+New Data Upload               :  99%|#########8|  176MB /  178MB, 5.67MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  99%|#########9|  177MB /  178MB            [A[AProcessing Files (0 / 1)      :  99%|#########9|  177MB /  178MB, 5.56MB/s  
+New Data Upload               :  99%|#########9|  177MB /  178MB, 5.56MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt:  99%|#########9|  177MB /  178MB            [A[AProcessing Files (0 / 1)      :  99%|#########9|  177MB /  178MB, 5.46MB/s  
+New Data Upload               :  99%|#########9|  177MB /  178MB, 5.46MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt: 100%|#########9|  178MB /  178MB            [A[AProcessing Files (0 / 1)      : 100%|#########9|  178MB /  178MB, 5.40MB/s  
+New Data Upload               : 100%|#########9|  178MB /  178MB, 5.40MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt: 100%|#########9|  178MB /  178MB            [A[A
+
+  ...eckpoints/wikidata_v10.pt: 100%|#########9|  178MB /  178MB            [A[A
+
+  ...eckpoints/wikidata_v10.pt: 100%|#########9|  178MB /  178MB            [A[A
+
+  ...eckpoints/wikidata_v10.pt: 100%|#########9|  178MB /  178MB            [A[A
+
+  ...eckpoints/wikidata_v10.pt: 100%|#########9|  178MB /  178MB            [A[A
+
+  ...eckpoints/wikidata_v10.pt: 100%|#########9|  178MB /  178MB            [A[A
+
+  ...eckpoints/wikidata_v10.pt: 100%|#########9|  178MB /  178MB            [A[A
+
+  ...eckpoints/wikidata_v10.pt: 100%|#########9|  178MB /  178MB            [A[A
+
+  ...eckpoints/wikidata_v10.pt: 100%|##########|  178MB /  178MB            [A[AProcessing Files (1 / 1)      : 100%|##########|  178MB /  178MB, 4.35MB/s  
+New Data Upload               : 100%|##########|  178MB /  178MB, 4.35MB/s  [A
+
+  ...eckpoints/wikidata_v10.pt: 100%|##########|  178MB /  178MB            [A[A
+
+  ...eckpoints/wikidata_v10.pt: 100%|##########|  178MB /  178MB            [A[A
+
+  ...eckpoints/wikidata_v10.pt: 100%|##########|  178MB /  178MB            [A[A
+
+  ...eckpoints/wikidata_v10.pt: 100%|##########|  178MB /  178MB            [A[A
+
+  ...eckpoints/wikidata_v10.pt: 100%|##########|  178MB /  178MB            [A[AProcessing Files (1 / 1)      : 100%|##########|  178MB /  178MB, 3.82MB/s  
+New Data Upload               : 100%|##########|  178MB /  178MB, 3.82MB/s  
+  ...eckpoints/wikidata_v10.pt: 100%|##########|  178MB /  178MB            
+
+=== Tagging 'v10' ===
+
+Done.
+  Snapshot: https://huggingface.co/datasets/EmmaLeonhart/loka/tree/v10
+  Latest:   https://huggingface.co/datasets/EmmaLeonhart/loka
+[2026-05-11 09:00 Pacific Summer Time] $ git add DEVLOG.md MODEL.json paper/paper.md training/logs/v10_train.log
+[2026-05-11 09:00 Pacific Summer Time] $ git commit -m v10 cron cycle: trained, tested, shipped to HF
+
+Generated by tools/training_cron.py.
+[main afc7282] v10 cron cycle: trained, tested, shipped to HF
+ 3 files changed, 76 insertions(+), 6 deletions(-)
+ create mode 100644 training/logs/v10_train.log
+[2026-05-11 09:00 Pacific Summer Time] $ git push origin main
+To https://github.com/EmmaLeonhart/Loka.git
+   50e36c3..afc7282  main -> main
+[2026-05-11 09:00 Pacific Summer Time] v10 shipped successfully.
+[2026-05-11 09:00 Pacific Summer Time] === CYCLE 1 DONE ===
+[2026-05-11 09:00 Pacific Summer Time] Sleeping 43200s until next cycle.

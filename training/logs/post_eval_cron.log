@@ -1,0 +1,245 @@
+[2026-05-11T15:40:20-07:00] post_eval_cron starting at 2026-05-11T22:40:20+00:00
+[2026-05-11T15:40:20-07:00]   first firing: 2026-05-12T10:40:20+00:00
+[2026-05-11T15:40:20-07:00]   interval: 21600s (6.0h)
+[2026-05-11T15:40:20-07:00]   hard end:  2026-05-13T22:40:20+00:00
+[2026-05-11T15:40:20-07:00] sleeping 43200s until 2026-05-12T10:40:20+00:00
+[2026-05-11T15:50:20-07:00] sleeping 42600s until 2026-05-12T10:40:20+00:00
+[2026-05-11T16:00:20-07:00] sleeping 42000s until 2026-05-12T10:40:20+00:00
+[2026-05-11T16:10:20-07:00] sleeping 41400s until 2026-05-12T10:40:20+00:00
+[2026-05-11T16:20:20-07:00] sleeping 40800s until 2026-05-12T10:40:20+00:00
+[2026-05-11T16:30:20-07:00] sleeping 40200s until 2026-05-12T10:40:20+00:00
+[2026-05-11T16:40:20-07:00] sleeping 39600s until 2026-05-12T10:40:20+00:00
+[2026-05-11T16:50:20-07:00] sleeping 39000s until 2026-05-12T10:40:20+00:00
+[2026-05-11T17:00:20-07:00] sleeping 38400s until 2026-05-12T10:40:20+00:00
+[2026-05-11T17:10:20-07:00] sleeping 37800s until 2026-05-12T10:40:20+00:00
+[2026-05-11T17:20:20-07:00] sleeping 37200s until 2026-05-12T10:40:20+00:00
+[2026-05-11T17:30:20-07:00] sleeping 36600s until 2026-05-12T10:40:20+00:00
+[2026-05-11T17:40:20-07:00] sleeping 36000s until 2026-05-12T10:40:20+00:00
+[2026-05-11T17:50:20-07:00] sleeping 35400s until 2026-05-12T10:40:20+00:00
+[2026-05-11T18:00:20-07:00] sleeping 34800s until 2026-05-12T10:40:20+00:00
+[2026-05-11T18:10:20-07:00] sleeping 34200s until 2026-05-12T10:40:20+00:00
+[2026-05-11T18:20:20-07:00] sleeping 33600s until 2026-05-12T10:40:20+00:00
+[2026-05-11T18:30:20-07:00] sleeping 33000s until 2026-05-12T10:40:20+00:00
+[2026-05-11T18:40:20-07:00] sleeping 32400s until 2026-05-12T10:40:20+00:00
+[2026-05-11T18:50:20-07:00] sleeping 31800s until 2026-05-12T10:40:20+00:00
+[2026-05-11T19:00:20-07:00] sleeping 31200s until 2026-05-12T10:40:20+00:00
+[2026-05-11T19:10:20-07:00] sleeping 30600s until 2026-05-12T10:40:20+00:00
+[2026-05-11T19:20:20-07:00] sleeping 30000s until 2026-05-12T10:40:20+00:00
+[2026-05-11T19:30:20-07:00] sleeping 29400s until 2026-05-12T10:40:20+00:00
+[2026-05-11T19:40:20-07:00] sleeping 28800s until 2026-05-12T10:40:20+00:00
+[2026-05-11T19:50:20-07:00] sleeping 28200s until 2026-05-12T10:40:20+00:00
+[2026-05-11T20:00:20-07:00] sleeping 27600s until 2026-05-12T10:40:20+00:00
+[2026-05-11T20:10:20-07:00] sleeping 27000s until 2026-05-12T10:40:20+00:00
+[2026-05-11T20:20:20-07:00] sleeping 26400s until 2026-05-12T10:40:20+00:00
+[2026-05-11T20:30:20-07:00] sleeping 25800s until 2026-05-12T10:40:20+00:00
+[2026-05-11T20:40:20-07:00] sleeping 25200s until 2026-05-12T10:40:20+00:00
+[2026-05-11T20:50:20-07:00] sleeping 24600s until 2026-05-12T10:40:20+00:00
+[2026-05-11T21:00:20-07:00] sleeping 24000s until 2026-05-12T10:40:20+00:00
+[2026-05-11T21:10:20-07:00] sleeping 23400s until 2026-05-12T10:40:20+00:00
+[2026-05-11T21:20:20-07:00] sleeping 22800s until 2026-05-12T10:40:20+00:00
+[2026-05-11T21:30:20-07:00] sleeping 22200s until 2026-05-12T10:40:20+00:00
+[2026-05-11T21:40:20-07:00] sleeping 21600s until 2026-05-12T10:40:20+00:00
+[2026-05-11T21:50:20-07:00] sleeping 21000s until 2026-05-12T10:40:20+00:00
+[2026-05-11T22:00:20-07:00] sleeping 20400s until 2026-05-12T10:40:20+00:00
+[2026-05-11T22:10:20-07:00] sleeping 19800s until 2026-05-12T10:40:20+00:00
+[2026-05-11T22:20:20-07:00] sleeping 19200s until 2026-05-12T10:40:20+00:00
+[2026-05-11T22:30:20-07:00] sleeping 18600s until 2026-05-12T10:40:20+00:00
+[2026-05-11T22:40:20-07:00] sleeping 18000s until 2026-05-12T10:40:20+00:00
+[2026-05-11T22:50:20-07:00] sleeping 17400s until 2026-05-12T10:40:20+00:00
+[2026-05-11T23:00:20-07:00] sleeping 16800s until 2026-05-12T10:40:20+00:00
+[2026-05-11T23:10:20-07:00] sleeping 16200s until 2026-05-12T10:40:20+00:00
+[2026-05-11T23:20:20-07:00] sleeping 15600s until 2026-05-12T10:40:20+00:00
+[2026-05-11T23:30:20-07:00] sleeping 15000s until 2026-05-12T10:40:20+00:00
+[2026-05-11T23:40:20-07:00] sleeping 14400s until 2026-05-12T10:40:20+00:00
+[2026-05-11T23:50:20-07:00] sleeping 13800s until 2026-05-12T10:40:20+00:00
+[2026-05-12T00:00:20-07:00] sleeping 13200s until 2026-05-12T10:40:20+00:00
+[2026-05-12T00:10:20-07:00] sleeping 12600s until 2026-05-12T10:40:20+00:00
+[2026-05-12T00:20:20-07:00] sleeping 12000s until 2026-05-12T10:40:20+00:00
+[2026-05-12T00:30:20-07:00] sleeping 11400s until 2026-05-12T10:40:20+00:00
+[2026-05-12T00:40:20-07:00] sleeping 10800s until 2026-05-12T10:40:20+00:00
+[2026-05-12T00:50:20-07:00] sleeping 10200s until 2026-05-12T10:40:20+00:00
+[2026-05-12T01:00:20-07:00] sleeping 9600s until 2026-05-12T10:40:20+00:00
+[2026-05-12T01:10:20-07:00] sleeping 9000s until 2026-05-12T10:40:20+00:00
+[2026-05-12T01:20:20-07:00] sleeping 8400s until 2026-05-12T10:40:20+00:00
+[2026-05-12T01:30:20-07:00] sleeping 7800s until 2026-05-12T10:40:20+00:00
+[2026-05-12T01:40:20-07:00] sleeping 7200s until 2026-05-12T10:40:20+00:00
+[2026-05-12T01:50:20-07:00] sleeping 6600s until 2026-05-12T10:40:20+00:00
+[2026-05-12T02:00:20-07:00] sleeping 6000s until 2026-05-12T10:40:20+00:00
+[2026-05-12T02:10:20-07:00] sleeping 5400s until 2026-05-12T10:40:20+00:00
+[2026-05-12T02:20:20-07:00] sleeping 4800s until 2026-05-12T10:40:20+00:00
+[2026-05-12T02:30:20-07:00] sleeping 4200s until 2026-05-12T10:40:20+00:00
+[2026-05-12T02:40:20-07:00] sleeping 3600s until 2026-05-12T10:40:20+00:00
+[2026-05-12T02:50:20-07:00] sleeping 3000s until 2026-05-12T10:40:20+00:00
+[2026-05-12T03:00:20-07:00] sleeping 2400s until 2026-05-12T10:40:20+00:00
+[2026-05-12T03:10:20-07:00] sleeping 1800s until 2026-05-12T10:40:20+00:00
+[2026-05-12T03:20:20-07:00] sleeping 1200s until 2026-05-12T10:40:20+00:00
+[2026-05-12T03:30:20-07:00] sleeping 600s until 2026-05-12T10:40:20+00:00
+[2026-05-12T03:40:20-07:00] === firing 1 ===
+[2026-05-12T03:42:03-07:00] Loka has 21,446,435 triples at firing time.
+[2026-05-12T03:42:03-07:00] Training v11.
+[2026-05-12T03:42:03-07:00] $ C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\python.exe training/preprocess.py --endpoint http://localhost:3030 --output C:\Users\Immanuelle\Documents\Github\SutraDB\training\data\triples_v11.txt
+Fetching triples from http://localhost:3030...
+Traceback (most recent call last):
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\connectionpool.py", line 534, in _make_request
+    response = conn.getresponse()
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\connection.py", line 516, in getresponse
+    httplib_response = super().getresponse()
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\http\client.py", line 1430, in getresponse
+    response.begin()
+    ~~~~~~~~~~~~~~^^
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\http\client.py", line 331, in begin
+    version, status, reason = self._read_status()
+                              ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\http\client.py", line 292, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+               ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\socket.py", line 719, in readinto
+    return self._sock.recv_into(b)
+           ~~~~~~~~~~~~~~~~~~~~^^^
+TimeoutError: timed out
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\requests\adapters.py", line 667, in send
+    resp = conn.urlopen(
+        method=request.method,
+    ...<9 lines>...
+        chunked=chunked,
+    )
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+        method, url, error=new_e, _pool=self, _stacktrace=sys.exc_info()[2]
+    )
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\util\retry.py", line 474, in increment
+    raise reraise(type(error), error, _stacktrace)
+          ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\util\util.py", line 39, in reraise
+    raise value
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+        conn,
+    ...<10 lines>...
+        **response_kw,
+    )
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\connectionpool.py", line 536, in _make_request
+    self._raise_timeout(err=e, url=url, timeout_value=read_timeout)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\connectionpool.py", line 367, in _raise_timeout
+    raise ReadTimeoutError(
+        self, url, f"Read timed out. (read timeout={timeout_value})"
+    ) from err
+urllib3.exceptions.ReadTimeoutError: HTTPConnectionPool(host='localhost', port=3030): Read timed out. (read timeout=300)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Immanuelle\Documents\Github\SutraDB\training\preprocess.py", line 458, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\Immanuelle\Documents\Github\SutraDB\training\preprocess.py", line 384, in main
+    triples = fetch_all_triples(args.endpoint)
+  File "C:\Users\Immanuelle\Documents\Github\SutraDB\training\preprocess.py", line 236, in fetch_all_triples
+    resp = requests.post(
+        f"{endpoint}/sparql",
+    ...<5 lines>...
+        timeout=300,
+    )
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\requests\api.py", line 115, in post
+    return request("post", url, data=data, json=json, **kwargs)
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\requests\api.py", line 59, in request
+    return session.request(method=method, url=url, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\requests\sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\requests\sessions.py", line 703, in send
+    r = adapter.send(request, **kwargs)
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\requests\adapters.py", line 713, in send
+    raise ReadTimeout(e, request=request)
+requests.exceptions.ReadTimeout: HTTPConnectionPool(host='localhost', port=3030): Read timed out. (read timeout=300)
+[2026-05-12T03:47:07-07:00] !! firing 1 failed: CalledProcessError: Command '['C:\\Users\\Immanuelle\\AppData\\Local\\Programs\\Python\\Python313\\python.exe', 'training/preprocess.py', '--endpoint', 'http://localhost:3030', '--output', 'C:\\Users\\Immanuelle\\Documents\\Github\\SutraDB\\training\\data\\triples_v11.txt']' returned non-zero exit status 1.
+[2026-05-12T03:47:07-07:00] sleeping 21194s until 2026-05-12T16:40:20+00:00
+[2026-05-12T03:57:07-07:00] sleeping 20594s until 2026-05-12T16:40:20+00:00
+[2026-05-12T04:07:07-07:00] sleeping 19994s until 2026-05-12T16:40:20+00:00
+[2026-05-12T04:17:07-07:00] sleeping 19394s until 2026-05-12T16:40:20+00:00
+[2026-05-12T04:27:07-07:00] sleeping 18794s until 2026-05-12T16:40:20+00:00
+[2026-05-12T04:37:07-07:00] sleeping 18194s until 2026-05-12T16:40:20+00:00
+[2026-05-12T04:47:07-07:00] sleeping 17594s until 2026-05-12T16:40:20+00:00
+[2026-05-12T04:57:07-07:00] sleeping 16994s until 2026-05-12T16:40:20+00:00
+[2026-05-12T05:07:07-07:00] sleeping 16394s until 2026-05-12T16:40:20+00:00
+[2026-05-12T05:17:07-07:00] sleeping 15794s until 2026-05-12T16:40:20+00:00
+[2026-05-12T05:27:07-07:00] sleeping 15194s until 2026-05-12T16:40:20+00:00
+[2026-05-12T05:37:07-07:00] sleeping 14594s until 2026-05-12T16:40:20+00:00
+[2026-05-12T05:47:07-07:00] sleeping 13994s until 2026-05-12T16:40:20+00:00
+[2026-05-12T05:57:07-07:00] sleeping 13394s until 2026-05-12T16:40:20+00:00
+[2026-05-12T06:07:07-07:00] sleeping 12794s until 2026-05-12T16:40:20+00:00
+[2026-05-12T06:17:07-07:00] sleeping 12194s until 2026-05-12T16:40:20+00:00
+[2026-05-12T06:27:07-07:00] sleeping 11594s until 2026-05-12T16:40:20+00:00
+[2026-05-12T06:37:07-07:00] sleeping 10994s until 2026-05-12T16:40:20+00:00
+[2026-05-12T06:47:07-07:00] sleeping 10394s until 2026-05-12T16:40:20+00:00
+[2026-05-12T06:57:07-07:00] sleeping 9794s until 2026-05-12T16:40:20+00:00
+[2026-05-12T07:07:07-07:00] sleeping 9194s until 2026-05-12T16:40:20+00:00
+[2026-05-12T07:17:07-07:00] sleeping 8594s until 2026-05-12T16:40:20+00:00
+[2026-05-12T07:27:07-07:00] sleeping 7994s until 2026-05-12T16:40:20+00:00
+[2026-05-12T07:37:07-07:00] sleeping 7394s until 2026-05-12T16:40:20+00:00
+[2026-05-12T07:47:07-07:00] sleeping 6794s until 2026-05-12T16:40:20+00:00
+[2026-05-12T07:57:07-07:00] sleeping 6194s until 2026-05-12T16:40:20+00:00
+[2026-05-12T08:07:07-07:00] sleeping 5594s until 2026-05-12T16:40:20+00:00
+[2026-05-12T08:17:07-07:00] sleeping 4994s until 2026-05-12T16:40:20+00:00
+[2026-05-12T08:27:07-07:00] sleeping 4394s until 2026-05-12T16:40:20+00:00
+[2026-05-12T08:37:07-07:00] sleeping 3794s until 2026-05-12T16:40:20+00:00
+[2026-05-12T08:47:07-07:00] sleeping 3194s until 2026-05-12T16:40:20+00:00
+[2026-05-12T08:57:07-07:00] sleeping 2594s until 2026-05-12T16:40:20+00:00
+[2026-05-12T09:07:07-07:00] sleeping 1994s until 2026-05-12T16:40:20+00:00
+[2026-05-12T09:17:07-07:00] sleeping 1394s until 2026-05-12T16:40:20+00:00
+[2026-05-12T09:27:07-07:00] sleeping 794s until 2026-05-12T16:40:20+00:00
+[2026-05-12T09:37:07-07:00] sleeping 194s until 2026-05-12T16:40:20+00:00
+[2026-05-12T09:40:20-07:00] === firing 2 ===
+[2026-05-12T09:45:22-07:00] loka_triple_count failed: HTTPConnectionPool(host='localhost', port=3030): Read timed out. (read timeout=300)
+[2026-05-12T09:45:22-07:00] Loka not reachable on :3030 — skipping firing.
+[2026-05-12T09:45:22-07:00] sleeping 21298s until 2026-05-12T22:40:20+00:00
+[2026-05-12T09:55:22-07:00] sleeping 20698s until 2026-05-12T22:40:20+00:00
+[2026-05-12T10:05:22-07:00] sleeping 20098s until 2026-05-12T22:40:20+00:00
+[2026-05-12T10:15:22-07:00] sleeping 19498s until 2026-05-12T22:40:20+00:00
+[2026-05-12T10:25:22-07:00] sleeping 18898s until 2026-05-12T22:40:20+00:00
+[2026-05-12T10:35:22-07:00] sleeping 18298s until 2026-05-12T22:40:20+00:00
+[2026-05-12T10:45:22-07:00] sleeping 17698s until 2026-05-12T22:40:20+00:00
+[2026-05-12T10:55:22-07:00] sleeping 17098s until 2026-05-12T22:40:20+00:00
+[2026-05-12T11:05:22-07:00] sleeping 16498s until 2026-05-12T22:40:20+00:00
+[2026-05-12T11:15:22-07:00] sleeping 15898s until 2026-05-12T22:40:20+00:00
+[2026-05-12T11:25:22-07:00] sleeping 15298s until 2026-05-12T22:40:20+00:00
+[2026-05-12T11:35:22-07:00] sleeping 14698s until 2026-05-12T22:40:20+00:00
+[2026-05-12T11:45:22-07:00] sleeping 14098s until 2026-05-12T22:40:20+00:00
+[2026-05-12T11:55:22-07:00] sleeping 13498s until 2026-05-12T22:40:20+00:00
+[2026-05-12T12:05:22-07:00] sleeping 12898s until 2026-05-12T22:40:20+00:00
+[2026-05-12T12:15:22-07:00] sleeping 12298s until 2026-05-12T22:40:20+00:00
+[2026-05-12T12:25:22-07:00] sleeping 11698s until 2026-05-12T22:40:20+00:00
+[2026-05-12T12:35:22-07:00] sleeping 11098s until 2026-05-12T22:40:20+00:00
+[2026-05-12T12:45:22-07:00] sleeping 10498s until 2026-05-12T22:40:20+00:00
+[2026-05-12T12:55:22-07:00] sleeping 9898s until 2026-05-12T22:40:20+00:00
+[2026-05-12T13:05:22-07:00] sleeping 9298s until 2026-05-12T22:40:20+00:00
+[2026-05-12T13:15:22-07:00] sleeping 8698s until 2026-05-12T22:40:20+00:00
+[2026-05-12T13:25:22-07:00] sleeping 8098s until 2026-05-12T22:40:20+00:00
+[2026-05-12T13:35:22-07:00] sleeping 7498s until 2026-05-12T22:40:20+00:00
+[2026-05-12T13:45:22-07:00] sleeping 6898s until 2026-05-12T22:40:20+00:00
+[2026-05-12T13:55:22-07:00] sleeping 6298s until 2026-05-12T22:40:20+00:00
+[2026-05-12T14:05:22-07:00] sleeping 5698s until 2026-05-12T22:40:20+00:00
+[2026-05-12T14:15:22-07:00] sleeping 5098s until 2026-05-12T22:40:20+00:00
+[2026-05-12T14:25:22-07:00] sleeping 4498s until 2026-05-12T22:40:20+00:00
+[2026-05-12T14:35:22-07:00] sleeping 3898s until 2026-05-12T22:40:20+00:00
+[2026-05-12T14:45:22-07:00] sleeping 3298s until 2026-05-12T22:40:20+00:00
+[2026-05-12T14:55:22-07:00] sleeping 2698s until 2026-05-12T22:40:20+00:00
+[2026-05-12T15:05:22-07:00] sleeping 2098s until 2026-05-12T22:40:20+00:00
+[2026-05-12T15:15:22-07:00] sleeping 1498s until 2026-05-12T22:40:20+00:00
+[2026-05-12T15:25:22-07:00] sleeping 898s until 2026-05-12T22:40:20+00:00
+[2026-05-12T15:35:22-07:00] sleeping 298s until 2026-05-12T22:40:20+00:00
+[2026-05-12T15:40:20-07:00] === firing 3 ===
+[2026-05-12T15:45:22-07:00] loka_triple_count failed: HTTPConnectionPool(host='localhost', port=3030): Read timed out. (read timeout=300)
+[2026-05-12T15:45:22-07:00] Loka not reachable on :3030 — skipping firing.
+[2026-05-12T15:45:22-07:00] sleeping 21298s until 2026-05-13T04:40:20+00:00
+[2026-05-12T15:55:22-07:00] sleeping 20698s until 2026-05-13T04:40:20+00:00
+[2026-05-12T16:05:22-07:00] sleeping 20098s until 2026-05-13T04:40:20+00:00
+[2026-05-12T16:15:22-07:00] sleeping 19498s until 2026-05-13T04:40:20+00:00
+[2026-05-12T16:25:22-07:00] sleeping 18898s until 2026-05-13T04:40:20+00:00
+[2026-05-12T16:35:22-07:00] sleeping 18298s until 2026-05-13T04:40:20+00:00
+[2026-05-12T16:45:22-07:00] sleeping 17698s until 2026-05-13T04:40:20+00:00
