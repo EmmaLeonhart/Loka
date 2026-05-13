@@ -28,7 +28,44 @@ Extracted from `chats/Computer freezing during AI training run - Claude.html` �
 
 The extractor (`tools/extract_claude_chat.py`) had a duplication bug — each Claude turn was appending all subsequent Claude turns. Fixed in this commit; output dropped from 64 KB to 19.5 KB. Existing committed chats (`ai-bubble.md`, `world-models.md`) were not regenerated since they're already in git and the user has been working from them.
 
-### 3. Start the v11 training cycle (BLOCKED on mitigations 1–3 below; revised after the verdict)
+### 3. Preprocess the corpus into a clean "normalized-wikidata" dataset (NEW direction after the verdict)
+
+The verdict made it clear that a 50M-triple raw-Wikidata training run on this laptop is thermally marginal. The fix is not just "cool the laptop better" — it's "stop training on the messy original corpus." Most of the triples in raw Wikidata aren't useful for the world-model objective anyway (external identifiers, malformed dates, opaque QID references with no labels). A normalization pass produces a **smaller, cleaner, more text-like dataset** that:
+- trains faster (smaller corpus → less wall-clock GPU time → less thermal pressure)
+- generalises better (no opaque QIDs littering the input)
+- is genuinely useful to others doing similar work — worth a standalone HF push
+
+**Plan, ordered:**
+
+1. **Audit existing preprocess.** Read `training/preprocess.py` + `tools/wikidata_hf_import.py`. Identify what is already done (label substitution? identifier stripping? datatype normalization?) and what is duplicated / loaded into memory monolithically (the suspected RAM bloat per the chat).
+
+2. **Stage 1 — lean import (keep current).** Wikidata triples land in SutraDB / `loka-data-cron-c1` with **QIDs intact**. Streaming. No in-memory accumulation. Existing `wikidata_hf_import.py` mostly fits the shape; verify it's actually streaming, not building a giant in-memory map.
+
+3. **Stage 2 — QID/PID label resolver (NEW Python script, lazy, resumable).**
+   - Walks SutraDB, collects unique QIDs/PIDs that appear in the corpus and don't have an `rdfs:label` already.
+   - Queries Wikidata API in batches of 50 (the API limit) for English labels.
+   - Writes to a **SQLite side table** `wikidata_labels.db`: `(qid TEXT PRIMARY KEY, en_label TEXT, fetched_at TIMESTAMP)`.
+   - Checkpoints the cursor between batches so crash → restart picks up where it left off.
+   - Rate-limited politely (Wikidata API has soft limits — 1–2 req/s).
+
+4. **Stage 3 — normalization pass (NEW Python script).**
+   - Reads the corpus + the label DB.
+   - Output is a text-like training format where:
+     - QIDs/PIDs are replaced with their English labels (from the side table), with the original QID kept in a parallel column for traceability.
+     - External identifiers (`P227` GND, `P214` VIAF, etc.) are stripped — they have no signal for the world-model objective.
+     - URLs are stripped or replaced with a single `<URL>` sentinel.
+     - Dates are normalized to ISO-8601 (the v7 datatype filter already does some of this).
+     - Datatypes are flattened to `"value"` form — no `"value"^^xsd:integer` clutter.
+   - The originals stay in SutraDB unchanged — normalization is a derived view, not a destructive rewrite.
+
+5. **Stage 4 — push `normalized-wikidata` to Hugging Face as a standalone dataset.**
+   - New HF repo: `EmmaLeonhart/normalized-wikidata` (or similar — confirm naming).
+   - README explains: source = Wikidata `20YY-MM-DD` dump, normalization choices, what was stripped, why. Useful to other people training world models on Wikidata.
+   - Reuse `tools/hf_snapshot.py` patterns.
+
+6. **Stage 5 — retry v11 on the normalized corpus.** The corpus will be significantly smaller (probably 30–50% of the raw triple count after stripping external identifiers and noise). Combined with the verdict's mitigations (batch 32, serialised workload, TdrDelay=10s, possibly cloud GPU), this is the right shape for actually shipping v11.
+
+### Old item — kept for reference: start the v11 training cycle (BLOCKED on mitigations 1–3 below; revised after the verdict)
 
 The verdict reframes this step. The original plan (`4 epochs × 52 min`, batch 64, on this laptop) was designed against assumed desktop-4070 thermal headroom. The actual hardware cannot sustain that without firmware-level shutdown. Either the workload changes or it moves to different hardware. **Required before resuming:**
 
