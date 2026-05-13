@@ -231,19 +231,40 @@ def fetch_all_triples(endpoint: str, exclude_generated: bool = True) -> list[dic
     By default, model-generated triples (flagged via the RDF-star annotation
     `<< s p o >> loka:generated ...`) are excluded so the training corpus
     never feeds back its own outputs.
+
+    Pages the query with LIMIT/OFFSET to avoid building a 32M-row JSON
+    response in Loka's memory in one shot — which hung the v11 manual
+    preprocess run on 2026-05-12 (Loka grew to 21 GB resident accumulating
+    the response, never sent a byte back). sled's iteration is byte-order
+    stable so pagination without an explicit ORDER BY is safe.
     """
-    query = TRAINING_CORPUS_QUERY if exclude_generated else "SELECT ?s ?p ?o WHERE { ?s ?p ?o }"
-    resp = requests.post(
-        f"{endpoint}/sparql",
-        data=query,
-        headers={
-            "Content-Type": "application/sparql-query",
-            "Accept": "application/sparql-results+json",
-        },
-        timeout=3600,  # raised from 300 — at 33M+ triples a full SPARQL dump can take 10-30 min
-    )
-    resp.raise_for_status()
-    return resp.json()["results"]["bindings"]
+    base = TRAINING_CORPUS_QUERY if exclude_generated else "SELECT ?s ?p ?o WHERE { ?s ?p ?o }"
+    # Strip a trailing `}` if it's the simple query so we can append modifiers.
+    page_size = 100_000
+    bindings: list[dict] = []
+    offset = 0
+    while True:
+        paged = f"{base} LIMIT {page_size} OFFSET {offset}"
+        resp = requests.post(
+            f"{endpoint}/sparql",
+            data=paged,
+            headers={
+                "Content-Type": "application/sparql-query",
+                "Accept": "application/sparql-results+json",
+            },
+            timeout=900,  # each page is ~100k rows, should be well under 15 min
+        )
+        resp.raise_for_status()
+        page = resp.json()["results"]["bindings"]
+        if not page:
+            break
+        bindings.extend(page)
+        print(f"  page {offset // page_size + 1}: {len(page):,} rows "
+              f"(total {len(bindings):,})", file=sys.stderr, flush=True)
+        if len(page) < page_size:
+            break  # short page = end of data
+        offset += page_size
+    return bindings
 
 
 def build_qid_label_map(triples: list[dict]) -> dict[str, str]:

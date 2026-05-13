@@ -30,6 +30,7 @@ Thumbs.db
 # Database data directories (binary, not versioned)
 loka-data/
 loka-data-backup-*/
+loka-data-cron-*/
 loka-import-data/
 sutra-data/
 sutra-data-backup-*/
