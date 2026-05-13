@@ -10,13 +10,16 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 In strategic order. Top item is the current focus.
 
-1. **Engine bug: `POST /triples` write-flush wedge.** Reproducible at ~5–6× growth in stored triples. `/health` keeps responding; writes and SPARQL hang until restart. Surfaced again on the live `--post` test (queue.md item below) — the script hangs entirely, not just slowly. Diagnose under load; fix in `loka-proto`/`loka-core`. Workaround in production code is automated stop-restart.
+1. **Engine bug #1: sled flusher panic at multi-GB scale.** Surfaced on 2026-05-12 as a hard panic (Win32 `ERROR_NO_SYSTEM_RESOURCES` from sled's periodic fsync at 32.88 M triples / 5 GB). Application-layer fix from `39effbb` (one transaction per HTTP request) was necessary but not sufficient; the panic comes from sled's *own* flusher thread. Probable fix shipped in `c36760b`: explicit `sled::Config` with 256 MB cache, 2 s flush interval, `Mode::HighThroughput`. **Verification still owed** — needs the reopen-in-place test against the existing 5 GB `loka-data-cron-c1/` data dir (option B below). If panic recurs, escalate to RocksDB migration (CLAUDE.md open question; sled 0.34 unmaintained since 2021).
 
-2. **Engine bug: SPARQL returns literal values in the predicate slot.** ~1% of rows on a 5M corpus. Confirmed in a separate symptom too: `<< ?s ?p ?o >> ?qp ?qv` returns `<<QUOTED_TRIPLE>>` sentinel and literal values in `?qp`. Probably an RDF-star annotation row with positions getting confused on the executor side. Repro and fix.
+2. **Engine bug #2: SPARQL returns literal values in the predicate slot.** ~1% of rows on a 5M corpus. Confirmed in a separate symptom too: `<< ?s ?p ?o >> ?qp ?qv` returns `<<QUOTED_TRIPLE>>` sentinel and literal values in `?qp`. Probably an RDF-star annotation row with positions getting confused on the executor side. Repro and fix.
 
-3. **Bigger corpus.** 27,780 entities of the 30M in `philippesaade/wikidata` is a tiny slice. `tools/wikidata_hf_import.py --max-triples 50000000` would 10× the store. Bandwidth-bound, not API-bound. Engine bug #1 will surface multiple times during the run; the auto-stop-restart loop handles it.
+3. **Bigger corpus (paused at 32.88 M triples).** `loka-data-cron-c1/` has 5 GB of ingest already on disk, dating to the 2026-05-12 crash. Three options post-fix, in priority order:
+   - **(B) Reopen in place** with the new sled config. If sled's WAL replays cleanly we keep the 32.88 M triples and resume the importer from row 318,582 of `philippesaade/wikidata`.
+   - **(A) Full re-import from row 1** if (B) fails — blow away the data dir + state file, ~31 h at 4 ent/s.
+   - This unblocks v11 training (queue.md item #4 / planning/v11-corpus.md).
 
-4. **Live `--post` end-to-end test of generative citation.** Attempted with `--max-subjects 30 --post`; script hung 7 min with no output, indicating engine bug #1 triggered during the POST phase. Re-attempt at lower scope after #1 is fixed.
+4. **Live `--post` end-to-end test of generative citation.** Attempted with `--max-subjects 30 --post`; script hung 7 min with no output, indicating engine bug #1 triggered during the POST phase. Re-attempt at lower scope after #1's fix is verified by option B.
 
 5. **Fine-tuning track scaffolding.** `planning/fine-tuning-track.md` defines the parallel near-term track: Qwen 2.5 1.5B-Instruct + QLoRA on the same `triples.txt` format, sharing the `propositionInferredFrom` output schema. Build `training/finetune/`.
 

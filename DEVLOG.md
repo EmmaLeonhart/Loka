@@ -7,6 +7,75 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-05-12 23:52 UTC — Engine bug #1, second incarnation: sled flusher panics on Windows at 33 M triples
+
+Headline: **the big-corpus ingest for v11 crashed Loka, not training. v10 is intact on HF; no model lost.** sled 0.34's periodic flusher thread panicked with Win32 `ERROR_NO_SYSTEM_RESOURCES` (os error 1450) trying to fsync, at ~32.88 M triples / 5.0 GB. Same wedge class as v6–v9 (queue.md engine bug #1), but a hard panic this time instead of a hang.
+
+### Timeline
+
+- **2026-05-11 15:59 UTC** — v10 trained, propgen-tested, pushed to HF as `EmmaLeonhart/loka@v10`, committed + pushed (`afc7282`). End of cycle 1.
+- **2026-05-11 ~22:35 UTC** — quiet window declared (no commits/pushes for 8 h; post-eval cron every 6 h for 48 h thereafter). `tools/post_eval_cron.py` started.
+- **2026-05-11 06:15 UTC → 2026-05-12 12:33 UTC** — bigger-corpus ingest into a fresh `loka-data-cron-c1/` data dir, targeting queue.md item #3 (10× the existing corpus). The HF importer (`tools/wikidata_hf_import.py`) ran cleanly for ~30 hours, climbing to **318,581 entity rows / 32,876,098 triples** at 4 entities/s sustained. No wedges or stalls along the way — the application-layer batching fix from `39effbb` held.
+- **2026-05-12 23:52:38 UTC** — Loka panicked:
+  ```
+  ERROR sled::flusher: failed to fsync from periodic flush thread:
+     Insufficient system resources exist to complete the requested service. (os error 1450)
+  thread 'log flusher' panicked at .../io/stdio.rs:1165:9:
+  failed printing to stderr: Insufficient system resources exist to complete the requested service.
+  ```
+- **2026-05-12 ~23:53 UTC** — v11 preprocess attempt (`training/logs/preprocess_v11.log`) hung waiting on the dead Loka and was the downstream casualty.
+- **post_eval_cron fires 2 + 3** (16:40 + 22:40 UTC) — skipped because `loka_triple_count()` timed out at the 300 s bound. The triple-count query takes 2–5 min on a quiet 33 M-triple Loka, so even with Loka healthy the count would have aborted the firing.
+
+### Root cause
+
+Win32 error 1450 is `ERROR_NO_SYSTEM_RESOURCES` from the OS I/O manager, returned to `FlushFileBuffers` (sled's fsync call) when the kernel runs out of resources (typically nonpaged-pool entries, file-system filter IRPs, or system-PTE pool) to issue the flush. Conditions that drove the system there:
+
+1. **sled 0.34 defaults on a 5 GB DB**: `sled::open(path)` uses 1 GB `cache_capacity`, 500 ms `flush_every_ms`, `Mode::LowSpaceUsage`. The 2 Hz fsync on a 5 GB mmap-backed store keeps a large fraction of file-system metadata write-behind queued.
+2. **Concurrent ingest**: the HF importer was POSTing batches continuously, so user-data writes interleaved with the periodic flusher's metadata fsyncs.
+3. **Windows nonpaged-pool exhaustion**: each outstanding I/O request consumes a kernel pool entry; 4070-class systems have hard limits on this pool.
+
+The v9/v10 application-layer fix (`39effbb`: one sled transaction per HTTP request, no synchronous `flush()` at request end) was necessary but not sufficient at this scale. The remaining churn comes from sled's *own* periodic flusher, which we don't control from the application.
+
+### Fix (this commit's predecessor: `c36760b`)
+
+`PersistentStore::open` now configures sled explicitly:
+
+```rust
+sled::Config::new()
+    .path(path)
+    .cache_capacity(256 * 1024 * 1024)   // 256 MB, ¼ of default
+    .flush_every_ms(Some(2000))          // 2 s, ¼ of default fsync rate
+    .mode(sled::Mode::HighThroughput)    // batch more before commit
+    .open()
+```
+
+The durability window grows from 0.5 s to 2 s, which is fine for our workload — bulk ingest is replayable from `wikidata_hf_import_state.json`, so 2 s of unacked writes on crash is at worst 2 s of re-ingest. The smaller cache reduces memory pressure; `HighThroughput` mode trades space-amplification (extra log files that survive longer before compaction) for far less per-fsync work.
+
+### What was lost: nothing critical
+
+- v10 checkpoint: safe locally and on HF (`EmmaLeonhart/loka@v10`).
+- v6–v9 checkpoints: safe locally and on HF.
+- `loka-data-cron-c1/`: still on disk at 5.0 GB. Won't be deleted until the reopen-in-place test (queue.md option B) tells us whether sled can replay its WAL cleanly with the new config. If yes, we keep the 32.88 M triples. If no, we fall back to a full re-import (~31 h).
+- `wikidata_hf_import_state.json`: intact (180 bytes). Knows the importer reached row 318,581.
+
+### Limits of this fix + when to escalate to RocksDB
+
+This is a **probable** fix, not a guaranteed one. We've cut sled's I/O footprint by ~4× but haven't changed its on-disk format or addressed sled 0.34's known issue of files growing without bound between manual compactions. Escalation criteria: if the same panic (or a similar Windows I/O exhaustion) recurs at the next ingest plateau, we migrate off sled 0.34 entirely. sled has been unmaintained since 2021; RocksDB is Oxigraph's choice for the same reason and is the long-standing open question in `CLAUDE.md`. This is the **next** engine task if the tuning doesn't hold.
+
+### Side fixes in the same window
+
+- `tools/post_eval_cron.py`: triple-count timeout 300 s → 1800 s (`b34d30d`). Counting 33 M triples on a healthy Loka takes 2–5 min; aborting the whole firing because the count is slow throws away the pipeline for nothing.
+- `training/preprocess.py`: page the SPARQL fetch with LIMIT/OFFSET (`b34d30d`). The v11 preprocess attempt found that asking Loka for a 32 M-row JSON in one shot grew it to 21 GB resident accumulating the response, never sent a byte back. 100 k-row pages with a 900 s per-page bound, sled iteration is byte-order stable so unordered pagination is safe.
+- `.gitignore`: add `loka-data-cron-*/` so the 5 GB scratch dirs the cron creates per cycle stay out of the repo.
+
+### Status
+
+- Engine fix shipped: `c36760b` ("sled: explicit config to survive multi-GB ingest on Windows").
+- Persistent-store unit tests all pass (9/9) under the new config.
+- Release binary rebuilt against the new config (cold start verification only — the panic was a runtime condition).
+- Next: queue.md item #5 (fine-tuning track scaffolding) and #6 (paper v2 publish), then option B (reopen `loka-data-cron-c1/` in place under the new config) to verify the fix holds against a real 33 M-triple sled state and to decide whether to keep that ingest or restart from row 1.
+
+---
 ## 2026-05-11 15:59 UTC — v10 trained (cron cycle)
 
 Trained by `tools/training_cron.py` on the local 4070. Same 44.5 M-parameter
