@@ -37,16 +37,16 @@ The verdict made it clear that a 50M-triple raw-Wikidata training run on this la
 
 **Plan, ordered:**
 
-1. **Audit existing preprocess.** Read `training/preprocess.py` + `tools/wikidata_hf_import.py`. Identify what is already done (label substitution? identifier stripping? datatype normalization?) and what is duplicated / loaded into memory monolithically (the suspected RAM bloat per the chat).
+1. **Audit existing preprocess.** ~~DONE 2026-05-13.~~ `training/preprocess.py` already does label substitution (English), reserved-namespace stripping, noise-datatype exclusion via `training/wikidata_excluded_predicates.json`, Wikidata-API PID fallback (cached at `training/property_label_cache.json`), and time/quantity normalization. The big problem is **it loads all triples into one Python list before processing** — that's the 21 GB RAM bloat the chat described. `tools/wikidata_hf_import.py` (stage 1) is already correctly streaming. Stage 2+3 is where the rewrite is needed.
 
 2. **Stage 1 — lean import (keep current).** Wikidata triples land in SutraDB / `loka-data-cron-c1` with **QIDs intact**. Streaming. No in-memory accumulation. Existing `wikidata_hf_import.py` mostly fits the shape; verify it's actually streaming, not building a giant in-memory map.
 
-3. **Stage 2 — QID/PID label resolver (NEW Python script, lazy, resumable).**
-   - Walks SutraDB, collects unique QIDs/PIDs that appear in the corpus and don't have an `rdfs:label` already.
-   - Queries Wikidata API in batches of 50 (the API limit) for English labels.
-   - Writes to a **SQLite side table** `wikidata_labels.db`: `(qid TEXT PRIMARY KEY, en_label TEXT, fetched_at TIMESTAMP)`.
-   - Checkpoints the cursor between batches so crash → restart picks up where it left off.
-   - Rate-limited politely (Wikidata API has soft limits — 1–2 req/s).
+3. **Stage 2 — QID/PID label resolver (built 2026-05-13).** `tools/preprocess_streaming.py` is the memory-flat replacement for `training/preprocess.py`. Two-pass design:
+   - **Pass 1 ("scan")**: stream every triple from Loka, extract English `rdfs:label` rows into the SQLite cache, build the set of unique QID/PID IRIs that appear in the corpus. Memory bounded by entity count (1–10% of triple count), not triple count.
+   - **Wikidata API step (optional, `--fetch-missing-from-wikidata`)**: for QIDs/PIDs the corpus mentions but doesn't have a label for, query the public Wikidata SPARQL endpoint in batches of 50, write results into the SQLite cache. Polite rate-limit (`--api-rate-seconds`).
+   - **Pass 2 ("emit")**: stream every triple again, resolve via SQLite, apply the same normalization rules as the canonical `preprocess.py` (which is imported, not duplicated), write the flat tab-separated corpus.
+   - Cache lives at `training/data/wikidata_labels.sqlite` and **persists across runs**. The same script can be re-run incrementally as the corpus grows.
+   - Not yet executed against the 50M corpus — that needs `loka serve` against `loka-data-cron-c1/` which is a sustained query load. Hold for user go-ahead given today's thermal events. Smoke test with `--max-pages 1` is safe to run anytime.
 
 4. **Stage 3 — normalization pass (NEW Python script).**
    - Reads the corpus + the label DB.
