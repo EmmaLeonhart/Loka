@@ -67,7 +67,14 @@ def latest_checkpoint_version() -> int:
 
 
 def loka_triple_count() -> int | None:
-    """Query the running Loka for total triple count. None if Loka not up."""
+    """Query the running Loka for total triple count. None if Loka not up.
+
+    Timeout was 300s; bumped to 1800s after firing 3 (2026-05-12 22:40 UTC)
+    skipped because count over 32.88M triples consistently takes 2-5 minutes
+    even on a quiet Loka. This is just an informational log line, so use a
+    generous bound — failing the firing because the count was slow throws
+    away the whole pipeline for nothing.
+    """
     try:
         import requests
         r = requests.post(
@@ -77,7 +84,7 @@ def loka_triple_count() -> int | None:
                 "Content-Type": "application/sparql-query",
                 "Accept": "application/sparql-results+json",
             },
-            timeout=300,
+            timeout=1800,
         )
         r.raise_for_status()
         return int(r.json()["results"]["bindings"][0]["n"]["value"])
