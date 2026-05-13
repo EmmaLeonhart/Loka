@@ -12,7 +12,25 @@ Full architecture: see `docs/architecture.md`.
 
 ## Workflow Rules
 
-- **Active diagnostic triage (2026-05-13).** The user reports persistent Windows instability that started after this project began. Branch `claude/diagnose-system-issues-8cjuO` holds the initial repo-only analysis at `planning/system-instability-diagnosis.md` — ranked hypotheses (Win32 `ERROR_NO_SYSTEM_RESOURCES` kernel-pool exhaustion from sled + ingest + training concurrency is the leading suspect, since we already have a logged panic with that exact signature), "stop the bleeding" PowerShell, and a diagnostic data-gathering block. **v11 training cycle and both crons (`training_cron.py`, `post_eval_cron.py`) are on hold** until the instability is understood. Do not restart them on the affected machine without first running through the diagnosis doc.
+- **Training-box hardware specs — READ THIS BEFORE PLANNING ANY LOOP, CRON, OR TRAINING RUN.** Diagnostic triage on 2026-05-13 (`planning/system-instability-evidence-2026-05-13.md` + `planning/system-instability-verdict-2026-05-13.md`) established that prior plans assumed desktop-class hardware the box does not have. The actual specs:
+    - **Form factor:** laptop (hostname `laptop-qe4jv37b`). NOT a desktop. Thermal headroom is the binding constraint on every sustained-compute decision.
+    - **CPU:** AMD Ryzen 7 8845HS — Zen 4 mobile, 8 cores / 16 threads, 3.8 GHz max boost, ~28 W default TDP boosting to ~54 W sustained. Integrated Radeon 780M iGPU on-die.
+    - **dGPU:** NVIDIA RTX 4070 **Laptop** GPU. ~8 GB VRAM (`AdapterRAM` under-reports as 4 GB on dual-GPU systems — the real figure is 8). **35–115 W TGP envelope, NOT the 200 W desktop 4070.** Driver `32.0.15.8183` (2025-11-03), Game Ready branch — should be switched to Studio for sustained compute.
+    - **iGPU:** AMD Radeon 780M, driver `32.0.11020.30000` (2025-12-09). Default display path; the dGPU is engaged for CUDA.
+    - **RAM:** 31.3 GB. Free at idle ~13 GB. Page-file peak at idle is negligible (20 MB) — memory pressure is not the dominant failure mode.
+    - **Disk:** C:\ has 1907 GB total, 758 GB free as of 2026-05-13. Disk fill is not a constraint.
+    - **OS:** Windows 11.
+    - **TDR registry:** unset → running defaults (`TdrDelay=2 s`). Too short for sustained CUDA kernels; raise to 10 s before any long training run.
+    - **Firmware caveats:** HAL `ACPI Time and Alarm Device failed` fires on every boot (benign but indicates older/incomplete firmware). IOMMU has logged DMA faults against the dGPU (device 0x200) — fragile PCIe path. BIOS update is on the queue's recommended-mitigation list.
+  
+  **Consequences for plan-making:**
+    - A "sustained N-hour GPU training" run on this box is thermally marginal. 4070 Laptop cannot hold full TGP for hours; it will throttle, and under multi-rail pressure (sled fsyncs + ingest + training concurrent) the firmware will issue a hard cutoff. 10 unexpected-shutdown events Mar 27 → 2026-05-13, none of which produced a BSOD or minidump — these are firmware-level events the OS does not see coming.
+    - Workload serialisation is mandatory: `loka serve` + ingest + training must not run concurrently. The auto-cron pattern that drove v9/v10 succeeded only because the corpus was small (94k triples at v10); at 50 M-triple scale the same pattern thermally overloads the box.
+    - Default batch sizes targeting a desktop 4070 (12 GB, 200 W) are too aggressive. Halve them (e.g. `--batch-size 32` not 64) when running locally.
+    - Strongly preferred alternative for long training runs: cloud GPU rental (Lambda Labs / RunPod / Vast.ai) at ~$5/cycle for a 3.5 h training pass. The corpus and tokenizer already live on Hugging Face. Treat the laptop as the development box and the cloud as the training box.
+    - When designing new loops/crons: budget for the thermal envelope, not theoretical hardware capacity. Add temperature-monitoring gates, sleep periods between heavy phases, and hard-stops on consecutive-failure counters.
+
+  **Status (2026-05-13):** `loka-v11-kickoff` is Disabled. `training_cron.py` and `post_eval_cron.py` are on hold and must not be re-enabled until at least one v11 cycle completes by hand under the verdict's mitigation list. See `planning/system-instability-verdict-2026-05-13.md` for the full preconditions before v11 resumes.
 - **Quiet windows.** Sometimes the user explicitly requests a no-commit / no-push window — for example, "do not commit and push anything until 8 hours from now" while a downstream review pipeline catches up. Respect the window exactly. The default "commit early and often" rule below is suspended during quiet windows. The user will declare the window verbally; record the declared end-time in DEVLOG.md so a future session can see it. The 2026-05-11 declaration was: "no commits/pushes for 8 h after 22:35 UTC; then a post-eval cron fires every 6 h starting +12 h, for up to 48 h total." See `tools/post_eval_cron.py`.
 - **Commit early and often.** Every meaningful change gets a commit with a clear message explaining *why*, not just what.
 - **Plan into `queue.md` FIRST, then execute.** When entering planning mode (or doing any multi-step think-before-do), the FIRST action is to write the plan into `queue.md` as concrete items. Only then begin executing. Chat context dies on session interrupt; the queue survives.
