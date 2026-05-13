@@ -10,16 +10,11 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 The user reports persistent Windows instability "ever since [I] got started on this project," currently off the affected machine. Repo evidence (`training/logs/loka-restart.log`, DEVLOG 2026-05-12 23:52 UTC) shows a Win32 `ERROR_NO_SYSTEM_RESOURCES` panic — kernel-level resource exhaustion that destabilises the whole OS, not just Loka. Until diagnostics rule that out, treat the box as fragile.
 
-### 1. Run the diagnostic triage on the affected box
+### 1. Run the diagnostic triage on the affected box — DONE 2026-05-13
 
-Branch `claude/diagnose-system-issues-8cjuO` has the analysis. **Read `planning/system-instability-diagnosis.md` first.** Sequence:
+Evidence collected into `planning/system-instability-evidence-2026-05-13.md`. Verdict written to `planning/system-instability-verdict-2026-05-13.md`.
 
-1. Run the "Stop the bleeding" PowerShell block — disables `loka-v11-kickoff`, kills any running cron/training/Loka/ingest processes, disables every Loka-tagged scheduled task. This makes sure nothing auto-fires while you're investigating.
-2. Run the "Diagnostic data to gather" block — Event Viewer (System log errors, BugCheck events, `nvlddmkm` warnings), `C:\Windows\Minidump\` listing, pool counters, free disk, stray python/loka processes, sled scratch-dir sizes. Save the output into `planning/system-instability-evidence-YYYY-MM-DD.md`.
-3. Use the six ranked hypotheses (kernel nonpaged-pool, preprocess.py 21 GB OOM, GPU TDR, disk fill, orphaned crons, hardware) plus the user's answers to the five narrowing questions to collapse the tree. The most valuable single data point is whether `Minidump\` has fresh `.dmp` files — those name the bugcheck and the offending driver, which usually closes it in one step.
-4. Apply mitigations in order of payoff: serialise serve/ingest/train, keep both crons disabled, tighter sled config, move sled state off C:, RocksDB migration if the same panic recurs.
-
-**Output expected:** a verdict written into `planning/system-instability-diagnosis.md` (or a follow-up `system-instability-verdict.md`) saying which hypothesis matched and what the residual risk is, plus an updated `queue.md` entry confirming whether v11 can resume.
+**Verdict, one paragraph:** the OS-freeze incidents are H6 (thermal / firmware-level shutdown on a thermally-constrained laptop), with H3 (GPU TDR fragility + IOMMU dGPU faults) as a co-factor. **It is a laptop**, hostname `laptop-qe4jv37b`, Ryzen 7 8845HS + Radeon 780M iGPU + RTX 4070 **Laptop** dGPU (not the desktop 4070 the previous Claude conversation assumed). Evidence: **10 Kernel-Power 41 events Mar 27 → today, zero BSODs, zero minidumps, zero WHEA, zero nvlddmkm errors** — the OS is not the layer detecting the failure; it's the firmware/EC layer. The 15-min cool-down recovery in `chats/system-instability.md` is the canonical thermal saturation signature. H1 (sled kernel pool) is real but separate — it owns the *logged* sled panic in DEVLOG, NOT the OS freezes.
 
 ### 2. Process the system-instability chat — DONE 2026-05-13
 
@@ -33,14 +28,23 @@ Extracted from `chats/Computer freezing during AI training run - Claude.html` �
 
 The extractor (`tools/extract_claude_chat.py`) had a duplication bug — each Claude turn was appending all subsequent Claude turns. Fixed in this commit; output dropped from 64 KB to 19.5 KB. Existing committed chats (`ai-bubble.md`, `world-models.md`) were not regenerated since they're already in git and the user has been working from them.
 
-### 3. Start the v11 training cycle (only after step 1's verdict says it's safe)
+### 3. Start the v11 training cycle (BLOCKED on mitigations 1–3 below; revised after the verdict)
 
-Once diagnostics complete and the system is verified stable enough to run the workload (or the mitigations from step 1 have been applied — e.g. serialise serve/ingest/train, tighter sled config, no overlapping crons):
+The verdict reframes this step. The original plan (`4 epochs × 52 min`, batch 64, on this laptop) was designed against assumed desktop-4070 thermal headroom. The actual hardware cannot sustain that without firmware-level shutdown. Either the workload changes or it moves to different hardware. **Required before resuming:**
 
-- Use the existing v11 restart protocol below (re-enable + fire `loka-v11-kickoff`, or run `python tools/v11_kickoff.py` directly).
-- Watch live: `tail -F training/logs/v11_kickoff.log` and Event Viewer in parallel. Stop at the first kernel-pool warning, don't wait for a panic.
+1. **External cooling.** Cooling pad / elevated rear / ambient temperature reduced. Verify via 30-min HWiNFO64 stress test: GPU hotspot < 90 °C, CPU package < 95 °C sustained.
+2. **Workload serialisation.** No `loka serve` + ingest + training concurrently. Strict sequencing (per `planning/system-instability-diagnosis.md` mitigation M1).
+3. **Smaller training batch.** `--batch-size 32` instead of 64. ~2× wall-clock cost; halves driver pool pressure.
+4. **One-time setting changes:** raise `TdrDelay` registry value to 10 s (was empty → default 2 s); switch NVIDIA driver from Game Ready 32.0.15.8183 to the **Studio** branch. Both require a reboot.
+5. **Check BIOS for an update** — HAL `ACPI TAD failed` warnings + IOMMU faults on the dGPU suggest firmware-level fixes may be pending from the vendor.
+
+**Strongly preferred alternative**: move the training run off this laptop entirely. Lambda Labs / RunPod / Vast.ai for the 3.5-h training pass costs < $5/cycle, eliminates the thermal risk, and the corpus + tokenizer already live on Hugging Face. The training-on-laptop path was always going to be marginal; the verdict makes that explicit.
+
+Once mitigations are in place:
+- Use the v11 restart protocol below (re-enable + fire `loka-v11-kickoff`, or run `python tools/v11_kickoff.py` directly).
+- Watch live: `tail -F training/logs/v11_kickoff.log` AND HWiNFO64 temps in parallel. Stop at first thermal warning OR first kernel-pool warning.
 - Completion marker: last line of `training/logs/v11_kickoff.log` is `=== v11 kickoff DONE — v11 shipped ===` and `git log -1` shows the v11 commit.
-- **Do not re-enable `training_cron.py` or `post_eval_cron.py`** as part of this — one cycle, by hand, first.
+- **Do not re-enable `training_cron.py` or `post_eval_cron.py`.** One cycle, by hand, first.
 
 ### 4. Set up a 5 h follow-up cron: analyse training + update paper
 
