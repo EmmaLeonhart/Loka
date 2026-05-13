@@ -72,8 +72,10 @@ This is a **probable** fix, not a guaranteed one. We've cut sled's I/O footprint
 
 - Engine fix shipped: `c36760b` ("sled: explicit config to survive multi-GB ingest on Windows").
 - Persistent-store unit tests all pass (9/9) under the new config.
-- Release binary rebuilt against the new config (cold start verification only — the panic was a runtime condition).
-- Next: queue.md item #5 (fine-tuning track scaffolding) and #6 (paper v2 publish), then option B (reopen `loka-data-cron-c1/` in place under the new config) to verify the fix holds against a real 33 M-triple sled state and to decide whether to keep that ingest or restart from row 1.
+- Release binary rebuilt against the new config.
+- **Option B verified 2026-05-13 01:00 UTC**: `loka serve --data-dir loka-data-cron-c1 --port 3030` opened the existing 5 GB sled state cleanly under the new config. `/health` returns 200, SPARQL `SELECT (COUNT(*) AS ?n)` returns **32,877,248** — 1,150 *more* than `big-pull.log`'s last recorded 32,876,098, meaning sled's WAL replay recovered every write that had reached durable storage at the moment of the panic. No data lost; the engine fix verified for the reopen case.
+- Queue.md item #5 (fine-tuning scaffolding, `df8fb43`) and #6 (paper v2 publish — post 2384, supersedes 2378) both shipped in the same window.
+- Next decision is the user's: resume the bigger-corpus ingest past 32.88 M triples (extending toward the original 50 M-triple target), or stop here and use this corpus as v11's training source. The probable-fix caveat in the previous section still applies — we cut sled's I/O footprint by ~4× but haven't migrated off sled 0.34; if the same panic recurs at the next plateau, RocksDB migration is queued.
 
 ---
 ## 2026-05-11 15:59 UTC — v10 trained (cron cycle)

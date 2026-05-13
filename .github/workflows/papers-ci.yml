@@ -124,12 +124,26 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet paper/ docs/theory-and-paper.md; then
-            echo "No paper/ or docs link changes after submit; nothing to commit"
+          # Stage paper/ unconditionally; stage docs/theory-and-paper.md
+          # only if it exists. The docs file is optional — it's where
+          # the SutraDB-era homepage button URL lives, but this repo
+          # may not have it (it didn't survive the rebrand cleanup).
+          # Without this guard the whole commit-back step exited 128
+          # on `git add docs/theory-and-paper.md` for a successful
+          # submit + review fetch (post 2384 v2 of paper, 2026-05-13).
+          git add paper/
+          if [ -f docs/theory-and-paper.md ]; then
+            git add docs/theory-and-paper.md
+          fi
+          # Now check the index (not the working tree) for staged work.
+          # `git diff --cached --quiet` returns 0 when nothing is staged,
+          # which is the "submit happened but didn't change tracked
+          # paper/ files" case (rare — post_id always changes on a
+          # successful submit).
+          if git diff --cached --quiet; then
+            echo "No staged changes after submit; nothing to commit"
             exit 0
           fi
-          git add paper/
-          git add docs/theory-and-paper.md
           git commit -m "papers-ci: paper submission + review
 
           $(date -u +%Y-%m-%dT%H:%M:%SZ) auto-commit by papers-ci.yml
