@@ -6,7 +6,57 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ---
 
-## 🚨 v11 cycle is staged — read this if you're picking up after a restart
+## 🚨 Top of queue — ordered, do these in this sequence
+
+The user reports persistent Windows instability "ever since [I] got started on this project," currently off the affected machine. Repo evidence (`training/logs/loka-restart.log`, DEVLOG 2026-05-12 23:52 UTC) shows a Win32 `ERROR_NO_SYSTEM_RESOURCES` panic — kernel-level resource exhaustion that destabilises the whole OS, not just Loka. Until diagnostics rule that out, treat the box as fragile.
+
+### 1. Run the diagnostic triage on the affected box
+
+Branch `claude/diagnose-system-issues-8cjuO` has the analysis. **Read `planning/system-instability-diagnosis.md` first.** Sequence:
+
+1. Run the "Stop the bleeding" PowerShell block — disables `loka-v11-kickoff`, kills any running cron/training/Loka/ingest processes, disables every Loka-tagged scheduled task. This makes sure nothing auto-fires while you're investigating.
+2. Run the "Diagnostic data to gather" block — Event Viewer (System log errors, BugCheck events, `nvlddmkm` warnings), `C:\Windows\Minidump\` listing, pool counters, free disk, stray python/loka processes, sled scratch-dir sizes. Save the output into `planning/system-instability-evidence-YYYY-MM-DD.md`.
+3. Use the six ranked hypotheses (kernel nonpaged-pool, preprocess.py 21 GB OOM, GPU TDR, disk fill, orphaned crons, hardware) plus the user's answers to the five narrowing questions to collapse the tree. The most valuable single data point is whether `Minidump\` has fresh `.dmp` files — those name the bugcheck and the offending driver, which usually closes it in one step.
+4. Apply mitigations in order of payoff: serialise serve/ingest/train, keep both crons disabled, tighter sled config, move sled state off C:, RocksDB migration if the same panic recurs.
+
+**Output expected:** a verdict written into `planning/system-instability-diagnosis.md` (or a follow-up `system-instability-verdict.md`) saying which hypothesis matched and what the residual risk is, plus an updated `queue.md` entry confirming whether v11 can resume.
+
+### 2. Process the system-instability chat (lands in a near-future commit)
+
+The user has a chat transcript related to the instability that they'll commit into `chats/` shortly. It'll follow the same format as `chats/ai-bubble.md` / `chats/world-models.md`. When the commit lands:
+
+- Read the new file under `chats/` (filename likely `chats/system-instability*.md` or similar).
+- Extract anything the chat says that wasn't in this triage doc — additional symptoms, machine specs, what the user already tried, ruled-out hypotheses.
+- Update `planning/system-instability-diagnosis.md` with the new evidence — promote or demote hypotheses as appropriate, add or remove diagnostic steps, sharpen the mitigation list. Do this in the same commit so the analysis and the source line up.
+- If the chat reveals something material (e.g. "BSOD code was X", "swapped the RAM and it still happens"), call it out in the commit message — that's the diff that future sessions need to find quickly.
+
+### 3. Start the v11 training cycle (only after step 1's verdict says it's safe)
+
+Once diagnostics complete and the system is verified stable enough to run the workload (or the mitigations from step 1 have been applied — e.g. serialise serve/ingest/train, tighter sled config, no overlapping crons):
+
+- Use the existing v11 restart protocol below (re-enable + fire `loka-v11-kickoff`, or run `python tools/v11_kickoff.py` directly).
+- Watch live: `tail -F training/logs/v11_kickoff.log` and Event Viewer in parallel. Stop at the first kernel-pool warning, don't wait for a panic.
+- Completion marker: last line of `training/logs/v11_kickoff.log` is `=== v11 kickoff DONE — v11 shipped ===` and `git log -1` shows the v11 commit.
+- **Do not re-enable `training_cron.py` or `post_eval_cron.py`** as part of this — one cycle, by hand, first.
+
+### 4. Set up a 5 h follow-up cron: analyse training + update paper
+
+**Doesn't exist yet** — closest analogue is `tools/post_eval_cron.py`, which fires every 6 h for 48 h and runs the full preprocess→train→propgen→DEVLOG→paper→push pipeline. That's a different shape: a continuous-loop training driver, not a one-shot post-training analyser.
+
+Plan for the new tool (call it `tools/post_v11_analyse.py` or similar):
+
+- Fires once, 5 h after v11 training completes (i.e. scheduled with `Register-ScheduledTask` against the v11 completion timestamp + 5 h, OR a `--first-delay 18000` flag on the existing cron pattern).
+- Reads `training/logs/v11_train.log` + `training/data/test_propgen_Q42_v11.nt` + `_meta.json`.
+- Diffs against v10's numbers (final ppl, catalog vs semantic emission split, asymmetric-drop count) and writes an analysis paragraph.
+- Appends a paper §5.9 update + DEVLOG entry with the comparison.
+- Commits + pushes (paper push triggers `papers-ci.yml` → clawRxiv submission).
+- **Single-shot** — no looping. The recurring `post_eval_cron.py` is what we have for the multi-firing pattern, and it's intentionally on hold.
+
+Defer the implementation until step 3 has actually produced a v11 checkpoint — premature scaffolding is wasted work if v11's shape comes out different from v10's.
+
+---
+
+## Reference: v11 cycle restart protocol (for step 3 above)
 
 **Date this was written:** 2026-05-13, ~11:30 PT, about 30 min before the v11 training cycle fires.
 
