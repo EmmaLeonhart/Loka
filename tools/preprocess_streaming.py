@@ -71,6 +71,27 @@ from training.preprocess import (  # noqa: E402
 WIKIDATA_SPARQL = "https://query.wikidata.org/sparql"
 USER_AGENT = "Loka-Training/0.2 (https://github.com/EmmaLeonhart/Loka)"
 
+# Engine bug #2 guard. Loka's executor occasionally surfaces an RDF-star
+# inner-triple component (an entity IRI) in the predicate position. The
+# `t["p"]["type"] != "uri"` check catches *literals* in the predicate slot but
+# not *entity URIs* in the predicate slot. A Wikidata predicate must be either
+# under `/prop/direct/` (`P\d+`) or one of the handful of structural vocab
+# IRIs the dump uses. Anything in the `/entity/` namespace is wrong by
+# construction.
+WD_ENTITY_PREDICATE_RE = re.compile(r"^http://www\.wikidata\.org/entity/")
+
+# URL-shaped values that leak into the object slot when the parent predicate
+# wasn't caught by the noise-datatype filter (e.g. when engine bug #2 puts an
+# entity in the predicate position). These never carry world-model signal:
+# strip them at the object level too.
+URL_PREFIX_RE = re.compile(r"^(https?|ftp|irc|ircs|mailto)://", re.IGNORECASE)
+
+# External-identifier shape: long digit-only strings, ISNI-style spaced groups,
+# DOI-shape (10.NNNN/...), etc. Object-position fallback for the same reason
+# as URL_PREFIX_RE.
+DIGIT_ID_RE = re.compile(r"^\d{8,}$")  # GND / VIAF / ISNI / catalog ids
+DOI_RE = re.compile(r"^10\.\d{4,9}/")
+
 
 # ── SQLite label cache ──────────────────────────────────────────────────────
 
@@ -346,6 +367,9 @@ def emit_pass(
         "skipped_excluded": 0,
         "skipped_provenance": 0,
         "skipped_nonuri_pred": 0,
+        "skipped_entity_pred": 0,
+        "skipped_url_object": 0,
+        "skipped_identifier_object": 0,
         "skipped_rdfs_label": 0,
     }
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -368,11 +392,27 @@ def emit_pass(
                 if p_iri in excl_iris:
                     stats["skipped_excluded"] += 1
                     continue
+                # Engine bug #2 surgical guard: entity IRIs leaking into the
+                # predicate position. Wikidata predicates are at /prop/direct/
+                # or in structural vocab; nothing under /entity/ is valid here.
+                if WD_ENTITY_PREDICATE_RE.match(p_iri):
+                    stats["skipped_entity_pred"] += 1
+                    continue
                 s = resolve_term(t["s"], conn, keep_all_languages)
                 p = resolve_term(t["p"], conn, keep_all_languages=True)
                 o = resolve_term(t["o"], conn, keep_all_languages)
                 if not (s and p and o):
                     stats["skipped_unresolved"] += 1
+                    continue
+                # Object-level URL / external-identifier guard. Catches values
+                # that came through because the parent predicate wasn't caught
+                # by the noise-datatype filter (mis-typed predicates, engine
+                # bug #2 fallout, etc.).
+                if URL_PREFIX_RE.match(o):
+                    stats["skipped_url_object"] += 1
+                    continue
+                if DIGIT_ID_RE.match(o) or DOI_RE.match(o):
+                    stats["skipped_identifier_object"] += 1
                     continue
                 s = s.replace("\t", " ").replace("\n", " ")
                 p = p.replace("\t", " ").replace("\n", " ")
