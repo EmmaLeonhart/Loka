@@ -21,14 +21,17 @@ Branch `claude/diagnose-system-issues-8cjuO` has the analysis. **Read `planning/
 
 **Output expected:** a verdict written into `planning/system-instability-diagnosis.md` (or a follow-up `system-instability-verdict.md`) saying which hypothesis matched and what the residual risk is, plus an updated `queue.md` entry confirming whether v11 can resume.
 
-### 2. Process the system-instability chat (lands in a near-future commit)
+### 2. Process the system-instability chat — DONE 2026-05-13
 
-The user has a chat transcript related to the instability that they'll commit into `chats/` shortly. It'll follow the same format as `chats/ai-bubble.md` / `chats/world-models.md`. When the commit lands:
+Extracted from `chats/Computer freezing during AI training run - Claude.html` → `chats/system-instability.md`. Key new evidence folded into `planning/system-instability-diagnosis.md`:
 
-- Read the new file under `chats/` (filename likely `chats/system-instability*.md` or similar).
-- Extract anything the chat says that wasn't in this triage doc — additional symptoms, machine specs, what the user already tried, ruled-out hypotheses.
-- Update `planning/system-instability-diagnosis.md` with the new evidence — promote or demote hypotheses as appropriate, add or remove diagnostic steps, sharpen the mitigation list. Do this in the same commit so the analysis and the source line up.
-- If the chat reveals something material (e.g. "BSOD code was X", "swapped the RAM and it still happens"), call it out in the commit message — that's the diff that future sessions need to find quickly.
+- **15-minute cool-down recovery pattern** — soft reboot didn't work, fast cold boot didn't work, leaving the box off for 15 min did. This is *not* a kernel-software-state signature. Hypothesis ranking revised: H3 (GPU TDR-stuck firmware) and H6 (thermal/PSU) promoted to co-#1 for the chat-described incident; H1 (sled kernel pool) now best explains the *logged* sled panic in DEVLOG but probably not the OS freeze.
+- **Hardware confirmed**: Windows + RTX 4070 (12 GB VRAM) + CPU "comparable currentness to the 4070".
+- **User's own attribution**: preprocessing pipeline. Aligns with H2 as the most likely *contributor* during the gradual-slowdown phase preceding the black screen.
+- **Likely two incidents conflated**: the DEVLOG sled panic vs the chat black-screen are plausibly different failure modes. Diagnosis doc now treats them as separate.
+- New diagnostic block added for H3-specific checks (Win32_ReliabilityRecords display events, driver branch Studio-vs-Game-Ready, TDR registry settings).
+
+The extractor (`tools/extract_claude_chat.py`) had a duplication bug — each Claude turn was appending all subsequent Claude turns. Fixed in this commit; output dropped from 64 KB to 19.5 KB. Existing committed chats (`ai-bubble.md`, `world-models.md`) were not regenerated since they're already in git and the user has been working from them.
 
 ### 3. Start the v11 training cycle (only after step 1's verdict says it's safe)
 

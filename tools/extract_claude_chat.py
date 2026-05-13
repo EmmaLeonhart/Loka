@@ -38,41 +38,44 @@ def to_markdown(tag: Tag) -> str:
 def extract(html_path: Path, md_path: Path) -> None:
     soup = BeautifulSoup(html_path.read_text(encoding="utf-8"), "html.parser")
 
-    user_msgs = soup.select('[data-testid="user-message"]')
-    if not user_msgs:
+    def is_user(t: Tag) -> bool:
+        return t.get("data-testid") == "user-message"
+
+    def is_top_claude(t: Tag) -> bool:
+        if "font-claude-response" not in (t.get("class") or []):
+            return False
+        return not any("font-claude-response" in (p.get("class") or []) for p in t.parents)
+
+    blocks = soup.find_all(lambda t: is_user(t) or is_top_claude(t))
+
+    if not any(is_user(b) for b in blocks):
         raise SystemExit(f"No user messages found in {html_path}")
 
     out: list[str] = []
     title = html_path.stem.replace(" - Claude", "")
     out.append(f"# {title}\n")
 
-    for i, user_msg in enumerate(user_msgs):
-        out.append(f"## User (turn {i + 1})\n")
-        out.append(to_markdown(user_msg))
-        out.append("")
-
-        # Claude's reply: walk forward in document order until the next user message,
-        # collecting any element with class "font-claude-response".
-        next_user = user_msgs[i + 1] if i + 1 < len(user_msgs) else None
-        claude_blocks: list[Tag] = []
-        for el in user_msg.find_all_next(class_="font-claude-response"):
-            if next_user is not None and (el is next_user or next_user in el.parents):
-                break
-            # Avoid descending into nested font-claude-response (take only top-level)
-            if any("font-claude-response" in (p.get("class") or []) for p in el.parents):
-                continue
-            claude_blocks.append(el)
-
-        if claude_blocks:
-            out.append(f"## Claude (turn {i + 1})\n")
-            for block in claude_blocks:
-                md = to_markdown(block)
-                if md:
-                    out.append(md)
-                    out.append("")
+    turn = 0
+    in_claude = False
+    for b in blocks:
+        if is_user(b):
+            turn += 1
+            out.append(f"## User (turn {turn})\n")
+            out.append(to_markdown(b))
+            out.append("")
+            in_claude = False
+        else:
+            if not in_claude:
+                out.append(f"## Claude (turn {turn})\n")
+                in_claude = True
+            md = to_markdown(b)
+            if md:
+                out.append(md)
+                out.append("")
 
     md_path.write_text("\n".join(out).rstrip() + "\n", encoding="utf-8")
-    print(f"  -> {md_path}  ({len(user_msgs)} turns, {md_path.stat().st_size:,} bytes)")
+    user_count = sum(1 for b in blocks if is_user(b))
+    print(f"  -> {md_path}  ({user_count} turns, {md_path.stat().st_size:,} bytes)")
 
 
 def main() -> None:

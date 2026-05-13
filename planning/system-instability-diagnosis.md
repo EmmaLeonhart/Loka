@@ -26,6 +26,29 @@ If you're reading this on a wobbly Windows box: **jump to "Stop the bleeding" fi
 
 The phrase "system instability" (vs. "Loka crashed") is the key signal that this is not just a process-level bug — it's the whole machine misbehaving.
 
+### Additional symptoms from `chats/system-instability.md` (added 2026-05-13)
+
+The user's recap of a recent incident (transcript in `chats/system-instability.md`, extracted 2026-05-13 from a separate Claude conversation, **9 turns**):
+
+- "Screen goes black" — sudden display loss, not a controlled OS shutdown.
+- **"Computer getting very slow and then all going black"** — gradual slowdown phase preceding the blank, ~minutes scale.
+- Force-power-off was required ("force press the power button to stop it and then start it and restart it").
+- **Even after the hard power-cycle the box was still "weirdly kind of frozen even when I started"** — i.e. a cold boot did not by itself recover.
+- **15 minutes powered off → fully working.** "I left my computer off for 15 minutes, and then that seems to have solved the thing. It's working normally now, but the restart kind of didn't work."
+- Hardware confirmed: Windows, RTX 4070 (12 GB VRAM). CPU "comparable currentness to the 4070" — presumably a modern Ryzen 7000+ or 13th-gen+ Intel.
+- The user's own attribution is the **preprocessing pipeline** ("the preprocessing was the thing that caused problems"). This is informed guess, not measurement.
+
+The 15-min-off-then-fine pattern is the single most diagnostic detail in the whole transcript. See the revised hypothesis ranking below.
+
+### Are these the same incident as the sled panic in DEVLOG?
+
+**Probably not.** The repo evidence (`training/logs/loka-restart.log`, DEVLOG 2026-05-12 23:52 UTC) is a *logged* sled panic with `ERROR_NO_SYSTEM_RESOURCES (os error 1450)` — i.e. the Loka process aborted in a way that left a stack trace behind. The chat describes the OS itself going dark, with no log to point at. These are plausibly two failure modes overlapping on the same workload, not one unified phenomenon:
+
+1. **Kernel-pool exhaustion from sled** → logged panic, process death, OS probably degraded but recoverable. Fix shipped in `c36970b`.
+2. **Thermal/GPU-driver wedge during sustained training+preprocess** → no log, screen blank, hard-reset needed, 15-min cool-down required for full recovery.
+
+The diagnosis must address both — treating them as one mystery has been masking the chat-described pattern, which has a *different* signature.
+
 ---
 
 ## Stop the bleeding (run these FIRST on the affected box)
@@ -52,7 +75,12 @@ Once this is done the system has a chance to settle. THEN run the diagnostic blo
 
 ## Working hypotheses, ranked
 
-### H1 — Windows nonpaged-pool exhaustion driven by sled+ingest+training concurrency  *(highest confidence)*
+> **Update 2026-05-13 after reading `chats/system-instability.md`:** the cool-down-recovery pattern (15 min off → working; soft reboot didn't work; cold boot alone didn't work) is **not** a kernel-software-state signature. Kernel nonpaged pool resets on every boot — H1 cannot explain "I had to wait for it to cool." So the chat-described incident is most plausibly **H3 (GPU driver wedge)** or **H6 (thermal)**, with **H2 (preprocess memory pressure)** as the most likely contributor during the gradual-slowdown phase. H1 still explains the *logged sled panic* in DEVLOG, but that appears to be a separate failure mode — see "Are these the same incident" above. The pre-revision ranking is preserved below for context; the post-chat ranking is at the top of each entry.
+
+**Post-chat ranking summary**, highest → lowest confidence for *the chat-described incident*:
+H3 (GPU TDR wedge) ≈ H6 (thermal) > H2 (preprocess RAM pressure as trigger) > H1 (sled kernel pool — owns the *logged* panic but probably not the OS freeze) > H4 (disk) > H5 (orphan crons) ≥ hardware-elsewhere.
+
+### H1 — Windows nonpaged-pool exhaustion driven by sled+ingest+training concurrency  *(was #1 pre-chat; now best explanation of the LOGGED sled panic, but does not match cool-down recovery)*
 
 **Why this is #1.** We already have a panic log with `Insufficient system resources exist to complete the requested service. (os error 1450)` in `training/logs/loka-restart.log`. That's the Win32 I/O manager telling sled it can't get a kernel buffer to issue `FlushFileBuffers`. DEVLOG 2026-05-12 23:52 UTC enumerates the conditions in detail.
 
@@ -77,11 +105,19 @@ The pagination fix landed in `b34d30d`, but: (a) it's only one of several caller
 
 **Predictions:** RAM usage spikes, page-file grows multi-GB, mouse stutter / window-redraw stalls, then either recovery (slow) or hard freeze.
 
-### H3 — GPU driver crash during training (DPC_WATCHDOG / VIDEO_TDR_FAILURE)  *(medium confidence)*
+### H3 — GPU driver crash during training (TDR-stuck / VIDEO_TDR_FAILURE / DPC_WATCHDOG)  *(promoted to #1 candidate for the chat-described incident)*
 
 `train.py` runs on a 4070, batch 64, `d_model=512`, 6 layers, 44.5 M params. v10 trained 20 epochs at ~10 min/epoch. v11_kickoff plans 4 epochs at ~52 min/epoch on the bigger corpus → ~3.5 h sustained GPU load. NVIDIA driver TDR (Timeout Detection and Recovery) bugs are a recurring source of Windows BSODs, especially when other things on the box are also competing for I/O.
 
-**Predictions:** BSOD with `VIDEO_TDR_FAILURE` or `DPC_WATCHDOG_VIOLATION`. Event Viewer shows `nvlddmkm` warnings/errors at crash time. Display blanks then recovers (TDR) seconds before the freeze.
+**Why promoted by the chat.** A TDR-stuck GPU firmware state is one of the few Windows failure modes that survives a soft reboot AND survives a fast cold boot, but is cleared by leaving the box powered off long enough for the card to fully discharge (rails settle, firmware reloads from cold). The user's pattern — soft reboot failed, immediate cold boot was "weirdly kind of frozen even when I started", 15 min off then fine — matches this exactly. Reported widely against the 4070-class consumer Ada cards under sustained CUDA load on Windows.
+
+**Predictions if this is right:**
+- Event Viewer → Application or System log shows `nvlddmkm` errors clustered around the freeze time.
+- `Get-CimInstance Win32_ReliabilityRecords` lists "Display driver stopped responding and has recovered" entries.
+- `C:\Windows\Minidump\` may have a `.dmp` whose bugcheck code is `0x116 VIDEO_TDR_FAILURE` or `0x117 VIDEO_TDR_TIMEOUT_DETECTED`.
+- May be reproducible by holding the 4070 at sustained >95% utilisation for 30 min without any other workload — if it crashes alone, it's H3 or H6 cleanly.
+
+**Mitigation (if confirmed):** smaller batch (32, see M6); enforce NVIDIA's recommended Pcie power-management = "Prefer maximum performance" to avoid clock thrash; consider the latest Studio driver branch (more stable than Game Ready under sustained compute).
 
 ### H4 — Disk fill / sled compaction-amplification  *(medium confidence)*
 
@@ -101,11 +137,19 @@ Multiple of these started in different sessions; nothing inventoried what's actu
 
 **Predictions:** Running `Get-ScheduledTask | ? State -ne Disabled` shows more Loka-tagged tasks than expected; multiple `python.exe` instances visible in Task Manager between reboots.
 
-### H6 — Hardware (RAM, PSU, thermals)  *(low confidence, but cheap to check)*
+### H6 — Hardware: thermals / PSU / RAM  *(promoted to co-#1 with H3 after the chat: 15 min cool-down recovery is the canonical thermal signature)*
 
 System-wide instability that starts after a heavy workload is sometimes mis-attributed to software when it's actually a marginal RAM stick that only fails under load, or a PSU sagging when GPU + sustained disk I/O happen together, or thermal throttling reaching shutdown territory.
 
-**Predictions:** WHEA-Logger events in Event Viewer; `mdsched` (Windows Memory Diagnostic) reports failures; HWiNFO64 logs show CPU package temp > 95 °C or VR temp > 100 °C during training.
+**Why promoted by the chat.** "Left my computer off for 15 minutes, and then that seems to have solved the thing" is, in isolation, the textbook thermal-recovery sequence: heatsoaked component (CPU, VRMs, NVMe controller, GPU power-stage MOSFETs) needs time to drop below the firmware/hardware protection cutoff. PSU sag is a similar shape — caps need time to discharge and the OCP latch resets. The gradual-slowdown phase before the black screen is also consistent with thermal throttling progressively cutting clocks until the system can't keep up.
+
+**Predictions if this is right:**
+- HWiNFO64 logged during a workload run shows CPU package > 95 °C, GPU hotspot > 95 °C, or VRM > 100 °C in the seconds before the freeze.
+- `WHEA-Logger` events in Event Viewer (machine-check exceptions, especially type 19 / processor cache errors point to thermal/voltage failure).
+- `mdsched` (Windows Memory Diagnostic) reports any failure — if so, that's the answer alone.
+- Reproducible with FurMark or `nvidia-smi` 100% load + a CPU stress test simultaneously, with no Loka running — if it crashes there, it is not Loka's fault at all.
+
+**Mitigation:** clean dust from heatsinks (yes, really); check case fan curves; if PSU is unknown vintage and the box has both a 4070 *and* a hungry CPU under sustained load, a PSU upgrade is cheap insurance. M3+ memtest86 pass for RAM. If thermals look fine and PSU is solid, this hypothesis demotes.
 
 ---
 
@@ -148,6 +192,19 @@ Get-WinEvent -LogName Application -MaxEvents 500 -ErrorAction SilentlyContinue |
   Select TimeCreated, Id, Message -First 20
 dir C:\Windows\Minidump\ -ErrorAction SilentlyContinue | Sort LastWriteTime -Descending | Select -First 10
 dir C:\Windows\MEMORY.DMP -ErrorAction SilentlyContinue | Select Name, Length, LastWriteTime
+
+# Added 2026-05-13 after chat: TDR-specific checks (H3 promotion)
+# Display-driver reliability records (any "Display driver stopped responding" entries):
+Get-CimInstance Win32_ReliabilityRecords -ErrorAction SilentlyContinue |
+  Where-Object { $_.Message -match 'display|nvlddmkm|TDR' } |
+  Sort TimeGenerated -Descending | Select TimeGenerated, SourceName, Message -First 20
+
+# Confirm the NVIDIA driver branch (Studio vs Game Ready); Studio is the supported branch for sustained compute:
+Get-CimInstance Win32_VideoController | Select Name, DriverVersion, DriverDate
+
+# Current TDR registry settings (default is 2 s timeout — short for long CUDA kernels):
+Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers' -ErrorAction SilentlyContinue |
+  Select TdrDelay, TdrDdiDelay, TdrLevel, TdrLimitCount, TdrLimitTime
 ```
 
 The single most valuable piece of data is whether `C:\Windows\Minidump\` has fresh `.dmp` files near the crash times — those identify the bugcheck code and the offending driver, which usually solves the whole question in one step.
@@ -193,13 +250,15 @@ If H3 is contributing, batch 32 instead of 64 cuts NVIDIA driver pool pressure r
 
 ## What I'd want the user to answer when they get back
 
-(These narrow the hypothesis tree; the user can fill them in as a comment on this file or just answer in chat.)
+Updated with chat-derived answers (2026-05-13). Remaining open questions narrow H3 vs H6.
 
-1. **When the box becomes unstable, does the display blank-then-recover before it freezes?** (yes → H3 GPU; no → H1/H2 kernel/memory.)
-2. **Does the OS itself BSOD, or does it just hang with the mouse/keyboard frozen?** (BSOD → check `C:\Windows\Minidump\` ; hang → H1 nonpaged-pool or H6 hardware.)
-3. **Is the instability tied to ANY heavy workload, or specifically to running Loka + training?** (any heavy workload → H6 hardware; only this project → H1/H2/H3.)
-4. **Total system RAM and whether the page file is on the same drive as `loka-data-cron-*`.** (If both on `C:` with limited free space → H4 amplifier.)
-5. **Date the instability started — does it line up with the first big-corpus ingest (2026-05-11) or earlier?** Earlier instability suggests H6 hardware; coincident with the bigger corpus suggests H1/H2.
+1. ~~**When the box becomes unstable, does the display blank-then-recover before it freezes?**~~ — chat answer: "the screen goes black" without mention of a recovery flash. Could still be a single-shot TDR that didn't survive; doesn't disambiguate H3 from H6.
+2. ~~**Does the OS itself BSOD, or does it just hang with the mouse/keyboard frozen?**~~ — chat answer: hang, not BSOD ("getting very slow and then all going black"). Probably means H3 wedge or H6 thermal cutoff rather than a clean kernel crash with a dump. **`C:\Windows\Minidump\` is still worth checking** — if there's a `.dmp` we still get a bugcheck code.
+3. **Still open: is the instability tied to ANY heavy workload, or specifically to running Loka + training?** Critical for separating H6 hardware from project-specific causes. Test: run a 30-min FurMark + Prime95 with no Loka.
+4. **Still open: total system RAM and whether the page file is on the same drive as `loka-data-cron-*`.** Affects whether preprocessing memory pressure is a bigger amplifier than assumed.
+5. ~~**Date the instability started — does it line up with the first big-corpus ingest (2026-05-11)?**~~ — chat doesn't pin a date; user just says "ever since I got started on this project". The 50–100M-triple workload only arrived recently, so the coincidence is plausible but not confirmed.
+6. **New, from chat:** *which* process was running when the freeze happened — preprocess.py alone, training alone, both concurrently, or training + a still-active ingest? The chat is a bit ambiguous ("a big AI training run" but later "the preprocessing was the thing"). Critical for ranking H2 vs H3.
+7. **New, from chat:** what driver branch is on the 4070 — Game Ready or Studio? Studio is the supported-for-compute path; Game Ready under sustained CUDA is a known TDR-stuck risk.
 
 ---
 
