@@ -10,14 +10,13 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 In strategic order. Top item is the current focus.
 
-1. **Engine bug #1: sled flusher panic at multi-GB scale.** Surfaced on 2026-05-12 as a hard panic (Win32 `ERROR_NO_SYSTEM_RESOURCES` from sled's periodic fsync at 32.88 M triples / 5 GB). Application-layer fix from `39effbb` (one transaction per HTTP request) was necessary but not sufficient; the panic comes from sled's *own* flusher thread. Probable fix shipped in `c36760b`: explicit `sled::Config` with 256 MB cache, 2 s flush interval, `Mode::HighThroughput`. **Verification still owed** — needs the reopen-in-place test against the existing 5 GB `loka-data-cron-c1/` data dir (option B below). If panic recurs, escalate to RocksDB migration (CLAUDE.md open question; sled 0.34 unmaintained since 2021).
+1. **Engine bug #1: sled flusher panic at multi-GB scale.** ~~Surfaced~~ Surfaced on 2026-05-12 as a hard panic (Win32 `ERROR_NO_SYSTEM_RESOURCES` at 32.88 M triples / 5 GB). Probable fix shipped in `c36760b`: explicit `sled::Config` with 256 MB cache, 2 s flush, `Mode::HighThroughput`. **Reopen-in-place verified 2026-05-13 01:00 UTC**: WAL replay recovered 32,877,248 triples (1,150 more than `big-pull.log` last recorded). The fix is verified for the reopen case; the residual question is whether it also holds against a fresh sustained ingest past 32.88 M. If a re-test ingest panics at the next plateau, escalate to RocksDB migration (sled 0.34 unmaintained since 2021).
 
 2. **Engine bug #2: SPARQL returns literal values in the predicate slot.** ~1% of rows on a 5M corpus. Confirmed in a separate symptom too: `<< ?s ?p ?o >> ?qp ?qv` returns `<<QUOTED_TRIPLE>>` sentinel and literal values in `?qp`. Probably an RDF-star annotation row with positions getting confused on the executor side. Repro and fix.
 
-3. **Bigger corpus (paused at 32.88 M triples).** `loka-data-cron-c1/` has 5 GB of ingest already on disk, dating to the 2026-05-12 crash. Three options post-fix, in priority order:
-   - **(B) Reopen in place** with the new sled config. If sled's WAL replays cleanly we keep the 32.88 M triples and resume the importer from row 318,582 of `philippesaade/wikidata`.
-   - **(A) Full re-import from row 1** if (B) fails — blow away the data dir + state file, ~31 h at 4 ent/s.
-   - This unblocks v11 training (queue.md item #4 / planning/v11-corpus.md).
+3. **Bigger corpus, paused at 32.88 M triples.** `loka-data-cron-c1/` has 32,877,248 triples on disk; option B reopen verified 2026-05-13 01:00 UTC. Two remaining decisions:
+   - **Resume ingest** from row 318,582 to push toward the 50 M-triple target — tests whether the sled tuning also holds under fresh sustained writes (not just reopen). Worst case: another panic at the next plateau, falls through to RocksDB migration.
+   - **Stop here and use as v11's training source** — already 17× the v10 corpus (94k triples). Skips the ingest risk; v11 trains immediately.
 
 4. **Live `--post` end-to-end test of generative citation.** Attempted with `--max-subjects 30 --post`; script hung 7 min with no output, indicating engine bug #1 triggered during the POST phase. Re-attempt at lower scope after #1's fix is verified by option B.
 
