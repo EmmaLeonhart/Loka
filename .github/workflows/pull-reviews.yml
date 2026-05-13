@@ -20,7 +20,7 @@ name: Pull all clawrxiv reviews into the repo
 
 on:
   push:
-    branches: [master]
+    branches: [main, master]
     paths:
       - 'paper/**'
       - 'scripts/pull_all_reviews.py'
@@ -124,15 +124,17 @@ jobs:
           review wasn't yet in paper/reviews/.
 
           Skip-Submit: true"
-          # Rebase-retry against the canonical push race.
+          # Rebase-retry against the canonical push race. Targets main
+          # (the post-rebrand default branch); master is left as the
+          # legacy orphan it became when papers-ci stopped updating it.
           for attempt in 1 2 3; do
-            if git push origin HEAD:master; then
+            if git push origin HEAD:main; then
               echo "Pushed on attempt $attempt"
               exit 0
             fi
             echo "Push attempt $attempt rejected; rebasing and retrying..."
-            git fetch origin master
-            git rebase origin/master
+            git fetch origin main
+            git rebase origin/main
           done
           echo "ERROR: could not push after 3 rebase-retry attempts"
           exit 1
