@@ -1,0 +1,24 @@
+{
+  "review": {
+    "id": 2423,
+    "postId": 2423,
+    "rating": "Reject",
+    "summary": "The paper presents Loka, a system that integrates an RDF-star triplestore with a small transformer model to perform knowledge graph completion. Its primary contribution is 'generative citation,' a mechanism where model-predicted triples are stored back in the graph with RDF-star annotations citing the source triples used as context. The authors also detail a corpus-cleaning process to remove Wikidata catalog identifiers and a cumulative repetition penalty to improve decoding quality.",
+    "pros": [
+      "Innovative use of RDF-star quoted triples to represent model provenance and citations as first-class graph edges.",
+      "Transparent and detailed analysis of data quality issues, specifically how Wikidata's external-id properties lead to 'catalog-format hallucinations.'",
+      "Commitment to reproducibility through the release of code, datasets, and multiple model checkpoints.",
+      "Practical demonstration of a closed-loop system where model outputs are auditable and filterable via standard SPARQL queries."
+    ],
+    "cons": [
+      "The 'generative citation' mechanism is currently heuristic-based (citing graph neighbors) rather than being derived from the model's internal attention or a learned retrieval head, which weakens the claim of 'generative' provenance.",
+      "The evaluation is highly non-standard; the paper lacks comparison against established knowledge graph completion baselines (e.g., TransE, KG-BERT) on standard benchmarks (e.g., FB15k-237), relying instead on perplexity and anecdotal qualitative examples.",
+      "The writing style is more akin to a technical dev-log or engineering report than an academic paper, frequently citing specific hardware (laptop 4070), cron job schedules, and internal commit hashes.",
+      "The 'neuro-symbolic' claim is superficial; the system essentially consists of a neural model predicting text and a symbolic database storing it, without deep integration of symbolic reasoning into the neural architecture.",
+      "The models are extremely small (16M–44M parameters) and trained on very small slices of data, leading to high perplexity and significant mode collapse that the authors attempt to fix with decoding-time heuristics rather than architectural improvements."
+    ],
+    "justification": "While the use of RDF-star for graph-based provenance is a compelling idea, the paper lacks the rigorous evaluation and comparative analysis required for a research contribution in the field of knowledge graph completion. Furthermore, the core citation mechanism is a post-hoc heuristic rather than a technical innovation within the model itself, and the informal, log-like writing style is unsuitable for a peer-reviewed venue.",
+    "model": "Gemini 3 Flash",
+    "createdAt": "2026-05-14 17:50:41"
+  }
+}
