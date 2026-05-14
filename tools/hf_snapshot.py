@@ -195,10 +195,34 @@ vocab = hf_hub_download(repo_id="EmmaLeonhart/loka", repo_type="dataset",
 | `v5` | 2026-05-09 | 84.85 | 757 k cleaned | 44.5 M params (3 × scale-up). Bigger model picks specific entities (`halle`, `33`, `kosmos 116`) where v4 fell back to fillers. |
 | `v6-bpe` | 2026-05-10 | 194.98 | 757 k cleaned | BPE tokenizer added. Same 44.5 M architecture. Final ppl not directly comparable to v5 (BPE has more tokens per role). Catalog hallucinations dominant in post-training behavioural tests — diagnosed as corpus composition. |
 | `v7` | 2026-05-10 | 192.63 | 184 k v7-cleaned | Catalog datatypes dropped (~76 % of v6 corpus removed). Same architecture, 5 epochs. Tied ppl with v6 on a 4 ×-smaller corpus, but the catalog-format leak (`instance of -> "+ Ġof - 00 - 03 T 00"`) is gone. |
-| `v8` | 2026-05-10 | **64.65** | 184 k v7-cleaned | Same architecture, 20 epochs from scratch on the v7 corpus. 3 × ppl improvement over v7 — the v7 corpus was undersaturated at 5 epochs. Loss still descending at epoch 20, so the next bottleneck is data scale. |
+| `v8` | 2026-05-10 | 64.65 | 184 k v7-cleaned | Same architecture, 20 epochs from scratch on the v7 corpus. 3 × ppl improvement over v7 — the v7 corpus was undersaturated at 5 epochs. Loss still descending at epoch 20, so the next bottleneck is data scale. |
+| `v9` | 2026-05-11 | 57.15 | 94 k from fresh 2 M-triple slice | First cron-cycle model. v9 propgen test: 35 emissions, 34 of them on semantic predicates (97 %) — best ratio yet. URL-prefix shape leak on `Template:* | different from` predicates is the residual failure mode. |
+| `v10` | 2026-05-11 | **55.52** | 94 k from fresh 2 M-triple slice | First fully-automated cron cycle (no manual steps). 100 % semantic-predicate share on Q42 propgen — the cleanest signal of the catalog-hallucination series. Loss still descending at epoch 20. |
+| `v11` | 2026-05-13 | 279.12 | **350 k** from new `normalized-wikidata` pipeline | First model on the no-Loka-in-the-loop preprocessing pipeline (`tools/preprocess_from_hf.py`). Trained 3 of 20 epochs before CUDA OOM at batch 32 on the 4070 Laptop's 8 GB VRAM — epoch-3 checkpoint is the v11 release. Future runs use batch 16. ppl looks worse than v10 because v10 ran 20 clean epochs on 94 k triples while v11 ran only 3 epochs on 350 k. **Different operating regime**, not directly comparable. Corpus tag on `EmmaLeonhart/normalized-wikidata`: `v11-50k`. |
+| `v12` | 2026-05-14 | 250.82 | **672 k** from `v12-100k` normalized corpus | Second rung of the normalized-wikidata series. Training was disrupted by an unrelated LLaMA 3.1 8B experiment sharing the GPU — epochs 5–7 diverged from epoch 4's best (226.86) as Adam's momentum state corrupted under contention. Shipped at the **epoch-6 snapshot** (taken before further degradation). Even with the corruption, v12 beats v11 (250.82 vs 279.12) — the bigger, cleaner corpus shows through. Corpus tag: `v12-100k`. |
 
 For the live latest list, see this dataset's **Files and versions** tab on
 Hugging Face. Tag `main` always tracks the most recent upload.
+
+### The normalized-wikidata pipeline (v11 onward)
+
+v11 onward, the training corpus is built by a separate streaming preprocessor
+that goes directly from `philippesaade/wikidata` parquet → text triples,
+without staging into a Loka store. Corpus versions live in a parallel HF
+dataset at [`EmmaLeonhart/normalized-wikidata`](https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata):
+
+| Loka model | Corpus tag | Entity rows | Output triples |
+|---|---|---|---|
+| `v11` | `v11-50k` | 50 000 | 350 428 |
+| `v12` | `v12-100k` | 100 000 | 671 817 |
+| `v13` | `v13-500k` (in training as of 2026-05-14) | 500 000 | 2 511 771 |
+| `v14` | `v14-1M` (queued) | 1 000 000 | ~7 M est. |
+
+The series exists because **the corpus quality lever still hasn't saturated**.
+v10's 55.52 ppl on a 94 k-triple corpus was the best clean-trained result;
+v11–v14 are scaling the cleaned corpus up to see when the perplexity floor
+re-establishes itself, and to ship a publicly-useful normalized Wikidata
+dataset as a side effect.
 
 ## Generated-triple provenance
 
