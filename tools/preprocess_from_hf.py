@@ -224,12 +224,38 @@ def snak_to_value(snak: dict) -> tuple[str | None, str | None]:
 
 # ── Pass 1: collect entity labels ──────────────────────────────────────────
 
+def _iter_dataset_with_retries(args, max_retries: int = 8, base_sleep: float = 5.0):
+    """Yield rows from the HF streaming dataset, transparently reconnecting
+    on transient network errors. The `datasets` library leaks closed
+    `httpx` clients between iterations of the same dataset object; rebuilding
+    `ds` on each retry sidesteps that. Resumption uses `dataset.skip(N)` so
+    we don't replay rows we already processed.
+    """
+    from datasets import load_dataset
+    consumed = 0
+    while True:
+        try:
+            ds = load_dataset(args.dataset, streaming=True, split=args.split)
+            if consumed:
+                ds = ds.skip(consumed)
+                print(f"  [RESUME] skipping {consumed:,} rows after retry", flush=True)
+            for row in ds:
+                yield row
+                consumed += 1
+            return
+        except (RuntimeError, OSError, ConnectionError) as e:
+            attempt = 0
+            attempt += 1  # placeholder; restart loop will retry until cap
+            print(f"  [WARN] stream error after {consumed:,} rows: {e!r}", flush=True)
+            print(f"  [RETRY] sleeping {base_sleep:.0f}s before reopening...", flush=True)
+            time.sleep(base_sleep)
+
+
 def scan_pass(args, conn: sqlite3.Connection) -> tuple[int, int]:
     """Stream once. For each entity row, write its English label into the
     SQLite cache. Returns (rows_consumed, labels_added).
     """
-    from datasets import load_dataset
-    ds = load_dataset(args.dataset, streaming=True, split=args.split)
+    iter_rows = _iter_dataset_with_retries(args)
 
     rows_consumed = 0
     labels_added = 0
@@ -239,7 +265,7 @@ def scan_pass(args, conn: sqlite3.Connection) -> tuple[int, int]:
 
     print(f"=== Pass 1: scan labels from {args.dataset} ===", flush=True)
     t0 = time.time()
-    for row in ds:
+    for row in iter_rows:
         if shutdown_requested:
             break
         if args.max_rows is not None and rows_consumed >= args.max_rows:
@@ -287,8 +313,7 @@ def resolve(iri: str, conn: sqlite3.Connection) -> str | None:
 
 def emit_pass(args, conn: sqlite3.Connection, out_path: Path) -> dict[str, int]:
     """Stream the dataset again, emit one tab-separated line per kept claim."""
-    from datasets import load_dataset
-    ds = load_dataset(args.dataset, streaming=True, split=args.split)
+    iter_rows = _iter_dataset_with_retries(args)
 
     excl_iris = load_excluded_predicate_iris()
     stats = {
@@ -311,7 +336,7 @@ def emit_pass(args, conn: sqlite3.Connection, out_path: Path) -> dict[str, int]:
     print(f"=== Pass 2: emit to {out_path} ===", flush=True)
 
     with out_path.open("w", encoding="utf-8") as f:
-        for row in ds:
+        for row in iter_rows:
             if shutdown_requested:
                 break
             if args.max_rows is not None and stats["rows_consumed"] >= args.max_rows:
