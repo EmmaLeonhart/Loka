@@ -71,6 +71,11 @@ from training.preprocess import (  # noqa: E402
 WIKIDATA_SPARQL = "https://query.wikidata.org/sparql"
 USER_AGENT = "Loka-Training/0.2 (https://github.com/EmmaLeonhart/Loka)"
 
+# Path to the curated property-label cache. Used as the authoritative source
+# for property labels, preloaded into SQLite at startup. See the comment in
+# scan_pass for why corpus-derived property labels are not trustworthy.
+CURATED_PROPERTY_LABELS_PATH = Path(__file__).resolve().parent.parent / "training" / "property_label_cache.json"
+
 # Engine bug #2 guard. Loka's executor occasionally surfaces an RDF-star
 # inner-triple component (an entity IRI) in the predicate position. The
 # `t["p"]["type"] != "uri"` check catches *literals* in the predicate slot but
@@ -79,6 +84,12 @@ USER_AGENT = "Loka-Training/0.2 (https://github.com/EmmaLeonhart/Loka)"
 # IRIs the dump uses. Anything in the `/entity/` namespace is wrong by
 # construction.
 WD_ENTITY_PREDICATE_RE = re.compile(r"^http://www\.wikidata\.org/entity/")
+
+# Property IRI shape, used to identify rdfs:label rows whose subject is a
+# property — we deliberately drop those in pass 1 because the corpus's
+# RDF-star annotation rows produce a different value for them than the
+# property's actual label. See scan_pass.
+WD_PROPERTY_SUBJECT_RE = re.compile(r"^http://www\.wikidata\.org/prop/direct/P\d+$")
 
 # URL-shaped values that leak into the object slot when the parent predicate
 # wasn't caught by the noise-datatype filter (e.g. when engine bug #2 puts an
@@ -146,6 +157,33 @@ def label_upsert_many(conn: sqlite3.Connection, rows: list[tuple[str, str, str]]
         [(iri, label, src, now) for iri, label, src in rows],
     )
     conn.commit()
+
+
+def preload_curated_property_labels(conn: sqlite3.Connection) -> int:
+    """Preload curated property labels from training/property_label_cache.json.
+
+    Why: corpus-derived property labels are systematically wrong. When the
+    Wikidata RDF-star dump records `<<S P O>> rdfs:label "..."@en` annotations
+    on triples, Loka's SPARQL executor surfaces those rows in a way that maps
+    the property IRI to the inner triple's *object* value, not the property's
+    real label. E.g. a triple `<Q42> wdt:P20 <Q31>` (place of death = Belgium)
+    with an annotation rdfs:label row ends up producing
+    `wdt:P20 -> "Belgium"` in the cache instead of
+    `wdt:P20 -> "place of death"`.
+
+    We trust the curated property_label_cache.json (built by the manual /
+    SPARQL-API path in training/preprocess.py) as the authoritative source.
+    Pass 1 *also* drops corpus rdfs:label rows whose subject is a property.
+
+    Curated entries are tagged source='curated' so a future
+    --fetch-missing-from-wikidata pass won't try to re-resolve them.
+    """
+    if not CURATED_PROPERTY_LABELS_PATH.exists():
+        return 0
+    data = json.loads(CURATED_PROPERTY_LABELS_PATH.read_text(encoding="utf-8"))
+    rows = [(iri, label, "curated") for iri, label in data.items()]
+    label_upsert_many(conn, rows)
+    return len(rows)
 
 
 def labels_present(conn: sqlite3.Connection, iris: list[str]) -> set[str]:
@@ -247,6 +285,11 @@ def scan_pass(
             if t["s"].get("type") != "uri":
                 continue
             if t["o"].get("type") != "literal":
+                continue
+            # Skip rdfs:label rows whose subject is a Wikidata property.
+            # See preload_curated_property_labels for why corpus property
+            # labels are corrupt.
+            if WD_PROPERTY_SUBJECT_RE.match(t["s"]["value"]):
                 continue
             value, lang = parse_literal(t["o"])
             if lang != "en":
@@ -370,6 +413,8 @@ def emit_pass(
         "skipped_entity_pred": 0,
         "skipped_url_object": 0,
         "skipped_identifier_object": 0,
+        "skipped_property_subject": 0,
+        "skipped_property_object": 0,
         "skipped_rdfs_label": 0,
     }
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -397,6 +442,16 @@ def emit_pass(
                 # or in structural vocab; nothing under /entity/ is valid here.
                 if WD_ENTITY_PREDICATE_RE.match(p_iri):
                     stats["skipped_entity_pred"] += 1
+                    continue
+                # Property IRIs (wdt:P\d+) appearing in the subject or object
+                # slot are also engine-bug-#2 fallout — for world-model
+                # training we want s/o to be entities or literals, never
+                # property identifiers themselves.
+                if t["s"].get("type") == "uri" and WD_PROPERTY_SUBJECT_RE.match(t["s"]["value"]):
+                    stats["skipped_property_subject"] = stats.get("skipped_property_subject", 0) + 1
+                    continue
+                if t["o"].get("type") == "uri" and WD_PROPERTY_SUBJECT_RE.match(t["o"]["value"]):
+                    stats["skipped_property_object"] = stats.get("skipped_property_object", 0) + 1
                     continue
                 s = resolve_term(t["s"], conn, keep_all_languages)
                 p = resolve_term(t["p"], conn, keep_all_languages=True)
@@ -473,6 +528,12 @@ def main() -> None:
     print(f"Label cache: {label_db} "
           f"({conn.execute('SELECT COUNT(*) FROM labels').fetchone()[0]:,} entries on open)",
           file=sys.stderr)
+
+    preloaded = preload_curated_property_labels(conn)
+    if preloaded:
+        print(f"Preloaded {preloaded:,} curated property labels "
+              f"from {CURATED_PROPERTY_LABELS_PATH.name}",
+              file=sys.stderr)
 
     seen: set[str] = set()
     if not args.skip_scan:
