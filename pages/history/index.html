@@ -89,6 +89,90 @@ hr { border: none; border-top: 1px solid #21262d; margin: 36px 0; }
   </ol>
 </div>
 
+<h2 id="may-2026-pipeline-rebuild">2026-05 (mid-to-late) — Catalog cleanup, cron loop, and the normalized-wikidata pipeline <span class="date">(2026-05-10 to 2026-05-14)</span></h2>
+
+<p>
+  After v3/v4/v5 (covered below), the world-model line moved through a sequence of corpus and pipeline improvements that
+  changed the headline numbers by 5&times; and added a second Hugging Face dataset for the cleaned training corpus.
+</p>
+
+<h3>v6 → v7: catalog-noise discovery and corpus cleanup</h3>
+<p>
+  v6 added the <strong>BPE tokenizer</strong>, fixing the v5 word-level tokenizer's unicode-chopping
+  (<code>Saint-Léger</code> &rarr; <code>Saint -</code> <code>Lé</code> <code>ger</code>) and unlocking proper sub-word handling. v6 also revealed
+  the real problem with the v3–v5 corpus: a post-training behavioural sweep caught <em>confident catalog-format hallucinations</em>
+  &mdash; <code>ISNI &rarr; "00000000"</code>, <code>Freebase &rarr; "/m/0c__9"</code> &mdash; and worse, the catalog-format <em>shape</em> was
+  leaking onto unrelated predicates. <code>instance of &rarr; "+ Ġof - 00 - 03 T 00"</code> appeared on 15 unrelated subjects in a single 30-source run.
+  Diagnosis: 49.6&nbsp;% of the v6 corpus was Wikidata <code>external-id</code> predicates (Freebase, ISNI, GND, LCCN, Dewey, etc.).
+  10,206 such property types on Wikidata, ~80&nbsp;% of the property catalogue.
+</p>
+<p>
+  v7 rebuilt the corpus with a per-datatype keep/drop policy that drops 10,525 of Wikidata's 12,756 properties (all noise datatypes:
+  <code>external-id</code>, <code>url</code>, <code>commonsMedia</code>, <code>math</code>, lexeme machinery, globe-coordinates) and normalises
+  time/quantity literal formats. Same v6 architecture, 5 epochs &mdash; matching ppl (192.63 vs v6's 194.98) on a 4&times;-smaller corpus, but
+  the catalog-format hallucinations <strong>vanished</strong>. v8 then ran 20 epochs from scratch on the v7 corpus: ppl <strong>64.65</strong>, a 3&times; reduction.
+</p>
+
+<h3>v9 → v10: cron-loop automation and the steady state</h3>
+<p>
+  v9 and v10 are trained on fresh 2 M-triple slices, processed under a per-data-dir state file design and the <code>POST /triples</code>
+  wedge-fix (single sled multi-tree transaction per request instead of three or four). Final ppl: v9 <strong>57.15</strong>, v10 <strong>55.52</strong>.
+  v10 is the first model shipped <em>end-to-end</em> by <code>tools/training_cron.py</code> &mdash; HF import → preprocess → train → propgen test →
+  DEVLOG entry → <code>MODEL.json</code> pin → HF push → commit → push → sleep, all autonomous, 12 h cadence. On the standard Q42 propgen test,
+  v10 emits 60 candidate triples, <strong>zero catalog-format hallucinations</strong>, 100&nbsp;% semantic-predicate share &mdash; the cleanest signal of the run.
+</p>
+
+<h3>v11 → v14: pipeline pivot and the normalized-wikidata dataset</h3>
+<p>
+  The v11 cycle pivoted the <em>shape</em> of the preprocessing pipeline. Earlier versions extracted training triples from a Loka store
+  via SPARQL <code>?s ?p ?o</code> paging. At the v11 scale (a fresh 50 M-triple Loka slice) this hit two structural problems:
+</p>
+<ul>
+  <li><strong>LIMIT/OFFSET is O(offset) on sled.</strong> Page 1 took 8 s, page 100 took 235 s, pass 1 alone projected to ~25 hours.</li>
+  <li><strong>Property <code>rdfs:label</code> rows are corrupted</strong> by Loka's RDF-star executor surfacing annotation rows in the wrong slot.
+  Every property we audited had its label keyed against the inner triple's object value &mdash; <code>P20</code> &rarr; "Belgium" instead of "place of death",
+  <code>P1412</code> &rarr; "English" instead of "languages spoken". Entity labels were unaffected. <strong>Caught mid-run</strong> by a sanity audit;
+  without the fix the entire normalized corpus would have been useless.</li>
+</ul>
+<p>
+  Both problems vanish if we go straight from <code>philippesaade/wikidata</code> parquet to the training file with Loka not in the loop.
+  <a href="https://github.com/EmmaLeonhart/Loka/blob/main/tools/preprocess_from_hf.py">tools/preprocess_from_hf.py</a> streams the source HF dataset twice over
+  &mdash; once to build a SQLite-backed English label cache, once to emit the normalized text corpus with curated property labels overriding the corrupt
+  in-corpus ones. Memory stays flat (constant per row), scales linearly.
+</p>
+<p>
+  The resulting corpus is independently useful, so it ships as its own Hugging Face dataset:
+  <a href="https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata">EmmaLeonhart/normalized-wikidata</a>, CC-BY-SA 4.0, four scale tiers:
+</p>
+<table>
+  <thead><tr><th>Tag</th><th>Entity rows</th><th>Triples</th><th>Model</th></tr></thead>
+  <tbody>
+    <tr><td><code>v11-50k</code></td><td>50,000</td><td>350,428</td><td><code>v11</code> &mdash; ppl 279.12 (3 epochs, CUDA OOM at batch 32 on 8 GB VRAM)</td></tr>
+    <tr><td><code>v12-100k</code></td><td>100,000</td><td>671,817</td><td><code>v12</code> &mdash; ppl 250.82 (epoch-6 snapshot; training disrupted by shared-GPU contention)</td></tr>
+    <tr><td><code>v13-500k</code></td><td>500,000</td><td>2,511,771</td><td><code>v13</code> &mdash; training in flight 2026-05-14</td></tr>
+    <tr><td><code>v14-1M</code></td><td>1,000,000</td><td>~7 M</td><td><code>v14</code> &mdash; corpus pass-2 in flight; training queued</td></tr>
+  </tbody>
+</table>
+
+<h3>Two hardware lessons from this cycle</h3>
+<ul>
+  <li><strong>The training box is a laptop, not a desktop.</strong> A separate diagnostic triage caught it: the 4070 in this machine is the
+    <em>Laptop</em> variant (8 GB VRAM, 35–115 W TGP), not the desktop 4070 (12 GB, 200 W). Earlier plans inherited desktop thermal-headroom assumptions
+    and ran into firmware-level shutdowns under sustained training + ingest + serve concurrency. All current training uses <code>--batch-size 16</code>
+    on an exclusive GPU.</li>
+  <li><strong>Shared GPU is poison for Adam.</strong> When v12 training overlapped with an unrelated LLaMA 3.1 8B experiment on the same card, the loss curve
+    <em>flipped direction</em> (epoch 4 ppl 226.86 &rarr; epoch 5 243.59 &rarr; epoch 6 250.82) and per-epoch wall-time 4&times;'d. The defensive response was to start
+    snapshotting each epoch as its own HF tag (<code>v13.1</code>, <code>v13.2</code>, …) via
+    <a href="https://github.com/EmmaLeonhart/Loka/blob/main/tools/epoch_snapshot_pusher.py">epoch_snapshot_pusher.py</a> &mdash; so even a botched late epoch can't take down the earlier ones.</li>
+</ul>
+
+<div class="callout">
+  <strong>Documentation surface as of 2026-05-14.</strong> Both Hugging Face datasets carry full READMEs documenting the multi-rung series; the
+  <a href="/">homepage</a> links both, the <a href="/loka/">Loka deep-dive</a> has the up-to-date snapshots table, and the
+  <a href="https://github.com/EmmaLeonhart/Loka/blob/main/paper/paper.md">paper</a> covers v11 (§5.9) and v12 (§5.10).
+  Per-version commit detail in <a href="https://github.com/EmmaLeonhart/Loka/blob/main/DEVLOG.md">DEVLOG.md</a>.
+</div>
+
 <h2 id="may-2026-pivot">2026-05 — The neuro-symbolic world-model pivot <span class="date">(weeks of 2026-05-07 to 2026-05-09)</span></h2>
 
 <p>

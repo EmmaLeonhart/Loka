@@ -7,6 +7,29 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-05-14 PT — Documentation sweep + v13 training in flight + per-epoch HF snapshotting
+
+Two things this entry captures, both downstream of the v12 disaster.
+
+### Per-epoch snapshot pattern
+
+v12's training divergence (epochs 5–7 under shared-GPU contention) overwrote the epoch-4 best checkpoint because `train.py` saves to a single fixed path each epoch. A defensive snapshot rescued an epoch-6 result, but the *correct* best was already gone. **Fix**: `tools/epoch_snapshot_pusher.py`, a passive watcher that tails the training log, snapshots the live `.pt` file with a per-epoch suffix the moment a `epoch N/M loss … ppl …` line appears, and pushes it to HF as a tagged revision (`v13.1`, `v13.2`, …). Starts alongside training; doesn't touch the training process. Each epoch is now preserved both locally and on `EmmaLeonhart/loka` so a divergent late epoch is recoverable.
+
+Verified working: v13 epoch 1 (ppl 334.76) snapshotted to `wikidata_v13_epoch01.pt` and uploaded to HF as tag `v13.1` while v13's epoch 2 ran.
+
+### v13 training in flight
+
+v13-500k corpus: 2,511,771 triples, the largest training input yet by 3.7×. Started 2026-05-14 ~10:45 PT on a now-exclusive GPU (the v12-killing LLaMA experiment exited after the first one was manually stopped, the second one we noticed running, and a third never appeared). 10 epochs at batch 16, ETA ~17 h to completion.
+
+Epoch 1 result is a strong signal that the corpus-quality lever isn't exhausted: **ppl 334.76 at epoch 1** is dramatically better than v11's epoch 1 (6577) or v12's epoch 1 (1334). More data = stronger gradient signal per epoch.
+
+### Documentation sweep
+
+Brought all five public surfaces (GitHub README, sutradb.org homepage, sutradb.org/loka/, both HF dataset READMEs, paper masthead+abstract) into sync with the multi-rung v11–v14 pipeline and the two-HF-dataset structure. The history page got a new top section covering v6 → v14 (catalog cleanup, cron loop, normalized-wikidata pivot, hardware lessons). `status.md` was completely rewritten — it had been dated 2026-05-09 and was still claiming v5 as the current model.
+
+Net effect: any AI agent or human landing on any of those surfaces now sees a consistent story about what the project is and what's currently shipping.
+
+---
 ## 2026-05-14 PT — v12 trained on the v12-100k corpus, disrupted by external GPU contention
 
 Headline: **v12 shipped at the epoch-6 snapshot, ppl 250.82, on the 671 817-triple `v12-100k` corpus — meaningfully better than v11 (ppl 279.12) despite a botched training trajectory. The training was disrupted by an unrelated LLaMA 3.1 8B experiment sharing the laptop GPU; epochs 5–7 diverged from epoch 4's best of 226.86 as Adam's momentum state corrupted under contention.**
