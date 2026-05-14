@@ -70,10 +70,11 @@ the `v11-50k` snapshot is the corpus the `v11` Loka model was trained on,
 | `v11-50k` (alias `v0.1-50k`) | 50,000 | **350,428** | 14.7 MB | [`EmmaLeonhart/loka@v11`](https://huggingface.co/datasets/EmmaLeonhart/loka/tree/v11) |
 | `v12-100k` | 100,000 | **671,817** | 28.4 MB | [`EmmaLeonhart/loka@v12`](https://huggingface.co/datasets/EmmaLeonhart/loka/tree/v12) |
 | `v13-500k` | 500,000 | **2,511,771** | 109 MB | (training in progress 2026-05-14) |
-| `v14-1M` | 1,000,000 | ~7 M (est.) | ~300 MB (est.) | (queued) |
+| `v14-1M` | 1,000,000 | **4,021,409** | 176 MB | (training queued behind v13) |
 
-The latest tag pushed is `{{SNAPSHOT}}`. Iterate the table here as new tags
-ship.
+All four corpus tiers are shipped as of 2026-05-14. The latest pushed tag is
+`{{SNAPSHOT}}`. The total file-size sum across all four tiers is ~330 MB; pulling
+just the largest gives you the deepest training signal.
 
 **Pulling a specific snapshot:**
 
