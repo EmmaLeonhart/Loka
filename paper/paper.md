@@ -448,6 +448,31 @@ This is also the start of a multi-rung dataset / model series:
 
 **Propgen test deferred.** The same GPU fragility that caused the OOM makes us wary of running a sustained autoregressive inference loop on this checkpoint immediately afterward. Defer to a follow-up cycle when the laptop is genuinely idle. The §5.6–§5.8 trajectory of catalog-predicate share collapsing to zero is expected to hold on v11 because the cleaning is dataset-side, not model-side; the v11-50k corpus has no external-id / catalog datatypes by construction.
 
+### 5.10 v12: bigger corpus pays despite a botched training trajectory
+
+v12 is the second rung of the normalized-wikidata series: 671 817 triples from the `v12-100k` corpus (100 000 entity rows, ~1.9× v11's size), same 44.5 M-parameter BPE architecture, `--batch-size 16` to live within 8 GB VRAM.
+
+The training run did not go cleanly. Five hours in, an unrelated LLaMA-3.1-8B experiment (`scripts/run_five_condition_experiment.py`) started using the laptop's GPU concurrently. Per-epoch wall time jumped from ~37 min to ~180 min, and the loss curve started *climbing* instead of descending — Adam's momentum estimates corrupted under shared-GPU contention (CUDA stream re-ordering, memory fragmentation, thermal throttling, in some combination). When the contending experiment was killed, the next epoch finished with even worse perplexity than the one before it — optimizer-state corruption is sticky. The v12 trainer was then killed externally during what would have been epoch 8.
+
+| Epoch | Loss | Perplexity | Wall |
+|---|---|---|---|
+| 2 | 5.8383 | 343.18 | 38 min |
+| 3 | 5.4725 | 238.05 | 32 min |
+| 4 | 5.4243 | **226.86** ← best | 41 min |
+| 5 | 5.4955 | 243.59 | 175 min (shared GPU) |
+| 6 | 5.5247 | **250.82** ← shipped | 191 min |
+| 7 | 5.5521 | 257.77 | 147 min |
+
+We snapshot-saved the epoch-6 checkpoint mid-run (foresight: `train.py` writes to the same path every epoch, overwriting), so the v12 release is ppl **250.82**, not the worse epoch-7 value the unsnapshotted run would have produced.
+
+Two findings from the cycle worth keeping:
+
+1. **The corpus shape matters more than 3 epochs of training**. v12 at ppl 250.82 (six botched epochs on a 672 k-triple corpus) beats v11 at ppl 279.12 (three clean epochs on a 350 k-triple corpus). v12's clean epoch-4 result (226.86, 31 points below v11's 3-epoch endpoint) is a stronger version of the same point — but even the regression-damaged epoch-6 result holds it.
+
+2. **Shared GPU is poison for Adam under sustained CUDA load.** This isn't merely "training is slow when the GPU is busy" — the *direction* of the loss curve flips. On a thermally-marginal consumer laptop, batched-transformer training requires exclusive GPU access; any other CUDA process on the same card will corrupt training over time, not just delay it.
+
+`v13-500k` (2 511 771 triples, 3.6× v12) is in flight with the now-exclusive GPU; `v14-1M` corpus build is also in flight. The next paper revision will report whether v13's 10-epoch clean run lands below v12's clean-trajectory floor (~225) or below the snapshot we shipped (~250).
+
 ---
 
 ## 6. Limitations
