@@ -281,7 +281,8 @@
     <a href="./theory/" style="color:#8b949e;">Theory</a>
     <a href="./benchmarks/" style="color:#8b949e;">Benchmarks</a>
     <a href="./codeofethics/" style="color:#8b949e;">Code of Ethics</a>
-    <a href="https://huggingface.co/datasets/EmmaLeonhart/loka" style="color:#8b949e;">HF: Loka</a>
+    <a href="https://huggingface.co/datasets/EmmaLeonhart/loka" style="color:#8b949e;">HF: Models</a>
+    <a href="https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata" style="color:#8b949e;">HF: Corpus</a>
     <a href="https://github.com/EmmaLeonhart/Loka" style="color:#8b949e;">GitHub</a>
 </nav>
 
@@ -301,23 +302,27 @@
     </div>
     <div class="cta">
         <a href="./loka/" class="btn btn-primary">Read the world-model deep dive</a>
-        <a href="https://huggingface.co/datasets/EmmaLeonhart/loka" class="btn btn-secondary">Pull from Hugging Face</a>
+        <a href="https://github.com/EmmaLeonhart/Loka" class="btn btn-secondary">GitHub repo</a>
         <a href="https://github.com/EmmaLeonhart/Loka/releases/latest" class="btn btn-secondary" id="download-btn">Engine release</a>
     </div>
 
-    <div style="margin-top: 32px; padding: 16px 24px; background: #1a2332; border: 1px solid #2d4a6f; border-radius: 10px; max-width: 700px; margin-left: auto; margin-right: auto;">
-        <p style="font-size: 1em; color: #79c0ff; margin-bottom: 4px; font-weight: 600;">What is Loka?</p>
-        <p style="font-size: 0.95em; color: #8b949e; margin-bottom: 8px;">
-            <strong>Loka</strong> is the project &mdash; engine + corpus + transformer + inference layer.
-            <strong>Loka</strong> is the engine inside it: a lean RDF-star triplestore with native HNSW vector indexing.
-            The engine works fine standalone (serverless by default, like SQLite), but the world-model layer turns it into something
-            that can <em>complete</em> a knowledge graph with cited inferences. <a href="./loka/">More →</a>
-        </p>
+    <div style="margin-top: 32px; padding: 16px 24px; background: #1a2332; border: 1px solid #2d4a6f; border-radius: 10px; max-width: 720px; margin-left: auto; margin-right: auto;">
+        <p style="font-size: 1em; color: #79c0ff; margin-bottom: 8px; font-weight: 600;">Two Hugging Face datasets</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.9em;">
+            <div>
+                <a href="https://huggingface.co/datasets/EmmaLeonhart/loka" style="font-weight: 600;">EmmaLeonhart/loka</a>
+                <p style="color: #8b949e; margin-top: 2px;">Trained model checkpoints (v3 → v12, current best <strong>v12</strong> ppl 250.82). 44.5 M-param BPE transformer. Pull via <code style="background:#1c2128;padding:1px 4px;border-radius:3px;">MODEL.json</code>.</p>
+            </div>
+            <div>
+                <a href="https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata" style="font-weight: 600;">EmmaLeonhart/normalized-wikidata</a>
+                <p style="color: #8b949e; margin-top: 2px;">Clean text-form Wikidata triples for world-model training, four scale tiers (<code>v11-50k</code> through <code>v14-1M</code>). CC-BY-SA 4.0.</p>
+            </div>
+        </div>
     </div>
 
-    <div style="margin-top: 16px; padding: 16px 24px; background: #1c2128; border: 1px solid #30363d; border-radius: 10px; max-width: 700px; margin-left: auto; margin-right: auto;">
+    <div style="margin-top: 16px; padding: 16px 24px; background: #1c2128; border: 1px solid #30363d; border-radius: 10px; max-width: 720px; margin-left: auto; margin-right: auto;">
         <p style="font-size: 1em; color: #79c0ff; margin-bottom: 4px; font-weight: 600;">AI Agent?</p>
-        <p style="font-size: 0.95em; color: #8b949e; margin-bottom: 8px;">The Loka engine inside Loka is serverless by default. Open a <code>.sdb</code> file &mdash; no daemon, no config. Install, configure, and query entirely from the command line. The agent installer (<code>loka install-agent</code>) lets an LLM walk through configuration via structured Markdown prompts.</p>
+        <p style="font-size: 0.95em; color: #8b949e; margin-bottom: 8px;">Loka is serverless by default &mdash; open a <code>.sdb</code> file, no daemon, no config. Install, configure, and query entirely from the command line. The agent installer (<code>loka install-agent</code>) walks an LLM through configuration via structured Markdown prompts. <strong>Start here:</strong> the GitHub repo's <a href="https://github.com/EmmaLeonhart/Loka/blob/main/README.md">README</a> documents the engine and the model series; <a href="https://github.com/EmmaLeonhart/Loka/blob/main/CLAUDE.md">CLAUDE.md</a> is the canonical context file for agent assistants.</p>
         <a href="https://github.com/EmmaLeonhart/Loka/blob/main/docs/AGENT_SETUP.md" class="btn btn-primary" style="padding: 8px 20px; font-size: 0.9em;">Agent Setup Guide</a>
     </div>
 </div>
@@ -448,11 +453,13 @@
 </div>
 
 <footer>
-    <p>Loka is open source under the Apache 2.0 license. Loka is the engine inside Loka.</p>
+    <p>Loka is open source under the Apache 2.0 license. Engine + corpus + trained transformer + inference layer, all in one project.</p>
     <p style="margin-top: 8px;">
         <a href="https://github.com/EmmaLeonhart/Loka">GitHub</a> &middot;
+        <a href="https://huggingface.co/datasets/EmmaLeonhart/loka">HF: Models</a> &middot;
+        <a href="https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata">HF: Corpus</a> &middot;
         <a href="https://github.com/EmmaLeonhart/Loka/blob/main/docs/architecture.md">Architecture</a> &middot;
-        <a href="https://github.com/EmmaLeonhart/Loka/blob/main/TODO.md">Roadmap</a>
+        <a href="https://github.com/EmmaLeonhart/Loka/blob/main/DEVLOG.md">DEVLOG</a>
     </p>
 </footer>
 
