@@ -38,8 +38,9 @@ tags:
 - wikidata
 - preprocessed
 - text-corpus
+- world-model
 size_categories:
-- 1M<n<100M
+- 1M<n<10M
 task_categories:
 - text-generation
 - feature-extraction
@@ -56,6 +57,41 @@ out.
 
 License inherits from Wikidata: **CC-BY-SA 4.0**.
 
+This dataset is the input to a corresponding series of Loka world-model
+checkpoints at [`EmmaLeonhart/loka`](https://huggingface.co/datasets/EmmaLeonhart/loka).
+Each snapshot here is named to match the Loka model trained on it — e.g.
+the `v11-50k` snapshot is the corpus the `v11` Loka model was trained on,
+`v12-100k` corresponds to `v12`, and so on.
+
+## Snapshots
+
+| Tag | Entity rows | Output triples | File size | Trained Loka model |
+|---|---|---|---|---|
+| `v11-50k` (alias `v0.1-50k`) | 50,000 | **350,428** | 14.7 MB | [`EmmaLeonhart/loka@v11`](https://huggingface.co/datasets/EmmaLeonhart/loka/tree/v11) |
+| `v12-100k` | 100,000 | **671,817** | 28.4 MB | [`EmmaLeonhart/loka@v12`](https://huggingface.co/datasets/EmmaLeonhart/loka/tree/v12) |
+| `v13-500k` | 500,000 | **2,511,771** | 109 MB | (training in progress 2026-05-14) |
+| `v14-1M` | 1,000,000 | ~7 M (est.) | ~300 MB (est.) | (queued) |
+
+The latest tag pushed is `{{SNAPSHOT}}`. Iterate the table here as new tags
+ship.
+
+**Pulling a specific snapshot:**
+
+```python
+from huggingface_hub import hf_hub_download
+path = hf_hub_download(
+    repo_id="{{REPO_ID}}",
+    repo_type="dataset",
+    filename="triples_normalized.txt",
+    revision="v11-50k",  # or v12-100k, v13-500k, ...
+)
+```
+
+Each snapshot is **strictly larger than the previous** — same first-N rows from
+the same upstream stream, just with N raised. The SQLite label cache at
+`wikidata_labels.sqlite` also grows monotonically across snapshots (~7,300
+curated property labels preloaded, plus all entity labels seen in the slice).
+
 ## What it is
 
 One triple per line, tab-separated:
@@ -65,8 +101,11 @@ subject\\tpredicate\\tobject
 ```
 
 All three positions are **English labels** — QIDs and PIDs are resolved to
-their `rdfs:label@en`, either from labels already in the source dump or
-fetched from the Wikidata public SPARQL endpoint as a fallback.
+their `rdfs:label@en`. Entity labels come from the entity's own row in the
+source dump; **property labels come from a curated cache** of 7,312 manually-
+resolved Wikidata properties, never from corpus `rdfs:label` rows on
+properties (those are corrupted by an upstream RDF-star executor bug — see
+"Known issues with raw Wikidata" below).
 
 ## What was stripped
 
@@ -86,8 +125,17 @@ shapes onto unrelated predicates:
 Predicates **kept**: `wikibase-item`, `wikibase-property`, `string`, `quantity`,
 `time`, `monolingualtext`.
 
-System-reserved provenance triples (predicates under
-`http://loka.dev/provenance/`) are also dropped.
+In addition, object-level guards drop:
+
+- URL-shaped values (`http://`, `https://`, `ftp://`, `irc://`, `mailto:`) that
+  slipped through with non-catalog predicates
+- Long digit-only strings (8+ digits — GND/VIAF/ISNI shape) and DOIs
+  (`10.NNNN/...`) in the object position
+- Rows where the subject *or* object is itself a property IRI
+  (`wdt:P\\d+`) — these are RDF-star annotation rows surfacing in the wrong
+  slot, never legitimate
+- System-reserved provenance triples (predicates under
+  `http://loka.dev/provenance/`)
 
 ## What was normalized
 
@@ -103,54 +151,61 @@ System-reserved provenance triples (predicates under
   off so it doesn't leak into training tokens. The datatype is consulted to
   decide normalization rules and then dropped.
 
-## What stayed
+## Known issues with raw Wikidata that this corpus addresses
 
-- All RDF-star inner triples that came through as plain SPO rows are kept.
-- All `wikibase-item` / `wikibase-property` edges (the core knowledge graph).
-- `rdfs:label` rows themselves are **excluded** from the corpus (they don't
-  teach the model anything new — they just say "X is called X").
+1. **Catalog / identifier explosion.** ~82 % of Wikidata's property types by
+   count are external identifiers, URLs, or other non-semantic catalog refs.
+   Training on them teaches the model catalog formats rather than world
+   knowledge. We strip them by datatype.
+2. **Property `rdfs:label` corruption when materialised through some RDF-star
+   executors.** A `<<S P O>> rdfs:label "..."@en` annotation row, depending
+   on the executor, can surface as `wdt:Pnnn rdfs:label "object-value"@en`
+   — i.e. the property gets keyed against the inner triple's object value
+   instead of its real label. Entity labels are unaffected. We work around
+   this by sourcing property labels from a curated cache and never from
+   in-corpus `rdfs:label` rows on properties.
+3. **Datatype suffix leakage.** `"2012-10-15T00:00:00Z"^^<...dateTime>` if
+   processed naively leaks tokens like `xmlschema`, `dateTime` etc. into the
+   training corpus. We strip these.
+4. **Mixed-language values.** Wikidata's `monolingualtext` includes all
+   languages; we keep them but strip the `@lang` tag so values like `Tokyo`
+   and `東京` are plain strings.
 
 ## How it was built
 
-```
-loka serve --data-dir <wikidata-store> --port 3030 &
-python tools/preprocess_streaming.py \\
-    --endpoint http://localhost:3030 \\
+The current preprocessor streams `philippesaade/wikidata` directly from
+Hugging Face, with a SQLite label cache that persists across runs:
+
+```bash
+python tools/preprocess_from_hf.py \\
+    --max-rows 100000 \\          # entity-row count, sets the size tier
     --label-db training/data/wikidata_labels.sqlite \\
-    --output training/data/triples_normalized.txt \\
-    --fetch-missing-from-wikidata
+    --output training/data/normalized/normalized_wikidata_v12_100k.txt
 ```
 
-Source: `philippesaade/wikidata` (parquet, full-dump RDF-star export),
-ingested into Loka and post-processed by
-[`tools/preprocess_streaming.py`](https://github.com/EmmaLeonhart/Loka/blob/main/tools/preprocess_streaming.py).
+Two passes over the dataset:
+- **Pass 1** scans every row to extract English `labels.en.value` into the
+  SQLite cache (constant memory regardless of corpus size).
+- **Pass 2** streams again to emit the tab-separated text corpus, using the
+  cache for label lookups, applying the noise-datatype filter, normalising
+  time/quantity values, and dropping engine-bug-#2 RDF-star fallout at the
+  s/o level.
 
-The preprocessor is **memory-flat**: streams the corpus twice over Loka's
-SPARQL endpoint and keeps the label cache in SQLite, so it processes 50M
-triples on a laptop without the 21 GB RAM bloat the previous one-shot version
-hit.
+Source code: [`tools/preprocess_from_hf.py`](https://github.com/EmmaLeonhart/Loka/blob/main/tools/preprocess_from_hf.py),
+[`tools/hf_push_normalized.py`](https://github.com/EmmaLeonhart/Loka/blob/main/tools/hf_push_normalized.py).
 
-## Snapshots
-
-Each snapshot is tagged with the build date.
-
-**Pulling a specific snapshot:**
-
-```python
-from huggingface_hub import hf_hub_download
-path = hf_hub_download(
-    repo_id="{{REPO_ID}}",
-    repo_type="dataset",
-    filename="triples_normalized.txt",
-    revision="{{SNAPSHOT}}",
-)
-```
+An earlier two-pass version that fetched from a Loka `.sdb` over SPARQL
+(`tools/preprocess_streaming.py`) hit O(offset) cost at multi-million-triple
+scale; the HF-direct version sidesteps that by streaming the upstream parquet.
 
 ## Provenance
 
 See [`Loka` on GitHub](https://github.com/EmmaLeonhart/Loka) for the engine,
-the preprocessor source, and the paper describing the world-model training
-pipeline that motivated this corpus.
+the preprocessor source, the trained model checkpoints, and the paper
+describing the world-model training pipeline that motivated this corpus.
+
+The Loka model series on Hugging Face:
+[`EmmaLeonhart/loka`](https://huggingface.co/datasets/EmmaLeonhart/loka).
 
 ## Citation
 
