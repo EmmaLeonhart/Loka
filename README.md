@@ -65,32 +65,63 @@ curl -X POST http://localhost:3030/sparql \
   -d 'SELECT * WHERE { ?s ?p ?o } LIMIT 10'
 ```
 
-## World Model (Loka)
+## World Model (Loka) — two HF datasets, one model series
 
-A small role-aware transformer trained on the RDF-star Wikidata corpus lives in this repo as the **Loka world model**. It predicts missing slot values in `<<S P O>>` triples and writes its predictions back as RDF-star annotations with `propositionInferredFrom` provenance.
+The Loka project ships **two parallel artifacts on Hugging Face**:
 
-**The model itself is on Hugging Face, not in this clone.** A fresh `git clone` is small (a few MB). The current pinned model is recorded in [`MODEL.json`](MODEL.json) and pulled lazily on first run.
+| Repo | What it is | Latest |
+|---|---|---|
+| **[`EmmaLeonhart/loka`](https://huggingface.co/datasets/EmmaLeonhart/loka)** | Trained model checkpoints (44.5 M-param BPE transformer, v3 → v12) + the training corpora used for each | `v12` (epoch-6 ppl 250.82, 2026-05-14) |
+| **[`EmmaLeonhart/normalized-wikidata`](https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata)** | Clean text-form Wikidata triples for world-model training — published as a standalone artifact for anyone | `v13-500k` (2 511 771 triples, 2026-05-14) |
+
+The world model is a small role-aware transformer that predicts missing slot values in `<<S P O>>` triples. Its predictions land back in the Loka triplestore as RDF-star annotations with `propositionInferredFrom` provenance edges. The training corpus and the model live in separate HF repos starting from v11 — the corpus is independently useful even if you don't use Loka.
+
+### Multi-rung pipeline (v11 onward, 2026-05-13/14)
+
+After v10 (ppl 55.52, 94 k triples), the pipeline was rebuilt: the preprocessor (`tools/preprocess_from_hf.py`) streams `philippesaade/wikidata` directly from HF — no Loka in the data path — and emits a clean text-form corpus published as `EmmaLeonhart/normalized-wikidata`. Each scale tier trains a corresponding Loka model:
+
+| Corpus tag | Entity rows | Output triples | Model | Status |
+|---|---|---|---|---|
+| `v11-50k` | 50 000 | 350 428 | `v11` | ppl 279.12 (3 epochs, CUDA OOM at batch 32 on the 8 GB laptop GPU) |
+| `v12-100k` | 100 000 | 671 817 | `v12` | ppl 250.82 (epoch-6 snapshot; training disrupted by shared-GPU contention) |
+| `v13-500k` | 500 000 | 2 511 771 | `v13` | training in flight 2026-05-14 (10 epochs, ETA ~17 h from epoch 1) |
+| `v14-1M` | 1 000 000 | ~7 M est. | `v14` | corpus pass 2 in flight; training queued |
+
+Each epoch is **snapshotted and tagged separately** on HF (`v13.1`, `v13.2`, …) via `tools/epoch_snapshot_pusher.py`, so a divergent late epoch can't take down the earlier ones.
+
+### Pulling a model in 2 lines
+
+A fresh `git clone` is a few MB. The pinned model and tokenizer download lazily from HF on first inference:
 
 ```bash
-# What's pinned right now?
+# Inspect the current pin
 python training/loader.py
-# -> Pinned model: loka-wikidata-v6 (v6, released 2026-05-10)
-#    repo: EmmaLeonhart/loka@v6-bpe
-#    checkpoint    -> training/checkpoints/wikidata_v6.pt   [missing (will download)]
-#    vocab         -> training/data/vocab_bpe.json          [missing (will download)]
-#    tokenizer_bpe -> training/data/tokenizer_bpe.json      [missing (will download)]
+# -> Pinned model: loka-wikidata-v12 (v12, released 2026-05-14)
+#    repo: EmmaLeonhart/loka@v12
 
-# Run inference — checkpoint, vocab, and BPE tokenizer download automatically
-# on first call (~180 MB once, then cached). v6 was trained with the BPE
-# tokenizer, so pass it through:
+# Run inference — checkpoint + BPE tokenizer + vocab download automatically (~180 MB once, then cached)
 python training/infer_with_citations.py \
     --bpe-tokenizer training/data/tokenizer_bpe.json \
     --max-subjects 20
 ```
 
-To bump the current model: upload via `python tools/hf_snapshot.py --snapshot-name vN`, then edit `MODEL.json` (`version`, `revision`, `files.checkpoint.in_repo`, `files.vocab.in_repo`) and commit. The pin is the single source of truth for "what does fresh-clone-and-run get you."
+### Pulling the normalized-wikidata corpus standalone
 
-Full training pipeline, BPE tokenizer, generative-citation loop, and clawRxiv submission stack live under `training/`, `tools/`, `paper/`, `scripts/` — see `DEVLOG.md` for the v3 → v4 → v5 → v6 → v7 history. The v7 round (2026-05-10, see DEVLOG and `planning/wikidata-datatype-processing.md`) found that **76% of the v6 corpus was Wikidata external-identifier predicates** — Freebase, ISNI, GND, LCCN, Dewey, etc. — and rebuilt the corpus with a per-datatype keep/drop policy that excludes 10,525 of Wikidata's 12,756 properties and normalises time/quantity literal formats. v7 perplexity matches v6 on the cleaner, 4×-smaller corpus, but the catalog-format hallucinations (`ISNI -> "00000000"`, `instance of -> "+ Ġof - 00 - 03 T 00"`) that dominated v6 generations are gone.
+If you just want clean Wikidata triples without Loka:
+
+```python
+from huggingface_hub import hf_hub_download
+path = hf_hub_download(
+    repo_id="EmmaLeonhart/normalized-wikidata",
+    repo_type="dataset",
+    filename="triples_normalized.txt",
+    revision="v13-500k",  # or v11-50k / v12-100k / v14-1M (when shipped)
+)
+```
+
+The corpus is one tab-separated `subject\tpredicate\tobject\n` line per claim, English labels in every position, noise datatypes (`external-id`, `url`, `commonsMedia`, etc. — ~82 % of Wikidata's property types) excluded, time/quantity values normalised.
+
+Full training pipeline + paper live under `training/`, `tools/`, `paper/`, `scripts/`. See `DEVLOG.md` for the v3 → v12 history including the v7 catalog-noise discovery (76 % of v6 corpus was external identifiers), the v9/v10 cron-loop automation, and the v11–v14 pipeline pivot.
 
 ## What's New in v0.3
 

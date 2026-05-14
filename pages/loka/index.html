@@ -197,47 +197,65 @@ li { margin-bottom: 6px; }
 
 <h2>Trained checkpoints</h2>
 <p>
-  All checkpoints train on a 5,055,385-triple slice of Wikidata streamed from <a href="https://huggingface.co/datasets/philippesaade/wikidata">philippesaade/wikidata</a>,
-  with English labels substituted for QIDs/PIDs. Pull a snapshot from
-  <a href="https://huggingface.co/datasets/EmmaLeonhart/loka">huggingface.co/datasets/EmmaLeonhart/loka</a>:
+  All checkpoints share the same architecture from v5 onward: <strong>44.5 M parameters, BPE tokenizer from v6 onward, role-aware masked S/P/O transformer</strong>. v3–v10 trained on Wikidata slices ingested into Loka; <strong>v11 onward train on the standalone <a href="https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata">normalized-wikidata</a> HF dataset</strong>, built by <code>tools/preprocess_from_hf.py</code> streaming <a href="https://huggingface.co/datasets/philippesaade/wikidata">philippesaade/wikidata</a> directly &mdash; no Loka in the data path. Pull any tag from <a href="https://huggingface.co/datasets/EmmaLeonhart/loka">EmmaLeonhart/loka</a>:
 </p>
 <table>
-<thead><tr><th>Model</th><th>Architecture</th><th>Final ppl</th><th>Notes</th></tr></thead>
+<thead><tr><th>Tag</th><th>Final ppl</th><th>Corpus</th><th>Notes</th></tr></thead>
 <tbody>
-<tr><td><code>wikidata_v3.pt</code></td><td>16M params (256 / 4 layers)</td><td>53.43</td><td>Pre-cleanup corpus &mdash; misleadingly low ppl from memorising datatype-suffix tokens.</td></tr>
-<tr><td><code>wikidata_v4.pt</code></td><td>16M params (256 / 4 layers)</td><td>92.48</td><td>Cleaned corpus. Higher ppl, qualitatively much better content.</td></tr>
-<tr><td><code>wikidata_v5.pt</code></td><td><strong>44M params (512 / 6 layers)</strong></td><td><strong>84.85</strong></td><td>Bigger model. Beats v4's final ppl by epoch 4. Picks specific real-world tokens (<code>halle</code>, <code>33</code>, <code>kosmos 116</code>) where v4 fell back to common connectors.</td></tr>
+<tr><td><code>v3</code></td><td>53.4</td><td>757 k noisy</td><td>16 M params. First end-to-end run; misleading ppl from datatype-suffix memorisation.</td></tr>
+<tr><td><code>v4</code></td><td>92.5</td><td>757 k cleaned</td><td>16 M params. Datatype-suffix bug fixed.</td></tr>
+<tr><td><code>v5</code></td><td>84.85</td><td>757 k cleaned</td><td>44.5 M params (3&times; scale-up). Picks specific real entities where v4 fell back to fillers.</td></tr>
+<tr><td><code>v6-bpe</code></td><td>194.98</td><td>757 k cleaned</td><td>BPE tokenizer added. Catalog hallucinations dominant &mdash; led to v7 corpus cleanup.</td></tr>
+<tr><td><code>v7</code></td><td>192.63</td><td>184 k v7-cleaned</td><td>Catalog datatypes dropped (~76 % of v6 corpus removed). Catalog-format leak gone.</td></tr>
+<tr><td><code>v8</code></td><td><strong>64.65</strong></td><td>184 k v7-cleaned</td><td>20 epochs on v7 corpus. 3&times; ppl improvement over v7.</td></tr>
+<tr><td><code>v9</code></td><td>57.15</td><td>94 k cleaned</td><td>Fresh 2 M-triple slice; 97 % semantic-predicate share on Q42 propgen.</td></tr>
+<tr><td><code>v10</code></td><td><strong>55.52</strong></td><td>94 k cleaned</td><td>First fully-automated cron cycle. 100 % semantic-predicate share &mdash; cleanest run yet.</td></tr>
+<tr><td><code>v11</code></td><td>279.12</td><td><strong>350 k</strong> from <code>v11-50k</code></td><td>First model on the no-Loka preprocessing pipeline. 3 of 20 epochs (CUDA OOM at batch 32 on the laptop's 8 GB VRAM); future runs use batch 16. Different operating regime &mdash; not directly comparable to v10.</td></tr>
+<tr><td><code>v12</code></td><td>250.82</td><td><strong>672 k</strong> from <code>v12-100k</code></td><td>Epoch-6 snapshot (training disrupted by shared-GPU LLaMA contention; epoch 4 hit 226.86). Per-epoch tags <code>v12.1</code>&hellip;<code>v12.7</code> also available.</td></tr>
+<tr><td><code>v13</code></td><td>training</td><td><strong>2.5 M</strong> from <code>v13-500k</code></td><td>10 epochs, batch 16, exclusive GPU. Per-epoch tags <code>v13.1</code>&hellip;<code>v13.10</code> via <code>tools/epoch_snapshot_pusher.py</code>.</td></tr>
+<tr><td><code>v14</code></td><td>queued</td><td>~7 M from <code>v14-1M</code></td><td>Corpus pass 2 in flight.</td></tr>
 </tbody>
 </table>
 
+<p>
+  v11 onward, the training corpus is its own Hugging Face dataset:
+  <a href="https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata">EmmaLeonhart/normalized-wikidata</a>
+  &mdash; clean text-form Wikidata triples, four scale tiers from 50 k to 1 M entity rows, published as a standalone artifact (CC-BY-SA 4.0). Pull either the corpus, the model, or both.
+</p>
+
 <pre><code>from huggingface_hub import hf_hub_download
 
+# Latest pinned model (v12)
 ckpt = hf_hub_download(
-    repo_id="EmmaLeonhart/loka",
-    repo_type="dataset",
-    filename="checkpoints/wikidata_v5.pt",
-    revision="v5",
+    repo_id="EmmaLeonhart/loka", repo_type="dataset",
+    filename="checkpoints/wikidata_v12.pt", revision="v12",
+)
+tok = hf_hub_download(
+    repo_id="EmmaLeonhart/loka", repo_type="dataset",
+    filename="corpus/tokenizer_bpe.json", revision="v12",
+)
+
+# Or just the corpus, standalone
+corpus = hf_hub_download(
+    repo_id="EmmaLeonhart/normalized-wikidata", repo_type="dataset",
+    filename="triples_normalized.txt", revision="v13-500k",
 )
 </code></pre>
 
 <h2>Run the full loop</h2>
-<pre><code># 1. Engine
+<pre><code># 1. Engine (optional &mdash; v11+ training doesn't need Loka serve)
 cargo build --release -p loka-cli
-./target/release/loka serve --port 3030 &
 
-# 2. Pull the prebuilt corpus snapshot (or rebuild via tools/wikidata_hf_import.py)
-git clone https://huggingface.co/datasets/EmmaLeonhart/loka
+# 2. Pull the latest model + tokenizer (auto-downloads on first inference)
+python training/loader.py
 
-# 3. Generative-citation inference (v5 + cumulative penalty)
+# 3. Generative-citation inference
 python training/infer_with_citations.py \
-    --checkpoint training/checkpoints/wikidata_v5.pt \
-    --vocab training/data/vocab.json \
-    --endpoint http://localhost:3030 \
+    --bpe-tokenizer training/data/tokenizer_bpe.json \
     --max-subjects 50 \
     --confidence 0.4 \
-    --repetition-penalty 3.0 \
-    --output training/data/generated_v5.nt
-# add --post to write predictions back into the store</code></pre>
+    --repetition-penalty 3.0
+# add --post to write predictions back into a running Loka store</code></pre>
 
 <h2>Read more</h2>
 <ul>
