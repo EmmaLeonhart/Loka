@@ -6,7 +6,28 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ---
 
-## 🚨 Top of queue — ordered, do these in this sequence
+## 🚀 Multi-version pipeline — 2026-05-13 evening pivot
+
+After hitting Loka SPARQL OFFSET-cost (page-N is O(N) on sled — 25h projected for pass 1 alone), pivoted to a no-Loka HF-source preprocessor (`tools/preprocess_from_hf.py`). The plan now is to ship a series of normalized-wikidata snapshots and train a model on each:
+
+| HF dataset tag | Entity rows | Output triples | Model trained | Status |
+|---|---|---|---|---|
+| `v0.1-50k` | 50,000 | 350,428 | `v11` | **✅ pushed 2026-05-13 20:31 PT** — https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata/tree/v0.1-50k. v11 training now in flight. |
+| `v0.2-100k` | 100,000 | ~700k (est) | `v12` | preprocessing in flight in background |
+| `v0.3-500k` | 500,000 | ~3.5M (est) | `v13` | queued — start after v0.2 ships |
+| `v0.4-1M` | 1,000,000 | ~7M (est) | `v14` | queued — start after v0.3 ships |
+
+For each tag: preprocess → push corpus to `EmmaLeonhart/normalized-wikidata` → train Loka model on it → push checkpoint to `EmmaLeonhart/loka` → DEVLOG + paper §5.X update → commit + push.
+
+**Thermal reasoning** (user decision 2026-05-13 20:30 PT): the prior crash was multi-rail `loka serve + ingest + training` concurrency. Pure GPU training with NO Loka and NO ingest is a different workload class. Preprocessing is CPU + HF download. We're running GPU training + CPU preprocessing in parallel — two single-rail loads on different subsystems, not the multi-rail load that crashed before. Monitor: if Kernel-Power 41 events recur, drop to serialised mode.
+
+**Current background tasks** (Loka KILLED — not running):
+- v11 training (task `bifylk2mf`) — log `training/logs/v11_train.log`. Corpus 350k triples, batch 32, 20 epochs.
+- v0.2 preprocessing (task `bze0fsiji`) — log `training/logs/preprocess_v0.2.log`. ETA ~1.5h.
+
+---
+
+## 🚨 Old queue (above the pivot): Top of queue — ordered, do these in this sequence
 
 The user reports persistent Windows instability "ever since [I] got started on this project," currently off the affected machine. Repo evidence (`training/logs/loka-restart.log`, DEVLOG 2026-05-12 23:52 UTC) shows a Win32 `ERROR_NO_SYSTEM_RESOURCES` panic — kernel-level resource exhaustion that destabilises the whole OS, not just Loka. Until diagnostics rule that out, treat the box as fragile.
 
