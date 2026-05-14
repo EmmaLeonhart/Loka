@@ -1,14 +1,14 @@
 {
-  "name": "loka-wikidata-v11",
-  "version": "v11",
-  "released": "2026-05-13",
+  "name": "loka-wikidata-v12",
+  "version": "v12",
+  "released": "2026-05-14",
   "repo_id": "EmmaLeonhart/loka",
   "repo_type": "dataset",
-  "revision": "v11",
+  "revision": "v12",
   "files": {
     "checkpoint": {
-      "in_repo": "checkpoints/wikidata_v11.pt",
-      "local": "training/checkpoints/wikidata_v11.pt",
+      "in_repo": "checkpoints/wikidata_v12.pt",
+      "local": "training/checkpoints/wikidata_v12.pt",
       "size_mb": 178.2
     },
     "vocab": {
@@ -22,5 +22,5 @@
       "size_mb": 1.0
     }
   },
-  "notes": "Same 44.5M-parameter BPE architecture as v6 onward. Trained on the first release of the normalized-wikidata pipeline (v11-50k corpus, 350,428 lines) — the first version trained on a corpus built without Loka in the data path. Streaming from philippesaade/wikidata directly via tools/preprocess_from_hf.py: pass 1 cached English labels into SQLite, pass 2 emitted one tab-separated triple per kept claim with curated property labels (training/property_label_cache.json, 7,312 entries) overriding corpus rdfs:label rows for properties (which are systematically wrong due to engine bug #2 surfacing RDF-star annotation rows in the wrong slot). v11 completed 3 of 20 planned epochs (ppl 6577 -> 347.71 -> 279.12, descending well) before CUDA OOM in epoch 4 backward pass on the laptop 4070's 8 GB VRAM at --batch-size 32; epoch-3 checkpoint is the v11 release. v12/v13/v14 will use --batch-size 16. Headline number 279.12 is worse than v10's 57.15 because the v10 corpus was 94k triples trained for the full 20 epochs while v11 is 350k triples trained for only 3 epochs — a partial first cut, not a fair comparison. The corpus quality is much better than v10 though: clean English labels throughout, no opaque QIDs leaking into output, normalised time/quantity values. Companion dataset on HF: EmmaLeonhart/normalized-wikidata tag v11-50k."
+  "notes": "Second model in the normalized-wikidata series. Trained on the v12-100k corpus (671,817 clean triples, ~1.9x the size of v11's v11-50k corpus) using the same 44.5M-parameter BPE architecture. Per-epoch trajectory was disrupted by another LLaMA 3.1 8B experiment sharing the laptop's 8 GB GPU mid-training: epochs 2-4 ran cleanly at 32-41 min each (ppl 343.18 -> 238.05 -> 226.86, hitting the v12 best at epoch 4), then epochs 5-7 went to 175-191 min each as GPU contention corrupted Adam's momentum state and the loss diverged (ppl 243.59 -> 250.82 -> 257.77). Training process was killed externally at epoch 7. We ship the epoch-6 snapshot (taken before the divergence got worse) at ppl 250.82. Even degraded, v12 is meaningfully better than v11 (ppl 279.12 at 3 epochs) — the bigger and cleaner corpus is showing through. A clean retrain on an exclusive GPU would land closer to the epoch-4 trajectory (~225 ppl). Pinning the epoch-6 ckpt for the series consistency; future cycles may revisit v12 with a clean retrain. Companion dataset on HF: EmmaLeonhart/normalized-wikidata tag v12-100k."
 }

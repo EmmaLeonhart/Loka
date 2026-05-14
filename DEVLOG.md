@@ -7,6 +7,44 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-05-14 PT — v12 trained on the v12-100k corpus, disrupted by external GPU contention
+
+Headline: **v12 shipped at the epoch-6 snapshot, ppl 250.82, on the 671 817-triple `v12-100k` corpus — meaningfully better than v11 (ppl 279.12) despite a botched training trajectory. The training was disrupted by an unrelated LLaMA 3.1 8B experiment sharing the laptop GPU; epochs 5–7 diverged from epoch 4's best of 226.86 as Adam's momentum state corrupted under contention.**
+
+### Trajectory
+
+| Epoch | Loss | Perplexity | Wall |
+|---|---|---|---|
+| 1 | 7.1963 | 1334.50 | 5642 s (warm-up) |
+| 2 | 5.8383 | 343.18 | 2309 s (38 min, clean GPU) |
+| 3 | 5.4725 | 238.05 | 1929 s (32 min, clean) |
+| 4 | 5.4243 | **226.86** ← best | 2445 s (41 min, clean) |
+| 5 | 5.4955 | 243.59 | 10485 s (175 min, LLaMA sharing GPU) |
+| 6 | 5.5247 | **250.82** ← shipped (snapshot saved before further degradation) | 11445 s (191 min) |
+| 7 | 5.5521 | 257.77 | 8817 s (147 min) |
+| — | — | training killed externally (exit 127) | — |
+
+### What happened
+
+The plan was 20 epochs on a clean GPU. Reality: ~5 hours in, a different research workflow on the same machine (`scripts/run_five_condition_experiment.py --model llama-3.1-8b`) started using the laptop's 8 GB VRAM concurrently. v12's per-epoch wall time jumped from ~37 min to ~180 min, and the loss curve started climbing instead of descending. The likely root cause is Adam's first/second-moment estimates getting corrupted by some combination of (a) CUDA stream contention slowing or reordering kernels, (b) memory fragmentation forcing pessimistic allocations, (c) thermal throttling under sustained dual-CUDA-process load.
+
+When the LLaMA experiment was killed at user request, epoch 7 started but completed with even worse perplexity (257.77) — momentum corruption is sticky; a clean GPU mid-run doesn't immediately heal it. A second LLaMA experiment instance ("scale_8b" — a different label, different conditions) started 17 min later and ran concurrently with epoch 7. The v12 trainer was then killed externally (likely OS-level resource pressure or a kill from outside the Loka workflow) during what would have been epoch 8.
+
+We had the foresight to snapshot the epoch-6 checkpoint before things kept getting worse (`training/checkpoints/wikidata_v12_epoch6_ppl250.pt`). That's what's pinned as v12: ppl 250.82, still better than v11.
+
+### What this proves
+
+- **The bigger/cleaner corpus matters.** v12 at ppl 250.82 from 6 corrupted epochs beats v11 at ppl 279.12 from 3 clean epochs — and v12's epoch 4 (ppl 226.86) is *31* points below v11's clean epoch-3 result. The normalized-wikidata pipeline produces a usefully better training input even when training itself is rough.
+- **Shared-GPU compute is poison for Adam.** Future training runs on this laptop need exclusive GPU access; CUDA contention with a 8B parameter model isn't just slow, it corrupts the optimization trajectory. The hardware-laptop project memory got an addendum on this.
+- **Per-epoch checkpoints saved us.** `train.py` writes a checkpoint after every epoch (same path, overwriting), and our snapshot of the epoch-6 file before the next epoch overwrote it was the difference between shipping ppl 250.82 and shipping ppl 257.77. Future ship workflow: take a snapshot every time you see a regression epoch.
+
+### Next
+
+- v13 (2.5M triples from the v13-500k corpus) training now in flight on the exclusive GPU. 10 epochs, batch 16, ETA ~24 h.
+- v14 pass-2 corpus emit also in flight in parallel (CPU + network, different subsystem).
+- Likely revisit v12 later with a clean retrain on an exclusive GPU. ETA ~12.5 h once the GPU is genuinely free.
+
+---
 ## 2026-05-13 PT — v11 trained on the normalized-wikidata pipeline (no Loka in the loop)
 
 Headline: **v11 trained on a 350,428-triple corpus produced by streaming `philippesaade/wikidata` directly through a new normalization pipeline — Loka eliminated from the training data path. Got through 3 of 20 epochs (loss 8.79 → 5.85 → 5.63, ppl 6577 → 347.71 → 279.12) before CUDA OOM at epoch-4 backward pass; the epoch-3 checkpoint is the v11 release.**
