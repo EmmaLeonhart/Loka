@@ -8,14 +8,16 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ## 🚀 Multi-version pipeline — 2026-05-13 evening pivot
 
-After hitting Loka SPARQL OFFSET-cost (page-N is O(N) on sled — 25h projected for pass 1 alone), pivoted to a no-Loka HF-source preprocessor (`tools/preprocess_from_hf.py`). The plan now is to ship a series of normalized-wikidata snapshots and train a model on each:
+After hitting Loka SPARQL OFFSET-cost (page-N is O(N) on sled — 25h projected for pass 1 alone), pivoted to a no-Loka HF-source preprocessor (`tools/preprocess_from_hf.py`). The plan now is to ship a series of normalized-wikidata snapshots and train a model on each.
+
+**Naming convention:** *the dataset tag matches the Loka-model version trained on it.* So the corpus that trains model `v11` is tagged `v11-50k`, the corpus for `v12` is `v12-100k`, etc. The `-NNk` / `-NM` suffix is the entity-row count, the version number is the model lineage (continuing from v10).
 
 | HF dataset tag | Entity rows | Output triples | Model trained | Status |
 |---|---|---|---|---|
-| `v0.1-50k` | 50,000 | 350,428 | `v11` | **✅ pushed 2026-05-13 20:31 PT** — https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata/tree/v0.1-50k. v11 training now in flight. |
-| `v0.2-100k` | 100,000 | ~700k (est) | `v12` | preprocessing in flight in background |
-| `v0.3-500k` | 500,000 | ~3.5M (est) | `v13` | queued — start after v0.2 ships |
-| `v0.4-1M` | 1,000,000 | ~7M (est) | `v14` | queued — start after v0.3 ships |
+| `v11-50k` (also `v0.1-50k` alias) | 50,000 | 350,428 | `v11` | **✅ pushed 2026-05-13 20:31 PT** — https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata/tree/v11-50k. v11 training now in flight. |
+| `v12-100k` | 100,000 | ~700k (est) | `v12` | preprocessing in flight in background |
+| `v13-500k` | 500,000 | ~3.5M (est) | `v13` | queued — start after v12 corpus ships |
+| `v14-1M` | 1,000,000 | ~7M (est) | `v14` | queued — start after v13 corpus ships |
 
 For each tag: preprocess → push corpus to `EmmaLeonhart/normalized-wikidata` → train Loka model on it → push checkpoint to `EmmaLeonhart/loka` → DEVLOG + paper §5.X update → commit + push.
 
@@ -23,7 +25,7 @@ For each tag: preprocess → push corpus to `EmmaLeonhart/normalized-wikidata` �
 
 **Current background tasks** (Loka KILLED — not running):
 - v11 training (task `bifylk2mf`) — log `training/logs/v11_train.log`. Corpus 350k triples, batch 32, 20 epochs.
-- v0.2 preprocessing (task `bze0fsiji`) — log `training/logs/preprocess_v0.2.log`. ETA ~1.5h.
+- v12-100k corpus preprocessing (task `bze0fsiji`) — log `training/logs/preprocess_v0.2.log`. Output path is currently `training/data/normalized/normalized_wikidata_v0.2_100k.txt` (legacy from the renamed scheme — will rename to `..._v12_100k.txt` on completion). ETA ~1.5h.
 
 ---
 
