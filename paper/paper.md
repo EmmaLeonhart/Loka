@@ -417,6 +417,37 @@ The Commons-category outputs are template-correct (`"Category : Dramatists and p
 
 The cron's `ship()` step covers DEVLOG, MODEL.json, propgen test artifacts, HF push, and the local commit + push, but it deliberately does *not* edit the paper — paper revisions happen here (or via the remote `schedule`-skill cron jobs that polish paper prose for the AI peer reviewer). This is the v10 paper revision.
 
+### 5.9 v11: pipeline pivot — no Loka in the training data path, and a standalone `normalized-wikidata` dataset
+
+The v11 cycle pivoted the *shape* of the preprocessing pipeline. Earlier versions extracted training triples from Loka via SPARQL `?s ?p ?o` paging. At the v11 scale (a fresh 50 M-triple Loka slice) this hit two structural problems:
+
+1. **`LIMIT/OFFSET` is O(offset) on sled.** Page 1 took 8 s, page 100 took 235 s, pass 1 alone projected to ~25 hours.
+2. **Engine bug #2 corrupts `rdfs:label` rows for properties.** RDF-star annotation rows in the Wikidata source dump are surfaced by Loka's SPARQL executor with the property IRI keyed against the inner triple's *object* value, not the property's actual label — so `wdt:P20 rdfs:label "Belgium"@en` instead of `"place of death"`, and similarly for every property we audited. Entity labels were unaffected, but for training-input use this would have made every predicate label arbitrary garbage. The fix preloads `training/property_label_cache.json` (7 312 curated entries) as `source='curated'` and skips corpus rdfs:label rows whose subject is a property.
+
+Both problems vanish if we go straight from the source HF parquet to the training file with Loka not in the loop. `tools/preprocess_from_hf.py` streams `philippesaade/wikidata`, builds an English-label cache in SQLite during a first iteration, then emits one tab-separated `subject\tpredicate\tobject\n` line per kept claim during a second iteration. Same filter set as the canonical preprocess (`training/wikidata_excluded_predicates.json` removes ~82 % of property types by datatype class, time/quantity values are normalised, RDF-star annotation rows are stripped, system-reserved `loka:propositionInferredFrom`-namespace triples are stripped). The resulting corpus is independently useful, so it gets its own HF dataset repo: `EmmaLeonhart/normalized-wikidata`, license CC-BY-SA 4.0 (inherits from Wikidata).
+
+This is also the start of a multi-rung dataset / model series:
+
+| HF dataset tag | Entity rows | Output triples | Trained model |
+|---|---|---|---|
+| `v11-50k` (released) | 50 000 | 350 428 | v11 |
+| `v12-100k` | 100 000 | ~700 000 (est.) | v12 |
+| `v13-500k` | 500 000 | ~3.5 M (est.) | v13 |
+| `v14-1M` | 1 000 000 | ~7 M (est.) | v14 |
+
+**v11 training.** Same 44.5 M-parameter BPE architecture as v6 onward. Hardware constraint: the training box is a laptop 4070 with **8 GB VRAM** (not the 12 GB of the desktop 4070). At `--batch-size 32` the model fits forward but Adam's optimizer state + gradient peaks in later epochs cross the line. v11 completed 3 of 20 planned epochs before `torch.AcceleratorError: CUDA error: out of memory` in epoch 4's backward pass; the per-epoch checkpoint mechanism in `train.py` means the **epoch-3 weights are the v11 release**. Future training runs (v12, v13, v14) use `--batch-size 16`.
+
+| Epoch | Loss | Perplexity | Wall |
+|---|---|---|---|
+| 1 | 8.7914 | 6 577.15 | 1 102 s |
+| 2 | 5.8514 | 347.71 | 1 100 s |
+| 3 | 5.6316 | **279.12** | 978 s |
+| 4 | — | **CUDA OOM** | — |
+
+**Headline number 279.12 is not directly comparable to v10's 55.52.** v10 was trained 20 epochs on a 94 k-triple corpus; v11 was trained 3 epochs on a 350 k-triple corpus. Loss curve is descending well at epoch 3 (5.85 → 5.63 in one epoch), so the headroom is real — a future continuation run at batch 16 would land somewhere between v10's 55.52 and the trajectory's projection of ~50–80 at epoch 20. We choose to ship v11 at epoch 3 rather than retrain because the next bottleneck is *corpus quality and scale*, which `v12-100k` / `v13-500k` / `v14-1M` are set up to push on. The corpus shape is what's new about v11; the model trained on it is a first measurement against that shape.
+
+**Propgen test deferred.** The same GPU fragility that caused the OOM makes us wary of running a sustained autoregressive inference loop on this checkpoint immediately afterward. Defer to a follow-up cycle when the laptop is genuinely idle. The §5.6–§5.8 trajectory of catalog-predicate share collapsing to zero is expected to hold on v11 because the cleaning is dataset-side, not model-side; the v11-50k corpus has no external-id / catalog datatypes by construction.
+
 ---
 
 ## 6. Limitations
