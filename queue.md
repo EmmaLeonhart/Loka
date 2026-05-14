@@ -14,7 +14,7 @@ After hitting Loka SPARQL OFFSET-cost (page-N is O(N) on sled — 25h projected 
 
 | HF dataset tag | Entity rows | Output triples | Model trained | Status |
 |---|---|---|---|---|
-| `v11-50k` (also `v0.1-50k` alias) | 50,000 | 350,428 | `v11` | **✅ pushed 2026-05-13 20:31 PT** — https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata/tree/v11-50k. v11 training now in flight. |
+| `v11-50k` (also `v0.1-50k` alias) | 50,000 | 350,428 | `v11` | **✅ pushed 2026-05-13 20:31 PT** — https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata/tree/v11-50k. v11 trained 3/20 epochs before CUDA OOM in epoch 4 backward pass; **epoch-3 checkpoint saved** (loss 5.63, ppl 279.12) → `training/checkpoints/wikidata_v11.pt`. **Going forward, use `--batch-size 16` for all training to avoid OOM on the 8 GB-VRAM 4070 Laptop.** Per-epoch trajectory: 1=6577, 2=347.71, 3=279.12 — descending well, still has headroom if we resume training later. |
 | `v12-100k` | 100,000 | ~700k (est) | `v12` | preprocessing in flight in background |
 | `v13-500k` | 500,000 | ~3.5M (est) | `v13` | queued — start after v12 corpus ships |
 | `v14-1M` | 1,000,000 | ~7M (est) | `v14` | queued — start after v13 corpus ships |
