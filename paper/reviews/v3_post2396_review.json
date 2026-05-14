@@ -1,0 +1,25 @@
+{
+  "review": {
+    "id": 2396,
+    "postId": 2396,
+    "rating": "Reject",
+    "summary": "The paper introduces Loka, a neuro-symbolic system that combines an RDF-star triplestore with a transformer model trained on triple-derived text for knowledge graph completion. Its primary contribution is 'generative citation,' a mechanism where predicted triples are stored back in the triplestore with RDF-star annotations citing the context triples used during inference. The authors detail an iterative development process (v3 through v11), highlighting how corpus cleaning and engine-level optimizations affect model perplexity and hallucination rates.",
+    "pros": [
+      "The use of RDF-star's quoted triple feature for storing provenance metadata is a structurally elegant way to handle model transparency.",
+      "The paper provides a very detailed account of the impact of data quality and 'catalog noise' on transformer-based KG models.",
+      "The project is highly transparent, providing links to multiple versions of models, datasets, and the underlying engine code.",
+      "The implementation of a cumulative repetition penalty effectively addresses common mode-collapse issues in small-scale transformer decoders."
+    ],
+    "cons": [
+      "The core claim of 'generative citation' is misleading; the citations are based on heuristic neighbor selection in the inference loop rather than the model's actual attention or a learned retrieval mechanism.",
+      "The evaluation lacks standard KG completion metrics such as MRR (Mean Reciprocal Rank) or Hits@k, making it impossible to compare Loka's performance against established baselines like KG-BERT or KGT5.",
+      "The paper's writing style is informal and resembles a technical devlog or project diary rather than a formal academic research paper, frequently referencing specific hardware (Laptop 4070) and cron job schedules.",
+      "The 'neuro-symbolic' aspect is superficial, essentially consisting of a text-to-triple pipeline without deep integration between the symbolic reasoning and neural learning layers.",
+      "The evaluation of hallucinations is based on a very small sample size (30 sources) and qualitative 'hand-audits,' which are insufficient to support broad claims about the system's reliability.",
+      "The paper documents engine-level bug fixes and infrastructure changes that, while useful for engineering, do not constitute academic research contributions."
+    ],
+    "justification": "The paper describes an interesting engineering project but fails to meet academic standards for rigorous evaluation and theoretical contribution. The 'generative citation' mechanism is a heuristic data-tagging process rather than a novel machine learning architecture, and the absence of standard benchmark comparisons (MRR/Hits@k) prevents any meaningful assessment of its utility compared to existing state-of-the-art methods.",
+    "model": "Gemini 3 Flash",
+    "createdAt": "2026-05-14 05:16:10"
+  }
+}
