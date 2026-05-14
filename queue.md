@@ -14,9 +14,9 @@ After hitting Loka SPARQL OFFSET-cost (page-N is O(N) on sled — 25h projected 
 
 | HF dataset tag | Entity rows | Output triples | Model trained | Status |
 |---|---|---|---|---|
-| `v11-50k` (also `v0.1-50k` alias) | 50,000 | 350,428 | `v11` | **✅ pushed 2026-05-13 20:31 PT** — https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata/tree/v11-50k. v11 trained 3/20 epochs before CUDA OOM in epoch 4 backward pass; **epoch-3 checkpoint saved** (loss 5.63, ppl 279.12) → `training/checkpoints/wikidata_v11.pt`. **Going forward, use `--batch-size 16` for all training to avoid OOM on the 8 GB-VRAM 4070 Laptop.** Per-epoch trajectory: 1=6577, 2=347.71, 3=279.12 — descending well, still has headroom if we resume training later. |
-| `v12-100k` | 100,000 | ~700k (est) | `v12` | preprocessing in flight in background |
-| `v13-500k` | 500,000 | ~3.5M (est) | `v13` | queued — start after v12 corpus ships |
+| `v11-50k` (also `v0.1-50k` alias) | 50,000 | 350,428 | `v11` | **✅ Fully shipped 2026-05-13** — corpus: https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata/tree/v11-50k, model: https://huggingface.co/datasets/EmmaLeonhart/loka/tree/v11. v11 trained 3/20 epochs (loss 8.79 → 5.85 → 5.63, ppl 6577 → 347.71 → **279.12**) before CUDA OOM at epoch 4 backward at batch 32 on the 8 GB-VRAM 4070 Laptop. **All future training uses `--batch-size 16`.** DEVLOG + paper §5.9 + MODEL.json updated. |
+| `v12-100k` | 100,000 | **671,817** | `v12` | **✅ corpus pushed 2026-05-13 22:42 PT** — https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata/tree/v12-100k. Model `v12` training in flight (task `bocj7flty`, batch 16, 20 epochs, log `training/logs/v12_train.log`). |
+| `v13-500k` | 500,000 | ~3.5M (est) | `v13` | corpus pass 1 (label scan) running in background (task `bfnyckfva`, log `training/logs/preprocess_v13_pass1.log`). Pass 2 runs as a separate process after pass 1 to avoid the fsspec memory accumulation that crashed the v12 single-process two-pass. |
 | `v14-1M` | 1,000,000 | ~7M (est) | `v14` | queued — start after v13 corpus ships |
 
 For each tag: preprocess → push corpus to `EmmaLeonhart/normalized-wikidata` → train Loka model on it → push checkpoint to `EmmaLeonhart/loka` → DEVLOG + paper §5.X update → commit + push.
@@ -24,8 +24,8 @@ For each tag: preprocess → push corpus to `EmmaLeonhart/normalized-wikidata` �
 **Thermal reasoning** (user decision 2026-05-13 20:30 PT): the prior crash was multi-rail `loka serve + ingest + training` concurrency. Pure GPU training with NO Loka and NO ingest is a different workload class. Preprocessing is CPU + HF download. We're running GPU training + CPU preprocessing in parallel — two single-rail loads on different subsystems, not the multi-rail load that crashed before. Monitor: if Kernel-Power 41 events recur, drop to serialised mode.
 
 **Current background tasks** (Loka KILLED — not running):
-- v11 training (task `bifylk2mf`) — log `training/logs/v11_train.log`. Corpus 350k triples, batch 32, 20 epochs.
-- v12-100k corpus preprocessing (task `bze0fsiji`) — log `training/logs/preprocess_v0.2.log`. Output path is currently `training/data/normalized/normalized_wikidata_v0.2_100k.txt` (legacy from the renamed scheme — will rename to `..._v12_100k.txt` on completion). ETA ~1.5h.
+- v12 training (task `bocj7flty`) — log `training/logs/v12_train.log`. Corpus 672k triples, batch 16, 20 epochs. ETA ~12-16h.
+- v13-500k corpus pass-1 scan (task `bfnyckfva`) — log `training/logs/preprocess_v13_pass1.log`. Adds labels for the next 400k entities to the existing SQLite cache.
 
 ---
 
