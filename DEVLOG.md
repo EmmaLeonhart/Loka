@@ -7,6 +7,59 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-05-13 PT — v11 trained on the normalized-wikidata pipeline (no Loka in the loop)
+
+Headline: **v11 trained on a 350,428-triple corpus produced by streaming `philippesaade/wikidata` directly through a new normalization pipeline — Loka eliminated from the training data path. Got through 3 of 20 epochs (loss 8.79 → 5.85 → 5.63, ppl 6577 → 347.71 → 279.12) before CUDA OOM at epoch-4 backward pass; the epoch-3 checkpoint is the v11 release.**
+
+### Why the pipeline changed
+
+Original plan was to ingest a 50 M-triple Wikidata slice into Loka, then preprocess from there. The ingest finished and reached 50,002,600 triples on `loka-data-cron-c1/`. But preprocessing via SPARQL `LIMIT/OFFSET` ran into O(offset) cost on sled — early pages took 8 s each, page 100 took 235 s, projected ~25 hours just for pass 1. Two days of pure preprocess wall-clock was untenable.
+
+So the pipeline pivoted: a new `tools/preprocess_from_hf.py` streams `philippesaade/wikidata` straight from the HF parquet shards, builds a SQLite-backed label cache (pass 1), then streams again to emit one tab-separated `subject\tpredicate\tobject\n` line per kept claim (pass 2). No Loka in the data path — and *as a side effect*, the cleaned corpus becomes an independently-useful artifact published as `EmmaLeonhart/normalized-wikidata` on HF.
+
+### One critical mid-run fix: corpus property labels are systematically wrong
+
+87 pages into the original Loka-source preprocessor, an audit caught that **every property's `rdfs:label` row in the corpus was mis-keyed against the inner-triple's object value** instead of the property's actual label. Examples: P20 → "Belgium" (should be "place of death"), P1412 → "English" (should be "languages spoken, written or signed"), P3301 → "NBC" (should be "broadcast by"). Engine bug #2 (RDF-star annotation rows surfaced in the wrong slot) was producing this; entity labels were unaffected. The fix in commit `78e1e7e`: preload `training/property_label_cache.json` (7,312 curated entries) as `source='curated'`, skip pass-1 rdfs:label rows whose subject is a property, drop pass-2 rows where subject *or* object is a property IRI. **Without this catch the entire normalized corpus would have been useless** — predicates would have read like "Douglas Adams Belgium English" instead of "Douglas Adams place of death English".
+
+### What we shipped
+
+| Artifact | Where | Notes |
+|---|---|---|
+| `v11-50k` corpus (350,428 lines) | `EmmaLeonhart/normalized-wikidata` tag `v11-50k` | First normalized-wikidata release. CC-BY-SA 4.0 (inherits from Wikidata). |
+| `wikidata_v11.pt` (178 MB) | `EmmaLeonhart/loka` tag `v11` *(to push)* | Epoch-3 checkpoint. Same 44.5 M-param architecture as v5+. |
+| `preprocess_from_hf.py` | tools/ | Streams HF source, SQLite label cache, two-pass (or split into two processes to avoid fsspec mem accumulation). |
+| `hf_push_normalized.py` | tools/ | Separate HF push targeting `EmmaLeonhart/normalized-wikidata` (not the model repo). |
+
+### Per-epoch training trajectory
+
+| Epoch | Loss | Perplexity | Wall |
+|---|---|---|---|
+| 1 | 8.7914 | 6577.15 | 1102 s |
+| 2 | 5.8514 | 347.71 | 1100 s |
+| 3 | 5.6316 | **279.12** | 978 s |
+| 4 | — | **CUDA OOM** in backward pass | — |
+
+Hardware lesson: the 4070 **Laptop** has 8 GB VRAM, not the 12 GB of the desktop variant. At `--batch-size 32` plus typical Adam optimizer state, gradient peak in epoch 4 pushed over the line. Future training runs (v12 / v13 / v14) must use `--batch-size 16`. Memory pinned to project memory.
+
+### Context: this version is the start of the multi-rung pipeline
+
+The plan after v11 is a series of corpus sizes / model versions:
+
+| Tag | Entity rows | Output triples (est) | Model |
+|---|---|---|---|
+| `v11-50k` | 50,000 | 350,428 (actual) | v11 ← here |
+| `v12-100k` | 100,000 | ~700k | v12 |
+| `v13-500k` | 500,000 | ~3.5M | v13 |
+| `v14-1M` | 1,000,000 | ~7M | v14 |
+
+Each rung ships the corpus to HF, trains a Loka model on it, ships the model to HF, and lands as a paper §5.X update. v12-100k preprocessing is in flight as of this writing.
+
+### What did *not* happen this cycle
+
+- No propgen test on v11 yet. The laptop's GPU is fragile (the same OOM that killed epoch 4 makes me wary of running a sustained autoregressive inference loop right after). Defer until the v12 preprocessing finishes and the GPU is genuinely idle.
+- The 50 M-triple Loka data dir (`loka-data-cron-c1/`, 17.6 GB) is still on disk but unused — keeping it as a reference snapshot in case we want to compare against Loka-source preprocessing later. Will likely be removed before the 1 M run.
+
+---
 ## 2026-05-12 23:52 UTC — Engine bug #1, second incarnation: sled flusher panics on Windows at 33 M triples
 
 Headline: **the big-corpus ingest for v11 crashed Loka, not training. v10 is intact on HF; no model lost.** sled 0.34's periodic flusher thread panicked with Win32 `ERROR_NO_SYSTEM_RESOURCES` (os error 1450) trying to fsync, at ~32.88 M triples / 5.0 GB. Same wedge class as v6–v9 (queue.md engine bug #1), but a hard panic this time instead of a hang.

@@ -1,14 +1,14 @@
 {
-  "name": "loka-wikidata-v10",
-  "version": "v10",
-  "released": "2026-05-11",
+  "name": "loka-wikidata-v11",
+  "version": "v11",
+  "released": "2026-05-13",
   "repo_id": "EmmaLeonhart/loka",
   "repo_type": "dataset",
-  "revision": "v10",
+  "revision": "v11",
   "files": {
     "checkpoint": {
-      "in_repo": "checkpoints/wikidata_v10.pt",
-      "local": "training/checkpoints/wikidata_v10.pt",
+      "in_repo": "checkpoints/wikidata_v11.pt",
+      "local": "training/checkpoints/wikidata_v11.pt",
       "size_mb": 178.2
     },
     "vocab": {
@@ -22,5 +22,5 @@
       "size_mb": 1.0
     }
   },
-  "notes": "Same 44.5M-parameter BPE architecture as v6/v7/v8. Trained 20 epochs from random init on a 94,202-triple corpus extracted from a freshly-pulled 2,090,640-triple Loka slice (philippesaade/wikidata, 9,647 entity rows). Final epoch-20 perplexity 57.15 — best of any version, beating v8's 64.65 by 12% despite training on half the data. Two reasons coexisting: (a) the engine-wedge bug documented in paper §6.1 was fixed in commit 39effbb (single sled multi-tree transaction per /triples request instead of 3-4 per N-Triples line, no synchronous flush), unlocking sustained ingest at 500 triples/s without the 90k/174k/1M-triple wedge points; (b) the v9 corpus is preferentially the entities with closed reference graphs — when the HF stream doesn't provide an entity's row, its label-as-object dependencies drop the row at preprocess, leaving only the structurally well-connected core. v9 propgen test on the Q42 seed: 35 emissions, 34 of them on semantic predicates (97%) — best ratio yet. Residual failure mode is a URL-prefix shape leak on `Template:* | different from` predicates (analogous to v6's date-shape leak but in URL format, narrower predicate scope). See DEVLOG.md for the v6 -> v7 -> v8 -> v9 trajectory and paper §5.5 / §5.6 / §5.7."
+  "notes": "Same 44.5M-parameter BPE architecture as v6 onward. Trained on the first release of the normalized-wikidata pipeline (v11-50k corpus, 350,428 lines) — the first version trained on a corpus built without Loka in the data path. Streaming from philippesaade/wikidata directly via tools/preprocess_from_hf.py: pass 1 cached English labels into SQLite, pass 2 emitted one tab-separated triple per kept claim with curated property labels (training/property_label_cache.json, 7,312 entries) overriding corpus rdfs:label rows for properties (which are systematically wrong due to engine bug #2 surfacing RDF-star annotation rows in the wrong slot). v11 completed 3 of 20 planned epochs (ppl 6577 -> 347.71 -> 279.12, descending well) before CUDA OOM in epoch 4 backward pass on the laptop 4070's 8 GB VRAM at --batch-size 32; epoch-3 checkpoint is the v11 release. v12/v13/v14 will use --batch-size 16. Headline number 279.12 is worse than v10's 57.15 because the v10 corpus was 94k triples trained for the full 20 epochs while v11 is 350k triples trained for only 3 epochs — a partial first cut, not a fair comparison. The corpus quality is much better than v10 though: clean English labels throughout, no opaque QIDs leaking into output, normalised time/quantity values. Companion dataset on HF: EmmaLeonhart/normalized-wikidata tag v11-50k."
 }
