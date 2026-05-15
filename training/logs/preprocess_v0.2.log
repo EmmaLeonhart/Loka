@@ -1,0 +1,85 @@
+Label cache: training\data\wikidata_labels.sqlite (56,586 entries on open)
+Preloaded 7,312 curated property labels.
+=== Pass 1: scan labels from philippesaade/wikidata ===
+  pass 1:      5,000 rows,      5,000 labels,      34 rows/s, elapsed   147 s
+  pass 1:     10,000 rows,      9,983 labels,      35 rows/s, elapsed   286 s
+  pass 1:     15,000 rows,     14,969 labels,      38 rows/s, elapsed   397 s
+  pass 1:     20,000 rows,     19,923 labels,      40 rows/s, elapsed   496 s
+  pass 1:     25,000 rows,     24,783 labels,      43 rows/s, elapsed   580 s
+  pass 1:     30,000 rows,     29,690 labels,      45 rows/s, elapsed   671 s
+  pass 1:     35,000 rows,     34,603 labels,      46 rows/s, elapsed   769 s
+  pass 1:     40,000 rows,     39,472 labels,      46 rows/s, elapsed   864 s
+  pass 1:     45,000 rows,     44,392 labels,      49 rows/s, elapsed   925 s
+  pass 1:     50,000 rows,     49,274 labels,      50 rows/s, elapsed   993 s
+  pass 1:     55,000 rows,     54,117 labels,      50 rows/s, elapsed 1,091 s
+  pass 1:     60,000 rows,     59,012 labels,      50 rows/s, elapsed 1,196 s
+  pass 1:     65,000 rows,     63,922 labels,      52 rows/s, elapsed 1,261 s
+  pass 1:     70,000 rows,     68,835 labels,      52 rows/s, elapsed 1,345 s
+  pass 1:     75,000 rows,     73,680 labels,      52 rows/s, elapsed 1,434 s
+  pass 1:     80,000 rows,     78,606 labels,      52 rows/s, elapsed 1,529 s
+  pass 1:     90,000 rows,     88,239 labels,      54 rows/s, elapsed 1,664 s
+  pass 1:     95,000 rows,     92,778 labels,      55 rows/s, elapsed 1,728 s
+  pass 1:    100,000 rows,     97,511 labels,      56 rows/s, elapsed 1,799 s
+[LIMIT] reached max_rows=100,000
+Pass 1 done: 100,000 rows consumed, 97,511 labels written.
+=== Pass 2: emit to training\data\normalized\normalized_wikidata_v0.2_100k.txt ===
+'[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)' thrown while requesting GET https://huggingface.co/datasets/philippesaade/wikidata/resolve/f515679220b381e7a00971fb3f077e8391355727/data/chunk_0-00001-of-00546.parquet
+Retrying in 1s [Retry 1/5].
+Traceback (most recent call last):
+  File "C:\Users\Immanuelle\Documents\Github\SutraDB\tools\preprocess_from_hf.py", line 446, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\Immanuelle\Documents\Github\SutraDB\tools\preprocess_from_hf.py", line 440, in main
+    emit_pass(args, conn, out_path)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Immanuelle\Documents\Github\SutraDB\tools\preprocess_from_hf.py", line 314, in emit_pass
+    for row in ds:
+               ^^
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\datasets\iterable_dataset.py", line 2690, in __iter__
+    for key, example in ex_iterable:
+                        ^^^^^^^^^^^
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\datasets\iterable_dataset.py", line 2227, in __iter__
+    for key, pa_table in self._iter_arrow():
+                         ~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\datasets\iterable_dataset.py", line 2251, in _iter_arrow
+    for key, pa_table in self.ex_iterable._iter_arrow():
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\datasets\iterable_dataset.py", line 494, in _iter_arrow
+    for key, pa_table in iterator:
+                         ^^^^^^^^
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\datasets\iterable_dataset.py", line 384, in _iter_arrow
+    for key, pa_table in self.generate_tables_fn(**gen_kwags):
+                         ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\datasets\packaged_modules\parquet\parquet.py", line 194, in _generate_tables
+    if parquet_fragment.row_groups:
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "pyarrow/_dataset_parquet.pyx", line 389, in pyarrow._dataset_parquet.ParquetFileFragment.row_groups.__get__
+  File "pyarrow/_dataset_parquet.pyx", line 396, in pyarrow._dataset_parquet.ParquetFileFragment.metadata.__get__
+  File "pyarrow/_dataset_parquet.pyx", line 385, in pyarrow._dataset_parquet.ParquetFileFragment.ensure_complete_metadata
+  File "pyarrow/error.pxi", line 89, in pyarrow.lib.check_status
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\datasets\utils\file_utils.py", line 844, in read_with_retries
+    out = read(*args, **kwargs)
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\huggingface_hub\hf_file_system.py", line 1272, in read
+    return super().read(length)
+           ~~~~~~~~~~~~^^^^^^^^
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\fsspec\spec.py", line 2122, in read
+    out = self.cache._fetch(self.loc, self.loc + length)
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\fsspec\caching.py", line 279, in _fetch
+    self.cache = self.fetcher(start, end)  # new block replaces old
+                 ~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\huggingface_hub\hf_file_system.py", line 1228, in _fetch_range
+    r = http_backoff("GET", url, headers=headers, timeout=constants.HF_HUB_DOWNLOAD_TIMEOUT)
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\huggingface_hub\utils\_http.py", line 559, in http_backoff
+    return next(
+        _http_backoff_base(
+    ...<9 lines>...
+        )
+    )
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\huggingface_hub\utils\_http.py", line 467, in _http_backoff_base
+    response = client.request(method=method, url=url, **kwargs)
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\httpx\_client.py", line 825, in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\httpx\_client.py", line 901, in send
+    raise RuntimeError("Cannot send a request, as the client has been closed.")
+RuntimeError: Cannot send a request, as the client has been closed.

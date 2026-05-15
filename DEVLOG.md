@@ -68,7 +68,7 @@ Epoch 1 result is a strong signal that the corpus-quality lever isn't exhausted:
 
 ### Documentation sweep
 
-Brought all five public surfaces (GitHub README, sutradb.org homepage, sutradb.org/loka/, both HF dataset READMEs, paper masthead+abstract) into sync with the multi-rung v11–v14 pipeline and the two-HF-dataset structure. The history page got a new top section covering v6 → v14 (catalog cleanup, cron loop, normalized-wikidata pivot, hardware lessons). `status.md` was completely rewritten — it had been dated 2026-05-09 and was still claiming v5 as the current model.
+Brought all five public surfaces (GitHub README, loka.emmaleonhart.com homepage, loka.emmaleonhart.com/loka/, both HF dataset READMEs, paper masthead+abstract) into sync with the multi-rung v11–v14 pipeline and the two-HF-dataset structure. The history page got a new top section covering v6 → v14 (catalog cleanup, cron loop, normalized-wikidata pivot, hardware lessons). `status.md` was completely rewritten — it had been dated 2026-05-09 and was still claiming v5 as the current model.
 
 Net effect: any AI agent or human landing on any of those surfaces now sees a consistent story about what the project is and what's currently shipping.
 
@@ -738,7 +738,7 @@ Containment semantics use three-valued query logic (true / false / unknown). Des
 - **Vector SPARQL operators** — `COSINE_SEARCH`, `EUCLID_SEARCH`, `DOTPRODUCT_SEARCH`.
 - **ACID compliance** — atomic transactions, durability, isolation. `PersistentStore.clear()` and GSP DELETE durability fixes.
 - **Self-update + version check + HNSW rebuild endpoint.**
-- **Theory pages on sutradb.org** — 18+ explainer pages: HNSW-in-RDF, four-index architecture, RDF-star edges, SPARQL exit conditions, hybrid databases, traversal indexing, cost-based planning, etc.
+- **Theory pages on loka.emmaleonhart.com** — 18+ explainer pages: HNSW-in-RDF, four-index architecture, RDF-star edges, SPARQL exit conditions, hybrid databases, traversal indexing, cost-based planning, etc.
 - **Code of Ethics page** — Buddhist/Shinto-techno-animist framing, deadpan style.
 
 ---

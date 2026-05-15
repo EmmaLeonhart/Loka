@@ -1,0 +1,96 @@
+Label cache: training\data\wikidata_labels.sqlite (104,823 entries on open)
+Preloaded 7,312 curated property labels.
+=== Pass 1: scan labels from philippesaade/wikidata ===
+  pass 1:      5,000 rows,      5,000 labels,      28 rows/s, elapsed   177 s
+  pass 1:     10,000 rows,      9,983 labels,      32 rows/s, elapsed   312 s
+  pass 1:     15,000 rows,     14,969 labels,      34 rows/s, elapsed   446 s
+  pass 1:     20,000 rows,     19,923 labels,      36 rows/s, elapsed   554 s
+  pass 1:     25,000 rows,     24,783 labels,      39 rows/s, elapsed   645 s
+  pass 1:     30,000 rows,     29,690 labels,      40 rows/s, elapsed   748 s
+'The read operation timed out' thrown while requesting GET https://huggingface.co/datasets/philippesaade/wikidata/resolve/f515679220b381e7a00971fb3f077e8391355727/data/chunk_0-00017-of-00546.parquet
+Retrying in 1s [Retry 1/5].
+'[WinError 10054] An existing connection was forcibly closed by the remote host' thrown while requesting GET https://huggingface.co/datasets/philippesaade/wikidata/resolve/f515679220b381e7a00971fb3f077e8391355727/data/chunk_0-00017-of-00546.parquet
+Retrying in 2s [Retry 2/5].
+'[WinError 10054] An existing connection was forcibly closed by the remote host' thrown while requesting GET https://huggingface.co/datasets/philippesaade/wikidata/resolve/f515679220b381e7a00971fb3f077e8391355727/data/chunk_0-00017-of-00546.parquet
+Retrying in 4s [Retry 3/5].
+  pass 1:     35,000 rows,     34,603 labels,      37 rows/s, elapsed   942 s
+  pass 1:     40,000 rows,     39,472 labels,      37 rows/s, elapsed 1,075 s
+  pass 1:     45,000 rows,     44,392 labels,      39 rows/s, elapsed 1,155 s
+  pass 1:     50,000 rows,     49,274 labels,      40 rows/s, elapsed 1,252 s
+  pass 1:     55,000 rows,     54,117 labels,      40 rows/s, elapsed 1,392 s
+  pass 1:     60,000 rows,     59,012 labels,      39 rows/s, elapsed 1,533 s
+  pass 1:     65,000 rows,     63,922 labels,      40 rows/s, elapsed 1,628 s
+  pass 1:     70,000 rows,     68,835 labels,      40 rows/s, elapsed 1,732 s
+  pass 1:     75,000 rows,     73,680 labels,      41 rows/s, elapsed 1,830 s
+  pass 1:     80,000 rows,     78,606 labels,      41 rows/s, elapsed 1,936 s
+  pass 1:     90,000 rows,     88,239 labels,      43 rows/s, elapsed 2,071 s
+  pass 1:     95,000 rows,     92,778 labels,      44 rows/s, elapsed 2,144 s
+  pass 1:    100,000 rows,     97,511 labels,      45 rows/s, elapsed 2,223 s
+  pass 1:    105,000 rows,    102,153 labels,      46 rows/s, elapsed 2,271 s
+  pass 1:    110,000 rows,    107,020 labels,      46 rows/s, elapsed 2,373 s
+  pass 1:    115,000 rows,    111,743 labels,      47 rows/s, elapsed 2,466 s
+  pass 1:    120,000 rows,    116,286 labels,      47 rows/s, elapsed 2,542 s
+  pass 1:    130,000 rows,    125,715 labels,      49 rows/s, elapsed 2,679 s
+  pass 1:    135,000 rows,    130,311 labels,      49 rows/s, elapsed 2,750 s
+  pass 1:    140,000 rows,    134,737 labels,      50 rows/s, elapsed 2,811 s
+  pass 1:    145,000 rows,    139,003 labels,      51 rows/s, elapsed 2,856 s
+  pass 1:    155,000 rows,    147,661 labels,      52 rows/s, elapsed 3,000 s
+  pass 1:    165,000 rows,    156,497 labels,      53 rows/s, elapsed 3,128 s
+  pass 1:    170,000 rows,    160,924 labels,      53 rows/s, elapsed 3,202 s
+  pass 1:    180,000 rows,    169,373 labels,      54 rows/s, elapsed 3,327 s
+  pass 1:    185,000 rows,    173,762 labels,      55 rows/s, elapsed 3,373 s
+  pass 1:    190,000 rows,    178,207 labels,      55 rows/s, elapsed 3,447 s
+  pass 1:    195,000 rows,    182,579 labels,      56 rows/s, elapsed 3,510 s
+  pass 1:    200,000 rows,    186,998 labels,      56 rows/s, elapsed 3,572 s
+  pass 1:    205,000 rows,    191,383 labels,      57 rows/s, elapsed 3,610 s
+  pass 1:    210,000 rows,    195,658 labels,      57 rows/s, elapsed 3,662 s
+  pass 1:    215,000 rows,    199,494 labels,      58 rows/s, elapsed 3,702 s
+  pass 1:    225,000 rows,    208,118 labels,      59 rows/s, elapsed 3,787 s
+  pass 1:    235,000 rows,    217,241 labels,      60 rows/s, elapsed 3,888 s
+  pass 1:    240,000 rows,    221,800 labels,      61 rows/s, elapsed 3,938 s
+  pass 1:    245,000 rows,    226,339 labels,      62 rows/s, elapsed 3,969 s
+  pass 1:    250,000 rows,    230,760 labels,      62 rows/s, elapsed 4,014 s
+  pass 1:    255,000 rows,    235,278 labels,      63 rows/s, elapsed 4,056 s
+  pass 1:    260,000 rows,    239,748 labels,      63 rows/s, elapsed 4,096 s
+  pass 1:    265,000 rows,    244,168 labels,      64 rows/s, elapsed 4,127 s
+  pass 1:    270,000 rows,    248,611 labels,      65 rows/s, elapsed 4,172 s
+  pass 1:    275,000 rows,    253,090 labels,      65 rows/s, elapsed 4,215 s
+  pass 1:    280,000 rows,    257,524 labels,      66 rows/s, elapsed 4,260 s
+  pass 1:    285,000 rows,    262,067 labels,      66 rows/s, elapsed 4,293 s
+  pass 1:    290,000 rows,    266,613 labels,      67 rows/s, elapsed 4,341 s
+  pass 1:    295,000 rows,    271,090 labels,      67 rows/s, elapsed 4,387 s
+  pass 1:    300,000 rows,    275,545 labels,      68 rows/s, elapsed 4,437 s
+  pass 1:    305,000 rows,    280,163 labels,      68 rows/s, elapsed 4,472 s
+  pass 1:    310,000 rows,    284,794 labels,      69 rows/s, elapsed 4,522 s
+  pass 1:    315,000 rows,    289,221 labels,      69 rows/s, elapsed 4,569 s
+  pass 1:    320,000 rows,    292,954 labels,      69 rows/s, elapsed 4,608 s
+  pass 1:    325,000 rows,    296,931 labels,      70 rows/s, elapsed 4,634 s
+  pass 1:    335,000 rows,    305,672 labels,      71 rows/s, elapsed 4,727 s
+  pass 1:    340,000 rows,    309,877 labels,      71 rows/s, elapsed 4,769 s
+  pass 1:    345,000 rows,    313,835 labels,      72 rows/s, elapsed 4,797 s
+  pass 1:    355,000 rows,    322,504 labels,      73 rows/s, elapsed 4,893 s
+  pass 1:    360,000 rows,    326,955 labels,      73 rows/s, elapsed 4,946 s
+  pass 1:    365,000 rows,    331,531 labels,      73 rows/s, elapsed 4,983 s
+  pass 1:    375,000 rows,    339,538 labels,      74 rows/s, elapsed 5,079 s
+  pass 1:    380,000 rows,    344,037 labels,      74 rows/s, elapsed 5,128 s
+  pass 1:    385,000 rows,    348,437 labels,      75 rows/s, elapsed 5,159 s
+  pass 1:    390,000 rows,    352,759 labels,      75 rows/s, elapsed 5,205 s
+  pass 1:    395,000 rows,    357,193 labels,      75 rows/s, elapsed 5,253 s
+  pass 1:    405,000 rows,    365,846 labels,      76 rows/s, elapsed 5,330 s
+  pass 1:    410,000 rows,    370,097 labels,      76 rows/s, elapsed 5,378 s
+  pass 1:    415,000 rows,    374,222 labels,      77 rows/s, elapsed 5,417 s
+  pass 1:    420,000 rows,    378,273 labels,      77 rows/s, elapsed 5,455 s
+  pass 1:    425,000 rows,    382,520 labels,      77 rows/s, elapsed 5,486 s
+  pass 1:    430,000 rows,    386,841 labels,      78 rows/s, elapsed 5,533 s
+  pass 1:    435,000 rows,    391,050 labels,      78 rows/s, elapsed 5,576 s
+  pass 1:    440,000 rows,    395,159 labels,      78 rows/s, elapsed 5,618 s
+  pass 1:    445,000 rows,    399,129 labels,      79 rows/s, elapsed 5,645 s
+  pass 1:    450,000 rows,    403,021 labels,      79 rows/s, elapsed 5,682 s
+  pass 1:    455,000 rows,    406,969 labels,      80 rows/s, elapsed 5,721 s
+  pass 1:    460,000 rows,    410,403 labels,      80 rows/s, elapsed 5,766 s
+  pass 1:    470,000 rows,    417,152 labels,      81 rows/s, elapsed 5,837 s
+  pass 1:    480,000 rows,    423,889 labels,      81 rows/s, elapsed 5,930 s
+  pass 1:    485,000 rows,    427,275 labels,      81 rows/s, elapsed 5,958 s
+  pass 1:    495,000 rows,    433,749 labels,      82 rows/s, elapsed 6,048 s
+[LIMIT] reached max_rows=500,000
+Pass 1 done: 500,000 rows consumed, 436,772 labels written.

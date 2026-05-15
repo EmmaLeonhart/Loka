@@ -1,0 +1,3 @@
+Watching training\logs\v14_resume_train.log for epoch completions on model v14.
+Snapshotting training\checkpoints\wikidata_v14.pt on each epoch.
+Pushing to EmmaLeonhart/loka as tags v14.N

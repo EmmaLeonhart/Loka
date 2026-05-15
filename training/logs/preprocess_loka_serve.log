@@ -1,0 +1,4 @@
+Error: sled error: IO error: could not acquire lock on "loka-data-cron-c1\\db": Os { code: 33, kind: Uncategorized, message: "The process cannot access the file because another process has locked a portion of the file." }
+
+Caused by:
+    IO error: could not acquire lock on "loka-data-cron-c1\\db": Os { code: 33, kind: Uncategorized, message: "The process cannot access the file because another process has locked a portion of the file." }
