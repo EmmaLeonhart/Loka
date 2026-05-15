@@ -21,6 +21,17 @@ Usage:
 Stops when the training log indicates final save ("Saved checkpoint to")
 OR when the log file hasn't grown for --idle-timeout-seconds (default 1
 hour — covers epoch-1 warmup plus a margin).
+
+ONE LOG FILE PER TRAINING INVOCATION. The watcher exits the instant it
+reads a "Saved checkpoint to" line (train.py prints this once, after its
+epoch loop). If you resume/continue a model with a second train.py run,
+that run MUST write to a *fresh* log file — do not append to the previous
+run's log. A watcher pointed at an appended log would re-read the stale
+"Saved checkpoint to" from the first run and exit before ever seeing the
+continued epochs. (Learned the hard way on the v14 5→10-epoch resume,
+2026-05-15: pusher exited after v14.5, the 6–10 run needed its own log
+`v14_resume_train.log` + its own watcher. The startup catch-up scan then
+backfills any missing tags, so v14.1–5 were not re-pushed.)
 """
 from __future__ import annotations
 
