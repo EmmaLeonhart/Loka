@@ -146,6 +146,24 @@ def main() -> None:
              "vocab. The first 7 special token IDs (PAD/CLS/SEP_S/SEP_P/SEP_O/MASK/UNK) "
              "are stable across both paths so the masked-prediction loop is unchanged.",
     )
+    parser.add_argument(
+        "--resume-from",
+        default=None,
+        help="Path to a checkpoint .pt to resume from. Restores model weights, "
+             "and the AdamW optimizer state if the checkpoint has it (checkpoints "
+             "saved before optimizer-state support only restore weights — Adam "
+             "restarts fresh, expect a small transient bump in the first resumed "
+             "epoch before the curve continues descending).",
+    )
+    parser.add_argument(
+        "--start-epoch",
+        type=int,
+        default=1,
+        help="Epoch number to start the loop at (default 1). Use with --resume-from "
+             "to continue numbering: e.g. --start-epoch 6 --epochs 10 trains epochs "
+             "6 through 10 and logs them as 'epoch 6/10' so per-epoch tooling "
+             "(epoch_snapshot_pusher) tags them v{N}.6 .. v{N}.10.",
+    )
     args = parser.parse_args()
 
     random.seed(args.seed)
@@ -204,10 +222,24 @@ def main() -> None:
     )
     loss_fn = nn.CrossEntropyLoss(ignore_index=-100)
 
+    if args.resume_from:
+        ckpt = torch.load(args.resume_from, map_location=device)
+        model.load_state_dict(ckpt["model_state"])
+        if "optimizer_state" in ckpt:
+            optim.load_state_dict(ckpt["optimizer_state"])
+            print(f"Resumed model + optimizer state from {args.resume_from} "
+                  f"(was epoch {ckpt.get('epoch', '?')})", file=sys.stderr)
+        else:
+            print(f"Resumed model weights from {args.resume_from} "
+                  f"(was epoch {ckpt.get('epoch', '?')}); checkpoint has NO "
+                  f"optimizer state — AdamW restarts fresh. Expect a small "
+                  f"perplexity bump in epoch {args.start_epoch} before the "
+                  f"curve resumes descending.", file=sys.stderr)
+
     Path(args.checkpoint).parent.mkdir(parents=True, exist_ok=True)
 
     model.train()
-    for epoch in range(1, args.epochs + 1):
+    for epoch in range(args.start_epoch, args.epochs + 1):
         epoch_loss = 0.0
         n_batches = 0
         t0 = time.time()
@@ -239,6 +271,7 @@ def main() -> None:
         torch.save(
             {
                 "model_state": model.state_dict(),
+                "optimizer_state": optim.state_dict(),
                 "vocab_size": len(vocab),
                 "config": {
                     "d_model": args.d_model,
