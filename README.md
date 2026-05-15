@@ -123,6 +123,23 @@ The corpus is one tab-separated `subject\tpredicate\tobject\n` line per claim, E
 
 Full training pipeline + paper live under `training/`, `tools/`, `paper/`, `scripts/`. See `DEVLOG.md` for the v3 → v12 history including the v7 catalog-noise discovery (76 % of v6 corpus was external identifiers), the v9/v10 cron-loop automation, and the v11–v14 pipeline pivot.
 
+### 🤝 Contributing GPU time (v14)
+
+**v14 is out of practical reach on the maintainer's hardware.** [EmmaLeonhart](https://github.com/EmmaLeonhart)'s training box is a laptop (RTX 4070 *Laptop*, 8 GB VRAM). v11 / v12 / v13 fit in that envelope at `--batch-size 16`; v14 (4 M-triple corpus × 10 epochs ≈ 40 h sustained exclusive GPU) does not.
+
+**If you have a GPU and time to donate**, the entire run is one command:
+
+```bash
+huggingface-cli login   # paste YOUR HF token (not Emma's)
+python tools/contribute_v14_training.py --hf-user YOUR_HF_USERNAME
+```
+
+The script pulls the v14-1M corpus from `EmmaLeonhart/normalized-wikidata` and the BPE tokenizer from `EmmaLeonhart/loka@v12`, trains 10 epochs of the standard 44.5 M-parameter architecture at batch 16, and pushes every epoch to **your** HF account as `<your-user>/loka-v14-contribution` tagged `v14.1` through `v14.10`. Even if a late epoch dies, every earlier epoch is preserved on HF.
+
+**Please open a GitHub issue at <https://github.com/EmmaLeonhart/Loka/issues> before you start** so the work doesn't get duplicated, and comment on it with your HF link when done — Emma can then mirror your result to `EmmaLeonhart/loka@v14` and credit you.
+
+Wall-time estimate at batch 16: ~4 h/epoch on an RTX 4090, ~8 h/epoch on an RTX 4070 Laptop. Full instructions and the rationale for the contributor path live at <https://sutradb.org/contribute/>.
+
 ## What's New in v0.3
 
 - **Loka Studio pre-built binaries** — Windows, Linux, and macOS desktop apps ship with every release. No Flutter SDK required.
