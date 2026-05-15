@@ -1,14 +1,14 @@
 {
-  "name": "loka-wikidata-v12",
-  "version": "v12",
+  "name": "loka-wikidata-v13",
+  "version": "v13",
   "released": "2026-05-14",
   "repo_id": "EmmaLeonhart/loka",
   "repo_type": "dataset",
-  "revision": "v12",
+  "revision": "v13",
   "files": {
     "checkpoint": {
-      "in_repo": "checkpoints/wikidata_v12.pt",
-      "local": "training/checkpoints/wikidata_v12.pt",
+      "in_repo": "checkpoints/wikidata_v13.pt",
+      "local": "training/checkpoints/wikidata_v13.pt",
       "size_mb": 178.2
     },
     "vocab": {
@@ -22,5 +22,5 @@
       "size_mb": 1.0
     }
   },
-  "notes": "Second model in the normalized-wikidata series. Trained on the v12-100k corpus (671,817 clean triples, ~1.9x the size of v11's v11-50k corpus) using the same 44.5M-parameter BPE architecture. Per-epoch trajectory was disrupted by another LLaMA 3.1 8B experiment sharing the laptop's 8 GB GPU mid-training: epochs 2-4 ran cleanly at 32-41 min each (ppl 343.18 -> 238.05 -> 226.86, hitting the v12 best at epoch 4), then epochs 5-7 went to 175-191 min each as GPU contention corrupted Adam's momentum state and the loss diverged (ppl 243.59 -> 250.82 -> 257.77). Training process was killed externally at epoch 7. We ship the epoch-6 snapshot (taken before the divergence got worse) at ppl 250.82. Even degraded, v12 is meaningfully better than v11 (ppl 279.12 at 3 epochs) — the bigger and cleaner corpus is showing through. A clean retrain on an exclusive GPU would land closer to the epoch-4 trajectory (~225 ppl). Pinning the epoch-6 ckpt for the series consistency; future cycles may revisit v12 with a clean retrain. Companion dataset on HF: EmmaLeonhart/normalized-wikidata tag v12-100k."
+  "notes": "Third rung of the normalized-wikidata series, trained on the v13-500k corpus (2,511,771 clean labeled triples, 3.7x v12's size). Same 44.5M-parameter BPE architecture. Per-epoch trajectory: epoch 1 ppl 334.76 (epoch 1 is much stronger than v11's 6577 or v12's 1334 — bigger corpus = stronger first-epoch gradient signal), epoch 2 ppl 242.75 (best), then plateau drift 248.29 -> 258.42 -> 256.04 over epochs 3-5. The drift is classic Adam-momentum plateau behaviour on an exclusive 80W-capped laptop GPU (verified via nvidia-smi: 74W actual, 74C, 83% GPU util, no contention) — not the v12-style multi-rail divergence. Per-epoch snapshots tagged v13.1 through v13.5 on HF; the canonical v13 is the epoch-2 ckpt at ppl 242.75. Future contributor runs with larger batch sizes (24GB+ VRAM) may find a deeper basin — see pages/contribute/index.html for the hardware-constraint rationale. Companion dataset: EmmaLeonhart/normalized-wikidata tag v13-500k. v14 partial-local training (5 epochs on the 4M-triple v14-1M corpus) started in parallel."
 }

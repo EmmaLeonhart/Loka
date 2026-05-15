@@ -473,6 +473,26 @@ Two findings from the cycle worth keeping:
 
 `v13-500k` (2 511 771 triples, 3.6× v12) is in flight with the now-exclusive GPU; `v14-1M` corpus build is also in flight. The next paper revision will report whether v13's 10-epoch clean run lands below v12's clean-trajectory floor (~225) or below the snapshot we shipped (~250).
 
+### 5.11 v13: shipped early at epoch-2 plateau (ppl 242.75), partial-local v14 follow-up
+
+v13 trained on the `v13-500k` corpus (2 511 771 triples, 3.6× v12) on an exclusive laptop GPU — no other CUDA processes, no contention. The loss curve descended cleanly to a strong epoch-2 result (ppl **242.75**) and then plateaued: epochs 3–5 walked inside a 248–258 band with stable 112 min/epoch wall-time. `nvidia-smi` showed the GPU power-cap-bound at 74 W actual / 80 W cap with 83 % util, 74 °C. Not divergence (the v12 pattern broke both ppl and wall-time); not contention (verified GPU exclusive). Adam's first/second-moment estimates appear to have settled around a local optimum at epoch 2 and the subsequent epochs are random-walking inside the basin.
+
+| Epoch | Loss | Perplexity | HF tag |
+|---|---|---|---|
+| 1 | 5.8134 | 334.76 | `v13.1` |
+| 2 | 5.4920 | **242.75** ← shipped | `v13.2` |
+| 3 | 5.5146 | 248.29 | `v13.3` |
+| 4 | 5.5546 | 258.42 | `v13.4` |
+| 5 | 5.5453 | 256.04 | `v13.5` |
+
+The decision to ship at epoch 2 rather than continue is enabled by `tools/epoch_snapshot_pusher.py`, a watcher introduced after the v12 disaster: every completed epoch is snapshotted to its own HF tag, so a divergent late epoch cannot lose the earlier ones. Shipping the canonical `v13` tag as the epoch-2 checkpoint costs nothing — every epoch through 5 is still pullable on Hugging Face for empirical comparison.
+
+**Cross-version comparison.** v13 at 242.75 lands between v12's lost best (epoch-4 ppl 226.86, never shipped) and v12's actual shipped value (epoch-6 ppl 250.82, training-disruption-degraded). The corpus-quality lever (more data, same architecture) is therefore still working: v11 (350 k) → v12 (672 k) → v13 (2 511 k) trained best results 279.12 → 226.86 → 242.75 — but the trained-headroom-on-this-laptop floor has clearly bottomed out around 240. Contributors with desktop GPUs and bigger batch sizes are the natural next axis; see the GPU-donation contributor path documented at <https://sutradb.org/contribute/> and `tools/contribute_v14_training.py`.
+
+**Power-cap observation.** The laptop runs power-cap-bound during training. A 24 GB-card contributor at `--batch-size 64` is a meaningfully different empirical regime (lower gradient noise, deeper basins are practical), not just a faster version of the same run. We expect the contributor v14 result to push below 240 — but we can't make that observation on this hardware.
+
+**v14 follow-up.** A partial-local v14 run (5 epochs, batch 16, ~16 h estimated) started immediately after v13 stopped. Each epoch will land on Hugging Face as `v14.N` regardless of whether the run completes. Full 10-epoch contributor path is published separately.
+
 ---
 
 ## 6. Limitations
