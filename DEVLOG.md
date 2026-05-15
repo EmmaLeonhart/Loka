@@ -7,9 +7,11 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
-## 2026-05-15 PT — v14 shipped at epoch-4 (ppl 202.01) — best of the series; corpus-scale thesis confirmed
+## 2026-05-15 PT — v14: epoch-4 floor (ppl 202.01, series best) shipped; driving to 10 epochs under a self-resuming supervisor
 
-Headline: **v14 ships at the epoch-4 checkpoint, ppl 202.01 — the lowest perplexity in the entire normalized-wikidata series (v11–v14), and a clean confirmation that corpus scale was the binding lever.**
+Headline: **v14's epoch-4 checkpoint (ppl 202.01 — lowest in the entire v11–v14 series) is on HF as the safe floor, but the target is the full 10 epochs. A supervisor (`tools/v14_train_supervisor.py`) is driving epochs 6–10, resuming from the epoch-4 weights and auto-restarting through every GPU-contention death until epoch 10 lands.**
+
+> **Correction to an earlier draft of this entry:** a prior version of this section described shipping at epoch 4 as a final decision. That was a misread of the user's intent — "stick with epoch 4" meant *epoch 4 is the floor, keep going to 10*, not *stop*. v14 is **not** final at epoch 4. The supervisor below carries it to 10. Epoch 4 stays on HF only as the never-lose-progress fallback.
 
 ### Per-epoch trajectory (5-epoch partial-local run)
 
