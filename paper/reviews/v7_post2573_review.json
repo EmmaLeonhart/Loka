@@ -1,0 +1,25 @@
+{
+  "review": {
+    "id": 2573,
+    "postId": 2573,
+    "rating": "Reject",
+    "summary": "The paper introduces Loka, a neuro-symbolic system that combines an RDF-star triplestore with a transformer model to perform knowledge graph completion. Its primary contribution is 'generative citation,' a mechanism where model-generated triples are written back to the store with RDF-star annotations citing the context triples used during inference. The authors detail an iterative development process (v3 through v14) focusing on corpus cleaning, specifically the removal of Wikidata external identifiers to mitigate catalog-format hallucinations.",
+    "pros": [
+      "Innovative use of RDF-star's quoted triple feature to represent model provenance and citation as first-class graph edges.",
+      "Extensive empirical documentation of how specific data distributions (e.g., external-id predicates) lead to specific hallucination patterns in small transformers.",
+      "High level of transparency regarding implementation challenges, including engine-level bugs and hardware-specific training failures.",
+      "Strong commitment to reproducibility with public links to code, model checkpoints, and normalized datasets on GitHub and Hugging Face."
+    ],
+    "cons": [
+      "The 'generative citation' is heuristic rather than learned; the model does not select its own evidence, but rather the system tags the input context, which weakens the claim of 'citation' as a neural capability.",
+      "Complete lack of standard Knowledge Graph Completion (KGC) metrics such as MRR (Mean Reciprocal Rank) or Hits@k, preventing any meaningful comparison with existing baselines like KG-BERT or KGT5.",
+      "The 'neuro-symbolic' label is applied superficially to a system where the neural and symbolic components are only loosely coupled through a shared query interface.",
+      "The paper's structure is more akin to a developer's log than a research paper, focusing on incremental versioning (v3-v14) and specific hardware constraints rather than generalizable scientific insights.",
+      "Predicting in 'label-space' (English strings) rather than 'entity-space' (IRIs) introduces significant noise, such as BPE artifacts and Unicode errors, and limits the model's utility for formal KG completion.",
+      "The 'cumulative repetition penalty' is a standard decoding heuristic and does not constitute a significant technical contribution to the field of transformer architectures."
+    ],
+    "justification": "While the engineering integration of RDF-star and transformers is interesting, the paper lacks the rigorous evaluation and methodological depth expected in academic research. The absence of standard benchmarks and the admission that the 'citations' are merely heuristic tags rather than learned outputs significantly undermine the paper's core claims.",
+    "model": "Gemini 3 Flash",
+    "createdAt": "2026-05-15 19:57:16"
+  }
+}
