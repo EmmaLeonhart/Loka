@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Contribute GPU time — Loka v14">
+<meta property="og:description" content="The Loka v11 / v12 / v13 model rungs fit on a laptop GPU. v14 doesn't. If you have a GPU with ≥8 GB VRAM and ~2 days of wall-clock to donate, this page tells you how.">
+<meta name="description" content="How to donate GPU time to train Loka v14, the largest model in the normalized-wikidata series.">
+<title>Contribute GPU time — Loka v14</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f4dc;</text></svg>">
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #e6edf3; --text-muted: #8b949e; --accent: #58a6ff;
+    --accent-hover: #79c0ff; --green: #3fb950; --orange: #d29922;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+         background: var(--bg); color: var(--text); line-height: 1.6; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: var(--accent-hover); text-decoration: underline; }
+  .container { max-width: 820px; margin: 0 auto; padding: 0 20px; }
+  header { padding: 60px 20px 40px; border-bottom: 1px solid var(--border); text-align: center; }
+  header h1 { font-size: 2.2em; margin-bottom: 12px; letter-spacing: -0.02em; }
+  header h1 span { color: var(--accent); }
+  header .tagline { color: var(--text-muted); max-width: 680px; margin: 0 auto; }
+  section { padding: 40px 0; border-bottom: 1px solid var(--border); }
+  section h2 { font-size: 1.5em; margin-bottom: 16px; }
+  section h3 { font-size: 1.15em; margin: 24px 0 8px; }
+  p { margin-bottom: 12px; }
+  ul, ol { margin: 8px 0 16px 24px; }
+  li { margin-bottom: 6px; }
+  pre { background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+        padding: 16px; overflow-x: auto; font-size: 0.9em;
+        font-family: 'SFMono-Regular', Consolas, monospace; margin: 12px 0; }
+  code { background: var(--surface); padding: 2px 6px; border-radius: 4px; font-size: 0.9em;
+         font-family: 'SFMono-Regular', Consolas, monospace; }
+  pre code { background: transparent; padding: 0; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.95em; }
+  th, td { padding: 8px 12px; border-bottom: 1px solid var(--border); text-align: left; }
+  th { background: var(--surface); }
+  .callout { background: var(--surface); border-left: 3px solid var(--accent);
+             padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+  .callout strong { color: var(--accent-hover); }
+  .btn { display: inline-block; padding: 10px 20px; border-radius: 6px;
+         background: var(--accent); color: var(--bg) !important; font-weight: 600;
+         text-decoration: none; }
+  .btn:hover { background: var(--accent-hover); text-decoration: none; }
+  footer { text-align: center; padding: 32px 20px; color: var(--text-muted); font-size: 0.9em; }
+</style>
+</head>
+<body>
+
+<nav style="padding:12px 24px;border-bottom:1px solid #30363d;display:flex;align-items:center;gap:24px;font-size:0.9em;flex-wrap:wrap;">
+  <a href="/" style="font-weight:700;font-size:1.1em;color:#e6edf3;text-decoration:none;"><span style="color:#58a6ff;">Loka</span></a>
+  <a href="/loka/" style="color:#8b949e;">World Model</a>
+  <a href="/history/" style="color:#8b949e;">History</a>
+  <a href="/contribute/" style="color:#58a6ff;font-weight:600;">Contribute</a>
+  <a href="https://huggingface.co/datasets/EmmaLeonhart/loka" style="color:#8b949e;">HF: Models</a>
+  <a href="https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata" style="color:#8b949e;">HF: Corpus</a>
+  <a href="https://github.com/EmmaLeonhart/Loka" style="color:#8b949e;">GitHub</a>
+</nav>
+
+<header>
+  <h1>Contribute <span>GPU time</span> &mdash; Loka v14</h1>
+  <p class="tagline">
+    Loka's v11, v12, and v13 model rungs all train on a laptop GPU. v14 (the 4 M-triple top tier) doesn't.
+    If you have a GPU with &ge;8 GB VRAM and roughly two days of wall-clock to donate, this is the one-command path to ship v14.
+  </p>
+</header>
+
+<div class="container">
+
+<section>
+  <h2>Why this page exists</h2>
+  <p>
+    The maintainer of this project is <a href="https://github.com/EmmaLeonhart">Emma Leonhart</a>. The development hardware is a laptop with an
+    NVIDIA RTX 4070 <em>Laptop</em> GPU (8 GB VRAM, 35&ndash;115 W TGP). Three rungs of the normalized-wikidata model series &mdash;
+    <a href="https://huggingface.co/datasets/EmmaLeonhart/loka/tree/v11"><code>v11</code></a> (350 k triples),
+    <a href="https://huggingface.co/datasets/EmmaLeonhart/loka/tree/v12"><code>v12</code></a> (672 k triples), and
+    <a href="https://huggingface.co/datasets/EmmaLeonhart/loka"><code>v13</code></a> (2.5 M triples, training in flight as of 2026-05-14)
+    &mdash; all fit within that envelope at <code>--batch-size 16</code>.
+  </p>
+  <p>
+    The fourth rung, <strong>v14 on the 4 M-triple <code>v14-1M</code> corpus</strong>, doesn't. Rough estimate: 10 epochs &times; ~4 h/epoch on
+    an RTX 4090 = ~40 h of <em>exclusive</em> GPU. On the 4070 Laptop, the same run would be ~80 h. That's outside what the maintainer can
+    practically dedicate to the project on her own hardware.
+  </p>
+  <p>
+    The training data is already public &mdash;
+    <a href="https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata/tree/v14-1M"><code>EmmaLeonhart/normalized-wikidata@v14-1M</code></a>
+    on Hugging Face, 4 021 409 clean labeled triples, CC-BY-SA 4.0 (inherits from Wikidata). The training code is in this repository.
+    What's missing is the wall-time. If that's something you can spare, this page tells you how.
+  </p>
+</section>
+
+<section>
+  <h2>What you'd be doing, in one command</h2>
+  <pre><code>git clone https://github.com/EmmaLeonhart/Loka
+cd Loka
+
+# Authenticate with YOUR Hugging Face account
+huggingface-cli login
+
+# Run the contributor script
+python tools/contribute_v14_training.py --hf-user YOUR_HF_USERNAME</code></pre>
+  <p>The script handles everything from there:</p>
+  <ol>
+    <li>Pulls the <code>v14-1M</code> training corpus from Hugging Face (~180 MB, cached on first run).</li>
+    <li>Pulls the BPE tokenizer and vocab from <code>EmmaLeonhart/loka@v12</code>.</li>
+    <li>Ensures a Hugging Face dataset repo exists under <strong>your</strong> account &mdash; default <code>&lt;your-user&gt;/loka-v14-contribution</code>.</li>
+    <li>Runs <code>training/train.py</code> for 10 epochs at the standard architecture (44.5 M parameters, BPE, 6 layers, batch 16).</li>
+    <li>Runs <code>tools/epoch_snapshot_pusher.py</code> in parallel, which watches the training log and uploads each completed epoch's checkpoint to your HF repo, tagged <code>v14.1</code>, <code>v14.2</code>, ... <code>v14.10</code>.</li>
+    <li>If a late epoch crashes for any reason, every earlier epoch is already preserved both locally and on Hugging Face. (This safety net was added after the v12 disaster &mdash; see <a href="/history/#may-2026-pipeline-rebuild">history</a>.)</li>
+  </ol>
+</section>
+
+<section>
+  <h2>Estimated wall-time, by hardware</h2>
+  <table>
+    <thead><tr><th>GPU</th><th>Per epoch</th><th>10 epochs total</th></tr></thead>
+    <tbody>
+      <tr><td>RTX 4090 (24 GB)</td><td>~4 h</td><td>~40 h</td></tr>
+      <tr><td>RTX 4080 (16 GB)</td><td>~5 h</td><td>~50 h</td></tr>
+      <tr><td>RTX 3090 (24 GB)</td><td>~6 h</td><td>~60 h</td></tr>
+      <tr><td>RTX 4070 Laptop (8 GB) <em>&mdash; the project's box</em></td><td>~8 h</td><td>~80 h</td></tr>
+      <tr><td>A100 / H100 (cloud)</td><td>~1&ndash;2 h</td><td>~10&ndash;20 h</td></tr>
+    </tbody>
+  </table>
+  <p>
+    If you have less than 8 GB VRAM, the script will likely OOM in epoch 1. If you have more, you can pass <code>--batch-size 32</code> or higher and finish proportionally faster.
+  </p>
+</section>
+
+<section>
+  <h2>Before you start &mdash; please raise a GitHub issue</h2>
+  <div class="callout">
+    <strong>Please raise an issue at <a href="https://github.com/EmmaLeonhart/Loka/issues">github.com/EmmaLeonhart/Loka/issues</a> before kicking off training.</strong>
+    Otherwise the maintainer has no idea anyone is running this, and two contributors might duplicate the work.
+  </div>
+  <p>Issue template (copy-paste, fill in the placeholders):</p>
+  <pre><code>Title: [v14] GPU donation: planning to train
+
+Body:
+Hi! Going to run `tools/contribute_v14_training.py --hf-user &lt;mine&gt;` on my hardware.
+
+System:
+- GPU: &lt;your-GPU&gt;
+- VRAM: &lt;X GB&gt;
+- Estimated wall-clock: ~&lt;hours&gt; h
+
+Will update this issue with the HF link to &lt;your-user&gt;/loka-v14-contribution
+when the run is in progress / complete.
+</code></pre>
+  <p>When the run finishes, please comment on the same issue with the HF link &mdash; Emma can then mirror your result to <code>EmmaLeonhart/loka@v14</code> and credit you in the paper.</p>
+</section>
+
+<section>
+  <h2>What gets pushed to your HF account, and who owns it</h2>
+  <p>
+    Each epoch's checkpoint is pushed to <strong>your</strong> Hugging Face account as <code>&lt;your-user&gt;/loka-v14-contribution</code>, tagged <code>v14.N</code>. You own that repo and the upload uses your token, not Emma's. The training script never has access to <code>EmmaLeonhart/loka</code>'s write credentials.
+  </p>
+  <p>
+    After you comment on the GitHub issue, Emma mirrors your result to <code>EmmaLeonhart/loka@v14</code> (a separate, explicit step), updates <code>MODEL.json</code> to pin v14, and adds your contribution to the paper's acknowledgements section. Your repo stays in place as the canonical original.
+  </p>
+</section>
+
+<section>
+  <h2>Cost (if you don't have hardware locally)</h2>
+  <p>
+    If you're considering a cloud GPU, the rough budget:
+  </p>
+  <table>
+    <thead><tr><th>Provider</th><th>GPU class</th><th>Approx hourly</th><th>Approx total (10 epochs)</th></tr></thead>
+    <tbody>
+      <tr><td>RunPod</td><td>RTX 4090</td><td>~$0.40</td><td>~$16</td></tr>
+      <tr><td>RunPod / Vast.ai</td><td>RTX 3090</td><td>~$0.30</td><td>~$18</td></tr>
+      <tr><td>Lambda Labs</td><td>A100 (40 GB)</td><td>~$1.10</td><td>~$15</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Emma is not paying for cloud GPU on this project, so v14 stays on the donor-only path. But if you're already paying for cloud GPU for other work and have a spare day's worth of compute, this is a fairly small budget to put a meaningful result on Hugging Face.
+  </p>
+</section>
+
+<section>
+  <h2>What you get out of it</h2>
+  <ul>
+    <li>The training run is your repo on Hugging Face &mdash; <code>&lt;your-user&gt;/loka-v14-contribution</code>. Your name on the artifact.</li>
+    <li>Acknowledgement in the paper draft (<a href="https://github.com/EmmaLeonhart/Loka/blob/main/paper/paper.md"><code>paper/paper.md</code></a>) when v14 is folded into the model series.</li>
+    <li>A reproducible reference run on the largest tier of the normalized-wikidata corpus &mdash; useful infrastructure for downstream world-model work.</li>
+    <li>The 4 M-triple <code>v14-1M</code> corpus on Hugging Face is independently useful for any KG-grounded language modelling project, and your trained checkpoint becomes a credible baseline for it.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Anything else?</h2>
+  <p>
+    If something fails or you want to do something different from the default recipe (more epochs, different architecture, a different corpus tier), open an issue and we'll figure it out. The contributor script is intentionally simple &mdash; one corpus, one model size, one batch size that fits 8 GB &mdash; but the underlying training code (<code>training/train.py</code>) supports everything that v3 onward supported.
+  </p>
+  <p>
+    Thank you for considering this. The whole project is open-source under Apache 2.0, the corpus is CC-BY-SA 4.0, and your contribution moves the entire normalized-wikidata model series forward.
+  </p>
+  <p style="margin-top: 24px;">
+    <a class="btn" href="https://github.com/EmmaLeonhart/Loka/issues/new">Open a GitHub issue</a>
+    &nbsp;&nbsp;
+    <a class="btn" style="background: var(--surface); color: var(--text) !important; border: 1px solid var(--border);" href="https://github.com/EmmaLeonhart/Loka/blob/main/tools/contribute_v14_training.py">Read the contributor script</a>
+  </p>
+</section>
+
+</div>
+
+<footer>
+  <p>
+    <a href="/">Home</a> &middot;
+    <a href="/loka/">World Model</a> &middot;
+    <a href="/history/">History</a> &middot;
+    <a href="https://huggingface.co/datasets/EmmaLeonhart/loka">HF: Models</a> &middot;
+    <a href="https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata">HF: Corpus</a> &middot;
+    <a href="https://github.com/EmmaLeonhart/Loka">GitHub</a>
+  </p>
+</footer>
+
+</body>
+</html>
