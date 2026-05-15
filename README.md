@@ -4,9 +4,9 @@ A lean, high-performance RDF-star triplestore written in Rust with native HNSW v
 
 [![CI](https://github.com/EmmaLeonhart/Loka/actions/workflows/ci.yml/badge.svg)](https://github.com/EmmaLeonhart/Loka/actions/workflows/ci.yml)
 
-**[sutradb.org](https://sutradb.org)** — Documentation, theory, and interactive visualizations.
+**[loka.emmaleonhart.com](https://loka.emmaleonhart.com)** — Documentation, theory, and interactive visualizations.
 
-> **Status: Developer Preview.** Core engine, SPARQL+, vector indexing, HTTP server, ACID compliance, self-update, and MCP server are fully functional. APIs may evolve before 1.0. See the [Roadmap](https://sutradb.org/roadmap/) for what's done and what's next.
+> **Status: Developer Preview.** Core engine, SPARQL+, vector indexing, HTTP server, ACID compliance, self-update, and MCP server are fully functional. APIs may evolve before 1.0. See the [Roadmap](https://loka.emmaleonhart.com/roadmap/) for what's done and what's next.
 
 > **AI Agents:** If you are an AI agent setting up a database, see **[Agent Setup Guide](docs/AGENT_SETUP.md)** for complete CLI reference, API endpoints, and step-by-step instructions. Loka is designed to be fully operable by AI agents without ever touching a GUI. **Start with serverless mode** (just open a `.sdb` file, no server needed) — only use server mode for multi-client or remote access scenarios.
 
@@ -138,7 +138,7 @@ The script pulls the v14-1M corpus from `EmmaLeonhart/normalized-wikidata` and t
 
 **Please open a GitHub issue at <https://github.com/EmmaLeonhart/Loka/issues> before you start** so the work doesn't get duplicated, and comment on it with your HF link when done — Emma can then mirror your result to `EmmaLeonhart/loka@v14` and credit you.
 
-Wall-time estimate at batch 16: ~4 h/epoch on an RTX 4090, ~8 h/epoch on an RTX 4070 Laptop. Full instructions and the rationale for the contributor path live at <https://sutradb.org/contribute/>.
+Wall-time estimate at batch 16: ~4 h/epoch on an RTX 4090, ~8 h/epoch on an RTX 4070 Laptop. Full instructions and the rationale for the contributor path live at <https://loka.emmaleonhart.com/contribute/>.
 
 ## What's New in v0.3
 
