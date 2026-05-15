@@ -7,6 +7,49 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-05-14 PT — v13 shipped at epoch-2 (ppl 242.75); v14 partial-local started
+
+Headline: **v13 ships at the epoch-2 snapshot, ppl 242.75 on the 2,511,771-triple `v13-500k` corpus.** Trained 5 of a planned 10 epochs; trajectory plateaued in the 240–260 band after epoch 2 (classic Adam-momentum behaviour, *not* contention divergence — wall-time was stable at 112 min/epoch and `nvidia-smi` showed exclusive GPU at 74 W actual / 80 W cap, 74 °C, 83 % util). Per-epoch snapshots `v13.1` through `v13.5` are all on Hugging Face via `tools/epoch_snapshot_pusher.py`; the canonical `v13` tag is the epoch-2 checkpoint.
+
+### Per-epoch trajectory
+
+| Epoch | Loss | Perplexity | Wall | HF tag |
+|---|---|---|---|---|
+| 1 | 5.8134 | 334.76 | 6 858 s (114 min) | `v13.1` |
+| 2 | 5.4920 | **242.75** ← shipped | 6 863 s (114 min) | `v13.2` |
+| 3 | 5.5146 | 248.29 | 6 740 s (112 min) | `v13.3` |
+| 4 | 5.5546 | 258.42 | 6 738 s (112 min) | `v13.4` |
+| 5 | 5.5453 | 256.04 | 6 732 s (112 min) | `v13.5` |
+| — | — | training stopped at user direction; epoch-2 promoted to canonical | — | `v13` |
+
+### Why we shipped early
+
+The plan was 10 epochs but the loss curve clearly plateaued. The decision rule was documented in `queue.md` before the run: "if epoch 5 stays in the 240–270 band, stop v13 and front-run partial-v14." Three reasons to make that call:
+
+1. **It's Adam plateau, not progress.** Adam's first/second-moment estimates settled around an optimum at epoch 2; subsequent epochs are random-walking inside the basin with momentum carrying it slightly outward. Adam's *property*, not a bug.
+2. **Per-epoch snapshots mean no loss.** v13.2 was already on Hugging Face the moment epoch 2 finished. The decision to stop has zero downside on result quality.
+3. **v14 has 1.6× more data.** The corpus-quality lever isn't exhausted; we know it pays (v11 → v12 → v13 each got a clean ppl improvement from corpus growth). v14's 4 M triples on the same laptop is a better use of the remaining GPU-hours than 5 more epochs of v13 at-plateau.
+
+### Comparison across the normalized-wikidata series so far
+
+| Model | Corpus | Triples | Best epoch ppl | Shipped ppl | Epochs trained |
+|---|---|---|---|---|---|
+| v11 | v11-50k | 350 428 | 279.12 (epoch 3) | **279.12** | 3 (CUDA OOM at epoch 4) |
+| v12 | v12-100k | 671 817 | 226.86 (epoch 4) | **250.82** (epoch 6, training corrupted) | 7 |
+| v13 | v13-500k | 2 511 771 | **242.75** (epoch 2) | **242.75** | 5 |
+| v14 | v14-1M | 4 021 409 | (training) | (training) | (5 partial-local + donor path) |
+
+v13 ships slightly worse than v12's lost best (242.75 vs 226.86) and slightly better than v12's actual shipped value (242.75 vs 250.82). The corpus-quality lever is still working — but the *trained-headroom-on-this-laptop* lever has clearly bottomed out around 240-something. Contributors with bigger hardware (`--batch-size 64` on 24 GB cards, full 10 epochs without wall-clock pressure) are the obvious source of meaningfully-lower numbers; see `pages/contribute/index.html`.
+
+### Hardware-bound power observation
+
+`nvidia-smi` during epoch 4 showed the laptop sitting at **74 W actual / 80 W cap** with 83 % GPU util at 74 °C — power-cap-bound, not thermally throttled. Documented in CLAUDE.md and the contribute page: the v13 240–260 plateau may be an artifact of the 80 W TGP budget + batch-16 gradient noise on a single laptop GPU, not a hard data ceiling.
+
+### Next
+
+v14 partial-local training (5 epochs, batch 16) started immediately after v13 stopped. Same epoch_snapshot_pusher setup. Each v14 epoch will land on Hugging Face as `v14.N` regardless of whether the run completes. ETA ~16 hours.
+
+---
 ## 2026-05-14 PT — Documentation sweep + v13 training in flight + per-epoch HF snapshotting
 
 Two things this entry captures, both downstream of the v12 disaster.
