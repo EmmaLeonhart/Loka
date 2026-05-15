@@ -167,6 +167,41 @@ when the run is in progress / complete.
 </section>
 
 <section>
+  <h2>Observed hardware constraints &mdash; and why your hardware might converge differently</h2>
+  <p>
+    The numbers reported in the project's DEVLOG and paper are <strong>laptop numbers</strong>. The 4070 Laptop's sustained TGP cap is
+    ~80&nbsp;W, hit consistently during training (verified via <code>nvidia-smi</code> while v13 was running &mdash; 74&nbsp;W actual /
+    80&nbsp;W cap, 74&nbsp;&deg;C, 83&nbsp;% GPU util). The desktop 4070 has roughly 200&nbsp;W of headroom &mdash; 2.5&times; the
+    sustained power budget &mdash; and an H100 / A100 has much more again.
+  </p>
+  <p>
+    For wall-time this matters in the obvious way (per-epoch time scales roughly inversely with power, modulo memory bandwidth).
+    But it can also change <em>what</em> the model converges to. Adam's momentum and learning-rate schedule interact with batch size,
+    and with more VRAM you can take larger batches &mdash; which changes the gradient noise and sometimes the depth of the basin Adam
+    settles into. The v13 run on Emma's laptop appears to plateau around ppl 240&ndash;260 starting at epoch 2; we don't know yet
+    whether that's the data's information ceiling or whether more aggressive batch sizes + power headroom would push lower. A
+    contributor run on a 24 GB card at <code>--batch-size 64</code> would be a genuinely different empirical data point, not just
+    a faster version of the same run.
+  </p>
+  <p>
+    Concrete things a contributor with better hardware might observe that we can't:
+  </p>
+  <ul>
+    <li><strong>Larger batches</strong> (32, 64, 128) &mdash; lower gradient noise, potentially flatter loss curves, sometimes deeper minima.</li>
+    <li><strong>Higher learning rates</strong> safely &mdash; large-batch training tolerates more aggressive schedules.</li>
+    <li><strong>No 80&nbsp;W power throttling</strong> &mdash; on a desktop GPU the per-batch wall-time is consistent across the run; on the laptop, there's some variance from thermal/power management.</li>
+    <li><strong>Full 10 epochs without hitting a wall-clock budget</strong> &mdash; Emma's local runs cap at 5 epochs to fit a day's budget; a contributor can let it run as long as the loss curve is still descending.</li>
+  </ul>
+  <p>
+    None of this is a blocker for contribution at the laptop-equivalent config. But if you're contributing and have more headroom,
+    feel free to experiment with <code>--batch-size</code> and <code>--epochs</code> flags on
+    <a href="https://github.com/EmmaLeonhart/Loka/blob/main/tools/contribute_v14_training.py">contribute_v14_training.py</a> &mdash;
+    the per-epoch HF snapshots mean every alternate-config run produces shipped artifacts other people can compare against, even if a
+    given experiment turns out worse than baseline.
+  </p>
+</section>
+
+<section>
   <h2>Cost (if you don't have hardware locally)</h2>
   <p>
     If you're considering a cloud GPU, the rough budget:
