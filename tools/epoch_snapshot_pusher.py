@@ -40,23 +40,83 @@ EPOCH_RE = re.compile(
 FINAL_RE = re.compile(r"Saved checkpoint to")
 
 
-def push_to_hf(api, repo_id: str, local_path: Path, repo_path: str, tag: str) -> None:
-    print(f"  [HF] uploading {local_path.name} -> {repo_id}:{repo_path}", flush=True)
-    api.upload_file(
-        path_or_fileobj=str(local_path),
-        path_in_repo=repo_path,
-        repo_id=repo_id,
-        repo_type="dataset",
-        commit_message=f"epoch snapshot: {tag}",
-    )
-    print(f"  [HF] tagging {tag}", flush=True)
-    api.create_tag(
-        repo_id=repo_id,
-        repo_type="dataset",
-        tag=tag,
-        exist_ok=True,
-    )
-    print(f"  [HF] done -> https://huggingface.co/datasets/{repo_id}/tree/{tag}", flush=True)
+def push_to_hf(api, repo_id: str, local_path: Path, repo_path: str, tag: str,
+               max_attempts: int = 4, backoff_seconds: float = 30.0) -> bool:
+    """Push a local file to HF and tag it. Retries on transient errors with
+    exponential backoff. Returns True on success, False on final failure."""
+    last_err = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            print(f"  [HF] uploading {local_path.name} -> {repo_id}:{repo_path} "
+                  f"(attempt {attempt}/{max_attempts})", flush=True)
+            api.upload_file(
+                path_or_fileobj=str(local_path),
+                path_in_repo=repo_path,
+                repo_id=repo_id,
+                repo_type="dataset",
+                commit_message=f"epoch snapshot: {tag}",
+            )
+            print(f"  [HF] tagging {tag}", flush=True)
+            api.create_tag(
+                repo_id=repo_id,
+                repo_type="dataset",
+                tag=tag,
+                exist_ok=True,
+            )
+            print(f"  [HF] done -> https://huggingface.co/datasets/{repo_id}/tree/{tag}",
+                  flush=True)
+            return True
+        except Exception as e:
+            last_err = e
+            wait = backoff_seconds * (2 ** (attempt - 1))
+            print(f"  [HF] attempt {attempt} failed ({type(e).__name__}: {e!s:.120s}); "
+                  f"retrying in {wait:.0f}s", flush=True)
+            time.sleep(wait)
+    print(f"  [HF] giving up on {tag} after {max_attempts} attempts. "
+          f"Last error: {last_err!r}", flush=True)
+    return False
+
+
+def list_hf_tags(api, repo_id: str) -> set[str]:
+    """Return the set of tag names that already exist on the HF repo. Returns
+    an empty set on error (so we'll attempt a push rather than skip)."""
+    try:
+        refs = api.list_repo_refs(repo_id=repo_id, repo_type="dataset")
+        return {t.name for t in refs.tags}
+    except Exception as e:
+        print(f"  [HF] couldn't list tags ({e!r}); assuming none exist", flush=True)
+        return set()
+
+
+def catchup_missed_pushes(api, repo_id: str, ckpt_path: Path, model: str) -> int:
+    """Look for local wikidata_v{model}_epochNN.pt snapshots whose corresponding
+    HF tag v{model}.N doesn't exist; push the missing ones. Returns count pushed.
+
+    This is the self-healing path: if WiFi was down when an epoch landed, the
+    snapshot is still on disk but never made it to HF. On startup and after every
+    new epoch event, we re-scan and catch up.
+    """
+    import re as _re
+    snap_re = _re.compile(_re.escape(ckpt_path.stem) + r"_epoch(\d+)\.pt$")
+    existing_tags = list_hf_tags(api, repo_id)
+    candidates = sorted(ckpt_path.parent.glob(f"{ckpt_path.stem}_epoch*.pt"))
+    pushed = 0
+    for snap in candidates:
+        m = snap_re.search(snap.name)
+        if not m:
+            continue
+        epoch = int(m.group(1))
+        tag = f"v{model}.{epoch}"
+        if tag in existing_tags:
+            continue
+        print(f"  [CATCHUP] tag {tag} missing on HF; pushing {snap.name}", flush=True)
+        ok = push_to_hf(api, repo_id, snap, f"checkpoints/{snap.name}", tag)
+        if ok:
+            pushed += 1
+            existing_tags.add(tag)
+    if pushed:
+        print(f"  [CATCHUP] caught up on {pushed} missed pushes.", flush=True)
+    return pushed
 
 
 def main() -> None:
@@ -87,6 +147,10 @@ def main() -> None:
     print(f"Snapshotting {ckpt_path} on each epoch.", flush=True)
     if not args.no_hf:
         print(f"Pushing to {args.hf_repo} as tags v{model}.N", flush=True)
+        # Startup catch-up: if any local snapshots exist without HF tags,
+        # push them now. Handles the case where the watcher was restarted
+        # mid-run, or where WiFi was out when an epoch happened.
+        catchup_missed_pushes(api, args.hf_repo, ckpt_path, model)
 
     seen_epochs: set[int] = set()
     last_size = 0
@@ -123,22 +187,32 @@ def main() -> None:
                 ppl = m.group("ppl")
                 print(f"[EPOCH {epoch}] loss {loss} ppl {ppl} — snapshotting", flush=True)
 
-                # Snapshot the .pt locally with the epoch suffix.
+                # Snapshot the .pt locally with the epoch suffix. If the
+                # snapshot already exists (e.g. the watcher restarted mid-run),
+                # don't overwrite — the file on disk was saved when the
+                # *correct* epoch was the live ckpt; the current ckpt_path
+                # may have been overwritten by a later epoch.
                 snap = ckpt_path.with_name(f"{ckpt_path.stem}_epoch{epoch:02d}.pt")
-                if not ckpt_path.exists():
+                if snap.exists():
+                    size_mb = snap.stat().st_size / 1_000_000
+                    print(f"  [EXIST] {snap.name} already saved ({size_mb:.1f} MB); not re-copying", flush=True)
+                elif not ckpt_path.exists():
                     print(f"  [WARN] checkpoint {ckpt_path} not yet on disk; skipping snapshot of epoch {epoch}", flush=True)
                     continue
-                shutil.copy2(ckpt_path, snap)
-                size_mb = snap.stat().st_size / 1_000_000
-                print(f"  local snapshot: {snap} ({size_mb:.1f} MB)", flush=True)
+                else:
+                    shutil.copy2(ckpt_path, snap)
+                    size_mb = snap.stat().st_size / 1_000_000
+                    print(f"  local snapshot: {snap} ({size_mb:.1f} MB)", flush=True)
 
                 if api is not None:
                     tag = f"v{model}.{epoch}"
-                    try:
-                        push_to_hf(api, args.hf_repo, snap,
-                                   f"checkpoints/{snap.name}", tag)
-                    except Exception as e:
-                        print(f"  [WARN] HF push failed for epoch {epoch}: {e!r}", flush=True)
+                    push_to_hf(api, args.hf_repo, snap,
+                               f"checkpoints/{snap.name}", tag)
+                    # After every push (success or not), opportunistically
+                    # catch up any older snapshots that might still be
+                    # missing on HF. Handles WiFi-out → epoch-N-pushed-but-
+                    # epoch-(N-1)-missed scenarios.
+                    catchup_missed_pushes(api, args.hf_repo, ckpt_path, model)
 
             pos = f.tell()
 
