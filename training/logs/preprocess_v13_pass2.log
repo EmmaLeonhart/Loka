@@ -1,0 +1,123 @@
+Label cache: training\data\wikidata_labels.sqlite (444,084 entries on open)
+Preloaded 7,312 curated property labels.
+=== Pass 2: emit to training\data\normalized\normalized_wikidata_v13_500k.txt ===
+  pass 2:      5,000 rows,     60,490 written,      20 rows/s, elapsed   245 s
+  pass 2:     10,000 rows,    104,785 written,      23 rows/s, elapsed   443 s
+  pass 2:     15,000 rows,    136,581 written,      25 rows/s, elapsed   604 s
+  pass 2:     20,000 rows,    187,556 written,      27 rows/s, elapsed   750 s
+  pass 2:     25,000 rows,    228,496 written,      28 rows/s, elapsed   877 s
+  pass 2:     30,000 rows,    260,471 written,      30 rows/s, elapsed 1,005 s
+  pass 2:     35,000 rows,    293,930 written,      31 rows/s, elapsed 1,144 s
+  pass 2:     40,000 rows,    322,989 written,      31 rows/s, elapsed 1,286 s
+  pass 2:     45,000 rows,    349,699 written,      33 rows/s, elapsed 1,379 s
+  pass 2:     50,000 rows,    370,396 written,      34 rows/s, elapsed 1,473 s
+  pass 2:     55,000 rows,    397,163 written,      34 rows/s, elapsed 1,609 s
+  pass 2:     60,000 rows,    434,527 written,      34 rows/s, elapsed 1,751 s
+  pass 2:     65,000 rows,    469,194 written,      35 rows/s, elapsed 1,852 s
+  pass 2:     70,000 rows,    503,170 written,      36 rows/s, elapsed 1,967 s
+  pass 2:     75,000 rows,    537,856 written,      36 rows/s, elapsed 2,104 s
+  pass 2:     80,000 rows,    572,237 written,      36 rows/s, elapsed 2,244 s
+  pass 2:     90,000 rows,    634,266 written,      36 rows/s, elapsed 2,477 s
+  pass 2:     95,000 rows,    654,660 written,      37 rows/s, elapsed 2,583 s
+  pass 2:    100,000 rows,    686,999 written,      37 rows/s, elapsed 2,706 s
+  pass 2:    105,000 rows,    710,126 written,      38 rows/s, elapsed 2,791 s
+'The read operation timed out' thrown while requesting GET https://huggingface.co/datasets/philippesaade/wikidata/resolve/f515679220b381e7a00971fb3f077e8391355727/data/chunk_0-00058-of-00546.parquet
+Retrying in 1s [Retry 1/5].
+'[Errno 11001] getaddrinfo failed' thrown while requesting GET https://huggingface.co/datasets/philippesaade/wikidata/resolve/f515679220b381e7a00971fb3f077e8391355727/data/chunk_0-00058-of-00546.parquet
+Retrying in 2s [Retry 2/5].
+  [WARN] stream error after 105,444 rows: RuntimeError('Cannot send a request, as the client has been closed.')
+  [RETRY] sleeping 5s before reopening...
+'[Errno 11001] getaddrinfo failed' thrown while requesting HEAD https://huggingface.co/datasets/philippesaade/wikidata/resolve/f515679220b381e7a00971fb3f077e8391355727/wikidata.py
+Retrying in 1s [Retry 1/5].
+  [WARN] stream error after 105,444 rows: RuntimeError('Cannot send a request, as the client has been closed.')
+  [RETRY] sleeping 5s before reopening...
+  [RESUME] skipping 105,444 rows after retry
+  pass 2:    110,000 rows,    761,338 written,      35 rows/s, elapsed 3,186 s
+'The read operation timed out' thrown while requesting GET https://huggingface.co/datasets/philippesaade/wikidata/resolve/f515679220b381e7a00971fb3f077e8391355727/data/chunk_0-00005-of-00546.parquet
+Retrying in 1s [Retry 1/5].
+'[Errno 11001] getaddrinfo failed' thrown while requesting GET https://huggingface.co/datasets/philippesaade/wikidata/resolve/f515679220b381e7a00971fb3f077e8391355727/data/chunk_0-00005-of-00546.parquet
+Retrying in 2s [Retry 2/5].
+  [WARN] stream error after 113,534 rows: RuntimeError('Cannot send a request, as the client has been closed.')
+  [RETRY] sleeping 5s before reopening...
+  [RESUME] skipping 113,534 rows after retry
+  pass 2:    115,000 rows,    816,011 written,      33 rows/s, elapsed 3,508 s
+  pass 2:    120,000 rows,    857,927 written,      33 rows/s, elapsed 3,679 s
+  pass 2:    125,000 rows,    897,614 written,      33 rows/s, elapsed 3,837 s
+  pass 2:    130,000 rows,    933,290 written,      33 rows/s, elapsed 3,983 s
+  pass 2:    135,000 rows,    983,314 written,      33 rows/s, elapsed 4,150 s
+  pass 2:    140,000 rows,  1,022,512 written,      33 rows/s, elapsed 4,304 s
+  pass 2:    145,000 rows,  1,057,057 written,      33 rows/s, elapsed 4,429 s
+  pass 2:    150,000 rows,  1,086,000 written,      33 rows/s, elapsed 4,577 s
+  pass 2:    155,000 rows,  1,110,219 written,      33 rows/s, elapsed 4,706 s
+  pass 2:    160,000 rows,  1,136,453 written,      33 rows/s, elapsed 4,816 s
+  pass 2:    165,000 rows,  1,158,524 written,      34 rows/s, elapsed 4,923 s
+  pass 2:    170,000 rows,  1,191,858 written,      34 rows/s, elapsed 5,074 s
+  pass 2:    175,000 rows,  1,228,247 written,      33 rows/s, elapsed 5,230 s
+  pass 2:    180,000 rows,  1,263,757 written,      34 rows/s, elapsed 5,360 s
+  pass 2:    185,000 rows,  1,296,743 written,      34 rows/s, elapsed 5,449 s
+  pass 2:    190,000 rows,  1,331,993 written,      34 rows/s, elapsed 5,570 s
+  pass 2:    195,000 rows,  1,365,655 written,      34 rows/s, elapsed 5,711 s
+  pass 2:    200,000 rows,  1,396,927 written,      34 rows/s, elapsed 5,834 s
+  pass 2:    210,000 rows,  1,447,472 written,      35 rows/s, elapsed 6,002 s
+  pass 2:    215,000 rows,  1,475,071 written,      35 rows/s, elapsed 6,104 s
+  pass 2:    220,000 rows,  1,502,659 written,      35 rows/s, elapsed 6,218 s
+  pass 2:    225,000 rows,  1,535,263 written,      36 rows/s, elapsed 6,323 s
+  pass 2:    230,000 rows,  1,562,909 written,      36 rows/s, elapsed 6,428 s
+  pass 2:    235,000 rows,  1,594,405 written,      36 rows/s, elapsed 6,532 s
+  pass 2:    240,000 rows,  1,640,801 written,      36 rows/s, elapsed 6,653 s
+  pass 2:    245,000 rows,  1,671,973 written,      36 rows/s, elapsed 6,734 s
+  pass 2:    250,000 rows,  1,696,811 written,      37 rows/s, elapsed 6,823 s
+  pass 2:    255,000 rows,  1,714,129 written,      37 rows/s, elapsed 6,895 s
+  pass 2:    260,000 rows,  1,734,115 written,      37 rows/s, elapsed 6,977 s
+  pass 2:    265,000 rows,  1,752,522 written,      38 rows/s, elapsed 7,038 s
+  pass 2:    275,000 rows,  1,796,057 written,      38 rows/s, elapsed 7,226 s
+  pass 2:    280,000 rows,  1,815,572 written,      38 rows/s, elapsed 7,304 s
+  pass 2:    285,000 rows,  1,837,308 written,      39 rows/s, elapsed 7,364 s
+  pass 2:    290,000 rows,  1,854,242 written,      39 rows/s, elapsed 7,435 s
+  pass 2:    295,000 rows,  1,870,365 written,      39 rows/s, elapsed 7,507 s
+  pass 2:    300,000 rows,  1,891,129 written,      40 rows/s, elapsed 7,591 s
+  pass 2:    305,000 rows,  1,915,363 written,      40 rows/s, elapsed 7,653 s
+  pass 2:    310,000 rows,  1,933,833 written,      40 rows/s, elapsed 7,735 s
+  pass 2:    320,000 rows,  1,969,356 written,      41 rows/s, elapsed 7,881 s
+  pass 2:    325,000 rows,  1,985,394 written,      41 rows/s, elapsed 7,929 s
+  pass 2:    330,000 rows,  1,997,231 written,      41 rows/s, elapsed 7,982 s
+  pass 2:    335,000 rows,  2,013,027 written,      42 rows/s, elapsed 8,051 s
+  pass 2:    345,000 rows,  2,047,721 written,      42 rows/s, elapsed 8,172 s
+  pass 2:    350,000 rows,  2,072,751 written,      42 rows/s, elapsed 8,251 s
+  pass 2:    355,000 rows,  2,092,349 written,      43 rows/s, elapsed 8,337 s
+  pass 2:    360,000 rows,  2,106,435 written,      43 rows/s, elapsed 8,399 s
+  pass 2:    365,000 rows,  2,119,788 written,      43 rows/s, elapsed 8,448 s
+  pass 2:    370,000 rows,  2,133,878 written,      43 rows/s, elapsed 8,509 s
+  pass 2:    375,000 rows,  2,148,715 written,      44 rows/s, elapsed 8,572 s
+  pass 2:    380,000 rows,  2,162,850 written,      44 rows/s, elapsed 8,638 s
+  pass 2:    385,000 rows,  2,177,090 written,      44 rows/s, elapsed 8,693 s
+  pass 2:    390,000 rows,  2,191,232 written,      45 rows/s, elapsed 8,761 s
+  pass 2:    395,000 rows,  2,205,794 written,      45 rows/s, elapsed 8,832 s
+  pass 2:    400,000 rows,  2,224,754 written,      45 rows/s, elapsed 8,906 s
+  pass 2:    410,000 rows,  2,256,352 written,      45 rows/s, elapsed 9,032 s
+  pass 2:    415,000 rows,  2,273,409 written,      46 rows/s, elapsed 9,113 s
+  pass 2:    425,000 rows,  2,314,070 written,      46 rows/s, elapsed 9,246 s
+  pass 2:    440,000 rows,  2,352,213 written,      47 rows/s, elapsed 9,422 s
+  pass 2:    445,000 rows,  2,365,475 written,      47 rows/s, elapsed 9,472 s
+  pass 2:    450,000 rows,  2,378,156 written,      47 rows/s, elapsed 9,539 s
+  pass 2:    460,000 rows,  2,402,196 written,      48 rows/s, elapsed 9,672 s
+  pass 2:    465,000 rows,  2,415,562 written,      48 rows/s, elapsed 9,723 s
+  pass 2:    470,000 rows,  2,430,460 written,      48 rows/s, elapsed 9,806 s
+  pass 2:    480,000 rows,  2,459,324 written,      48 rows/s, elapsed 9,963 s
+  pass 2:    485,000 rows,  2,471,111 written,      48 rows/s, elapsed 10,011 s
+  pass 2:    490,000 rows,  2,485,241 written,      49 rows/s, elapsed 10,090 s
+  pass 2:    495,000 rows,  2,499,253 written,      49 rows/s, elapsed 10,157 s
+  pass 2:    500,000 rows,  2,511,771 written,      49 rows/s, elapsed 10,223 s
+[LIMIT] reached max_rows=500,000
+Pass 2 done. Stats:
+  rows_consumed: 500,000
+  written: 2,511,771
+  skipped_no_subject_label: 39,798
+  skipped_no_pred_label: 10,888
+  skipped_no_object_label: 4,391,871
+  skipped_excluded_iri: 5,215,312
+  skipped_noise_datatype: 0
+  skipped_provenance: 0
+  skipped_url_object: 57
+  skipped_identifier_object: 13,402
+  claims_seen: 6,923,739

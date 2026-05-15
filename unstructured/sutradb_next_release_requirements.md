@@ -91,11 +91,11 @@ SELECT ?prop ?value WHERE {
 
 ## P2 — Nice to have
 
-### 5. TLS certificate for sutradb.org
+### 5. TLS certificate for loka.emmaleonhart.com
 
-The site returns `ERR_TLS_CERT_ALTNAME_INVALID`. Certificate doesn't include `sutradb.org` in Subject Alternative Names. Documentation is only accessible via the GitHub repo.
+The site returns `ERR_TLS_CERT_ALTNAME_INVALID`. Certificate doesn't include `loka.emmaleonhart.com` in Subject Alternative Names. Documentation is only accessible via the GitHub repo.
 
-**Fix:** Reissue cert with `sutradb.org` and `www.sutradb.org` in the SAN list.
+**Fix:** Reissue cert with `loka.emmaleonhart.com` and `www.loka.emmaleonhart.com` in the SAN list.
 
 ---
 

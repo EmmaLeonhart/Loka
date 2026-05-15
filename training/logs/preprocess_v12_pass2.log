@@ -1,0 +1,43 @@
+Label cache: training\data\wikidata_labels.sqlite (104,823 entries on open)
+Preloaded 7,312 curated property labels.
+=== Pass 2: emit to training\data\normalized\normalized_wikidata_v12_100k.txt ===
+'The read operation timed out' thrown while requesting GET https://huggingface.co/datasets/philippesaade/wikidata/resolve/f515679220b381e7a00971fb3f077e8391355727/data/chunk_0-00001-of-00546.parquet
+Retrying in 1s [Retry 1/5].
+'[Errno 11001] getaddrinfo failed' thrown while requesting GET https://huggingface.co/datasets/philippesaade/wikidata/resolve/f515679220b381e7a00971fb3f077e8391355727/data/chunk_0-00001-of-00546.parquet
+Retrying in 2s [Retry 2/5].
+  [WARN] stream error after 1,818 rows: RuntimeError('Cannot send a request, as the client has been closed.')
+  [RETRY] sleeping 5s before reopening...
+  [RESUME] skipping 1,818 rows after retry
+  pass 2:      5,000 rows,     67,305 written,      13 rows/s, elapsed   393 s
+  pass 2:     10,000 rows,    108,388 written,      19 rows/s, elapsed   539 s
+  pass 2:     15,000 rows,    143,144 written,      21 rows/s, elapsed   720 s
+  pass 2:     20,000 rows,    187,343 written,      23 rows/s, elapsed   874 s
+  pass 2:     25,000 rows,    228,963 written,      24 rows/s, elapsed 1,041 s
+  pass 2:     30,000 rows,    262,258 written,      26 rows/s, elapsed 1,147 s
+  pass 2:     35,000 rows,    296,400 written,      27 rows/s, elapsed 1,287 s
+  pass 2:     40,000 rows,    324,098 written,      28 rows/s, elapsed 1,431 s
+  pass 2:     45,000 rows,    347,786 written,      29 rows/s, elapsed 1,548 s
+  pass 2:     50,000 rows,    368,852 written,      31 rows/s, elapsed 1,616 s
+  pass 2:     55,000 rows,    393,322 written,      31 rows/s, elapsed 1,759 s
+  pass 2:     60,000 rows,    429,562 written,      31 rows/s, elapsed 1,917 s
+  pass 2:     65,000 rows,    463,565 written,      32 rows/s, elapsed 2,060 s
+  pass 2:     70,000 rows,    496,075 written,      33 rows/s, elapsed 2,152 s
+  pass 2:     75,000 rows,    528,555 written,      33 rows/s, elapsed 2,271 s
+  pass 2:     80,000 rows,    563,179 written,      33 rows/s, elapsed 2,398 s
+  pass 2:     85,000 rows,    594,733 written,      34 rows/s, elapsed 2,534 s
+  pass 2:     90,000 rows,    623,852 written,      34 rows/s, elapsed 2,613 s
+  pass 2:     95,000 rows,    644,244 written,      35 rows/s, elapsed 2,693 s
+  pass 2:    100,000 rows,    671,817 written,      36 rows/s, elapsed 2,798 s
+[LIMIT] reached max_rows=100,000
+Pass 2 done. Stats:
+  rows_consumed: 100,000
+  written: 671,817
+  skipped_no_subject_label: 2,443
+  skipped_no_pred_label: 3,508
+  skipped_no_object_label: 1,224,641
+  skipped_excluded_iri: 1,490,656
+  skipped_noise_datatype: 0
+  skipped_provenance: 0
+  skipped_url_object: 31
+  skipped_identifier_object: 5,214
+  claims_seen: 1,903,562

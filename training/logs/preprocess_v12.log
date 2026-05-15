@@ -1,0 +1,81 @@
+Label cache: training\data\wikidata_labels.sqlite (104,823 entries on open)
+Preloaded 7,312 curated property labels.
+=== Pass 1: scan labels from philippesaade/wikidata ===
+  pass 1:      5,000 rows,      5,000 labels,      29 rows/s, elapsed   175 s
+  pass 1:     10,000 rows,      9,983 labels,      32 rows/s, elapsed   317 s
+  pass 1:     15,000 rows,     14,969 labels,      35 rows/s, elapsed   433 s
+  pass 1:     20,000 rows,     19,923 labels,      37 rows/s, elapsed   540 s
+  pass 1:     25,000 rows,     24,783 labels,      40 rows/s, elapsed   625 s
+  pass 1:     30,000 rows,     29,690 labels,      42 rows/s, elapsed   717 s
+  pass 1:     35,000 rows,     34,603 labels,      43 rows/s, elapsed   817 s
+  pass 1:     40,000 rows,     39,472 labels,      44 rows/s, elapsed   915 s
+  pass 1:     45,000 rows,     44,392 labels,      46 rows/s, elapsed   977 s
+  pass 1:     50,000 rows,     49,274 labels,      48 rows/s, elapsed 1,046 s
+  pass 1:     55,000 rows,     54,117 labels,      48 rows/s, elapsed 1,153 s
+  pass 1:     60,000 rows,     59,012 labels,      48 rows/s, elapsed 1,261 s
+  pass 1:     65,000 rows,     63,922 labels,      49 rows/s, elapsed 1,333 s
+  pass 1:     70,000 rows,     68,835 labels,      49 rows/s, elapsed 1,429 s
+  pass 1:     75,000 rows,     73,680 labels,      49 rows/s, elapsed 1,516 s
+  pass 1:     80,000 rows,     78,606 labels,      49 rows/s, elapsed 1,620 s
+  pass 1:     90,000 rows,     88,239 labels,      51 rows/s, elapsed 1,756 s
+  pass 1:     95,000 rows,     92,778 labels,      52 rows/s, elapsed 1,819 s
+  pass 1:    100,000 rows,     97,511 labels,      53 rows/s, elapsed 1,889 s
+[LIMIT] reached max_rows=100,000
+Pass 1 done: 100,000 rows consumed, 97,511 labels written.
+=== Pass 2: emit to training\data\normalized\normalized_wikidata_v12_100k.txt ===
+  pass 2:      5,000 rows,     58,369 written,      21 rows/s, elapsed   241 s
+  pass 2:     10,000 rows,    101,176 written,      22 rows/s, elapsed   453 s
+  pass 2:     15,000 rows,    131,751 written,      21 rows/s, elapsed   730 s
+Traceback (most recent call last):
+  File "C:\Users\Immanuelle\Documents\Github\SutraDB\tools\preprocess_from_hf.py", line 471, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\Immanuelle\Documents\Github\SutraDB\tools\preprocess_from_hf.py", line 465, in main
+    emit_pass(args, conn, out_path)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Immanuelle\Documents\Github\SutraDB\tools\preprocess_from_hf.py", line 339, in emit_pass
+    for row in iter_rows:
+               ^^^^^^^^^
+  File "C:\Users\Immanuelle\Documents\Github\SutraDB\tools\preprocess_from_hf.py", line 242, in _iter_dataset_with_retries
+    for row in ds:
+               ^^
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\datasets\iterable_dataset.py", line 2690, in __iter__
+    for key, example in ex_iterable:
+                        ^^^^^^^^^^^
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\datasets\iterable_dataset.py", line 2227, in __iter__
+    for key, pa_table in self._iter_arrow():
+                         ~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\datasets\iterable_dataset.py", line 2251, in _iter_arrow
+    for key, pa_table in self.ex_iterable._iter_arrow():
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\datasets\iterable_dataset.py", line 494, in _iter_arrow
+    for key, pa_table in iterator:
+                         ^^^^^^^^
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\datasets\iterable_dataset.py", line 384, in _iter_arrow
+    for key, pa_table in self.generate_tables_fn(**gen_kwags):
+                         ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\datasets\packaged_modules\parquet\parquet.py", line 196, in _generate_tables
+    for batch_idx, record_batch in enumerate(
+                                   ~~~~~~~~~^
+        parquet_fragment.to_batches(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+        )
+        ^
+    ):
+    ^
+  File "pyarrow/_dataset.pyx", line 3934, in _iterator
+  File "pyarrow/_dataset.pyx", line 3524, in pyarrow._dataset.TaggedRecordBatchIterator.__next__
+  File "pyarrow/error.pxi", line 155, in pyarrow.lib.pyarrow_internal_check_status
+  File "pyarrow/error.pxi", line 89, in pyarrow.lib.check_status
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\datasets\utils\file_utils.py", line 844, in read_with_retries
+    out = read(*args, **kwargs)
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\huggingface_hub\hf_file_system.py", line 1272, in read
+    return super().read(length)
+           ~~~~~~~~~~~~^^^^^^^^
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\fsspec\spec.py", line 2122, in read
+    out = self.cache._fetch(self.loc, self.loc + length)
+  File "C:\Users\Immanuelle\AppData\Local\Programs\Python\Python313\Lib\site-packages\fsspec\caching.py", line 282, in _fetch
+    return part + self.cache[:l]
+           ~~~~~^~~~~~~~~~~~~~~~
+MemoryError

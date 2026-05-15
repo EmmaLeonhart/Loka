@@ -103,15 +103,15 @@ cp sutra.exe ~/.cargo/bin/sutra.exe
 
 ---
 
-## 4. sutradb.org TLS Certificate Error
+## 4. loka.emmaleonhart.com TLS Certificate Error
 
 **Severity: Medium — blocks documentation access**
 
-The documentation website at sutradb.org returns `ERR_TLS_CERT_ALTNAME_INVALID`. The site's TLS certificate doesn't include `sutradb.org` in its Subject Alternative Names.
+The documentation website at loka.emmaleonhart.com returns `ERR_TLS_CERT_ALTNAME_INVALID`. The site's TLS certificate doesn't include `loka.emmaleonhart.com` in its Subject Alternative Names.
 
 **Workaround:** Use documentation from the GitHub repo's `docs/` folder directly.
 
-**Suggested fix:** Reissue the TLS certificate with `sutradb.org` and `www.sutradb.org` in the SAN list.
+**Suggested fix:** Reissue the TLS certificate with `loka.emmaleonhart.com` and `www.loka.emmaleonhart.com` in the SAN list.
 
 ---
 
@@ -173,6 +173,6 @@ For reference, these features work correctly:
 1. **RDF-star query support** (Critical — everything else depends on this)
 2. **Verbose import errors** (Nice to have — helps debugging)
 3. **Self-update asset selection** (Nice to have)
-4. **TLS cert for sutradb.org** (Medium — documentation access)
+4. **TLS cert for loka.emmaleonhart.com** (Medium — documentation access)
 5. **Publish Python SDK to PyPI** (Medium — enables direct Python integration)
 6. **Validate temporal operators** (After #1 is fixed)
