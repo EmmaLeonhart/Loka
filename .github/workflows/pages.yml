@@ -53,7 +53,7 @@ jobs:
           # Match each <url> block and update its <lastmod>
           def update_block(match):
               block = match.group(0)
-              loc_match = re.search(r"<loc>https://sutradb\.org(/[^<]*)</loc>", block)
+              loc_match = re.search(r"<loc>https://loka\.emmaleonhart\.com(/[^<]*)</loc>", block)
               if not loc_match:
                   return block
               path = loc_match.group(1)
