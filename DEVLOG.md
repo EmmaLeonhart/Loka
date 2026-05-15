@@ -7,6 +7,44 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-05-15 PT — v14 shipped at epoch-4 (ppl 202.01) — best of the series; corpus-scale thesis confirmed
+
+Headline: **v14 ships at the epoch-4 checkpoint, ppl 202.01 — the lowest perplexity in the entire normalized-wikidata series (v11–v14), and a clean confirmation that corpus scale was the binding lever.**
+
+### Per-epoch trajectory (5-epoch partial-local run)
+
+| Epoch | Loss | Perplexity | HF tag |
+|---|---|---|---|
+| 1 | 5.6457 | 283.07 | `v14.1` |
+| 2 | 5.3727 | 215.45 | `v14.2` |
+| 3 | 5.3449 | 209.55 | `v14.3` |
+| 4 | 5.3083 | **202.01** ← shipped | `v14.4` |
+| 5 | 5.3216 | 204.70 | `v14.5` |
+
+### The corpus-scale result
+
+Clearest single finding of the whole v11→v14 arc. Holding architecture, tokenizer, batch size, and optimizer constant and only scaling the cleaned corpus:
+
+| Model | Corpus triples | Best ppl |
+|---|---|---|
+| v11 | 350 428 | 279.12 |
+| v12 | 671 817 | 250.82 (226.86 lost) |
+| v13 | 2 511 771 | 242.75 |
+| **v14** | **4 021 409** | **202.01** |
+
+11× more clean data → 28% perplexity reduction (279 → 202), and the curve was *still descending at epoch 4* — unlike v13 (2.5M) which plateaued by epoch 2. The bigger corpus didn't just shift the floor; it extended how many epochs of useful learning the model could extract before Adam settled. Strongest evidence to date that the binding constraint on this model line is corpus scale, not architecture or training duration on this hardware.
+
+### Why epoch 4 and not a 10-epoch run
+
+The plan was to extend v14 to 10 epochs (it hadn't plateaued at 5). `train.py` got `--resume-from` / `--start-epoch` support + optimizer-state persistence for exactly this. First resume attempt was killed (it appended to the same log, which would have re-tripped the pusher's FINAL_RE exit — documented gotcha, now in the pusher docstring + queue.md). The clean relaunch on a fresh log then OOM'd in epoch 6's backward pass — **an unrelated `pytest sdk/sutra-compiler/tests/` run had grabbed the 8 GB laptop GPU concurrently.** Same failure class as the v12 LLaMA-contention disaster: any second CUDA process on this card during training is poison.
+
+Decision (user call): **ship v14 at epoch 4 rather than re-run.** Epoch 4 (202.01) is already the series best and is safe on HF as both the canonical `v14` tag and the per-epoch `v14.4` tag; the full clean 10-epoch run is available via the donor path (`tools/contribute_v14_training.py`, documented at loka.emmaleonhart.com/contribute/). Re-running 16 h locally to maybe shave a few points off the already-best model, on hardware where a stray pytest run can kill it, isn't worth it — the contributor path exists precisely for this.
+
+### Series complete
+
+v11 → v14 all trained and shipped. Twelve model versions on `EmmaLeonhart/loka` (v3–v14), four corpus tiers on `EmmaLeonhart/normalized-wikidata` (v11-50k → v14-1M), plus per-epoch tags `v12.*` `v13.*` `v14.*`. The per-epoch snapshot discipline meant not a single epoch was lost across three training disruptions (v11 OOM, v12 contention, v14 pytest OOM). Docs consistent across GitHub, the site (loka.emmaleonhart.com), both HF READMEs, paper, DEVLOG, status.md.
+
+---
 ## 2026-05-14 PT — v13 shipped at epoch-2 (ppl 242.75); v14 partial-local started
 
 Headline: **v13 ships at the epoch-2 snapshot, ppl 242.75 on the 2,511,771-triple `v13-500k` corpus.** Trained 5 of a planned 10 epochs; trajectory plateaued in the 240–260 band after epoch 2 (classic Adam-momentum behaviour, *not* contention divergence — wall-time was stable at 112 min/epoch and `nvidia-smi` showed exclusive GPU at 74 W actual / 80 W cap, 74 °C, 83 % util). Per-epoch snapshots `v13.1` through `v13.5` are all on Hugging Face via `tools/epoch_snapshot_pusher.py`; the canonical `v13` tag is the epoch-2 checkpoint.

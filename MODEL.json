@@ -1,14 +1,14 @@
 {
-  "name": "loka-wikidata-v13",
-  "version": "v13",
-  "released": "2026-05-14",
+  "name": "loka-wikidata-v14",
+  "version": "v14",
+  "released": "2026-05-15",
   "repo_id": "EmmaLeonhart/loka",
   "repo_type": "dataset",
-  "revision": "v13",
+  "revision": "v14",
   "files": {
     "checkpoint": {
-      "in_repo": "checkpoints/wikidata_v13.pt",
-      "local": "training/checkpoints/wikidata_v13.pt",
+      "in_repo": "checkpoints/wikidata_v14.pt",
+      "local": "training/checkpoints/wikidata_v14.pt",
       "size_mb": 178.2
     },
     "vocab": {
@@ -22,5 +22,5 @@
       "size_mb": 1.0
     }
   },
-  "notes": "Third rung of the normalized-wikidata series, trained on the v13-500k corpus (2,511,771 clean labeled triples, 3.7x v12's size). Same 44.5M-parameter BPE architecture. Per-epoch trajectory: epoch 1 ppl 334.76 (epoch 1 is much stronger than v11's 6577 or v12's 1334 — bigger corpus = stronger first-epoch gradient signal), epoch 2 ppl 242.75 (best), then plateau drift 248.29 -> 258.42 -> 256.04 over epochs 3-5. The drift is classic Adam-momentum plateau behaviour on an exclusive 80W-capped laptop GPU (verified via nvidia-smi: 74W actual, 74C, 83% GPU util, no contention) — not the v12-style multi-rail divergence. Per-epoch snapshots tagged v13.1 through v13.5 on HF; the canonical v13 is the epoch-2 ckpt at ppl 242.75. Future contributor runs with larger batch sizes (24GB+ VRAM) may find a deeper basin — see pages/contribute/index.html for the hardware-constraint rationale. Companion dataset: EmmaLeonhart/normalized-wikidata tag v13-500k. v14 partial-local training (5 epochs on the 4M-triple v14-1M corpus) started in parallel."
+  "notes": "Top rung of the normalized-wikidata series and the best model overall. Trained on the v14-1M corpus (4,021,409 clean labeled triples, ~12x v11's size). Same 44.5M-parameter BPE architecture. Per-epoch trajectory (5-epoch partial-local run): ep1 283.07, ep2 215.45, ep3 209.55, ep4 202.01 (best), ep5 204.70. Pinned at the epoch-4 checkpoint, ppl 202.01 — the lowest in the entire v11-v14 series and a clear demonstration that corpus scale was the binding lever (v11 350k -> 279.12, v12 672k -> 250.82, v13 2.5M -> 242.75, v14 4M -> 202.01). Unlike v13 (which plateaued by epoch 2), v14 was still descending at epoch 4 on the larger corpus. A 6-10 epoch continuation was attempted but OOM'd when an unrelated pytest run grabbed the 8GB laptop GPU; rather than re-run, we ship epoch 4 since it is already the series best and the full clean 10-epoch run is available via the donor path (tools/contribute_v14_training.py). Per-epoch tags v14.1 through v14.5 on HF via the snapshot pusher. Companion dataset: EmmaLeonhart/normalized-wikidata tag v14-1M."
 }
