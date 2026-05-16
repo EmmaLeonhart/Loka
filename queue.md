@@ -40,9 +40,15 @@ non-external item, ordered by leverage:
    - **Bug B:** `loka-cli/src/mcp.rs:1518` and `loka-ffi/src/lib.rs:234` ingest via the
      non-star `parse_ntriples_line`, which returns the sentinel and silently drops the inner
      triple for RDF-star input. Should use `parse_ntriples_star_line`.
-3. **Fine-tuning track scaffolding** — build `training/finetune/` per
-   `planning/fine-tuning-track.md` (Qwen 2.5 1.5B-Instruct + QLoRA, shared
-   `propositionInferredFrom` schema).
+3. ✅ **DONE 2026-05-16 — Fine-tuning track scaffolding.** Already scaffolded in
+   `df8fb43` (`training/finetune/`: `prepare_jsonl.py` implemented + 3 CLI-shape stubs
+   per the documented scaffold contract). Brought current with the v11+ pipeline:
+   `prepare_jsonl.py --endpoint` no longer required (the `--fixture` TSV path consumes
+   the normalized-wikidata corpus directly — smoke-tested, emits spec-correct
+   masked-triple JSONL); README status block refreshed (engine bug #1/#2 blockers
+   cleared, only GPU-gated now); output-schema doc corrected to the real
+   `http://loka.dev/provenance/` predicates. First real QLoRA run is GPU-gated, same
+   as the donor v14 path.
 4. **World-model cascade-retraction** (Active #8) — `retract_node` MCP tool + engine
    prerequisites, cascade bounded to the `http://loka.dev/provenance/` namespace.
 
