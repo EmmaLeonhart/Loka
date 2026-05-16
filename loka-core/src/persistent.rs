@@ -783,6 +783,55 @@ mod tests {
     }
 
     #[test]
+    fn quoted_survives_store_reopen() {
+        // The real durability proof temporary() can't give: write a quoted
+        // triple to an on-disk store, drop it, reopen, and confirm the
+        // reverse map rehydrates through load_terms_into.
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("reopen.sdb");
+
+        let (qid, s, p, o);
+        {
+            let ps = PersistentStore::open(&path).unwrap();
+            s = ps.intern("http://wd/Q42").unwrap();
+            p = ps.intern("http://wd/P20").unwrap();
+            o = ps.intern("\"Belgium\"").unwrap();
+            // inner asserted triple + the content-addressed annotation row.
+            ps.insert(Triple::new(s, p, o)).unwrap();
+            qid = ps.register_quoted(s, p, o).unwrap();
+            let conf = ps
+                .intern("http://loka.dev/provenance/propositionConfidence")
+                .unwrap();
+            let v = ps.intern("\"0.9\"").unwrap();
+            ps.insert(Triple::new(qid, conf, v)).unwrap();
+            ps.flush().unwrap();
+        } // store dropped — sled closed.
+
+        // Reopen the same path.
+        let ps = PersistentStore::open(&path).unwrap();
+        let mut dict = crate::id::TermDictionary::new();
+        ps.load_terms_into(&mut dict); // also hydrates the quoted map.
+
+        assert_eq!(
+            dict.resolve_quoted(qid),
+            Some((s, p, o)),
+            "quoted reverse map survived reopen"
+        );
+        assert_eq!(
+            dict.render_term(qid).as_deref(),
+            Some("<< <http://wd/Q42> <http://wd/P20> \"Belgium\" >>"),
+            "faithful render survives reopen"
+        );
+        // The annotation triple is still on disk.
+        let conf = dict.lookup("http://loka.dev/provenance/propositionConfidence").unwrap();
+        assert!(!ps.find_by_subject(qid).is_empty());
+        assert!(ps
+            .find_by_subject(qid)
+            .iter()
+            .any(|t| t.predicate == conf));
+    }
+
+    #[test]
     fn quoted_register_and_hydrate() {
         let store = PersistentStore::temporary().unwrap();
         // Non-batch path.

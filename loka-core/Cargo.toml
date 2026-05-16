@@ -17,6 +17,7 @@ serde_json.workspace = true
 
 [dev-dependencies]
 criterion.workspace = true
+tempfile = "3"
 
 [[bench]]
 name = "triple_insert"
