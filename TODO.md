@@ -284,3 +284,16 @@ Benchmark results are tracked automatically by CI. See:
 | Bulk insert (2000) | 76ms (20K/sec) |
 | Point lookup p50 | 0.61ms |
 | Point lookup p99 | 1.25ms |
+
+## Website
+
+- [ ] **Benchmarks page chart is visually weird (non-critical).** On
+  `pages/benchmarks/` the release-milestone markers (red dashed lines
+  + `v0` / `v0.3.5` / `.3.4` / `v0.3.7` / `v0.4.0` pills) overlap and
+  crowd the x-axis, and the early milestones bunch together
+  illegibly. Emma flagged it 2026-05-16 — important to fix but not
+  blocking the cross-site visual-identity work. Fix: dedupe/space the
+  milestone labels (stagger or collapse adjacent ones), lighten the
+  marker styling so it doesn't fight the series lines, and make sure
+  it reads at mobile width. Keep the data correct — only the
+  presentation is the problem.
