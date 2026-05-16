@@ -1,0 +1,4 @@
+Device: cuda
+Vocabulary: 50,000 tokens
+BPE tokenizer loaded: training/data/tokenizer_bpe.json
+Loading dataset from training/data/triples_v14.txt...

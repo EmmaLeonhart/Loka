@@ -1,0 +1,8 @@
+v14 training supervisor — drives epochs 6..10 to completion, auto-resuming on any GPU-contention death.
+
+[Attempt 1/20] waiting for a free GPU...
+
+=== Attempt 1: first continuation: resume from epoch-4 weights (ppl 202.01), fresh Adam ===
+  resume_from=wikidata_v14_epoch04.pt  start_epoch=6  target=10
+  train log:  C:\Users\Immanuelle\Documents\Github\SutraDB\training\logs\v14_sup_attempt1_20260515_160405_train.log
+  pusher log: C:\Users\Immanuelle\Documents\Github\SutraDB\training\logs\v14_sup_attempt1_20260515_160405_pusher.log
