@@ -103,12 +103,16 @@ code, pre, .mono { font-family: var(--mono); }
   transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.2s;
 }
 .btn-primary {
-  background: var(--accent-deep); color: var(--on-accent-deep);
+  background: linear-gradient(135deg, var(--accent-deep) 0%, var(--accent-deep-hover) 100%);
+  color: var(--on-accent-deep);
   border-color: var(--accent-deep);
+  box-shadow: 0 8px 24px -12px var(--accent-glow);
 }
 .btn-primary:hover {
-  background: var(--accent-deep-hover); border-color: var(--accent-deep-hover);
+  background: linear-gradient(135deg, var(--accent-deep-hover) 0%, var(--accent-bright) 130%);
+  border-color: var(--accent-deep-hover);
   color: var(--on-accent-deep); transform: translateY(-1px);
+  box-shadow: 0 10px 30px -10px var(--accent-glow);
 }
 .btn-secondary {
   background: var(--bg-card); color: var(--text-strong);
