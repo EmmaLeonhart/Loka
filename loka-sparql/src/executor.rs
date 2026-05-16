@@ -1502,6 +1502,11 @@ fn evaluate_triple_pattern(
                     };
 
                     for outer_triple in &outer_candidates {
+                        // Engine-honesty invariant (engine bug #2): the outer
+                        // (annotation) predicate can never be a literal.
+                        if term_id_is_literal(outer_triple.predicate, ctx.dict) {
+                            continue;
+                        }
                         if let Some(o) = o_id {
                             if outer_triple.object != o {
                                 continue;
@@ -1642,6 +1647,11 @@ fn evaluate_triple_pattern(
                     };
 
                     for outer_triple in &outer_candidates {
+                        // Engine-honesty invariant (engine bug #2): the outer
+                        // (annotation) predicate can never be a literal.
+                        if term_id_is_literal(outer_triple.predicate, ctx.dict) {
+                            continue;
+                        }
                         let mut new_row = row.clone();
 
                         // Bind inner variables
@@ -1733,6 +1743,13 @@ fn evaluate_triple_pattern(
         };
 
         for triple in candidates {
+            // Engine-honesty invariant (RDF-star engine bug #2): never surface
+            // a triple whose predicate slot is a literal. Such a row is a
+            // mis-keyed RDF-star annotation row; emitting it would produce
+            // invalid RDF (a literal in the predicate position).
+            if term_id_is_literal(triple.predicate, ctx.dict) {
+                continue;
+            }
             if let Some(s) = s_id {
                 if triple.subject != s {
                     continue;
@@ -3171,6 +3188,19 @@ fn is_concrete(term: &Term) -> bool {
     }
 }
 
+/// RDF — and RDF-star — forbid literals in the predicate position. A stored
+/// triple whose predicate slot is an inline literal or a quoted-string term is
+/// invalid output: it is the fingerprint of a mis-surfaced RDF-star annotation
+/// row (engine bug #2 — `<< s p o >> qp qv` rows whose positions got confused
+/// on the way into the store). The executor must never bind such a row into a
+/// result, so the database stays honest at the query layer regardless of how
+/// the malformed row entered the store. This is the engine-side replacement
+/// for the `tools/preprocess_streaming.py` mask that used to drop these rows
+/// downstream.
+fn term_id_is_literal(id: TermId, dict: &TermDictionary) -> bool {
+    loka_core::is_inline(id) || dict.resolve(id).is_some_and(|s| s.starts_with('"'))
+}
+
 fn filter_term_value(term: &Term, row: &Bindings) -> Option<TermId> {
     match term {
         Term::Variable(name) => row.get(name).copied(),
@@ -3305,6 +3335,96 @@ mod tests {
             parser::parse("SELECT ?s WHERE { ?s <http://example.org/nonexistent> ?o }").unwrap();
         let result = execute(&q, &store, &dict).unwrap();
         assert_eq!(result.rows.len(), 0);
+    }
+
+    // ── Engine bug #2: RDF-star annotation rows surfaced in the wrong slot ──
+    //
+    // Symptom (DEVLOG 2026-05-12): a plain `?s ?p ?o` scan returned literal
+    // values in the predicate slot on ~1% of a 5M-triple corpus — invalid RDF
+    // output, the fingerprint of a mis-keyed RDF-star annotation row. It was
+    // masked downstream in tools/preprocess_streaming.py. The fix moves the
+    // invariant into the engine: the executor must never bind a literal into
+    // the predicate position, so the database is honest at the query layer.
+
+    #[test]
+    fn engine_bug2_literal_predicate_rows_are_never_surfaced() {
+        let mut dict = TermDictionary::new();
+        let mut store = TripleStore::new();
+
+        // One valid triple.
+        let q42 = dict.intern("http://www.wikidata.org/entity/Q42");
+        let p20 = dict.intern("http://www.wikidata.org/prop/direct/P20");
+        let q31 = dict.intern("http://www.wikidata.org/entity/Q31");
+        store.insert(Triple::new(q42, p20, q31)).unwrap();
+
+        // The engine-bug-#2 fingerprint physically in the store: rows whose
+        // predicate slot holds a literal (a quoted-string term, and an inline
+        // literal). RDF forbids literal predicates.
+        let belgium = dict.intern("\"Belgium\"");
+        let rdfs_label = dict.intern("http://www.w3.org/2000/01/rdf-schema#label");
+        store.insert(Triple::new(p20, belgium, rdfs_label)).unwrap();
+        let inline_lit = loka_core::inline_integer(1828).unwrap();
+        store.insert(Triple::new(q42, inline_lit, q31)).unwrap();
+
+        assert_eq!(store.len(), 3, "all three rows are physically stored");
+
+        let q = parser::parse("SELECT ?s ?p ?o WHERE { ?s ?p ?o }").unwrap();
+        let result = execute(&q, &store, &dict).unwrap();
+
+        assert_eq!(
+            result.rows.len(),
+            1,
+            "only the one valid triple is honest output"
+        );
+        for row in &result.rows {
+            let p = *row.get("p").unwrap();
+            assert!(
+                !term_id_is_literal(p, &dict),
+                "predicate position must never bind a literal"
+            );
+        }
+    }
+
+    #[test]
+    fn engine_bug2_rdf_star_annotation_round_trips_without_literal_predicate() {
+        let mut dict = TermDictionary::new();
+        let mut store = TripleStore::new();
+
+        let q42 = dict.intern("http://www.wikidata.org/entity/Q42");
+        let p20 = dict.intern("http://www.wikidata.org/prop/direct/P20");
+        let q31 = dict.intern("http://www.wikidata.org/entity/Q31");
+        let conf = dict.intern("http://loka.dev/confidence");
+        let val = dict.intern("\"0.9\"");
+
+        // Inner asserted triple + annotation keyed by its content hash —
+        // exactly how the proto ingest path stores
+        // `<< Q42 P20 Q31 >> :confidence "0.9"`.
+        store.insert(Triple::new(q42, p20, q31)).unwrap();
+        let qid = loka_core::quoted_triple_id(q42, p20, q31);
+        store.insert(Triple::new(qid, conf, val)).unwrap();
+
+        // A corrupt annotation row whose OUTER predicate is a literal.
+        let bad_pred = dict.intern("\"place of death\"");
+        store.insert(Triple::new(qid, bad_pred, q31)).unwrap();
+
+        let q = parser::parse("SELECT ?s ?p ?o ?qp ?qv WHERE { << ?s ?p ?o >> ?qp ?qv }")
+            .unwrap();
+        let result = execute(&q, &store, &dict).unwrap();
+
+        assert_eq!(
+            result.rows.len(),
+            1,
+            "the honest annotation round-trips; the literal-predicate row is dropped"
+        );
+        let row = &result.rows[0];
+        assert_eq!(*row.get("s").unwrap(), q42);
+        assert_eq!(*row.get("p").unwrap(), p20);
+        assert_eq!(*row.get("o").unwrap(), q31);
+        assert_eq!(*row.get("qp").unwrap(), conf);
+        assert!(
+            !term_id_is_literal(*row.get("qp").unwrap(), &dict),
+            "annotation predicate must never bind a literal"
+        );
     }
 
     #[test]
