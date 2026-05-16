@@ -7,6 +7,55 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-05-16 — RDF-star hardened across every path; cascade-retraction ships end-to-end
+
+Headline: **a continuous barrel (B0–B8) took RDF-star from "works on the proto
+bulk path, content-hash with no reverse map" to solid across ingest /
+persistence / query / export, and landed cascade-retraction — "remove a node
+and every generated inference that transitively cited it" — end-to-end:
+pure engine fn → preview endpoint → `/retract` + `retract_node` MCP tool →
+Loka Studio action, with the destructive surface gated behind an explicit
+commit flag.**
+
+Built on the Phase-0 reverse index (same-day, below), in order, each its own
+commit+push:
+
+- **B1 — cascade Phase 1.** `loka-core/src/retract.rs`: pure
+  `retract_set(root, store, dict) -> RetractSet` (depth-grouped). Bounded to
+  `http://loka.dev/provenance/`, recurses only along `propositionInferredFrom`,
+  cycle-safe, real→real and child→parent are not dependencies. 5 unit tests.
+- **B2 — Bug B.** `loka-ffi` + `loka-cli/mcp.rs` serverless ingest used the
+  non-star parser (dropped inner triples, interned the `<<QUOTED_TRIPLE>>`
+  sentinel). Switched to `parse_ntriples_star_line` + `register_quoted`; FFI
+  `resolve_id`/`loka_resolve` + mcp `resolve_id` now `render_term`.
+- **B3 — persistence durability.** On-disk reopen round-trip test: write a
+  quoted triple, drop (sled closed), reopen, `load_terms_into` → reverse map +
+  faithful render survive. (Unit tests use `temporary()`, which can't reopen.)
+- **B4 — export round-trips.** `resolve_term_for_turtle` (Turtle + N-Triples
+  `/graph`) renders quoted ids as parseable `<< … >>`; `compact_iri` guards
+  against compacting a `<<` form. Export → re-parse round-trip test.
+- **B5 — SPARQL-star query coverage.** `resolve_term` already hashed a
+  concrete `<< s p o >>`; locked bound + unbound + projection in with tests
+  (sparql + a proto CSV-projection test).
+- **B6 — cascade Phase 2.** `POST /retract/preview` — read-only, returns the
+  would-be-removed set by depth + HNSW-tombstone count. Test asserts the
+  store row count is unchanged.
+- **B7 — cascade Phase 3.** `POST /retract {iri, commit}` (commit:false ==
+  preview; commit:true deletes from in-memory + persistent store and flips
+  HNSW via `VectorRegistry::delete` — the wired-but-never-called path now
+  invoked) + `retract_node` MCP tool (dry-run default, serverless + server).
+- **B8 — cascade Phase 4.** Loka Studio: a "Retract (cascade)" button on the
+  selected-node panel → preview dialog (per-depth breakdown + HNSW count) →
+  explicit confirm → destructive commit → reload. `flutter analyze` clean.
+
+Every Rust suite green throughout (core 142, proto 14, sparql 88+, cli 14,
+ffi 4), zero regressions; Studio analyzes clean. The recurring rebase against
+the repo's `cargo fmt [skip ci]` cron was handled per push (one content
+conflict in `server.rs`, resolved keeping the refactor). The cascade's
+destructive path is opt-in everywhere: the default at the endpoint, the MCP
+tool, and the Studio dialog is preview/dry-run.
+
+---
 ## 2026-05-16 — Quoted-triple reverse index (cascade-retraction Phase 0); engine bug #2 Bug A fixed
 
 Headline: **RDF-star quoted-triple ids are content hashes (`xxh3_64(s|p|o)`) and the
