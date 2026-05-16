@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,47 +14,90 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  background: #0d1117;
+  background: var(--bg);
   color: #c9d1d9;
   line-height: 1.6;
   padding: 0 0 60px;
 }
 .container { max-width: 920px; margin: 0 auto; padding: 0 24px; }
-nav.top { background: #161b22; border-bottom: 1px solid #30363d; padding: 14px 24px; }
-nav.top a { color: #8b949e; margin-right: 18px; text-decoration: none; font-size: 0.9rem; }
-nav.top a:hover { color: #79c0ff; }
-nav.top a.brand { color: #58a6ff; font-weight: 600; }
-header.hero { padding: 64px 24px 40px; text-align: center; border-bottom: 1px solid #21262d; margin-bottom: 40px; }
-header.hero h1 { font-size: 2.4rem; color: #e6edf3; margin-bottom: 10px; letter-spacing: -0.5px; }
-header.hero h1 .accent { color: #58a6ff; }
-header.hero .tagline { color: #8b949e; font-size: 1.05rem; max-width: 620px; margin: 0 auto; }
+nav.top { background: var(--bg-card); border-bottom: 1px solid var(--border); padding: 14px 24px; }
+nav.top a { color: var(--text-mute); margin-right: 18px; text-decoration: none; font-size: 0.9rem; }
+nav.top a:hover { color: var(--accent-bright); }
+nav.top a.brand { color: var(--accent); font-weight: 600; }
+header.hero { padding: 64px 24px 40px; text-align: center; border-bottom: 1px solid var(--border); margin-bottom: 40px; }
+header.hero h1 { font-size: 2.4rem; color: var(--text-strong); margin-bottom: 10px; letter-spacing: -0.5px; }
+header.hero h1 .accent { color: var(--accent); }
+header.hero .tagline { color: var(--text-mute); font-size: 1.05rem; max-width: 620px; margin: 0 auto; }
 header.hero .tagline strong { color: #c9d1d9; }
 .badges { margin-top: 22px; }
-.badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; margin: 0 4px; background: #1f2937; color: #79c0ff; border: 1px solid #2d4a6f; }
-h2 { color: #e6edf3; margin-top: 40px; margin-bottom: 12px; font-size: 1.4rem; padding-bottom: 6px; border-bottom: 1px solid #21262d; }
-h3 { color: #79c0ff; margin-top: 24px; margin-bottom: 8px; font-size: 1.05rem; }
+.badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; margin: 0 4px; background: #1f2937; color: var(--accent-bright); border: 1px solid #2d4a6f; }
+h2 { color: var(--text-strong); margin-top: 40px; margin-bottom: 12px; font-size: 1.4rem; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+h3 { color: var(--accent-bright); margin-top: 24px; margin-bottom: 8px; font-size: 1.05rem; }
 p { margin-bottom: 14px; }
-a { color: #58a6ff; }
+a { color: var(--accent); }
 code, pre { font-family: 'Consolas', 'Courier New', monospace; }
-code { background: #161b22; padding: 1px 6px; border-radius: 3px; font-size: 0.92em; color: #d2a8ff; }
-pre { background: #161b22; border: 1px solid #21262d; padding: 14px 18px; border-radius: 6px; overflow-x: auto; margin: 16px 0; font-size: 0.88rem; line-height: 1.5; }
+code { background: var(--bg-card); padding: 1px 6px; border-radius: 3px; font-size: 0.92em; color: #d2a8ff; }
+pre { background: var(--bg-card); border: 1px solid var(--border); padding: 14px 18px; border-radius: 6px; overflow-x: auto; margin: 16px 0; font-size: 0.88rem; line-height: 1.5; }
 pre code { background: none; padding: 0; color: #c9d1d9; }
 table { width: 100%; border-collapse: collapse; margin: 14px 0; }
-th, td { padding: 8px 12px; border: 1px solid #30363d; text-align: left; vertical-align: top; }
-th { background: #161b22; color: #79c0ff; font-weight: 600; }
-.callout { background: #1c2128; border-left: 3px solid #58a6ff; padding: 14px 18px; margin: 18px 0; border-radius: 4px; }
-.callout strong { color: #79c0ff; }
-.diagram { background: #0a0d12; border: 1px solid #21262d; padding: 18px; border-radius: 6px; margin: 20px 0; font-family: 'Consolas', monospace; white-space: pre; font-size: 0.82rem; line-height: 1.4; color: #c9d1d9; overflow-x: auto; }
+th, td { padding: 8px 12px; border: 1px solid var(--border); text-align: left; vertical-align: top; }
+th { background: var(--bg-card); color: var(--accent-bright); font-weight: 600; }
+.callout { background: #1c2128; border-left: 3px solid var(--accent); padding: 14px 18px; margin: 18px 0; border-radius: 4px; }
+.callout strong { color: var(--accent-bright); }
+.diagram { background: #0a0d12; border: 1px solid var(--border); padding: 18px; border-radius: 6px; margin: 20px 0; font-family: 'Consolas', monospace; white-space: pre; font-size: 0.82rem; line-height: 1.4; color: #c9d1d9; overflow-x: auto; }
 ul { margin: 0 0 16px 24px; }
 li { margin-bottom: 6px; }
 .meta { color: #6e7681; font-size: 0.85rem; }
 .cta { display: inline-block; background: #1f6feb; color: white; padding: 10px 22px; border-radius: 6px; text-decoration: none; margin: 8px 6px 0 0; font-size: 0.95rem; }
 .cta:hover { background: #388bfd; }
-.cta.secondary { background: #1c2128; color: #c9d1d9; border: 1px solid #30363d; }
-.cta.secondary:hover { background: #21262d; }
-</style>
+.cta.secondary { background: #1c2128; color: #c9d1d9; border: 1px solid var(--border); }
+.cta.secondary:hover { background: var(--border); }
+
+    /* ===== CANONICAL VISUAL IDENTITY (emmaleonhart.com/_identity/) ====
+       Appended last so it overrides any earlier Pewter :root. Dark is
+       default; [data-theme="light"] flips it. Semantic data vars
+       (--green/--orange/--purple/--red) are intentionally NOT redefined. */
+    :root{
+      --bg:#07070c; --bg-soft:#0c0c14; --bg-card:#11111b; --bg-elevated:#14141f;
+      --surface:#11111b; --surface2:#14141f;
+      --border:#1d1d2c; --border-hover:#34344e; --border-strong:#262638;
+      --text:#d4d4e0; --text-strong:#f0f0f6; --text-mute:#8c8caa;
+      --text-muted:#8c8caa; --text-dim:#5d5d78; --text-faint:#5d5d78;
+      --accent:#8b9bff; --accent-bright:#b0bcff; --accent-hover:#b0bcff;
+      --accent-dim:#5d6bd0; --accent-soft:rgba(139,155,255,.10);
+      --accent-glow:rgba(139,155,255,.28);
+    }
+    html[data-theme="light"]{
+      --bg:#f4f4f8; --bg-soft:#ebebf2; --bg-card:#ffffff; --bg-elevated:#fbfbfe;
+      --surface:#ffffff; --surface2:#fbfbfe;
+      --border:#dadae6; --border-hover:#b6b6cf; --border-strong:#c7c7d8;
+      --text:#2b2b38; --text-strong:#14141f; --text-mute:#5c5c74;
+      --text-muted:#5c5c74; --text-dim:#8c8caa; --text-faint:#8c8caa;
+      --accent:#5160dd; --accent-bright:#3a48c4; --accent-hover:#3a48c4;
+      --accent-dim:#7a86e0; --accent-soft:rgba(81,96,221,.10);
+      --accent-glow:rgba(81,96,221,.22);
+    }
+    body{transition:background .35s ease,color .35s ease}
+    .theme-toggle{position:fixed;top:18px;right:18px;z-index:200;width:40px;
+      height:40px;display:flex;align-items:center;justify-content:center;
+      background:var(--bg-card);border:1px solid var(--border);
+      border-radius:999px;color:var(--text-mute);cursor:pointer;
+      transition:color .2s,border-color .2s,background .2s,transform .2s}
+    .theme-toggle:hover{color:var(--accent-bright);border-color:var(--accent);
+      background:var(--accent-soft);transform:translateY(-1px)}
+    .theme-toggle svg{width:18px;height:18px;display:none}
+    html[data-theme="dark"] .theme-toggle .icon-sun{display:block}
+    html[data-theme="light"] .theme-toggle .icon-moon{display:block}
+  </style>
+  <!-- Canonical identity: theme before first paint (dark default). See emmaleonhart.com/_identity/. -->
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t!=='light'&&t!=='dark')t='dark';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
 </head>
 <body>
+  <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle light and dark theme" title="Toggle light / dark">
+    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg>
+    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+  </button>
+
 
 <nav class="top">
   <a href="/" class="brand">Loka</a>
@@ -274,5 +317,6 @@ engine + corpus + transformer + inference layer &mdash; is <strong>Loka</strong>
 </p>
 
 </div>
+  <script>(function(){var b=document.getElementById('theme-toggle');if(!b)return;b.addEventListener('click',function(){var c=document.documentElement.getAttribute('data-theme')==='light'?'light':'dark';var n=c==='light'?'dark':'light';document.documentElement.setAttribute('data-theme',n);try{localStorage.setItem('theme',n);}catch(e){}});})();</script>
 </body>
 </html>

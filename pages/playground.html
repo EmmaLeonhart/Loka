@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -419,9 +419,52 @@
   ::-webkit-scrollbar-track { background: var(--bg); }
   ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 4px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--border); }
-</style>
+
+    /* ===== CANONICAL VISUAL IDENTITY (emmaleonhart.com/_identity/) ====
+       Appended last so it overrides any earlier Pewter :root. Dark is
+       default; [data-theme="light"] flips it. Semantic data vars
+       (--green/--orange/--purple/--red) are intentionally NOT redefined. */
+    :root{
+      --bg:#07070c; --bg-soft:#0c0c14; --bg-card:#11111b; --bg-elevated:#14141f;
+      --surface:#11111b; --surface2:#14141f;
+      --border:#1d1d2c; --border-hover:#34344e; --border-strong:#262638;
+      --text:#d4d4e0; --text-strong:#f0f0f6; --text-mute:#8c8caa;
+      --text-muted:#8c8caa; --text-dim:#5d5d78; --text-faint:#5d5d78;
+      --accent:#8b9bff; --accent-bright:#b0bcff; --accent-hover:#b0bcff;
+      --accent-dim:#5d6bd0; --accent-soft:rgba(139,155,255,.10);
+      --accent-glow:rgba(139,155,255,.28);
+    }
+    html[data-theme="light"]{
+      --bg:#f4f4f8; --bg-soft:#ebebf2; --bg-card:#ffffff; --bg-elevated:#fbfbfe;
+      --surface:#ffffff; --surface2:#fbfbfe;
+      --border:#dadae6; --border-hover:#b6b6cf; --border-strong:#c7c7d8;
+      --text:#2b2b38; --text-strong:#14141f; --text-mute:#5c5c74;
+      --text-muted:#5c5c74; --text-dim:#8c8caa; --text-faint:#8c8caa;
+      --accent:#5160dd; --accent-bright:#3a48c4; --accent-hover:#3a48c4;
+      --accent-dim:#7a86e0; --accent-soft:rgba(81,96,221,.10);
+      --accent-glow:rgba(81,96,221,.22);
+    }
+    body{transition:background .35s ease,color .35s ease}
+    .theme-toggle{position:fixed;top:18px;right:18px;z-index:200;width:40px;
+      height:40px;display:flex;align-items:center;justify-content:center;
+      background:var(--bg-card);border:1px solid var(--border);
+      border-radius:999px;color:var(--text-mute);cursor:pointer;
+      transition:color .2s,border-color .2s,background .2s,transform .2s}
+    .theme-toggle:hover{color:var(--accent-bright);border-color:var(--accent);
+      background:var(--accent-soft);transform:translateY(-1px)}
+    .theme-toggle svg{width:18px;height:18px;display:none}
+    html[data-theme="dark"] .theme-toggle .icon-sun{display:block}
+    html[data-theme="light"] .theme-toggle .icon-moon{display:block}
+  </style>
+  <!-- Canonical identity: theme before first paint (dark default). See emmaleonhart.com/_identity/. -->
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t!=='light'&&t!=='dark')t='dark';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
 </head>
 <body>
+  <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle light and dark theme" title="Toggle light / dark">
+    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg>
+    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+  </button>
+
 
 <header>
   <h1>Loka Playground</h1>
@@ -1072,5 +1115,6 @@ async function fetchInfo() {
 buildSidebar();
 fetchInfo();
 </script>
+  <script>(function(){var b=document.getElementById('theme-toggle');if(!b)return;b.addEventListener('click',function(){var c=document.documentElement.getAttribute('data-theme')==='light'?'light':'dark';var n=c==='light'?'dark':'light';document.documentElement.setAttribute('data-theme',n);try{localStorage.setItem('theme',n);}catch(e){}});})();</script>
 </body>
 </html>
