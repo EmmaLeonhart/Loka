@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,8 +14,8 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: #0a0a0f;
-      color: #d0d0dc;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -23,39 +23,39 @@
       padding: 0 0 24px;
     }
     .container { max-width: 1060px; width: 100%; }
-    .back { display: inline-block; color: #7c8cf8; text-decoration: none; font-size: 0.9rem; margin-bottom: 24px; }
+    .back { display: inline-block; color: var(--accent); text-decoration: none; font-size: 0.9rem; margin-bottom: 24px; }
     .back:hover { text-decoration: underline; }
-    h1 { font-size: 1.6rem; font-weight: 700; color: #e8e8f0; margin-bottom: 8px; letter-spacing: -0.3px; }
-    .subtitle { color: #8888a0; font-size: 0.95rem; margin-bottom: 24px; line-height: 1.5; }
+    h1 { font-size: 1.6rem; font-weight: 700; color: var(--text-strong); margin-bottom: 8px; letter-spacing: -0.3px; }
+    .subtitle { color: var(--text-mute); font-size: 0.95rem; margin-bottom: 24px; line-height: 1.5; }
     .main-layout { display: flex; gap: 20px; align-items: flex-start; }
     .canvas-wrap {
       flex: 0 0 auto; width: 520px;
-      border: 1px solid #1e1e2a; border-radius: 8px;
-      overflow: hidden; background: #0a0a0f;
+      border: 1px solid var(--border); border-radius: 8px;
+      overflow: hidden; background: var(--bg);
     }
     canvas { display: block; width: 100%; touch-action: none; }
     #info {
       flex: 1; min-width: 0;
-      background: #12121a; border: 1px solid #1e1e2a;
+      background: var(--bg-card); border: 1px solid var(--border);
       border-radius: 8px; padding: 16px;
     }
     .section-label {
-      font-size: 0.6rem; color: #666880;
+      font-size: 0.6rem; color: var(--text-faint);
       text-transform: uppercase; letter-spacing: 0.1em;
       margin-bottom: 6px; margin-top: 12px;
     }
     .section-label:first-child { margin-top: 0; }
     .explanation {
-      font-size: 0.85rem; color: #9898ac;
+      font-size: 0.85rem; color: var(--text-mute);
       line-height: 1.6; margin-bottom: 12px;
     }
     .phase-card {
-      background: #0e0e16; border-radius: 6px;
+      background: var(--bg-soft); border-radius: 6px;
       padding: 10px 12px; margin-bottom: 8px;
-      border-left: 3px solid #1e1e2a;
+      border-left: 3px solid var(--border);
       transition: border-color 0.3s, opacity 0.3s, background 0.3s;
     }
-    .phase-card.active { border-left-color: #7c8cf8; background: #10101a; }
+    .phase-card.active { border-left-color: var(--accent); background: #10101a; }
     .phase-card.done { border-left-color: #34d399; opacity: 0.7; }
     .phase-card.error { border-left-color: #f87c7c; }
     .phase-card .phase-title {
@@ -64,10 +64,10 @@
       margin-bottom: 4px;
     }
     .phase-card .phase-detail {
-      font-size: 0.82rem; color: #9898ac; line-height: 1.5;
+      font-size: 0.82rem; color: var(--text-mute); line-height: 1.5;
       font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
     }
-    .highlight { color: #7c8cf8; font-weight: 600; }
+    .highlight { color: var(--accent); font-weight: 600; }
     .highlight-green { color: #34d399; font-weight: 600; }
     .highlight-yellow { color: #facc15; font-weight: 600; }
     .highlight-red { color: #f87c7c; font-weight: 600; }
@@ -76,34 +76,34 @@
       padding: 8px 10px; margin: 6px 0;
       font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
       font-size: 0.75rem; line-height: 1.5;
-      border: 1px solid #1a1a28;
+      border: 1px solid var(--bg-elevated);
       overflow-x: auto;
     }
-    .json-key { color: #7c8cf8; }
+    .json-key { color: var(--accent); }
     .json-str { color: #34d399; }
-    .json-comment { color: #666880; font-style: italic; }
+    .json-comment { color: var(--text-faint); font-style: italic; }
     .controls {
       display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;
     }
     button {
-      background: #1a1a28; border: 1px solid #2a2a3a;
-      color: #b0b0cc; padding: 6px 14px; border-radius: 6px;
+      background: var(--bg-elevated); border: 1px solid #2a2a3a;
+      color: var(--text); padding: 6px 14px; border-radius: 6px;
       font-size: 0.82rem; cursor: pointer;
       transition: background 0.15s, border-color 0.15s;
     }
-    button:hover { background: #22222f; border-color: #3a3a50; }
+    button:hover { background: #22222f; border-color: var(--border-hover); }
     .cost-bar {
       display: flex; align-items: center; gap: 8px;
       font-size: 0.78rem; margin-bottom: 6px;
     }
     .cost-bar .bar-track {
-      flex: 1; height: 6px; background: #1e1e2a; border-radius: 3px; overflow: hidden;
+      flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden;
     }
     .cost-bar .bar-fill {
       height: 100%; border-radius: 3px; transition: width 0.5s;
     }
     .divider {
-      border: none; border-top: 1px solid #1e1e2a; margin: 12px 0;
+      border: none; border-top: 1px solid var(--border); margin: 12px 0;
     }
     @media (max-width: 900px) {
       .main-layout { flex-direction: column; }
@@ -113,9 +113,52 @@
       body { padding: 24px 12px; }
       h1 { font-size: 1.3rem; }
     }
+  
+    /* ===== CANONICAL VISUAL IDENTITY (emmaleonhart.com/_identity/) ====
+       Appended last so it overrides any earlier Pewter :root. Dark is
+       default; [data-theme="light"] flips it. Semantic data vars
+       (--green/--orange/--purple/--red) are intentionally NOT redefined. */
+    :root{
+      --bg:#07070c; --bg-soft:#0c0c14; --bg-card:#11111b; --bg-elevated:#14141f;
+      --surface:#11111b; --surface2:#14141f;
+      --border:#1d1d2c; --border-hover:#34344e; --border-strong:#262638;
+      --text:#d4d4e0; --text-strong:#f0f0f6; --text-mute:#8c8caa;
+      --text-muted:#8c8caa; --text-dim:#5d5d78; --text-faint:#5d5d78;
+      --accent:#8b9bff; --accent-bright:#b0bcff; --accent-hover:#b0bcff;
+      --accent-dim:#5d6bd0; --accent-soft:rgba(139,155,255,.10);
+      --accent-glow:rgba(139,155,255,.28);
+    }
+    html[data-theme="light"]{
+      --bg:#f4f4f8; --bg-soft:#ebebf2; --bg-card:#ffffff; --bg-elevated:#fbfbfe;
+      --surface:#ffffff; --surface2:#fbfbfe;
+      --border:#dadae6; --border-hover:#b6b6cf; --border-strong:#c7c7d8;
+      --text:#2b2b38; --text-strong:#14141f; --text-mute:#5c5c74;
+      --text-muted:#5c5c74; --text-dim:#8c8caa; --text-faint:#8c8caa;
+      --accent:#5160dd; --accent-bright:#3a48c4; --accent-hover:#3a48c4;
+      --accent-dim:#7a86e0; --accent-soft:rgba(81,96,221,.10);
+      --accent-glow:rgba(81,96,221,.22);
+    }
+    body{transition:background .35s ease,color .35s ease}
+    .theme-toggle{position:fixed;top:18px;right:18px;z-index:200;width:40px;
+      height:40px;display:flex;align-items:center;justify-content:center;
+      background:var(--bg-card);border:1px solid var(--border);
+      border-radius:999px;color:var(--text-mute);cursor:pointer;
+      transition:color .2s,border-color .2s,background .2s,transform .2s}
+    .theme-toggle:hover{color:var(--accent-bright);border-color:var(--accent);
+      background:var(--accent-soft);transform:translateY(-1px)}
+    .theme-toggle svg{width:18px;height:18px;display:none}
+    html[data-theme="dark"] .theme-toggle .icon-sun{display:block}
+    html[data-theme="light"] .theme-toggle .icon-moon{display:block}
   </style>
+  <!-- Canonical identity: theme before first paint (dark default). See emmaleonhart.com/_identity/. -->
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t!=='light'&&t!=='dark')t='dark';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
 </head>
 <body>
+  <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle light and dark theme" title="Toggle light / dark">
+    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg>
+    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+  </button>
+
 <nav style="padding:12px 24px;border-bottom:1px solid #1e1e2a;display:flex;align-items:center;gap:24px;font-size:0.9rem;background:#0a0a0f;flex-shrink:0;width:100%;">
     <a href="../../" style="font-weight:700;font-size:1.1em;color:#e8e8f0;text-decoration:none;"><span style="color:#7c8cf8;">Loka</span></a>
     <a href="../../#download" style="color:#8888a0;text-decoration:none;">Download</a>
@@ -159,5 +202,6 @@
     </div>
   </div>
   <script type="module" src="main.js"></script>
+  <script>(function(){var b=document.getElementById('theme-toggle');if(!b)return;b.addEventListener('click',function(){var c=document.documentElement.getAttribute('data-theme')==='light'?'light':'dark';var n=c==='light'?'dark':'light';document.documentElement.setAttribute('data-theme',n);try{localStorage.setItem('theme',n);}catch(e){}});})();</script>
 </body>
 </html>
