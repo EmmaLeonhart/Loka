@@ -35,9 +35,7 @@ pub use pseudotable::{
     SelectionVector, SubgraphPath, SubgraphPattern,
 };
 pub use rdfxml::parse_rdfxml;
-pub use retract::{
-    retract_set, RetractSet, PROP_INFERRED_FROM, RESERVED_PROVENANCE_PREFIX,
-};
+pub use retract::{retract_set, RetractSet, PROP_INFERRED_FROM, RESERVED_PROVENANCE_PREFIX};
 pub use store::TripleStore;
 pub use temporal::{
     decode_inline_temporal, inline_temporal, parse_temporal, TemporalAnnotations,
