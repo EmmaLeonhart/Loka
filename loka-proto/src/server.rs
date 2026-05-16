@@ -295,7 +295,8 @@ fn resolve_term_for_csv(id: loka_core::TermId, dict: &TermDictionary) -> String 
     }
     // render_term resolves plain terms exactly as `resolve` would and an
     // RDF-star quoted-triple id to faithful `<< s p o >>` (no more _:idN).
-    dict.render_term(id).unwrap_or_else(|| format!("_:id{}", id))
+    dict.render_term(id)
+        .unwrap_or_else(|| format!("_:id{}", id))
 }
 
 // ─── SPARQL XML ─────────────────────────────────────────────────────────────
