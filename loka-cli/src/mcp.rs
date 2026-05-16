@@ -438,6 +438,18 @@ fn handle_tools_list(id: &Value) -> Value {
                     }
                 },
                 {
+                    "name": "retract_node",
+                    "description": "Cascade-retraction: remove a node — real data OR AI-generated — and every generated inference that transitively cited it. Propagation follows ONLY provenance back-edges (http://loka.dev/provenance/propositionInferredFrom); ordinary data edges are never followed (real→real is not a dependency). Dry-run by default: returns the would-be-removed set grouped by cascade depth. Pass commit:true to actually delete (DESTRUCTIVE).",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {
+                            "iri": {"type": "string", "description": "The node IRI to retract"},
+                            "commit": {"type": "boolean", "description": "false (default) = non-destructive preview; true = delete the cascade"}
+                        },
+                        "required": ["iri"]
+                    }
+                },
+                {
                     "name": "backup",
                     "description": "Create a backup snapshot of the database. Works in both serverless and server modes.",
                     "inputSchema": {"type": "object", "properties": {}}
@@ -508,6 +520,7 @@ async fn handle_tools_call(
         "database_info" => tool_database_info(ctx).await,
         "sparql_query" => tool_sparql_query(ctx, args).await,
         "insert_triples" => tool_insert_triples(ctx, args).await,
+        "retract_node" => tool_retract_node(ctx, args).await,
         "backup" => tool_backup(ctx).await,
         "vector_search" => tool_vector_search(ctx, args).await,
         "download_studio" => tool_download_studio(notify_tx).await,
@@ -1291,17 +1304,11 @@ fn open_serverless(
     Ok((ps, store, dict))
 }
 
-/// Resolve a TermId to its string representation.
+/// Resolve a TermId to its string representation. `render_term` resolves
+/// plain terms exactly as `resolve` would and an RDF-star quoted-triple id
+/// to faithful `<< s p o >>` (no more `_:idN`).
 fn resolve_id(id: loka_core::TermId, dict: &loka_core::TermDictionary) -> String {
-    if let Some(n) = loka_core::decode_inline_integer(id) {
-        return n.to_string();
-    }
-    if let Some(b) = loka_core::decode_inline_boolean(id) {
-        return b.to_string();
-    }
-    dict.resolve(id)
-        .map(|s| s.to_string())
-        .unwrap_or_else(|| format!("_:id{}", id))
+    dict.render_term(id).unwrap_or_else(|| format!("_:id{}", id))
 }
 
 // ─── Tool implementations ────────────────────────────────────────────────────
@@ -1555,6 +1562,67 @@ async fn tool_insert_triples(ctx: &McpContext, args: &Value) -> Result<String, S
     }
     let result = http_post(ctx, "/triples", data, "application/n-triples").await?;
     Ok(result.to_string())
+}
+
+/// Cascade-retraction (Phase 3). Dry-run by default; `commit:true` deletes.
+async fn tool_retract_node(ctx: &McpContext, args: &Value) -> Result<String, String> {
+    let iri = args["iri"].as_str().ok_or("Missing 'iri' argument")?;
+    let commit = args["commit"].as_bool().unwrap_or(false);
+
+    if ctx.mode == "serverless" {
+        let data_dir = ctx.data_dir.as_deref().unwrap_or("./loka-data");
+        let (ps, store, dict) = open_serverless(data_dir)?;
+        let set = match dict.lookup(iri) {
+            Some(root) => loka_core::retract_set(root, &store, &dict),
+            None => loka_core::RetractSet::default(),
+        };
+        let total = set.total();
+        let mut lines = Vec::new();
+        for (depth, triples) in set.by_depth.iter().enumerate() {
+            for t in triples {
+                lines.push(format!(
+                    "  [d{}] {} {} {}",
+                    depth,
+                    resolve_id(t.subject, &dict),
+                    resolve_id(t.predicate, &dict),
+                    resolve_id(t.object, &dict)
+                ));
+            }
+        }
+        if !commit {
+            return Ok(format!(
+                "DRY RUN — would retract {} triple(s) rooted at {} (max depth {}). \
+                 Pass commit:true to delete.\n{}",
+                total,
+                iri,
+                set.max_depth(),
+                lines.join("\n")
+            ));
+        }
+        let mut removed = 0usize;
+        for t in set.all() {
+            if ps.remove(t).unwrap_or(false) {
+                removed += 1;
+            }
+        }
+        ps.flush().map_err(|e| format!("Flush error: {}", e))?;
+        // HNSW is rebuilt from the remaining vector triples on next open,
+        // so removing the vector rows from the persistent store is
+        // sufficient in serverless mode (no live VectorRegistry to tombstone).
+        return Ok(format!(
+            "COMMITTED — retracted {} of {} triple(s) rooted at {} (max depth {}).\n{}",
+            removed,
+            total,
+            iri,
+            set.max_depth(),
+            lines.join("\n")
+        ));
+    }
+
+    // Server mode: the engine owns the mutation; POST /retract.
+    let body = serde_json::json!({ "iri": iri, "commit": commit }).to_string();
+    let result = http_post(ctx, "/retract", &body, "application/json").await?;
+    Ok(serde_json::to_string_pretty(&result).unwrap_or_else(|_| result.to_string()))
 }
 
 async fn tool_backup(ctx: &McpContext) -> Result<String, String> {

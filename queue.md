@@ -58,9 +58,16 @@ Ordered; barrel top-down. Each line = one commit+push.
   committed:false}`. Triples rendered via `render_term` (quoted faithful).
   hnsw_tombstones = removed triples whose predicate has a declared vector
   index. proto test asserts cascade + store-count-unchanged. proto green (13).
-- **B7. Cascade Phase 3 — `retract_node` MCP tool.** `commit:false` default →
-  preview; `commit:true` → delete via existing path + `VectorRegistry::delete`.
-  The destructive surface — stays opt-in behind the explicit flag.
+- **B7. ✅ DONE — Cascade Phase 3, the destructive surface.** `POST /retract`
+  (loka-proto): `{iri, commit}`; `commit:false` (default) = same as preview,
+  `commit:true` deletes the cascade from in-memory + persistent store and
+  flips HNSW entries via `VectorRegistry::delete` (the wired-but-never-called
+  path, now invoked). `retract_node` MCP tool (loka-cli): dry-run default;
+  serverless mode operates on the PersistentStore directly, server mode POSTs
+  `/retract`. mcp `resolve_id` also fixed to `render_term`. proto test:
+  commit:false no-op, commit:true deletes the whole cascade incl. the
+  transitively-cited child. All crates green (proto 14, cli 14). **The
+  functional "cut off the branches" goal is achieved and agent-operable.**
 - **B8. Cascade Phase 4 — Studio dependency-tree preview + confirm.** GUI;
   agent-first means this may land as a documented follow-up if scope runs long.
 
