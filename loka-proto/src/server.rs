@@ -1112,7 +1112,10 @@ fn render_retract_by_depth(
     dict: &TermDictionary,
     vectors: &VectorRegistry,
 ) -> (Vec<serde_json::Value>, usize) {
-    let render = |id: loka_core::TermId| dict.render_term(id).unwrap_or_else(|| format!("_:id{}", id));
+    let render = |id: loka_core::TermId| {
+        dict.render_term(id)
+            .unwrap_or_else(|| format!("_:id{}", id))
+    };
     let mut hnsw = 0usize;
     let by_depth = set
         .by_depth
@@ -1922,11 +1925,18 @@ mod tests {
             .body(Body::from(r#"{"iri":"http://wd/Q42","commit":false}"#))
             .unwrap();
         let resp = app.oneshot(req).await.unwrap();
-        let j: serde_json::Value =
-            serde_json::from_slice(&axum::body::to_bytes(resp.into_body(), usize::MAX).await.unwrap())
-                .unwrap();
+        let j: serde_json::Value = serde_json::from_slice(
+            &axum::body::to_bytes(resp.into_body(), usize::MAX)
+                .await
+                .unwrap(),
+        )
+        .unwrap();
         assert_eq!(j["committed"], false);
-        assert_eq!(state.store.read().unwrap().len(), before, "dry-run is a no-op");
+        assert_eq!(
+            state.store.read().unwrap().len(),
+            before,
+            "dry-run is a no-op"
+        );
         let total = j["total"].as_u64().unwrap();
         assert!(total >= 3);
 
@@ -1939,9 +1949,12 @@ mod tests {
             .body(Body::from(r#"{"iri":"http://wd/Q42","commit":true}"#))
             .unwrap();
         let resp = app.oneshot(req).await.unwrap();
-        let j: serde_json::Value =
-            serde_json::from_slice(&axum::body::to_bytes(resp.into_body(), usize::MAX).await.unwrap())
-                .unwrap();
+        let j: serde_json::Value = serde_json::from_slice(
+            &axum::body::to_bytes(resp.into_body(), usize::MAX)
+                .await
+                .unwrap(),
+        )
+        .unwrap();
         assert_eq!(j["committed"], true);
         assert!(j["removed"].as_u64().unwrap() >= 3);
         assert_eq!(
@@ -1957,7 +1970,12 @@ mod tests {
             .find_by_subject(state.dict.read().unwrap().lookup("http://wd/Q350").unwrap())
             .iter()
             .any(|t| t.predicate
-                == state.dict.read().unwrap().lookup("http://wd/G_died").unwrap()));
+                == state
+                    .dict
+                    .read()
+                    .unwrap()
+                    .lookup("http://wd/G_died")
+                    .unwrap()));
     }
 
     #[tokio::test]
