@@ -32,10 +32,12 @@ Ordered; barrel top-down. Each line = one commit+push.
   subjects come back faithfully. End-to-end ffi test (insert annotation →
   count==2 proves the inner triple is no longer dropped → query → faithful
   `<< … >>`). All crates green.
-- **B3. Persistence reopen round-trip.** Integration test: ingest a quoted
-  triple into a real (on-disk tempdir) `PersistentStore`, drop, reopen,
-  assert `resolve_quoted`/`render_term` survive. (`temporary()` can't reopen —
-  this is the durability proof Phase 0's unit tests can't give.)
+- **B3. ✅ DONE — Persistence reopen round-trip.** `quoted_survives_store_reopen`
+  in `loka-core/persistent.rs`: on-disk tempdir store, write quoted triple,
+  drop (sled closed), reopen, `load_terms_into` → `resolve_quoted` +
+  `render_term` + the annotation row all survive. `tempfile` added to
+  loka-core dev-deps. Proves Phase 0 durability (unit tests use `temporary()`
+  which can't reopen).
 - **B4. RDF-star export round-trips.** Turtle (`resolve_term_for_turtle` +
   `export_graph`) and N-Triples export render a quoted-triple position as
   `<< … >>`, not `_:idN`. Test: export → re-parse → identical.
