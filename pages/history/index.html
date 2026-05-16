@@ -316,13 +316,19 @@ hr { border: none; border-top: 1px solid var(--border); margin: 36px 0; }
 </p>
 
 <div class="callout warn">
-  <strong>Engine bugs surfaced at scale.</strong>
+  <strong>Engine bugs surfaced at scale &mdash; both now resolved.</strong>
   <ul style="margin-top: 8px; margin-bottom: 0;">
-    <li><strong>SPARQL <code>?s ?p ?o</code> occasionally returns literal values in the predicate slot.</strong> RDF disallows literal predicates;
-    this is invalid output from the executor. Filtered at preprocess (drops ~1% of rows on a 5M corpus). Real engine bug.</li>
-    <li><strong><code>POST /triples</code> wedges after roughly every 5–6× growth in stored triples.</strong> Hit at ~174k and again at ~1M during the
-    HF ingest. <code>/health</code> keeps responding, but <code>/triples</code> and SPARQL hang indefinitely until restart. Data is intact on disk;
-    recoverable. Real engine bug.</li>
+    <li><strong>SPARQL <code>?s ?p ?o</code> occasionally returned literal values in the predicate slot.</strong> RDF (and RDF-star) forbid
+    literal predicates, so this was invalid output &mdash; the fingerprint of a mis-keyed RDF-star annotation row (~1% of a 5M corpus; also
+    surfaced as a literal in <code>?qp</code> for <code>&lt;&lt; ?s ?p ?o &gt;&gt; ?qp ?qv</code>). Masked at preprocess, then
+    <strong>fixed at the query layer 2026-05-16</strong> (commit <code>b63af81</code>): the <code>loka-sparql</code> executor now enforces
+    the no-literal-predicate invariant at the basic scan and both RDF-star wildcard loops, with two <code>engine_bug2_*</code> regression
+    tests and the full 119-test suite green. The ingest-side root cause &mdash; a content-addressed quoted-triple id with no persisted
+    reverse map &mdash; is specified as the next engine work item (<code>planning/cascade-retraction.md</code>, Phase 0).</li>
+    <li><strong><code>POST /triples</code> wedged after roughly every 5&ndash;6&times; growth in stored triples.</strong> Hit at ~174k and
+    again at ~1M during the HF ingest; <code>/health</code> kept responding while <code>/triples</code> and SPARQL hung until restart, data
+    intact on disk. <strong>Fixed during v9</strong> (commit <code>39effbb</code>): one sled multi-tree transaction per request instead of
+    3&ndash;4 per line, synchronous flush removed. Verified at 2M-triple sustained ingest, no recurrence.</li>
   </ul>
 </div>
 
