@@ -320,16 +320,33 @@ hr { border: none; border-top: 1px solid var(--border); margin: 36px 0; }
   <ul style="margin-top: 8px; margin-bottom: 0;">
     <li><strong>SPARQL <code>?s ?p ?o</code> occasionally returned literal values in the predicate slot.</strong> RDF (and RDF-star) forbid
     literal predicates, so this was invalid output &mdash; the fingerprint of a mis-keyed RDF-star annotation row (~1% of a 5M corpus; also
-    surfaced as a literal in <code>?qp</code> for <code>&lt;&lt; ?s ?p ?o &gt;&gt; ?qp ?qv</code>). Masked at preprocess, then
-    <strong>fixed at the query layer 2026-05-16</strong> (commit <code>b63af81</code>): the <code>loka-sparql</code> executor now enforces
-    the no-literal-predicate invariant at the basic scan and both RDF-star wildcard loops, with two <code>engine_bug2_*</code> regression
-    tests and the full 119-test suite green. The ingest-side root cause &mdash; a content-addressed quoted-triple id with no persisted
-    reverse map &mdash; is specified as the next engine work item (<code>planning/cascade-retraction.md</code>, Phase 0).</li>
+    surfaced as a literal in <code>?qp</code> for <code>&lt;&lt; ?s ?p ?o &gt;&gt; ?qp ?qv</code>). <strong>Fully resolved 2026-05-16</strong>,
+    ingest <em>and</em> query layers: (i) the <code>loka-sparql</code> executor now enforces the no-literal-predicate invariant (commit
+    <code>b63af81</code>, two <code>engine_bug2_*</code> tests); (ii) the ingest-side root cause &mdash; a content-addressed
+    <code>quoted_triple_id</code> with no persisted reverse map (a one-way hash can't be reversed, so a quoted subject couldn't render and
+    the proto path persisted a <code>&lt;&lt;QUOTED_TRIPLE&gt;&gt;</code> sentinel) &mdash; was fixed with a persisted
+    <code>quoted_triple_id&nbsp;&rarr;&nbsp;(s,p,o)</code> reverse index, rehydrated on reopen; (iii) two ingest paths
+    (<code>loka-ffi</code>, the serverless MCP tool) that dropped inner triples were switched to the RDF-star parser. RDF-star now
+    round-trips losslessly across ingest, persistence, query, and export &mdash; and closing the ingest side unblocked
+    <strong>cascade-retraction</strong> (below).</li>
     <li><strong><code>POST /triples</code> wedged after roughly every 5&ndash;6&times; growth in stored triples.</strong> Hit at ~174k and
     again at ~1M during the HF ingest; <code>/health</code> kept responding while <code>/triples</code> and SPARQL hung until restart, data
     intact on disk. <strong>Fixed during v9</strong> (commit <code>39effbb</code>): one sled multi-tree transaction per request instead of
     3&ndash;4 per line, synchronous flush removed. Verified at 2M-triple sustained ingest, no recurrence.</li>
   </ul>
+</div>
+
+<div class="callout">
+  <strong>Cascade-retraction shipped (2026-05-16).</strong> The flip side of the
+  <code>propositionInferredFrom</code> citation graph is that it is <em>actionable</em>. Remove a node &mdash; real data
+  or model-generated &mdash; and every generated inference that transitively cited it disappears with it. Propagation
+  follows <strong>only</strong> provenance back-edges, bounded to <code>http://loka.dev/provenance/</code>: an ordinary
+  data edge is never mistaken for a derivation (real&rarr;real is not a dependency) and the traversal is cycle-safe.
+  It ships end-to-end &mdash; a pure engine function (<code>retract_set</code>), a read-only
+  <code>POST&nbsp;/retract/preview</code>, a commit-gated <code>POST&nbsp;/retract</code> + <code>retract_node</code>
+  MCP tool, and a Loka Studio &ldquo;Retract (cascade)&rdquo; confirm action &mdash; with the destructive path opt-in
+  (dry-run preview is the default at every surface). It depended on the quoted-triple reverse index above: you cannot
+  dereference a <code>propositionInferredFrom</code> source while a quoted-triple id is a one-way hash.
 </div>
 
 <p>

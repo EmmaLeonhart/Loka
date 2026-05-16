@@ -247,8 +247,9 @@ No separate SP or PO indexes needed — they are prefix scans on SPO and POS res
 ### Implementation Notes
 - Underlying storage: LSM-tree (RocksDB or sled TBD — see open questions)
 - IRIs and blank nodes interned to u64 at write time
-- Quoted triples get a content-addressed u64 ID: hash(S, P, O)
+- Quoted triples get a content-addressed u64 ID: hash(S, P, O). **A persisted `quoted_triple_id → (s,p,o)` reverse index** (`loka-core`, written inside the batch transaction, rehydrated by `load_terms_into` on reopen) makes that one-way hash reversible — required for faithful `<< s p o >>` rendering across query/CSV/Turtle/N-Triples and for dereferencing `propositionInferredFrom` sources. **Always mint quoted ids via `TermDictionary::register_quoted` (or `PersistentStore::register_quoted`), never bare `quoted_triple_id`, on any ingest path** — otherwise the id is unreversible and renders as `_:idN`.
 - All index entries operate on u64 IDs, never strings
+- **Cascade-retraction** (`loka-core::retract_set`): remove a node + every generated inference that transitively cited it, bounded to `http://loka.dev/provenance/`, following only `propositionInferredFrom` (real→real is not a dependency), cycle-safe. Surfaces: `POST /retract/preview` (read-only), `POST /retract` (commit-gated), `retract_node` MCP tool, Loka Studio action. Destructive path is opt-in everywhere (dry-run default). Design: `planning/cascade-retraction.md`.
 
 ---
 

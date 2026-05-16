@@ -216,6 +216,33 @@ li { margin-bottom: 6px; }
   model thinks the reasoning is. The schema does the work; we don't need elaborate guards.
 </div>
 
+<h2 id="cascade">Cascade-retraction &mdash; the citation graph is actionable</h2>
+<p>
+  Auditable is the floor; the real payoff is that the citation graph is <strong>actionable</strong>. Remove a node
+  &mdash; real data or model-generated &mdash; and every generated inference that transitively cited it disappears with
+  it. When a source turns out to be wrong, the contaminated model output is excised precisely instead of lingering as
+  orphaned hallucination.
+</p>
+<p>
+  Propagation follows <strong>only</strong> <code>propositionInferredFrom</code> back-edges and is bounded to the
+  reserved <code>http://loka.dev/provenance/</code> namespace, so an ordinary data edge is never mistaken for a
+  derivation &mdash; <em>real&rarr;real is not a dependency</em> &mdash; and the traversal is cycle-safe. It ships
+  end-to-end: a pure engine function (<code>retract_set</code>), a read-only <code>POST /retract/preview</code>, a
+  commit-gated <code>POST /retract</code> plus a <code>retract_node</code> MCP tool, and a Loka Studio
+  &ldquo;Retract (cascade)&rdquo; confirm action. The destructive path is opt-in &mdash; a dry-run preview, showing
+  exactly what would disappear by cascade depth, is the default at every surface.
+</p>
+<pre><code># MCP: preview by default, commit explicitly
+retract_node { "iri": "&lt;node&gt;" }                 # dry run — lists the cascade
+retract_node { "iri": "&lt;node&gt;", "commit": true } # destructive — deletes it</code></pre>
+<p class="meta">
+  This depends on Loka assigning RDF-star quoted triples a persisted, reversible id: a
+  <code>propositionInferredFrom</code> object is a content hash of the cited triple, and the cascade can only
+  dereference it because the engine keeps a <code>quoted_triple_id&nbsp;&rarr;&nbsp;(s,p,o)</code> reverse index
+  (the same index that makes a quoted subject render as <code>&lt;&lt; s p o &gt;&gt;</code> instead of an opaque
+  blank node, end-to-end across ingest, persistence, query, and export).
+</p>
+
 <h2>Cumulative repetition penalty</h2>
 <p>
   Masked-S/P/O training produces models that "know" the answer category (university, museum, https-URL) but degenerate

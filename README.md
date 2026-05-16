@@ -74,7 +74,7 @@ The Loka project ships **two parallel artifacts on Hugging Face**:
 | **[`EmmaLeonhart/loka`](https://huggingface.co/datasets/EmmaLeonhart/loka)** | Trained model checkpoints (44.5 M-param BPE transformer, v3 → v14) + the training corpora used for each | `v14` (epoch-4 ppl **202.01** — series best, 2026-05-15) |
 | **[`EmmaLeonhart/normalized-wikidata`](https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata)** | Clean text-form Wikidata triples for world-model training — published as a standalone artifact for anyone | `v14-1M` (4 021 409 triples, 2026-05-15) |
 
-The world model is a small role-aware transformer that predicts missing slot values in `<<S P O>>` triples. Its predictions land back in the Loka triplestore as RDF-star annotations with `propositionInferredFrom` provenance edges. The training corpus and the model live in separate HF repos starting from v11 — the corpus is independently useful even if you don't use Loka.
+The world model is a small role-aware transformer that predicts missing slot values in `<<S P O>>` triples. Its predictions land back in the Loka triplestore as RDF-star annotations with `propositionInferredFrom` provenance edges. That provenance graph is **actionable**: [cascade-retraction](#whats-new--rdf-star-hardening--cascade-retraction-2026-05-16) removes any node together with every generated inference that transitively cited it. The training corpus and the model live in separate HF repos starting from v11 — the corpus is independently useful even if you don't use Loka.
 
 ### Multi-rung pipeline (v11 → v14, all shipped)
 
@@ -139,6 +139,11 @@ The script pulls the v14-1M corpus from `EmmaLeonhart/normalized-wikidata` and t
 **Please open a GitHub issue at <https://github.com/EmmaLeonhart/Loka/issues> before you start** so the work doesn't get duplicated, and comment on it with your HF link when done — Emma can then mirror your result to `EmmaLeonhart/loka@v14` and credit you.
 
 Wall-time estimate at batch 16: ~4 h/epoch on an RTX 4090, ~8 h/epoch on an RTX 4070 Laptop. Full instructions and the rationale for the contributor path live at <https://loka.emmaleonhart.com/contribute/>.
+
+## What's New — RDF-star hardening + cascade-retraction (2026-05-16)
+
+- **Cascade-retraction.** Remove a node — real data or model-generated — and every generated inference that transitively cited it disappears with it. Propagation follows **only** `propositionInferredFrom` provenance back-edges, bounded to the reserved `http://loka.dev/provenance/` namespace: an ordinary data edge is never mistaken for a derivation (real→real is not a dependency) and the traversal is cycle-safe. Ships end-to-end — a pure engine function (`retract_set`), a read-only `POST /retract/preview`, a commit-gated `POST /retract`, a `retract_node` MCP tool (the **13th**), and a Loka Studio "Retract (cascade)" confirm action. **Destructive path is opt-in: dry-run preview is the default at every surface.**
+- **RDF-star is now solid across every path.** Engine bug #2 (literal values in the predicate slot) is fully closed: a query-layer no-literal-predicate invariant, *plus* the ingest-side root cause — content-addressed `quoted_triple_id` had no persisted reverse map (a one-way hash, so a quoted subject couldn't render and the bulk path stored a `<<QUOTED_TRIPLE>>` sentinel). A persisted `quoted_triple_id → (s,p,o)` reverse index (rehydrated on reopen) fixes faithful `<< s p o >>` rendering across query / CSV / Turtle / N-Triples export, and two ingest paths (`loka-ffi`, the serverless MCP tool) that dropped inner triples were switched to the RDF-star parser. RDF-star round-trips losslessly across ingest, persistence, query, and export.
 
 ## What's New in v0.3
 
