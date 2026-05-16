@@ -37,18 +37,26 @@
     </script>
     <title>Loka &mdash; Neuro-Symbolic World Model on RDF-Star</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f4dc;</text></svg>">
+    <!-- Canonical identity: the ONE shared stylesheet (palette, light
+         flip, .theme-toggle, .gh repo pill, type). Linked, not copied —
+         same file as emmaleonhart.com/identity.css. -->
+    <link rel="stylesheet" href="/identity.css">
     <style>
+        /* Loka maps its component var names onto the shared /identity.css
+           tokens — palette + dark/light flip come from that one linked
+           file, not a cascade-override copy. Semantic data colors are
+           Loka's own and keep their meaning. */
         :root {
-            --bg: #0d1117;
-            --surface: #161b22;
-            --border: #30363d;
-            --text: #e6edf3;
-            --text-muted: #8b949e;
-            --accent: #58a6ff;
-            --accent-hover: #79c0ff;
+            --surface: var(--bg-card);
+            --surface2: var(--bg-elevated);
+            --text-muted: var(--text-mute);
+            --text-dim: var(--text-faint);
+            --accent-hover: var(--accent-bright);
+            --accent-dim: var(--accent);
             --green: #3fb950;
             --orange: #d29922;
             --purple: #bc8cff;
+            --red: #f85149;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -269,54 +277,6 @@
             border-top: 1px solid var(--border);
         }
     
-    /* ===== CANONICAL VISUAL IDENTITY (emmaleonhart.com/_identity/) ====
-       Appended last so it overrides any earlier Pewter :root. Dark is
-       default; [data-theme="light"] flips it. Semantic data vars
-       (--green/--orange/--purple/--red) are intentionally NOT redefined. */
-    :root{
-      --bg:#07070c; --bg-soft:#0c0c14; --bg-card:#11111b; --bg-elevated:#14141f;
-      --surface:#11111b; --surface2:#14141f;
-      --border:#1d1d2c; --border-hover:#34344e; --border-strong:#262638;
-      --text:#d4d4e0; --text-strong:#f0f0f6; --text-mute:#8c8caa;
-      --text-muted:#8c8caa; --text-dim:#5d5d78; --text-faint:#5d5d78;
-      --accent:#8b9bff; --accent-bright:#b0bcff; --accent-hover:#b0bcff;
-      --accent-dim:#5d6bd0; --accent-soft:rgba(139,155,255,.10);
-      --accent-glow:rgba(139,155,255,.28);
-    }
-    html[data-theme="light"]{
-      --bg:#f4f4f8; --bg-soft:#ebebf2; --bg-card:#ffffff; --bg-elevated:#fbfbfe;
-      --surface:#ffffff; --surface2:#fbfbfe;
-      --border:#dadae6; --border-hover:#b6b6cf; --border-strong:#c7c7d8;
-      --text:#2b2b38; --text-strong:#14141f; --text-mute:#5c5c74;
-      --text-muted:#5c5c74; --text-dim:#8c8caa; --text-faint:#8c8caa;
-      --accent:#5160dd; --accent-bright:#3a48c4; --accent-hover:#3a48c4;
-      --accent-dim:#7a86e0; --accent-soft:rgba(81,96,221,.10);
-      --accent-glow:rgba(81,96,221,.22);
-    }
-    body{transition:background .35s ease,color .35s ease}
-    .theme-toggle{position:fixed;top:18px;right:18px;z-index:200;width:40px;
-      height:40px;display:flex;align-items:center;justify-content:center;
-      background:var(--bg-card);border:1px solid var(--border);
-      border-radius:999px;color:var(--text-mute);cursor:pointer;
-      transition:color .2s,border-color .2s,background .2s,transform .2s}
-    .theme-toggle:hover{color:var(--accent-bright);border-color:var(--accent);
-      background:var(--accent-soft);transform:translateY(-1px)}
-    .theme-toggle svg{width:18px;height:18px;display:none}
-    html[data-theme="dark"] .theme-toggle .icon-sun{display:block}
-    html[data-theme="light"] .theme-toggle .icon-moon{display:block}
-    /* GitHub repo pill — same identity widget as the sister sites */
-    .gh{display:inline-flex;align-items:center;gap:8px;color:var(--accent);
-      padding:6px 13px;border:1px solid var(--border-hover);border-radius:8px;
-      background:var(--accent-soft);font-size:.8rem;font-weight:500;
-      font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
-      text-decoration:none;transition:color .2s,border-color .2s,background .2s}
-    .gh:hover{color:var(--accent-bright);border-color:var(--accent)}
-    .gh svg{width:15px;height:15px;fill:currentColor;flex:none}
-    .gh .gh-stat{display:inline-flex;align-items:center;gap:5px;
-      padding-left:9px;border-left:1px solid var(--border-hover);
-      color:var(--text-mute);font-variant-numeric:tabular-nums}
-    .gh .gh-stat svg{width:13px;height:13px}
-    .gh:hover .gh-stat{border-color:var(--accent);color:var(--accent-bright)}
   </style>
   <!-- Canonical identity: theme before first paint (dark default). See emmaleonhart.com/_identity/. -->
   <script>(function(){try{var t=localStorage.getItem('theme');if(t!=='light'&&t!=='dark')t='dark';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
