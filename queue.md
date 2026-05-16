@@ -6,17 +6,45 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ---
 
-## ✅ Cascade-retraction Phase 0 — DONE 2026-05-16
+## 🔁 BARREL — RDF-star hardening → cascade-retraction (2026-05-16, continuous)
 
-Persisted `quoted_triple_id → (s,p,o)` reverse index landed
-(`loka-core` id.rs + persistent.rs `quoted` sled tree, written inside
-`insert_batch`'s txn; `loka-proto` mint/render; `loka-cli` import). Quoted
-ids now reverse to their components and render as faithful `<< s p o >>`.
-**This also fixed ingest-side Bug A** (proto no longer persists the
-`<<QUOTED_TRIPLE>>` sentinel). Unit + end-to-end tests; core+proto+sparql
-suites green, zero regressions. Writeup: `planning/cascade-retraction.md` §6a.
-Cascade Phases 1–4 are now unblocked (Active #8). Next: **Phase 1** — the
-pure `retract_set` cascade fn + tests.
+**Directive (user, 2026-05-16):** get RDF-star solid across *every* path
+(ingest / query / export / persistence), then land cascade-retraction
+("cutting off the branches") as the finale. Work continuously, commit+push
+each unit, don't stop to re-ask. Durable push authorization for this effort.
+
+Ordered; barrel top-down. Each line = one commit+push.
+
+- **B0. ✅ DONE — quoted-triple reverse index (cascade Phase 0).** Persisted
+  `quoted_triple_id → (s,p,o)` map; faithful `<< s p o >>` render; fixed Bug A.
+  Commit `d95c80f`. `planning/cascade-retraction.md` §6a.
+- **B1. Cascade Phase 1 — pure `retract_set` fn + tests.** Non-destructive.
+  `retract_set(root_id, store, dict) -> Vec<Triple>`: node's own rows +
+  transitive closure along `propositionInferredFrom` only, bounded to
+  `http://loka.dev/provenance/`, cycle-safe, real→real not a dependency.
+  Uses `resolve_quoted`. Algorithm: `planning/cascade-retraction.md` §4.
+- **B2. Bug B — RDF-star ingest on the ffi/mcp paths.** `loka-ffi/src/lib.rs:234`
+  + `loka-cli/src/mcp.rs:1518` use the non-star `parse_ntriples_line` → drop
+  inner triples + intern the sentinel. Switch to `parse_ntriples_star_line`
+  + `register_quoted`, mirroring the proto bulk path.
+- **B3. Persistence reopen round-trip.** Integration test: ingest a quoted
+  triple into a real (on-disk tempdir) `PersistentStore`, drop, reopen,
+  assert `resolve_quoted`/`render_term` survive. (`temporary()` can't reopen —
+  this is the durability proof Phase 0's unit tests can't give.)
+- **B4. RDF-star export round-trips.** Turtle (`resolve_term_for_turtle` +
+  `export_graph`) and N-Triples export render a quoted-triple position as
+  `<< … >>`, not `_:idN`. Test: export → re-parse → identical.
+- **B5. SPARQL-star query coverage.** Tests + fixes for bound
+  `<< <s> <p> <o> >> ?qp ?qv`, unbound `<< ?s ?p ?o >> ?qp ?qv`, and
+  projecting a quoted-bound variable through JSON/CSV/TSV/XML results.
+- **B6. Cascade Phase 2 — `POST /retract/preview`** (read-only, non-destructive).
+- **B7. Cascade Phase 3 — `retract_node` MCP tool.** `commit:false` default →
+  preview; `commit:true` → delete via existing path + `VectorRegistry::delete`.
+  The destructive surface — stays opt-in behind the explicit flag.
+- **B8. Cascade Phase 4 — Studio dependency-tree preview + confirm.** GUI;
+  agent-first means this may land as a documented follow-up if scope runs long.
+
+Mirrored to tasks #7 (B1) onward; new tasks created as items are reached.
 
 ---
 
