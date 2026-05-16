@@ -1,0 +1,11 @@
+Device: cuda
+Vocabulary: 50,000 tokens
+BPE tokenizer loaded: C:\Users\Immanuelle\Documents\Github\SutraDB\training\data\tokenizer_bpe.json
+Loading dataset from C:\Users\Immanuelle\Documents\Github\SutraDB\training\data\triples_v14.txt...
+  examples: 4,021,409
+C:\Users\Immanuelle\Documents\Github\SutraDB\training\model.py:45: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  self.encoder = nn.TransformerEncoder(layer, num_layers)
+Model parameters: 44,531,712
+Resumed model weights from C:\Users\Immanuelle\Documents\Github\SutraDB\training\checkpoints\wikidata_v14_epoch04.pt (was epoch 4); checkpoint has NO optimizer state — AdamW restarts fresh. Expect a small perplexity bump in epoch 6 before the curve resumes descending.
+epoch   6/10  loss 5.3284  ppl 206.12  (12259.6s, 251339 batches)
+epoch   7/10  loss 5.3465  ppl 209.87  (12465.1s, 251339 batches)
