@@ -18,11 +18,13 @@ Ordered; barrel top-down. Each line = one commit+push.
 - **B0. ✅ DONE — quoted-triple reverse index (cascade Phase 0).** Persisted
   `quoted_triple_id → (s,p,o)` map; faithful `<< s p o >>` render; fixed Bug A.
   Commit `d95c80f`. `planning/cascade-retraction.md` §6a.
-- **B1. Cascade Phase 1 — pure `retract_set` fn + tests.** Non-destructive.
-  `retract_set(root_id, store, dict) -> Vec<Triple>`: node's own rows +
-  transitive closure along `propositionInferredFrom` only, bounded to
-  `http://loka.dev/provenance/`, cycle-safe, real→real not a dependency.
-  Uses `resolve_quoted`. Algorithm: `planning/cascade-retraction.md` §4.
+- **B1. ✅ DONE — Cascade Phase 1, pure `retract_set` fn + tests.**
+  `loka-core/src/retract.rs`: `retract_set(root_id, store, dict) -> RetractSet`
+  (depth-grouped), bounded to `http://loka.dev/provenance/`, cycle-safe,
+  real→real not a dependency, child→parent not a dependency. 5 unit tests
+  (transitive chain, real→real isolation, child→parent isolation, no-prov,
+  cycle). loka-core green. `RESERVED_PROVENANCE_PREFIX`/`PROP_INFERRED_FROM`
+  consts now in the engine.
 - **B2. Bug B — RDF-star ingest on the ffi/mcp paths.** `loka-ffi/src/lib.rs:234`
   + `loka-cli/src/mcp.rs:1518` use the non-star `parse_ntriples_line` → drop
   inner triples + intern the sentinel. Switch to `parse_ntriples_star_line`
