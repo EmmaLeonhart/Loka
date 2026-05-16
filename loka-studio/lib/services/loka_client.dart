@@ -168,6 +168,46 @@ class LokaClient {
     return res.body;
   }
 
+  // ── Cascade-retraction ────────────────────────────────────────
+
+  /// Preview the cascade-retraction set for [iri] — the node's own rows
+  /// plus every generated inference that transitively cited it. Read-only;
+  /// nothing is deleted. Returns the decoded `/retract/preview` JSON
+  /// (`total`, `max_depth`, `hnsw_tombstones`, `by_depth`, …).
+  Future<Map<String, dynamic>> retractPreview(String iri) async {
+    final res = await _http
+        .post(
+          Uri.parse('$_base/retract/preview'),
+          headers: {..._headers, 'Content-Type': 'application/json'},
+          body: jsonEncode({'iri': iri}),
+        )
+        .timeout(config.timeout);
+    if (res.statusCode != 200) {
+      throw LokaClientException(
+          'Retract preview failed: ${res.statusCode} ${res.body}');
+    }
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  /// Commit a cascade-retraction: DELETE the node and every generated
+  /// inference that transitively cited it. Destructive — call only after
+  /// the user has confirmed a [retractPreview]. Returns the decoded
+  /// `/retract` JSON (`removed`, `hnsw_flipped`, …).
+  Future<Map<String, dynamic>> retractCommit(String iri) async {
+    final res = await _http
+        .post(
+          Uri.parse('$_base/retract'),
+          headers: {..._headers, 'Content-Type': 'application/json'},
+          body: jsonEncode({'iri': iri, 'commit': true}),
+        )
+        .timeout(config.timeout);
+    if (res.statusCode != 200) {
+      throw LokaClientException(
+          'Retract failed: ${res.statusCode} ${res.body}');
+    }
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
   // ── Database health diagnostics ───────────────────────────────
 
   /// Get basic database statistics by counting triples and types.
