@@ -3407,8 +3407,7 @@ mod tests {
         let bad_pred = dict.intern("\"place of death\"");
         store.insert(Triple::new(qid, bad_pred, q31)).unwrap();
 
-        let q = parser::parse("SELECT ?s ?p ?o ?qp ?qv WHERE { << ?s ?p ?o >> ?qp ?qv }")
-            .unwrap();
+        let q = parser::parse("SELECT ?s ?p ?o ?qp ?qv WHERE { << ?s ?p ?o >> ?qp ?qv }").unwrap();
         let result = execute(&q, &store, &dict).unwrap();
 
         assert_eq!(
