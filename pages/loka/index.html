@@ -257,8 +257,8 @@ li { margin-bottom: 6px; }
 <tr><td><code>v10</code></td><td><strong>55.52</strong></td><td>94 k cleaned</td><td>First fully-automated cron cycle. 100 % semantic-predicate share &mdash; cleanest run yet.</td></tr>
 <tr><td><code>v11</code></td><td>279.12</td><td><strong>350 k</strong> from <code>v11-50k</code></td><td>First model on the no-Loka preprocessing pipeline. 3 of 20 epochs (CUDA OOM at batch 32 on the laptop's 8 GB VRAM); future runs use batch 16. Different operating regime &mdash; not directly comparable to v10.</td></tr>
 <tr><td><code>v12</code></td><td>250.82</td><td><strong>672 k</strong> from <code>v12-100k</code></td><td>Epoch-6 snapshot (training disrupted by shared-GPU LLaMA contention; epoch 4 hit 226.86). Per-epoch tags <code>v12.1</code>&hellip;<code>v12.7</code> also available.</td></tr>
-<tr><td><code>v13</code></td><td>training</td><td><strong>2.5 M</strong> from <code>v13-500k</code></td><td>10 epochs, batch 16, exclusive GPU. Per-epoch tags <code>v13.1</code>&hellip;<code>v13.10</code> via <code>tools/epoch_snapshot_pusher.py</code>.</td></tr>
-<tr><td><code>v14</code></td><td><strong>202.01</strong></td><td>4,021,409 from <code>v14-1M</code></td><td><strong>Series best.</strong> Epoch-4 ppl 202.01 is canonical; per-epoch tags <code>v14.1</code>&hellip;<code>v14.7</code> on HF, continuing to <code>v14.10</code>. Corpus-scale lever confirmed: v11 350k&rarr;279 to v14 4M&rarr;202. The fresh-Adam continuation (ep6 206, ep7 210) is not beating epoch 4 &mdash; ~202 is the from-scratch floor on this corpus/hardware; a clean 10-epoch contributor run is the path lower.</td></tr>
+<tr><td><code>v13</code></td><td><strong>242.75</strong></td><td><strong>2.5 M</strong> from <code>v13-500k</code></td><td>Epoch-2 snapshot, promoted to canonical (loss plateaued by epoch 2: ep1 334.76 &rarr; ep2 242.75 &rarr; ep3&ndash;5 stayed in the 248&ndash;258 band). Per-epoch tags <code>v13.1</code>&hellip;<code>v13.5</code> on HF.</td></tr>
+<tr><td><code>v14</code></td><td><strong>202.01</strong></td><td>4,021,409 from <code>v14-1M</code></td><td><strong>Series best, latest pinned.</strong> Epoch-4 ppl 202.01 is canonical; per-epoch tags <code>v14.1</code>&hellip;<code>v14.7</code> on HF. Corpus-scale lever confirmed: v11 350 k&rarr;279.12 to v14 4 M&rarr;202.01, a 28 % best-ppl drop from corpus scale alone with architecture/tokenizer/config held fixed. A fresh-Adam continuation (ep6 206, ep7 210) did not beat epoch 4 &mdash; ~202 is the from-scratch floor on this corpus and the maintainer's 8 GB power-capped laptop GPU; a clean 10-epoch run on bigger hardware is the path lower (<a href="../contribute/">contributor donor path</a>).</td></tr>
 </tbody>
 </table>
 
@@ -270,20 +270,20 @@ li { margin-bottom: 6px; }
 
 <pre><code>from huggingface_hub import hf_hub_download
 
-# Latest pinned model (v12)
+# Latest pinned model (v14 — series best, ppl 202.01)
 ckpt = hf_hub_download(
     repo_id="EmmaLeonhart/loka", repo_type="dataset",
-    filename="checkpoints/wikidata_v12.pt", revision="v12",
+    filename="checkpoints/wikidata_v14.pt", revision="v14",
 )
 tok = hf_hub_download(
     repo_id="EmmaLeonhart/loka", repo_type="dataset",
-    filename="corpus/tokenizer_bpe.json", revision="v12",
+    filename="corpus/tokenizer_bpe.json", revision="v14",
 )
 
-# Or just the corpus, standalone
+# Or just the corpus, standalone (top tier — 4 M clean labeled triples)
 corpus = hf_hub_download(
     repo_id="EmmaLeonhart/normalized-wikidata", repo_type="dataset",
-    filename="triples_normalized.txt", revision="v13-500k",
+    filename="triples_normalized.txt", revision="v14-1M",
 )
 </code></pre>
 

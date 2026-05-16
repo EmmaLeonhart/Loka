@@ -71,23 +71,23 @@ The Loka project ships **two parallel artifacts on Hugging Face**:
 
 | Repo | What it is | Latest |
 |---|---|---|
-| **[`EmmaLeonhart/loka`](https://huggingface.co/datasets/EmmaLeonhart/loka)** | Trained model checkpoints (44.5 M-param BPE transformer, v3 → v12) + the training corpora used for each | `v12` (epoch-6 ppl 250.82, 2026-05-14) |
-| **[`EmmaLeonhart/normalized-wikidata`](https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata)** | Clean text-form Wikidata triples for world-model training — published as a standalone artifact for anyone | `v13-500k` (2 511 771 triples, 2026-05-14) |
+| **[`EmmaLeonhart/loka`](https://huggingface.co/datasets/EmmaLeonhart/loka)** | Trained model checkpoints (44.5 M-param BPE transformer, v3 → v14) + the training corpora used for each | `v14` (epoch-4 ppl **202.01** — series best, 2026-05-15) |
+| **[`EmmaLeonhart/normalized-wikidata`](https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata)** | Clean text-form Wikidata triples for world-model training — published as a standalone artifact for anyone | `v14-1M` (4 021 409 triples, 2026-05-15) |
 
 The world model is a small role-aware transformer that predicts missing slot values in `<<S P O>>` triples. Its predictions land back in the Loka triplestore as RDF-star annotations with `propositionInferredFrom` provenance edges. The training corpus and the model live in separate HF repos starting from v11 — the corpus is independently useful even if you don't use Loka.
 
-### Multi-rung pipeline (v11 onward, 2026-05-13/14)
+### Multi-rung pipeline (v11 → v14, all shipped)
 
-After v10 (ppl 55.52, 94 k triples), the pipeline was rebuilt: the preprocessor (`tools/preprocess_from_hf.py`) streams `philippesaade/wikidata` directly from HF — no Loka in the data path — and emits a clean text-form corpus published as `EmmaLeonhart/normalized-wikidata`. Each scale tier trains a corresponding Loka model:
+After v10 (ppl 55.52, 94 k triples), the pipeline was rebuilt: the preprocessor (`tools/preprocess_from_hf.py`) streams `philippesaade/wikidata` directly from HF — no Loka in the data path — and emits a clean text-form corpus published as `EmmaLeonhart/normalized-wikidata`. Each scale tier trains a corresponding Loka model. **The full series is shipped; the headline is a corpus-scale result** — architecture, tokenizer, batch size and optimizer held fixed, only the cleaned corpus scaled:
 
-| Corpus tag | Entity rows | Output triples | Model | Status |
+| Corpus tag | Entity rows | Output triples | Model | Best ppl |
 |---|---|---|---|---|
-| `v11-50k` | 50 000 | 350 428 | `v11` | ppl 279.12 (3 epochs, CUDA OOM at batch 32 on the 8 GB laptop GPU) |
-| `v12-100k` | 100 000 | 671 817 | `v12` | ppl 250.82 (epoch-6 snapshot; training disrupted by shared-GPU contention) |
-| `v13-500k` | 500 000 | 2 511 771 | `v13` | training in flight 2026-05-14 (10 epochs, ETA ~17 h from epoch 1) |
-| `v14-1M` | 1 000 000 | ~7 M est. | `v14` | corpus pass 2 in flight; training queued |
+| `v11-50k` | 50 000 | 350 428 | `v11` | 279.12 (3 epochs; CUDA OOM at batch 32 on the 8 GB laptop GPU) |
+| `v12-100k` | 100 000 | 671 817 | `v12` | 250.82 (epoch-6 snapshot; shared-GPU contention; epoch-4 best 226.86 lost) |
+| `v13-500k` | 500 000 | 2 511 771 | `v13` | 242.75 (epoch-2 canonical; loss plateaued by epoch 2) |
+| `v14-1M` | 1 000 000 | 4 021 409 | `v14` | **202.01** (epoch-4 canonical — series best, still descending where v13 plateaued) |
 
-Each epoch is **snapshotted and tagged separately** on HF (`v13.1`, `v13.2`, …) via `tools/epoch_snapshot_pusher.py`, so a divergent late epoch can't take down the earlier ones.
+An 11× increase in clean training data drove a **28 % perplexity reduction** (279.12 → 202.01). Each epoch is **snapshotted and tagged separately** on HF (`v12.*`, `v13.*`, `v14.*`) via `tools/epoch_snapshot_pusher.py`, so a divergent late epoch can't take down the earlier ones — this preserved every epoch across three separate training disruptions.
 
 ### Pulling a model in 2 lines
 
@@ -96,8 +96,8 @@ A fresh `git clone` is a few MB. The pinned model and tokenizer download lazily 
 ```bash
 # Inspect the current pin
 python training/loader.py
-# -> Pinned model: loka-wikidata-v12 (v12, released 2026-05-14)
-#    repo: EmmaLeonhart/loka@v12
+# -> Pinned model: loka-wikidata-v14 (v14, released 2026-05-15)
+#    repo: EmmaLeonhart/loka@v14
 
 # Run inference — checkpoint + BPE tokenizer + vocab download automatically (~180 MB once, then cached)
 python training/infer_with_citations.py \
@@ -115,17 +115,17 @@ path = hf_hub_download(
     repo_id="EmmaLeonhart/normalized-wikidata",
     repo_type="dataset",
     filename="triples_normalized.txt",
-    revision="v13-500k",  # or v11-50k / v12-100k / v14-1M (when shipped)
+    revision="v14-1M",  # top tier; also v11-50k / v12-100k / v13-500k
 )
 ```
 
 The corpus is one tab-separated `subject\tpredicate\tobject\n` line per claim, English labels in every position, noise datatypes (`external-id`, `url`, `commonsMedia`, etc. — ~82 % of Wikidata's property types) excluded, time/quantity values normalised.
 
-Full training pipeline + paper live under `training/`, `tools/`, `paper/`, `scripts/`. See `DEVLOG.md` for the v3 → v12 history including the v7 catalog-noise discovery (76 % of v6 corpus was external identifiers), the v9/v10 cron-loop automation, and the v11–v14 pipeline pivot.
+Full training pipeline + paper live under `training/`, `tools/`, `paper/`, `scripts/`. See `DEVLOG.md` for the v3 → v14 history including the v7 catalog-noise discovery (76 % of v6 corpus was external identifiers), the v9/v10 cron-loop automation, and the v11–v14 normalized-wikidata corpus-scale series. The paper (`paper/paper.md`) covers the full series in §5.9–§5.12.
 
 ### 🤝 Contributing GPU time (v14)
 
-**v14 is out of practical reach on the maintainer's hardware.** [EmmaLeonhart](https://github.com/EmmaLeonhart)'s training box is a laptop (RTX 4070 *Laptop*, 8 GB VRAM). v11 / v12 / v13 fit in that envelope at `--batch-size 16`; v14 (4 M-triple corpus × 10 epochs ≈ 40 h sustained exclusive GPU) does not.
+**v11–v14 are all shipped — but v14 floored at its epoch-4 checkpoint (ppl 202.01, series best).** [EmmaLeonhart](https://github.com/EmmaLeonhart)'s training box is a laptop (RTX 4070 *Laptop*, 8 GB VRAM); v11–v14 all trained in that envelope at `--batch-size 16`, but v14 only got a partial 5-epoch run, and a bounded continuation confirmed ~202 is the practical floor for a fresh optimizer resumed mid-line on this hardware. A **full clean 10-epoch run with a single optimizer** (4 M-triple corpus × 10 epochs ≈ 40 h sustained exclusive GPU) does not fit the laptop — that's the run expected to push meaningfully below 202.
 
 **If you have a GPU and time to donate**, the entire run is one command:
 
@@ -134,7 +134,7 @@ huggingface-cli login   # paste YOUR HF token (not Emma's)
 python tools/contribute_v14_training.py --hf-user YOUR_HF_USERNAME
 ```
 
-The script pulls the v14-1M corpus from `EmmaLeonhart/normalized-wikidata` and the BPE tokenizer from `EmmaLeonhart/loka@v12`, trains 10 epochs of the standard 44.5 M-parameter architecture at batch 16, and pushes every epoch to **your** HF account as `<your-user>/loka-v14-contribution` tagged `v14.1` through `v14.10`. Even if a late epoch dies, every earlier epoch is preserved on HF.
+The script pulls the v14-1M corpus from `EmmaLeonhart/normalized-wikidata` and the BPE tokenizer from `EmmaLeonhart/loka@v14` (byte-identical across all tags — stable since v6), trains 10 epochs of the standard 44.5 M-parameter architecture at batch 16, and pushes every epoch to **your** HF account as `<your-user>/loka-v14-contribution` tagged `v14.1` through `v14.10`. Even if a late epoch dies, every earlier epoch is preserved on HF.
 
 **Please open a GitHub issue at <https://github.com/EmmaLeonhart/Loka/issues> before you start** so the work doesn't get duplicated, and comment on it with your HF link when done — Emma can then mirror your result to `EmmaLeonhart/loka@v14` and credit you.
 

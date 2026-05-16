@@ -194,8 +194,8 @@ hr { border: none; border-top: 1px solid var(--border); margin: 36px 0; }
   <tbody>
     <tr><td><code>v11-50k</code></td><td>50,000</td><td>350,428</td><td><code>v11</code> &mdash; ppl 279.12 (3 epochs, CUDA OOM at batch 32 on 8 GB VRAM)</td></tr>
     <tr><td><code>v12-100k</code></td><td>100,000</td><td>671,817</td><td><code>v12</code> &mdash; ppl 250.82 (epoch-6 snapshot; training disrupted by shared-GPU contention)</td></tr>
-    <tr><td><code>v13-500k</code></td><td>500,000</td><td>2,511,771</td><td><code>v13</code> &mdash; training in flight 2026-05-14</td></tr>
-    <tr><td><code>v14-1M</code></td><td>1,000,000</td><td>4,021,409</td><td><code>v14</code> &mdash; <strong>series best, ppl 202.01</strong> (epoch 4, canonical). Per-epoch tags to <code>v14.7</code>, continuing to 10. Corpus scale confirmed as the binding lever (v11 279 &rarr; v14 202).</td></tr>
+    <tr><td><code>v13-500k</code></td><td>500,000</td><td>2,511,771</td><td><code>v13</code> &mdash; ppl 242.75 (epoch-2 snapshot, canonical; loss plateaued by epoch 2)</td></tr>
+    <tr><td><code>v14-1M</code></td><td>1,000,000</td><td>4,021,409</td><td><code>v14</code> &mdash; <strong>series best, ppl 202.01</strong> (epoch 4, canonical). Per-epoch tags <code>v14.1</code>&hellip;<code>v14.7</code> on HF; from-scratch run concluded at the ~202 floor. Corpus scale confirmed as the binding lever (v11 350 k&rarr;279.12 &hellip; v14 4 M&rarr;202.01, a 28 % best-ppl drop with config held fixed).</td></tr>
   </tbody>
 </table>
 
@@ -212,9 +212,9 @@ hr { border: none; border-top: 1px solid var(--border); margin: 36px 0; }
 </ul>
 
 <div class="callout">
-  <strong>Documentation surface as of 2026-05-14.</strong> Both Hugging Face datasets carry full READMEs documenting the multi-rung series; the
+  <strong>Documentation surface as of 2026-05-16.</strong> Both Hugging Face datasets carry full READMEs documenting the multi-rung series; the
   <a href="/">homepage</a> links both, the <a href="/loka/">Loka deep-dive</a> has the up-to-date snapshots table, and the
-  <a href="https://github.com/EmmaLeonhart/Loka/blob/main/paper/paper.md">paper</a> covers v11 (§5.9) and v12 (§5.10).
+  <a href="https://github.com/EmmaLeonhart/Loka/blob/main/paper/paper.md">paper</a> covers the full v11&ndash;v14 series (&sect;5.9&ndash;&sect;5.12), best perplexity 202.01 (v14).
   Per-version commit detail in <a href="https://github.com/EmmaLeonhart/Loka/blob/main/DEVLOG.md">DEVLOG.md</a>.
 </div>
 

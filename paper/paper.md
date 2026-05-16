@@ -431,10 +431,12 @@ This is also the start of a multi-rung dataset / model series:
 
 | HF dataset tag | Entity rows | Output triples | Trained model |
 |---|---|---|---|
-| `v11-50k` (released) | 50 000 | 350 428 | v11 |
-| `v12-100k` | 100 000 | ~700 000 (est.) | v12 |
-| `v13-500k` | 500 000 | ~3.5 M (est.) | v13 |
-| `v14-1M` | 1 000 000 | ~7 M (est.) | v14 |
+| `v11-50k` | 50 000 | 350 428 | v11 |
+| `v12-100k` | 100 000 | 671 817 | v12 |
+| `v13-500k` | 500 000 | 2 511 771 | v13 |
+| `v14-1M` | 1 000 000 | 4 021 409 | v14 |
+
+(All four tiers released; counts above are final, not the forward estimates this table carried while the series was in flight. The §5.12 headline table reproduces them against best perplexity.)
 
 **v11 training.** Same 44.5 M-parameter BPE architecture as v6 onward. Hardware constraint: the training box is a laptop 4070 with **8 GB VRAM** (not the 12 GB of the desktop 4070). At `--batch-size 32` the model fits forward but Adam's optimizer state + gradient peaks in later epochs cross the line. v11 completed 3 of 20 planned epochs before `torch.AcceleratorError: CUDA error: out of memory` in epoch 4's backward pass; the per-epoch checkpoint mechanism in `train.py` means the **epoch-3 weights are the v11 release**. Future training runs (v12, v13, v14) use `--batch-size 16`.
 

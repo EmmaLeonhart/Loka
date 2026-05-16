@@ -2,7 +2,7 @@
 
 > Loka engine (RDF-star triplestore) + a small role-aware transformer trained on the same triples. Now in its multi-rung normalized-wikidata phase (v11 → v14). Models live at [`EmmaLeonhart/loka`](https://huggingface.co/datasets/EmmaLeonhart/loka); the training corpora live at [`EmmaLeonhart/normalized-wikidata`](https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata).
 
-Last touched: **2026-05-14**
+Last touched: **2026-05-16**
 
 ---
 
@@ -12,35 +12,33 @@ A neuro-symbolic world model. **Loka** is the engine (Rust, this repo): a lean R
 
 ---
 
-## Where we are RIGHT NOW (2026-05-14)
+## Where we are RIGHT NOW (2026-05-16)
 
 ### Background processes in flight
 
-| Task | What it is | State |
-|---|---|---|
-| `b6n9v2spd` | `training/train.py` v13 — 10 epochs, batch 16, on 2,511,771-triple `v13-500k` corpus | Epoch 1 done (ppl 334.76, 114 min). 9 epochs to go, ETA ~17 h |
-| `b60mi28cf` | `tools/preprocess_from_hf.py --max-rows 1000000 --skip-scan` — v14-1M pass-2 emit | In flight, ~25 rows/s, several hours remaining |
-| `bv6patdms` | `tools/epoch_snapshot_pusher.py` watching v13_train.log | Snapshotted + pushed `wikidata_v13_epoch01.pt` as HF tag `v13.1`; will fire on each subsequent epoch |
+**None.** v11–v14 are all shipped-final; the supervisor, trainer, and epoch-snapshot pusher were cleanly stopped. The GPU is intentionally idle (released for the maintainer's other use). No training, ingest, or `loka serve` running. The only actionable work while the GPU is paused is code-only (engine bug #2, fine-tuning scaffolding, cascade-retraction) and docs (this currency sweep) — see `queue.md`.
 
 ### Current pinned model
 
-`MODEL.json` → `loka-wikidata-v12` (epoch-6 snapshot, ppl 250.82, released 2026-05-14). Pulls from `EmmaLeonhart/loka@v12`.
+`MODEL.json` → `loka-wikidata-v14` (epoch-4 checkpoint, ppl **202.01** — series best, released 2026-05-15). Pulls from `EmmaLeonhart/loka@v14`.
 
-### Multi-rung pipeline status
+### Multi-rung pipeline status — series complete
 
 | HF corpus tag | Entity rows | Output triples | Model | Status |
 |---|---|---|---|---|
-| `v11-50k` | 50 000 | 350 428 | `v11` | ✅ shipped — ppl 279.12 |
-| `v12-100k` | 100 000 | 671 817 | `v12` | ✅ shipped — ppl 250.82 (epoch 6 snapshot) |
-| `v13-500k` | 500 000 | 2 511 771 | `v13` | corpus ✅, model training (epoch 1/10 done) |
-| `v14-1M` | 1 000 000 | ~7 M (est) | `v14` | pass-1 ✅, pass-2 in flight, training queued |
+| `v11-50k` | 50 000 | 350 428 | `v11` | ✅ shipped — ppl 279.12 (3 epochs; batch-32 OOM) |
+| `v12-100k` | 100 000 | 671 817 | `v12` | ✅ shipped — ppl 250.82 (epoch-6 snapshot; epoch-4 best 226.86 lost to contention) |
+| `v13-500k` | 500 000 | 2 511 771 | `v13` | ✅ shipped — ppl 242.75 (epoch-2 canonical; plateaued by epoch 2) |
+| `v14-1M` | 1 000 000 | 4 021 409 | `v14` | ✅ shipped — ppl **202.01** (epoch-4 canonical, **series best**) |
+
+Headline: 11× more clean data → **28 % perplexity reduction** (279.12 → 202.01), architecture/tokenizer/config held fixed. Per-epoch tags `v12.*` `v13.*` `v14.*` all on HF.
 
 ### Corpus + cache state on disk
 
 - `loka-data-cron-c1/` — 17.6 GB, 50,002,600 ingested raw triples. **Currently unused** (the v11+ pipeline streams from HF directly). Keep as a reference snapshot.
 - `training/data/wikidata_labels.sqlite` — ~25 MB, 900 065 entity labels + 7 312 curated property labels. Grows with each pass-1 run.
-- `training/data/normalized/` — per-tier output files: `normalized_wikidata_v11_50k.txt` (14.7 MB), `v12_100k.txt` (28.4 MB), `v13_500k.txt` (109 MB), `v14_1M.txt` (in flight).
-- `training/checkpoints/wikidata_v11.pt`, `wikidata_v12.pt`, `wikidata_v12_epoch6_ppl250.pt` (snapshot), `wikidata_v13.pt`, `wikidata_v13_epoch01.pt`.
+- `training/data/normalized/` — per-tier output files: `normalized_wikidata_v11_50k.txt` (14.7 MB), `v12_100k.txt` (28.4 MB), `v13_500k.txt` (109 MB), `v14_1M.txt` (~165 MB).
+- `training/checkpoints/wikidata_v11.pt` … `wikidata_v14.pt` plus per-epoch snapshot `.pt` files.
 
 ---
 
@@ -115,19 +113,21 @@ Working:
 Known issues:
 - **Engine bug #2: Loka SPARQL occasionally returns literal values or entity IRIs in the predicate position.** Filtered at preprocess. Real engine bug to fix later.
 - **The v11+ Loka data dir (`loka-data-cron-c1/`, 17.6 GB) is no longer in the training data path.** Kept on disk for reference.
-- **Mode collapse on common connector tokens.** Even with rep penalty, "of/and" still win when (S, P) coverage is thin. v11–v14 are pushing on corpus scale to address this.
-- **v12 training was disrupted mid-run** by an unrelated LLaMA 3.1 8B experiment sharing the GPU. Shipped at the epoch-6 snapshot rather than the epoch-4 best. A clean v12 retrain is on the queue for a future cycle.
+- **Mode collapse on common connector tokens.** Even with rep penalty, "of/and" still win when (S, P) coverage is thin. The v11→v14 corpus-scale series narrowed this (best ppl 279.12 → 202.01) but did not eliminate it; a clean 10-epoch v14 on bigger hardware is the next lever.
+- **v12 shipped at the epoch-6 snapshot** (ppl 250.82) rather than the epoch-4 best (226.86) — lost to an unrelated LLaMA 3.1 8B experiment sharing the GPU. A clean v12 retrain (~225 expected) remains a GPU-blocked queue item.
 
 ---
 
 ## Open levers in priority order
 
-1. **Let v13 finish (10 epochs)** — currently 1/10 done. Will produce the first clean run on the v13-500k corpus.
-2. **Ship v13 + train v14** — same recipe on the 1M-row v14 corpus once v14 pass-2 completes.
-3. **Retrain v12 cleanly** — when there's exclusive-GPU time (~12 h), to get the trajectory v12 *should* have had at ppl ~225.
-4. **Propgen-test v11/v12/v13/v14 on the standard Q42 seed** — same evaluation as v6–v10; deferred from v11 onward because of GPU fragility during shared use. Catalog-predicate share is expected to remain at 0 % since cleaning is dataset-side.
-5. **Engine bug #2 root-cause fix.** Currently filtered at preprocess; should be fixed in `loka-sparql` so the database is honest.
-6. **Fine-tuning track** (`planning/fine-tuning-track.md`) — Qwen 2.5 1.5B-Instruct + QLoRA on the same `triples_v{N}.txt` format. Scaffolded but not run yet.
+_Series is shipped-final; GPU paused. Items 1–3 are code-only (actionable now); 4–6 are GPU-blocked._
+
+1. **Engine bug #2 root-cause fix.** Currently filtered at preprocess; should be fixed in `loka-sparql` so the database is honest. Code-only — the queue's flagged actionable item.
+2. **Fine-tuning track** (`planning/fine-tuning-track.md`) — Qwen 2.5 1.5B-Instruct + QLoRA on the same `triples_v{N}.txt` format. Scaffold `training/finetune/`.
+3. **World-model cascade-retraction** — `retract_node` MCP tool + engine prerequisites, cascade bounded to the `http://loka.dev/provenance/` namespace (`queue.md` Active #8).
+4. **Donor clean-Adam 10-epoch v14** (`tools/contribute_v14_training.py`) — the explicit successor experiment per paper §5.12, expected to push below 202.01. Passive: waits for a contributor.
+5. **Retrain v12 cleanly** — exclusive-GPU time (~12 h) to get the trajectory v12 *should* have had at ppl ~225.
+6. **Propgen-test v11/v12/v13/v14 on the standard Q42 seed** — same evaluation as v6–v10; deferred from v11 onward because of GPU fragility. Catalog-predicate share expected to remain 0 % (cleaning is dataset-side).
 
 ---
 
@@ -144,7 +144,7 @@ training/infer_with_citations.py  — predict + emit N-Triples-star with provena
 training/property_label_cache.json — 7 312 curated Wikidata property labels (authoritative)
 training/wikidata_excluded_predicates.json — per-PID exclusion list (noise datatypes)
 queue.md                          — live in-flight work + tag pipeline state
-DEVLOG.md                         — narrative history (v3 → v12, latest first)
+DEVLOG.md                         — narrative history (v3 → v14, latest first)
 ```
 
 ---

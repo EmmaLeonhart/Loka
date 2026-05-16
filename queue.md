@@ -6,6 +6,32 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ---
 
+## 🔨 Active sweep — 2026-05-16 (code-only + docs, GPU paused)
+
+v11–v14 all shipped-final; GPU released for Minecraft. Barrelling through every non-GPU,
+non-external item, ordered by leverage:
+
+1. ✅ **DONE 2026-05-16 — Website + paper currency pass.** The public surfaces had stale
+   pre-v14 performance numbers (homepage said "current best v12 ppl 250.82"; `/loka/` showed
+   v13 as "training"; `/history/` + `/contribute/` framed v14 as untrained; README + status.md
+   stuck at 2026-05-14 with v12 pinned). Brought homepage, `/loka/`, `/history/`, `/contribute/`,
+   `README.md`, `status.md`, the contributor script, and the paper §5.9 forward-table all in
+   line with the shipped series (v11 350k→279.12, v12 672k→250.82, v13 2.5M→242.75,
+   v14 4M→**202.01**, 28% best-ppl drop). Paper abstract/§5.9–5.12/masthead tag list verified
+   already-consistent. Tokenizer pin moved v12→v14 (canonical) in script + docs.
+2. **Engine bug #2 root-cause fix** in `loka-sparql` — RDF-star annotation rows project a
+   literal into the predicate slot on ~1% of rows. Fix in the executor, add a regression test,
+   then remove the preprocess mask in `tools/preprocess_streaming.py`.
+3. **Fine-tuning track scaffolding** — build `training/finetune/` per
+   `planning/fine-tuning-track.md` (Qwen 2.5 1.5B-Instruct + QLoRA, shared
+   `propositionInferredFrom` schema).
+4. **World-model cascade-retraction** (Active #8) — `retract_node` MCP tool + engine
+   prerequisites, cascade bounded to the `http://loka.dev/provenance/` namespace.
+
+Mirrored into the task tool (tasks #1–#5). Delete items here as each lands.
+
+---
+
 ## 🚀 Multi-version pipeline — 2026-05-13 evening pivot
 
 After hitting Loka SPARQL OFFSET-cost (page-N is O(N) on sled — 25h projected for pass 1 alone), pivoted to a no-Loka HF-source preprocessor (`tools/preprocess_from_hf.py`). The plan now is to ship a series of normalized-wikidata snapshots and train a model on each.
