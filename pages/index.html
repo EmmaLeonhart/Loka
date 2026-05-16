@@ -111,27 +111,11 @@
             justify-content: center;
             flex-wrap: wrap;
         }
-        .btn {
-            display: inline-block;
-            padding: 12px 28px;
-            border-radius: 8px;
-            font-size: 1em;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.2s;
-        }
-        .btn:hover { text-decoration: none; transform: translateY(-1px); }
-        .btn-primary {
-            background: var(--accent);
-            color: var(--bg);
-        }
-        .btn-primary:hover { background: var(--accent-hover); color: var(--bg); }
-        .btn-secondary {
-            background: var(--surface);
-            color: var(--text);
-            border: 1px solid var(--border);
-        }
-        .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+        /* .btn / .btn-primary / .btn-secondary come from the shared
+           /identity.css (linked above) — the ONE canonical button
+           Emma wants everywhere. No local override here: that cascade
+           re-declaration is exactly what made the sites diverge. Only
+           .cta (the row layout) is page-specific. */
 
         .container {
             max-width: 960px;

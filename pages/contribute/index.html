@@ -43,10 +43,15 @@
   .callout { background: var(--surface); border-left: 3px solid var(--accent);
              padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 16px 0; }
   .callout strong { color: var(--accent-hover); }
-  .btn { display: inline-block; padding: 10px 20px; border-radius: 6px;
+  /* Loka-feel button, matched to the shared /identity.css .btn-primary
+     (this page inlines its identity so it can't link the file). */
+  .btn { display: inline-flex; align-items: center; justify-content: center;
+         gap: 8px; padding: 12px 28px; border-radius: 8px; font-size: 1rem;
          background: var(--accent); color: var(--bg) !important; font-weight: 600;
-         text-decoration: none; }
-  .btn:hover { background: var(--accent-hover); text-decoration: none; }
+         border: 1px solid var(--accent); text-decoration: none;
+         transition: background .2s, color .2s, border-color .2s, transform .2s; }
+  .btn:hover { background: var(--accent-hover); border-color: var(--accent-hover);
+         text-decoration: none; transform: translateY(-1px); }
   footer { text-align: center; padding: 32px 20px; color: var(--text-muted); font-size: 0.9em; }
 
     /* ===== CANONICAL VISUAL IDENTITY (emmaleonhart.com/_identity/) ====
