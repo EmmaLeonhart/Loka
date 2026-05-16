@@ -507,9 +507,11 @@ async fn main() -> anyhow::Result<()> {
                     let is_id = ps.intern(inner_s)?;
                     let ip_id = ps.intern(inner_p)?;
                     let io_id = ps.intern(inner_o)?;
-                    // Store the inner triple itself
+                    // Store the inner triple itself + the reverse mapping so
+                    // the content-hash id can be reversed (faithful rendering
+                    // + provenance cascade).
                     let _ = ps.insert(loka_core::Triple::new(is_id, ip_id, io_id));
-                    loka_core::quoted_triple_id(is_id, ip_id, io_id)
+                    ps.register_quoted(is_id, ip_id, io_id)?
                 } else {
                     ps.intern(&parsed.subject)?
                 };
@@ -522,7 +524,7 @@ async fn main() -> anyhow::Result<()> {
                     let ip_id = ps.intern(inner_p)?;
                     let io_id = ps.intern(inner_o)?;
                     let _ = ps.insert(loka_core::Triple::new(is_id, ip_id, io_id));
-                    loka_core::quoted_triple_id(is_id, ip_id, io_id)
+                    ps.register_quoted(is_id, ip_id, io_id)?
                 } else {
                     ps.intern(&parsed.object)?
                 };

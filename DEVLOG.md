@@ -7,6 +7,57 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-05-16 — Quoted-triple reverse index (cascade-retraction Phase 0); engine bug #2 Bug A fixed
+
+Headline: **RDF-star quoted-triple ids are content hashes (`xxh3_64(s|p|o)`) and the
+store had no reverse map — so a quoted-triple subject couldn't be rendered back to
+`<< s p o >>` and a provenance cascade couldn't dereference a `propositionInferredFrom`
+source id. Added the persisted reverse map. This unblocks cascade-retraction Phases 1–4
+*and* fixes ingest-side Bug A (proto was persisting the `<<QUOTED_TRIPLE>>` sentinel
+because it couldn't render the id).**
+
+This is the engine-bug-#2 follow-through. The 2026-05-16 query-layer fix (commit
+`b63af81`) made the executor refuse to emit literal predicates — honest output
+regardless of how a malformed row got in. But the *root cause* was ingest-side: a
+one-way content hash with no reverse map. A hash cannot be reversed, so the fix is
+structural — store the mapping at mint time.
+
+**What changed**
+
+- `loka-core/id.rs` — `TermDictionary` gains an in-memory
+  `quoted: HashMap<TermId,[TermId;3]>` plus `register_quoted` (mint+record,
+  idempotent, returns the same id `quoted_triple_id` would), `resolve_quoted`,
+  `insert_quoted_with_id` (hydration), and `render_term` — a recursive,
+  depth-bounded renderer that turns a quoted id into faithful N-Triples-star
+  `<< <s> <p> "o" >>` and is a drop-in for `resolve` on plain terms.
+- `loka-core/persistent.rs` — new `quoted` sled tree (id LE 8B → s|p|o LE 24B).
+  `BatchInsert` gains `quoted: Option<(TermId,TermId,TermId)>`, written **inside
+  `insert_batch`'s existing multi-tree transaction** (now a 7-tuple) so the mapping
+  is atomic with its rows and the wedge-fix invariant (no new per-row sled txn) is
+  preserved. `register_quoted` for the non-batch path; `load_quoted_into`;
+  `load_terms_into` now also hydrates the quoted map so every existing hydration
+  call site gets reversal for free; `flush` covers the new tree.
+- `loka-proto/server.rs` — bulk `/triples` and `INSERT DATA` mint sites call
+  `register_quoted`; the annotation row persists a faithful `<< s p o >>` subject/
+  object string instead of the `<<QUOTED_TRIPLE>>` sentinel (**Bug A fixed**);
+  `resolve_term_to_json` (now `"type":"triple"`) and `resolve_term_for_csv` render
+  via `render_term` (no more `_:idN` for quoted subjects).
+- `loka-cli/main.rs` — import path registers quoted on the star path.
+
+**Verification.** New unit tests in `loka-core` (register/resolve/render/nested/
+rehydrate + a persistence round-trip through `insert_batch`) and a `loka-proto`
+end-to-end test (`POST /triples` an RDF-star annotation → SPARQL it back → assert
+the subject is `type:triple` with a faithful `<< … >>` value, not `_:idN`). Full
+`loka-core` + `loka-proto` + `loka-sparql` suites green, zero regressions.
+
+**Scope boundary (deliberate).** Turtle/graph **export** serializers still use
+`resolve` — RDF-star Turtle export is a separate serializer concern, off the
+query/cascade path. The non-star `parse_ntriples_line` in `loka-ffi`/`mcp.rs`
+(Bug B) is a parser-choice bug, not the reverse map; left as a low-priority
+follow-up. Design + phasing: `planning/cascade-retraction.md` §6a. Next:
+cascade-retraction Phase 1 (the pure `retract_set` fn + tests).
+
+---
 ## 2026-05-15 PT — v14: epoch-4 floor (ppl 202.01, series best) shipped; driving to 10 epochs under a self-resuming supervisor
 
 Headline: **v14's epoch-4 checkpoint (ppl 202.01 — lowest in the entire v11–v14 series) is on HF as the safe floor, but the target is the full 10 epochs. A supervisor (`tools/v14_train_supervisor.py`) is driving epochs 6–10, resuming from the epoch-4 weights and auto-restarting through every GPU-contention death until epoch 10 lands.**

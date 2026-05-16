@@ -6,6 +6,20 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ---
 
+## ✅ Cascade-retraction Phase 0 — DONE 2026-05-16
+
+Persisted `quoted_triple_id → (s,p,o)` reverse index landed
+(`loka-core` id.rs + persistent.rs `quoted` sled tree, written inside
+`insert_batch`'s txn; `loka-proto` mint/render; `loka-cli` import). Quoted
+ids now reverse to their components and render as faithful `<< s p o >>`.
+**This also fixed ingest-side Bug A** (proto no longer persists the
+`<<QUOTED_TRIPLE>>` sentinel). Unit + end-to-end tests; core+proto+sparql
+suites green, zero regressions. Writeup: `planning/cascade-retraction.md` §6a.
+Cascade Phases 1–4 are now unblocked (Active #8). Next: **Phase 1** — the
+pure `retract_set` cascade fn + tests.
+
+---
+
 ## ✅ Code-only + docs sweep — 2026-05-16 session (complete)
 
 v11–v14 all shipped-final, GPU paused. Swept every non-GPU, non-external item:
@@ -16,8 +30,9 @@ v11–v14 all shipped-final, GPU paused. Swept every non-GPU, non-external item:
    abstract/§5.9–5.12/masthead verified already-consistent. Commit `190df09`.
 2. **Engine bug #2 root-cause fix in `loka-sparql`** — no-literal-predicate invariant
    enforced at the basic scan + both RDF-star wildcard loops; `engine_bug2_*` regression
-   tests; 119-test suite green. Commit `b63af81`. Live follow-ups → **Active #2** (Bug A:
-   proto persists the `<<QUOTED_TRIPLE>>` sentinel; Bug B: mcp/ffi use the non-star parser).
+   tests; 119-test suite green. Commit `b63af81`. Ingest-side **Bug A** later fixed by
+   Cascade Phase 0 (2026-05-16); only **Bug B** (mcp/ffi non-star parser) remains — see
+   **Active #2**.
 3. **Fine-tuning track** — already scaffolded (`df8fb43`); brought current with the v11+
    pipeline (`prepare_jsonl.py --fixture` consumes the normalized-wikidata corpus, no
    endpoint; README/schema refreshed). Commit `39e36c7`.
@@ -230,7 +245,7 @@ In strategic order. Top item is the current focus.
 
 1. **Engine bug #1: sled flusher panic at multi-GB scale.** ~~Surfaced~~ Surfaced on 2026-05-12 as a hard panic (Win32 `ERROR_NO_SYSTEM_RESOURCES` at 32.88 M triples / 5 GB). Probable fix shipped in `c36760b`: explicit `sled::Config` with 256 MB cache, 2 s flush, `Mode::HighThroughput`. **Reopen-in-place verified 2026-05-13 01:00 UTC**: WAL replay recovered 32,877,248 triples (1,150 more than `big-pull.log` last recorded). The fix is verified for the reopen case; the residual question is whether it also holds against a fresh sustained ingest past 32.88 M. If a re-test ingest panics at the next plateau, escalate to RocksDB migration (sled 0.34 unmaintained since 2021).
 
-2. **Engine bug #2: SPARQL returns literal values in the predicate slot.** ✅ **Query-layer fix landed 2026-05-16** — see the "Active sweep" item 2 above for the full writeup. Executor now enforces the RDF invariant (no literal predicates) at the basic scan + both RDF-star wildcard outer loops; `engine_bug2_*` regression tests added; 119-test loka-sparql suite green. Remaining: ingest-side corruption sources **Bug A** (proto persists the `<<QUOTED_TRIPLE>>` sentinel) and **Bug B** (mcp/ffi use the non-star parser) — documented in the sweep item, deferred, not blocking.
+2. **Engine bug #2: SPARQL returns literal values in the predicate slot.** ✅ **Fully resolved 2026-05-16.** (a) Query-layer invariant fixed in `loka-sparql` (commit `b63af81`, `engine_bug2_*` tests). (b) **Bug A fixed** by Cascade Phase 0: the quoted-triple reverse index means the proto bulk/INSERT-DATA paths now persist a faithful `<< s p o >>` term string instead of the `<<QUOTED_TRIPLE>>` sentinel, and quoted ids render faithfully (no more `_:idN`). Only **Bug B** remains: `loka-cli/src/mcp.rs:1518` and `loka-ffi/src/lib.rs:234` ingest via the non-star `parse_ntriples_line`, silently dropping inner triples for RDF-star input — a parser-choice bug, separate from the reverse map, low priority (those paths aren't the Wikidata ingest path). Fix = switch them to `parse_ntriples_star_line`.
 
 3. **Bigger corpus, paused at 32.88 M triples.** `loka-data-cron-c1/` has 32,877,248 triples on disk; option B reopen verified 2026-05-13 01:00 UTC. Two remaining decisions:
    - **Resume ingest** from row 318,582 to push toward the 50 M-triple target — tests whether the sled tuning also holds under fresh sustained writes (not just reopen). Worst case: another panic at the next plateau, falls through to RocksDB migration.
@@ -244,21 +259,19 @@ In strategic order. Top item is the current focus.
 
 7. **Repo rename Loka → Loka.** Top of `TODO.md` has the full checklist.
 
-8. **World-model cascade-retraction.** Design + dependency analysis fixed in
-   **`planning/cascade-retraction.md`** (2026-05-16). The full feature (remove any node —
-   real or generated — and all generated inferences that transitively cite it, bounded to
-   the `http://loka.dev/provenance/` namespace; `retract_node` MCP tool + preview endpoint
-   + Studio action) is specced there with a 5-phase plan. **Gating prerequisite — Phase 0:
-   a persisted `quoted_triple_id → (s,p,o)` reverse index.** Rationale: `quoted_triple_id`
-   is a content hash with no reverse map (ingest-side Bug A); a hash cannot be reversed, so
-   the cascade's core test ("does this `propositionInferredFrom` source quoted-id
-   dereference a removed row?") is impossible without it. Phase 0 also fixes Bug A
-   (faithful `<< s p o >>` term rendering instead of the persisted `<<QUOTED_TRIPLE>>`
-   sentinel) and subsumes the spec's prerequisite (a) (the SPO prefix scan on a
-   now-reversible quoted id *is* the inner-triple→annotation back-reference). Phases 1–4
-   (pure cascade fn + tests → preview endpoint → MCP tool → Studio) each ship
-   independently; the destructive surface stays gated behind the non-destructive preview
-   and an explicit `commit` flag. **Next concrete work: Phase 0.**
+8. **World-model cascade-retraction.** Spec + 5-phase plan in
+   **`planning/cascade-retraction.md`**. **Phase 0 ✅ DONE 2026-05-16** — the persisted
+   `quoted_triple_id → (s,p,o)` reverse index landed and tested (also fixed Bug A); §6a of
+   the design doc has the writeup. Phases 1–4 are now unblocked:
+   - **Phase 1 (next):** pure `retract_set(root_id, store, qindex) -> Vec<Triple>` cascade
+     fn + unit tests (provenance DAG, cycle-safe, real→real isolation, namespace-bounded).
+     Non-destructive, code-only, GPU-independent.
+   - **Phase 2:** `POST /retract/preview` read-only endpoint.
+   - **Phase 3:** `retract_node` MCP tool (`commit:false` default → preview;
+     `commit:true` → delete via the existing path + `VectorRegistry::delete`).
+   - **Phase 4:** Studio dependency-tree preview + confirm.
+   The destructive surface (3–4) stays gated behind the non-destructive preview (1–2) and
+   an explicit `commit` flag. **Next concrete work: Phase 1.**
 
 ---
 
