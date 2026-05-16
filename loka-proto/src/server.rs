@@ -1125,7 +1125,8 @@ async fn retract_preview(
         .read()
         .map_err(|e| ProtoError::BadRequest(format!("lock poisoned: {}", e)))?;
     let render = |id: loka_core::TermId| {
-        dict.render_term(id).unwrap_or_else(|| format!("_:id{}", id))
+        dict.render_term(id)
+            .unwrap_or_else(|| format!("_:id{}", id))
     };
 
     let mut hnsw_tombstones = 0usize;
@@ -1766,20 +1767,31 @@ mod tests {
 
         assert_eq!(j["root_found"], true);
         assert_eq!(j["committed"], false);
-        assert!(j["total"].as_u64().unwrap() >= 3, "real row + G1 + its provenance: {j}");
-        assert!(j["max_depth"].as_u64().unwrap() >= 1, "at least one provenance hop");
+        assert!(
+            j["total"].as_u64().unwrap() >= 3,
+            "real row + G1 + its provenance: {j}"
+        );
+        assert!(
+            j["max_depth"].as_u64().unwrap() >= 1,
+            "at least one provenance hop"
+        );
         // Depth 0 holds the root's own real row.
         let d0 = &j["by_depth"][0]["triples"];
         assert!(
-            d0.as_array().unwrap().iter().any(|t| t["s"] == "http://wd/Q42"
-                && t["p"] == "http://wd/P_pob"
-                && t["o"] == "http://wd/Q350"),
+            d0.as_array()
+                .unwrap()
+                .iter()
+                .any(|t| t["s"] == "http://wd/Q42"
+                    && t["p"] == "http://wd/P_pob"
+                    && t["o"] == "http://wd/Q350"),
             "depth 0 = the node's own row"
         );
         // Somewhere the generated G1 asserted row appears (cascaded).
-        let flat = j["by_depth"].as_array().unwrap().iter().flat_map(|d| {
-            d["triples"].as_array().unwrap().clone()
-        });
+        let flat = j["by_depth"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .flat_map(|d| d["triples"].as_array().unwrap().clone());
         assert!(
             flat.clone().any(|t| t["s"] == "http://wd/Q350"
                 && t["p"] == "http://wd/G_died"
