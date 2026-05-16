@@ -43,6 +43,14 @@ Full architecture: see `docs/architecture.md`.
 - **Update README.md regularly.** It should always reflect the current state of the project for human readers.
 - **Every release MUST have informative release notes.** When tagging a release, always write a proper description covering what changed and why — features, fixes, breaking changes. Never leave auto-generated "What's Changed" boilerplate as the release description. Use `gh release edit` to fix descriptions retroactively if needed. Uninformative release notes make the software look abandoned.
 
+## Queue and longer-horizon work
+
+(Clarity model adopted from the `cleanvibe` scaffold — the bar for "clear project docs.")
+
+- **`queue.md`** — what is being worked on *right now*: concrete, executable steps. Items are deleted in the same commit that completes them — no checkmarks, no "done" markers, no status narration, no progress snapshots. If a line is still in `queue.md`, it is not done. If a task is not in `queue.md`, it is not in scope for the current session.
+- **`todo.md`** — the long-term horizon: abstract, multi-session goals. A *destination, not a step*. `todo.md` is the *basis for* `queue.md`; parked / deferred / reference material lives here, never in `queue.md`.
+- **Forward flow only:** `todo.md` (abstract) → `queue.md` (concrete steps) → task tool (in-flight) → `git log` (history). Items only move forward; done work is deleted, not annotated. A stale `queue.md` is worse than no `queue.md`.
+
 ---
 
 ## Training & Ship Workflow
