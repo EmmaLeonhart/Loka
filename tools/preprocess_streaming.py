@@ -421,9 +421,16 @@ def emit_pass(
     with out_path.open("w", encoding="utf-8") as f:
         for page_num, offset, bindings in iter_triple_pages(endpoint, page_size, max_pages):
             for t in bindings:
-                # Engine bug #2 guard: drop rows where the predicate slot is
-                # not a URI (RDF-star inner-triple components leaking into
-                # the wrong slot).
+                # Engine bug #2 is now fixed engine-side: loka-sparql's
+                # executor enforces the RDF invariant that the predicate
+                # position never binds a literal (see
+                # loka-sparql `term_id_is_literal` + the
+                # engine_bug2_* regression tests). This Python guard is
+                # therefore redundant against a current-engine Loka and is
+                # kept only as a harmless safety net for stale data dirs
+                # served by an old binary. (This script is the legacy
+                # Loka-source path; v11+ uses tools/preprocess_from_hf.py
+                # with no Loka in the data path.)
                 if t["p"].get("type") != "uri":
                     stats["skipped_nonuri_pred"] += 1
                     continue

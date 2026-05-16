@@ -19,9 +19,27 @@ non-external item, ordered by leverage:
    line with the shipped series (v11 350k→279.12, v12 672k→250.82, v13 2.5M→242.75,
    v14 4M→**202.01**, 28% best-ppl drop). Paper abstract/§5.9–5.12/masthead tag list verified
    already-consistent. Tokenizer pin moved v12→v14 (canonical) in script + docs.
-2. **Engine bug #2 root-cause fix** in `loka-sparql` — RDF-star annotation rows project a
-   literal into the predicate slot on ~1% of rows. Fix in the executor, add a regression test,
-   then remove the preprocess mask in `tools/preprocess_streaming.py`.
+2. ✅ **DONE 2026-05-16 — Engine bug #2 root-cause fix in `loka-sparql`.** RDF/RDF-star
+   forbid literals in the predicate position; the executor was surfacing mis-keyed RDF-star
+   annotation rows as plain `?s ?p ?o` results with literals in the predicate slot (~1% of a
+   5M corpus — the documented "invalid output from the executor"). Fix: new
+   `term_id_is_literal` invariant guard applied at the basic-scan candidate loop **and** both
+   RDF-star wildcard outer-predicate binding loops (covers the `<< ?s ?p ?o >> ?qp ?qv`
+   "literal in ?qp" symptom). Two regression tests added (`engine_bug2_*`); full loka-sparql
+   suite green (119 tests). Legacy `tools/preprocess_streaming.py` mask comment updated to
+   note the engine now enforces the invariant (script is dormant — v11+ uses
+   `preprocess_from_hf.py`, no Loka in the data path; guard kept as a harmless stale-data-dir
+   safety net rather than ripped out of a non-pipeline script).
+   **Identified ingest-side follow-ups (deferred, not blocking — these are corruption
+   *sources*, the guard makes the query layer honest regardless):**
+   - **Bug A:** `loka-proto/src/server.rs` bulk `/triples` path persists the literal
+     `<<QUOTED_TRIPLE>>` sentinel string as the term for quoted-triple subjects/objects
+     (`BatchInsert.subject/object = parsed.subject/object`, lines ~990–995) — on WAL replay
+     this interns the sentinel and pollutes term resolution. Should persist a faithful
+     `<< s p o >>` term string instead.
+   - **Bug B:** `loka-cli/src/mcp.rs:1518` and `loka-ffi/src/lib.rs:234` ingest via the
+     non-star `parse_ntriples_line`, which returns the sentinel and silently drops the inner
+     triple for RDF-star input. Should use `parse_ntriples_star_line`.
 3. **Fine-tuning track scaffolding** — build `training/finetune/` per
    `planning/fine-tuning-track.md` (Qwen 2.5 1.5B-Instruct + QLoRA, shared
    `propositionInferredFrom` schema).
@@ -234,7 +252,7 @@ In strategic order. Top item is the current focus.
 
 1. **Engine bug #1: sled flusher panic at multi-GB scale.** ~~Surfaced~~ Surfaced on 2026-05-12 as a hard panic (Win32 `ERROR_NO_SYSTEM_RESOURCES` at 32.88 M triples / 5 GB). Probable fix shipped in `c36760b`: explicit `sled::Config` with 256 MB cache, 2 s flush, `Mode::HighThroughput`. **Reopen-in-place verified 2026-05-13 01:00 UTC**: WAL replay recovered 32,877,248 triples (1,150 more than `big-pull.log` last recorded). The fix is verified for the reopen case; the residual question is whether it also holds against a fresh sustained ingest past 32.88 M. If a re-test ingest panics at the next plateau, escalate to RocksDB migration (sled 0.34 unmaintained since 2021).
 
-2. **Engine bug #2: SPARQL returns literal values in the predicate slot.** ~1% of rows on a 5M corpus. Confirmed in a separate symptom too: `<< ?s ?p ?o >> ?qp ?qv` returns `<<QUOTED_TRIPLE>>` sentinel and literal values in `?qp`. Probably an RDF-star annotation row with positions getting confused on the executor side. Repro and fix.
+2. **Engine bug #2: SPARQL returns literal values in the predicate slot.** ✅ **Query-layer fix landed 2026-05-16** — see the "Active sweep" item 2 above for the full writeup. Executor now enforces the RDF invariant (no literal predicates) at the basic scan + both RDF-star wildcard outer loops; `engine_bug2_*` regression tests added; 119-test loka-sparql suite green. Remaining: ingest-side corruption sources **Bug A** (proto persists the `<<QUOTED_TRIPLE>>` sentinel) and **Bug B** (mcp/ffi use the non-star parser) — documented in the sweep item, deferred, not blocking.
 
 3. **Bigger corpus, paused at 32.88 M triples.** `loka-data-cron-c1/` has 32,877,248 triples on disk; option B reopen verified 2026-05-13 01:00 UTC. Two remaining decisions:
    - **Resume ingest** from row 318,582 to push toward the 50 M-triple target — tests whether the sled tuning also holds under fresh sustained writes (not just reopen). Worst case: another panic at the next plateau, falls through to RocksDB migration.
