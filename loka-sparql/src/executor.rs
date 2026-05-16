@@ -3459,7 +3459,8 @@ mod tests {
         let row = &result.rows[0];
         assert_eq!(
             *row.get("qp").unwrap(),
-            dict.lookup("http://loka.dev/provenance/propositionConfidence").unwrap()
+            dict.lookup("http://loka.dev/provenance/propositionConfidence")
+                .unwrap()
         );
         assert_eq!(*row.get("qv").unwrap(), dict.lookup("\"0.9\"").unwrap());
     }
@@ -3467,16 +3468,22 @@ mod tests {
     #[test]
     fn sparql_star_unbound_binds_inner_and_annotation() {
         let (store, dict, _qid) = star_fixture();
-        let q = parser::parse(
-            "SELECT ?s ?p ?o ?qp ?qv WHERE { << ?s ?p ?o >> ?qp ?qv }",
-        )
-        .unwrap();
+        let q = parser::parse("SELECT ?s ?p ?o ?qp ?qv WHERE { << ?s ?p ?o >> ?qp ?qv }").unwrap();
         let result = execute(&q, &store, &dict).unwrap();
         assert_eq!(result.rows.len(), 1);
         let row = &result.rows[0];
-        assert_eq!(*row.get("s").unwrap(), dict.lookup("http://wd/Q42").unwrap());
-        assert_eq!(*row.get("p").unwrap(), dict.lookup("http://wd/P20").unwrap());
-        assert_eq!(*row.get("o").unwrap(), dict.lookup("http://wd/Q31").unwrap());
+        assert_eq!(
+            *row.get("s").unwrap(),
+            dict.lookup("http://wd/Q42").unwrap()
+        );
+        assert_eq!(
+            *row.get("p").unwrap(),
+            dict.lookup("http://wd/P20").unwrap()
+        );
+        assert_eq!(
+            *row.get("o").unwrap(),
+            dict.lookup("http://wd/Q31").unwrap()
+        );
     }
 
     #[test]
