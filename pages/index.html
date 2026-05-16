@@ -355,7 +355,7 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.9em;">
             <div>
                 <a href="https://huggingface.co/datasets/EmmaLeonhart/loka" style="font-weight: 600;">EmmaLeonhart/loka</a>
-                <p style="color: #8b949e; margin-top: 2px;">Trained model checkpoints (v3 → v12, current best <strong>v12</strong> ppl 250.82). 44.5 M-param BPE transformer. Pull via <code style="background:#1c2128;padding:1px 4px;border-radius:3px;">MODEL.json</code>.</p>
+                <p style="color: #8b949e; margin-top: 2px;">Trained model checkpoints (v3 → v14, current best <strong>v14</strong> ppl 202.01). 44.5 M-param BPE transformer. Pull via <code style="background:#1c2128;padding:1px 4px;border-radius:3px;">MODEL.json</code>.</p>
             </div>
             <div>
                 <a href="https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata" style="font-weight: 600;">EmmaLeonhart/normalized-wikidata</a>
@@ -365,8 +365,8 @@
     </div>
 
     <div style="margin-top: 16px; padding: 16px 24px; background: #2c1810; border: 1px solid #f0883e; border-radius: 10px; max-width: 720px; margin-left: auto; margin-right: auto;">
-        <p style="font-size: 1em; color: #f0883e; margin-bottom: 4px; font-weight: 600;">Have a GPU and ~2 days to donate? Loka v14 needs you.</p>
-        <p style="font-size: 0.95em; color: #8b949e; margin-bottom: 8px;">v11&ndash;v13 train on the maintainer's laptop GPU. v14 (4 M-triple top tier) doesn't &mdash; ~40 h on an RTX 4090 of <em>exclusive</em> GPU. The training data is already on HF; the contributor script is one command. Your name on the artifact, ack in the paper. <a href="./contribute/">Full instructions →</a></p>
+        <p style="font-size: 1em; color: #f0883e; margin-bottom: 4px; font-weight: 600;">Have a GPU and ~2 days to donate? Push v14 below its floor.</p>
+        <p style="font-size: 0.95em; color: #8b949e; margin-bottom: 8px;">v11&ndash;v14 are all shipped (v14 = epoch-4, ppl 202.01, series best). But v14 floored at epoch 4 because a full clean 10-epoch run won't fit the maintainer's 8 GB power-capped laptop GPU &mdash; ~40 h on an RTX 4090 of <em>exclusive</em> GPU. A single clean optimizer over the full 10 epochs should push below 202. The data is already on HF; the contributor script is one command. Your name on the artifact, ack in the paper. <a href="./contribute/">Full instructions →</a></p>
     </div>
 
     <div style="margin-top: 16px; padding: 16px 24px; background: #1c2128; border: 1px solid #30363d; border-radius: 10px; max-width: 720px; margin-left: auto; margin-right: auto;">

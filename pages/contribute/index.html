@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Contribute GPU time — Loka v14">
-<meta property="og:description" content="The Loka v11 / v12 / v13 model rungs fit on a laptop GPU. v14 doesn't. If you have a GPU with ≥8 GB VRAM and ~2 days of wall-clock to donate, this page tells you how.">
-<meta name="description" content="How to donate GPU time to train Loka v14, the largest model in the normalized-wikidata series.">
+<meta property="og:description" content="v11–v14 are all shipped (v14 floored at epoch-4, ppl 202.01, series best). A full clean 10-epoch v14 run doesn't fit a laptop GPU. If you have ≥8 GB VRAM and ~2 days of wall-clock, this page tells you how to push below the 202 floor.">
+<meta name="description" content="How to donate GPU time for a clean full 10-epoch v14 run — the path below Loka's current 202.01 series-best perplexity floor.">
 <title>Contribute GPU time — Loka v14</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f4dc;</text></svg>">
 <style>
@@ -108,8 +108,9 @@
 <header>
   <h1>Contribute <span>GPU time</span> &mdash; Loka v14</h1>
   <p class="tagline">
-    Loka's v11, v12, and v13 model rungs all train on a laptop GPU. v14 (the 4 M-triple top tier) doesn't.
-    If you have a GPU with &ge;8 GB VRAM and roughly two days of wall-clock to donate, this is the one-command path to ship v14.
+    v11&ndash;v14 are all shipped. v14 floored at its epoch-4 checkpoint (ppl 202.01, the series best) because a full
+    <em>clean 10-epoch</em> run on the 4 M-triple top tier doesn't fit a laptop GPU. If you have a GPU with &ge;8 GB VRAM
+    and roughly two days of wall-clock to donate, this is the one-command path to push v14 below the 202 floor.
   </p>
 </header>
 
@@ -119,22 +120,25 @@
   <h2>Why this page exists</h2>
   <p>
     The maintainer of this project is <a href="https://github.com/EmmaLeonhart">Emma Leonhart</a>. The development hardware is a laptop with an
-    NVIDIA RTX 4070 <em>Laptop</em> GPU (8 GB VRAM, 35&ndash;115 W TGP). Three rungs of the normalized-wikidata model series &mdash;
-    <a href="https://huggingface.co/datasets/EmmaLeonhart/loka/tree/v11"><code>v11</code></a> (350 k triples),
-    <a href="https://huggingface.co/datasets/EmmaLeonhart/loka/tree/v12"><code>v12</code></a> (672 k triples), and
-    <a href="https://huggingface.co/datasets/EmmaLeonhart/loka"><code>v13</code></a> (2.5 M triples, training in flight as of 2026-05-14)
-    &mdash; all fit within that envelope at <code>--batch-size 16</code>.
+    NVIDIA RTX 4070 <em>Laptop</em> GPU (8 GB VRAM, 35&ndash;115 W TGP). The four rungs of the normalized-wikidata model series &mdash;
+    <a href="https://huggingface.co/datasets/EmmaLeonhart/loka/tree/v11"><code>v11</code></a> (350 k triples, ppl 279.12),
+    <a href="https://huggingface.co/datasets/EmmaLeonhart/loka/tree/v12"><code>v12</code></a> (672 k triples, ppl 250.82),
+    <a href="https://huggingface.co/datasets/EmmaLeonhart/loka/tree/v13"><code>v13</code></a> (2.5 M triples, epoch-2 ppl 242.75), and
+    <a href="https://huggingface.co/datasets/EmmaLeonhart/loka/tree/v14"><code>v14</code></a> (4 M triples, epoch-4 ppl <strong>202.01</strong> &mdash; series best)
+    &mdash; all shipped, all trained within that envelope at <code>--batch-size 16</code>.
   </p>
   <p>
-    The fourth rung, <strong>v14 on the 4 M-triple <code>v14-1M</code> corpus</strong>, doesn't. Rough estimate: 10 epochs &times; ~4 h/epoch on
-    an RTX 4090 = ~40 h of <em>exclusive</em> GPU. On the 4070 Laptop, the same run would be ~80 h. That's outside what the maintainer can
-    practically dedicate to the project on her own hardware.
+    But v14's local run was a <strong>partial 5-epoch run</strong> &mdash; it floored at the epoch-4 checkpoint (202.01) and a
+    bounded continuation confirmed ~202 is the practical from-scratch floor on this 8 GB power-capped card. What doesn't fit the
+    laptop is a <strong>full clean 10-epoch run with a single optimizer</strong>: rough estimate 10 epochs &times; ~4 h/epoch on
+    an RTX 4090 = ~40 h of <em>exclusive</em> GPU; ~80 h on the 4070 Laptop. That's outside what the maintainer can
+    practically dedicate on her own hardware &mdash; and it's the run expected to push meaningfully below 202.
   </p>
   <p>
     The training data is already public &mdash;
     <a href="https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata/tree/v14-1M"><code>EmmaLeonhart/normalized-wikidata@v14-1M</code></a>
     on Hugging Face, 4 021 409 clean labeled triples, CC-BY-SA 4.0 (inherits from Wikidata). The training code is in this repository.
-    What's missing is the wall-time. If that's something you can spare, this page tells you how.
+    What's missing is the wall-time for the clean full-length run. If that's something you can spare, this page tells you how.
   </p>
 </section>
 
@@ -151,7 +155,7 @@ python tools/contribute_v14_training.py --hf-user YOUR_HF_USERNAME</code></pre>
   <p>The script handles everything from there:</p>
   <ol>
     <li>Pulls the <code>v14-1M</code> training corpus from Hugging Face (~180 MB, cached on first run).</li>
-    <li>Pulls the BPE tokenizer and vocab from <code>EmmaLeonhart/loka@v12</code>.</li>
+    <li>Pulls the BPE tokenizer and vocab from <code>EmmaLeonhart/loka@v14</code> (byte-identical across all tags &mdash; stable since v6 &mdash; pinned to the canonical revision).</li>
     <li>Ensures a Hugging Face dataset repo exists under <strong>your</strong> account &mdash; default <code>&lt;your-user&gt;/loka-v14-contribution</code>.</li>
     <li>Runs <code>training/train.py</code> for 10 epochs at the standard architecture (44.5 M parameters, BPE, 6 layers, batch 16).</li>
     <li>Runs <code>tools/epoch_snapshot_pusher.py</code> in parallel, which watches the training log and uploads each completed epoch's checkpoint to your HF repo, tagged <code>v14.1</code>, <code>v14.2</code>, ... <code>v14.10</code>.</li>
@@ -221,10 +225,12 @@ when the run is in progress / complete.
     For wall-time this matters in the obvious way (per-epoch time scales roughly inversely with power, modulo memory bandwidth).
     But it can also change <em>what</em> the model converges to. Adam's momentum and learning-rate schedule interact with batch size,
     and with more VRAM you can take larger batches &mdash; which changes the gradient noise and sometimes the depth of the basin Adam
-    settles into. The v13 run on Emma's laptop appears to plateau around ppl 240&ndash;260 starting at epoch 2; we don't know yet
-    whether that's the data's information ceiling or whether more aggressive batch sizes + power headroom would push lower. A
-    contributor run on a 24 GB card at <code>--batch-size 64</code> would be a genuinely different empirical data point, not just
-    a faster version of the same run.
+    settles into. v13 (2.5 M triples) plateaued around ppl 240&ndash;260 by epoch 2; v14 (4 M) was <em>still descending at epoch 4</em>
+    (ppl 202.01, the series best) when the partial-local run stopped, and a bounded fresh-Adam continuation (epochs 6&ndash;7) drifted
+    back to 206&ndash;210 rather than lower. That tells us ~202 is the floor for a <em>fresh optimizer resumed mid-line</em> on this
+    hardware &mdash; it does <strong>not</strong> tell us where a single clean optimizer run to 10 full epochs lands, because the laptop
+    can't run that experiment. A contributor run on a 24 GB card at <code>--batch-size 64</code> for the full 10 epochs is a genuinely
+    different empirical data point, not just a faster version of the same run &mdash; and it's the one expected to break below 202.
   </p>
   <p>
     Concrete things a contributor with better hardware might observe that we can't:

@@ -12,7 +12,9 @@ What it does:
   1. Authenticates with Hugging Face (uses your token, NOT Emma's).
   2. Pulls the v14-1M training corpus from
      EmmaLeonhart/normalized-wikidata (CC-BY-SA 4.0).
-  3. Pulls the BPE tokenizer + vocab from EmmaLeonhart/loka@v12.
+  3. Pulls the BPE tokenizer + vocab from EmmaLeonhart/loka@v14
+     (byte-identical across all tags — stable since v6 — but pinned
+     to the canonical revision for clarity).
   4. Trains 10 epochs (default) of the 44.5 M-parameter role-aware
      transformer at batch size 16, same architecture as v3 onward.
   5. After every epoch, pushes the checkpoint to YOUR Hugging Face repo
@@ -108,7 +110,7 @@ def download_corpus_and_tokenizer(skip_corpus: bool) -> None:
         size_mb = LOCAL_CORPUS.stat().st_size / 1_000_000
         print(f"  {LOCAL_CORPUS} ({size_mb:.1f} MB)", flush=True)
 
-    banner("Downloading BPE tokenizer + vocab from EmmaLeonhart/loka@v12")
+    banner("Downloading BPE tokenizer + vocab from EmmaLeonhart/loka@v14")
     for repo_file, local_file in [
         ("corpus/vocab_bpe.json", LOCAL_VOCAB),
         ("corpus/tokenizer_bpe.json", LOCAL_TOKENIZER),
@@ -120,7 +122,7 @@ def download_corpus_and_tokenizer(skip_corpus: bool) -> None:
             repo_id="EmmaLeonhart/loka",
             repo_type="dataset",
             filename=repo_file,
-            revision="v12",
+            revision="v14",
         )
         shutil.copy(path, local_file)
         print(f"  {local_file} ({local_file.stat().st_size:,} bytes)", flush=True)
