@@ -67,6 +67,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/graph-store", get(gsp_get).put(gsp_put).delete(gsp_delete))
         .route("/vectors/health", get(vectors_health))
         .route("/vectors/rebuild", post(rebuild_hnsw))
+        .route("/retract/preview", post(retract_preview))
         .route("/.well-known/void", get(service_description))
         .route("/service-description", get(service_description))
         .layer(middleware::from_fn_with_state(
@@ -1084,6 +1085,83 @@ fn intern_object(dict: &mut TermDictionary, obj: &str) -> loka_core::TermId {
     dict.intern(obj)
 }
 
+// ─── Cascade-retraction preview (non-destructive) ────────────────────────────
+
+/// Request body for `POST /retract/preview`.
+#[derive(Deserialize)]
+pub struct RetractRequest {
+    /// The node IRI to (preview) retract.
+    pub iri: String,
+}
+
+/// `POST /retract/preview` — compute the cascade-retraction set rooted at
+/// `iri` **without deleting anything**. Returns the would-be-removed triples
+/// grouped by cascade depth, plus a count of HNSW tombstones a commit would
+/// flip. This is cascade-retraction Phase 2
+/// (`planning/cascade-retraction.md` §5.1); the destructive `retract_node`
+/// (Phase 3) builds on the exact same set computation.
+async fn retract_preview(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<RetractRequest>,
+) -> Result<Json<serde_json::Value>, ProtoError> {
+    let store = state
+        .store
+        .read()
+        .map_err(|e| ProtoError::BadRequest(format!("lock poisoned: {}", e)))?;
+    let dict = state
+        .dict
+        .read()
+        .map_err(|e| ProtoError::BadRequest(format!("lock poisoned: {}", e)))?;
+
+    let root_id = dict.lookup(&req.iri);
+    let set = match root_id {
+        Some(id) => loka_core::retract_set(id, &store, &dict),
+        // Unknown node: nothing to remove. Non-destructive + informative.
+        None => loka_core::RetractSet::default(),
+    };
+
+    let vectors = state
+        .vectors
+        .read()
+        .map_err(|e| ProtoError::BadRequest(format!("lock poisoned: {}", e)))?;
+    let render = |id: loka_core::TermId| {
+        dict.render_term(id).unwrap_or_else(|| format!("_:id{}", id))
+    };
+
+    let mut hnsw_tombstones = 0usize;
+    let by_depth: Vec<serde_json::Value> = set
+        .by_depth
+        .iter()
+        .enumerate()
+        .map(|(depth, triples)| {
+            let rows: Vec<serde_json::Value> = triples
+                .iter()
+                .map(|t| {
+                    if vectors.has_index(t.predicate) {
+                        hnsw_tombstones += 1;
+                    }
+                    serde_json::json!({
+                        "s": render(t.subject),
+                        "p": render(t.predicate),
+                        "o": render(t.object),
+                    })
+                })
+                .collect();
+            serde_json::json!({ "depth": depth, "count": rows.len(), "triples": rows })
+        })
+        .collect();
+
+    Ok(Json(serde_json::json!({
+        "root": req.iri,
+        "root_found": root_id.is_some(),
+        "total": set.total(),
+        "max_depth": set.max_depth(),
+        "hnsw_tombstones": hnsw_tombstones,
+        "by_depth": by_depth,
+        "committed": false,
+    })))
+}
+
 // ─── Declare Vector Predicate ────────────────────────────────────────────────
 
 /// Request body for POST /vectors/declare.
@@ -1648,6 +1726,69 @@ mod tests {
         for line in text.lines() {
             assert!(line.trim().ends_with('.'), "bad line: {}", line);
         }
+    }
+
+    #[tokio::test]
+    async fn retract_preview_is_nondestructive_and_cascades() {
+        // B6: POST /retract/preview computes the cascade set without
+        // deleting anything.
+        let state = test_state();
+        let app = router(state.clone());
+        // Real source + a generated triple that cites it.
+        let body = concat!(
+            "<http://wd/Q42> <http://wd/P_pob> <http://wd/Q350> .\n",
+            "<< <http://wd/Q350> <http://wd/G_died> <http://wd/Q999> >> ",
+            "<http://loka.dev/provenance/propositionInferredFrom> ",
+            "<< <http://wd/Q42> <http://wd/P_pob> <http://wd/Q350> >> .\n",
+        );
+        let req = Request::builder()
+            .method("POST")
+            .uri("/triples")
+            .header("content-type", "text/plain")
+            .body(Body::from(body))
+            .unwrap();
+        assert_eq!(app.oneshot(req).await.unwrap().status(), StatusCode::OK);
+        let count_before = state.store.read().unwrap().len();
+
+        let app = router(state.clone());
+        let req = Request::builder()
+            .method("POST")
+            .uri("/retract/preview")
+            .header("content-type", "application/json")
+            .body(Body::from(r#"{"iri":"http://wd/Q42"}"#))
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let j: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+
+        assert_eq!(j["root_found"], true);
+        assert_eq!(j["committed"], false);
+        assert!(j["total"].as_u64().unwrap() >= 3, "real row + G1 + its provenance: {j}");
+        assert!(j["max_depth"].as_u64().unwrap() >= 1, "at least one provenance hop");
+        // Depth 0 holds the root's own real row.
+        let d0 = &j["by_depth"][0]["triples"];
+        assert!(
+            d0.as_array().unwrap().iter().any(|t| t["s"] == "http://wd/Q42"
+                && t["p"] == "http://wd/P_pob"
+                && t["o"] == "http://wd/Q350"),
+            "depth 0 = the node's own row"
+        );
+        // Somewhere the generated G1 asserted row appears (cascaded).
+        let flat = j["by_depth"].as_array().unwrap().iter().flat_map(|d| {
+            d["triples"].as_array().unwrap().clone()
+        });
+        assert!(
+            flat.clone().any(|t| t["s"] == "http://wd/Q350"
+                && t["p"] == "http://wd/G_died"
+                && t["o"] == "http://wd/Q999"),
+            "the generated child cascaded into the preview"
+        );
+
+        // NON-DESTRUCTIVE: store unchanged.
+        assert_eq!(state.store.read().unwrap().len(), count_before);
     }
 
     #[tokio::test]

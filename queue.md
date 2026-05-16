@@ -52,7 +52,12 @@ Ordered; barrel top-down. Each line = one commit+push.
   `sparql_star_projected_quoted_var_renders_faithfully`; loka-proto
   `rdf_star_quoted_var_renders_in_csv` (CSV format; JSON covered by the B0
   test). All green (sparql 88, proto 12).
-- **B6. Cascade Phase 2 — `POST /retract/preview`** (read-only, non-destructive).
+- **B6. ✅ DONE — Cascade Phase 2, `POST /retract/preview`.** Read-only
+  endpoint: `{"iri":...}` → `retract_set` → `{root, root_found, total,
+  max_depth, hnsw_tombstones, by_depth:[{depth,count,triples:[{s,p,o}]}],
+  committed:false}`. Triples rendered via `render_term` (quoted faithful).
+  hnsw_tombstones = removed triples whose predicate has a declared vector
+  index. proto test asserts cascade + store-count-unchanged. proto green (13).
 - **B7. Cascade Phase 3 — `retract_node` MCP tool.** `commit:false` default →
   preview; `commit:true` → delete via existing path + `VectorRegistry::delete`.
   The destructive surface — stays opt-in behind the explicit flag.
