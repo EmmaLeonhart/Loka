@@ -498,13 +498,17 @@ The decision to ship at epoch 2 rather than continue is enabled by `tools/epoch_
 
 v14 trained on the `v14-1M` corpus (4 021 409 triples, 1.6× v13, ~11× v11) — same 44.5 M-parameter architecture, batch 16, partial-local 5-epoch run. It is the best model in the entire series and the cleanest demonstration of the central empirical claim.
 
-| Epoch | Loss | Perplexity | HF tag |
-|---|---|---|---|
-| 1 | 5.6457 | 283.07 | `v14.1` |
-| 2 | 5.3727 | 215.45 | `v14.2` |
-| 3 | 5.3449 | 209.55 | `v14.3` |
-| 4 | 5.3083 | **202.01** ← shipped | `v14.4` |
-| 5 | 5.3216 | 204.70 | `v14.5` |
+| Epoch | Loss | Perplexity | HF tag | Notes |
+|---|---|---|---|---|
+| 1 | 5.6457 | 283.07 | `v14.1` | |
+| 2 | 5.3727 | 215.45 | `v14.2` | |
+| 3 | 5.3449 | 209.55 | `v14.3` | |
+| 4 | 5.3083 | **202.01** ← canonical | `v14.4` | series best |
+| 5 | 5.3216 | 204.70 | `v14.5` | end of partial-local run |
+| 6 | 5.3284 | 206.12 | `v14.6` | continuation; fresh-Adam restart from epoch-4 weights (epoch-4 ckpt predates optimizer-state saving) — expected one-epoch bump |
+| 7 | 5.3465 | 209.87 | `v14.7` | Adam *not* recovering below 202; drifting up like v13's epochs 3–5 |
+
+**On the v14 continuation (epochs 6+).** v14's 5-epoch partial run had not plateaued (ep4 202.01 was the best, ep5 204.70 a slight tick up), so a continuation toward 10 epochs was undertaken. Because the epoch-4 checkpoint predates optimizer-state persistence, the continuation restarts Adam from zero state on the epoch-4 weights. The result so far (ep6 206.12, ep7 209.87) is the same Adam-plateau signature seen in v13 §5.11: a fresh optimizer on already-well-fit weights does not re-find a deeper basin within a few epochs; it random-walks slightly *outward* before (in v13's case) partially recovering. **The canonical v14 therefore remains the epoch-4 checkpoint (ppl 202.01)** — every epoch is preserved as its own HF tag (`v14.1`…`v14.7`, continuing to `v14.10`), so the best is shippable independent of where the continuation lands. The honest reading: on this corpus and this hardware, ~202 is the floor for a from-scratch 5-epoch fit; squeezing materially below it is a question for a clean-Adam 10-epoch contributor run (§contributor path), not for resuming a fresh optimizer mid-line.
 
 **The headline result.** Holding architecture, tokenizer, batch size and optimizer fixed and varying only the cleaned-corpus size:
 

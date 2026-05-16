@@ -152,7 +152,7 @@ hr { border: none; border-top: 1px solid #21262d; margin: 36px 0; }
     <tr><td><code>v11-50k</code></td><td>50,000</td><td>350,428</td><td><code>v11</code> &mdash; ppl 279.12 (3 epochs, CUDA OOM at batch 32 on 8 GB VRAM)</td></tr>
     <tr><td><code>v12-100k</code></td><td>100,000</td><td>671,817</td><td><code>v12</code> &mdash; ppl 250.82 (epoch-6 snapshot; training disrupted by shared-GPU contention)</td></tr>
     <tr><td><code>v13-500k</code></td><td>500,000</td><td>2,511,771</td><td><code>v13</code> &mdash; training in flight 2026-05-14</td></tr>
-    <tr><td><code>v14-1M</code></td><td>1,000,000</td><td>~7 M</td><td><code>v14</code> &mdash; corpus pass-2 in flight; training queued</td></tr>
+    <tr><td><code>v14-1M</code></td><td>1,000,000</td><td>4,021,409</td><td><code>v14</code> &mdash; <strong>series best, ppl 202.01</strong> (epoch 4, canonical). Per-epoch tags to <code>v14.7</code>, continuing to 10. Corpus scale confirmed as the binding lever (v11 279 &rarr; v14 202).</td></tr>
   </tbody>
 </table>
 
