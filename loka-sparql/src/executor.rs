@@ -3426,6 +3426,79 @@ mod tests {
         );
     }
 
+    // ── B5: SPARQL-star query coverage ──────────────────────────────────
+
+    fn star_fixture() -> (TripleStore, TermDictionary, TermId) {
+        let mut dict = TermDictionary::new();
+        let mut store = TripleStore::new();
+        let q42 = dict.intern("http://wd/Q42");
+        let p20 = dict.intern("http://wd/P20");
+        let q31 = dict.intern("http://wd/Q31");
+        let conf = dict.intern("http://loka.dev/provenance/propositionConfidence");
+        let val = dict.intern("\"0.9\"");
+        store.insert(Triple::new(q42, p20, q31)).unwrap();
+        // Register the reverse map (as the ingest paths now do) so a
+        // projected quoted id renders faithfully.
+        let qid = dict.register_quoted(q42, p20, q31);
+        store.insert(Triple::new(qid, conf, val)).unwrap();
+        (store, dict, qid)
+    }
+
+    #[test]
+    fn sparql_star_bound_quoted_subject() {
+        // `<< <s> <p> <o> >> ?qp ?qv` — concrete inner triple. resolve_term
+        // computes the content hash and the scan finds the annotation.
+        let (store, dict, _qid) = star_fixture();
+        let q = parser::parse(
+            "SELECT ?qp ?qv WHERE { \
+             << <http://wd/Q42> <http://wd/P20> <http://wd/Q31> >> ?qp ?qv }",
+        )
+        .unwrap();
+        let result = execute(&q, &store, &dict).unwrap();
+        assert_eq!(result.rows.len(), 1);
+        let row = &result.rows[0];
+        assert_eq!(
+            *row.get("qp").unwrap(),
+            dict.lookup("http://loka.dev/provenance/propositionConfidence").unwrap()
+        );
+        assert_eq!(*row.get("qv").unwrap(), dict.lookup("\"0.9\"").unwrap());
+    }
+
+    #[test]
+    fn sparql_star_unbound_binds_inner_and_annotation() {
+        let (store, dict, _qid) = star_fixture();
+        let q = parser::parse(
+            "SELECT ?s ?p ?o ?qp ?qv WHERE { << ?s ?p ?o >> ?qp ?qv }",
+        )
+        .unwrap();
+        let result = execute(&q, &store, &dict).unwrap();
+        assert_eq!(result.rows.len(), 1);
+        let row = &result.rows[0];
+        assert_eq!(*row.get("s").unwrap(), dict.lookup("http://wd/Q42").unwrap());
+        assert_eq!(*row.get("p").unwrap(), dict.lookup("http://wd/P20").unwrap());
+        assert_eq!(*row.get("o").unwrap(), dict.lookup("http://wd/Q31").unwrap());
+    }
+
+    #[test]
+    fn sparql_star_projected_quoted_var_renders_faithfully() {
+        // A plain pattern binds ?qt to the quoted-triple id (the annotation
+        // subject). The projected id must render as faithful << s p o >>.
+        let (store, dict, qid) = star_fixture();
+        let q = parser::parse(
+            "SELECT ?qt ?v WHERE { ?qt \
+             <http://loka.dev/provenance/propositionConfidence> ?v }",
+        )
+        .unwrap();
+        let result = execute(&q, &store, &dict).unwrap();
+        assert_eq!(result.rows.len(), 1);
+        assert_eq!(*result.rows[0].get("qt").unwrap(), qid);
+        assert_eq!(
+            dict.render_term(qid).as_deref(),
+            Some("<< <http://wd/Q42> <http://wd/P20> <http://wd/Q31> >>"),
+            "projected quoted id renders faithfully (not _:idN)"
+        );
+    }
+
     #[test]
     fn vector_similar_unbound_subject() {
         use loka_hnsw::{VectorPredicateConfig, VectorRegistry};

@@ -45,9 +45,13 @@ Ordered; barrel top-down. Each line = one commit+push.
   already faithful via the B2 `resolve_id` fix. proto round-trip test
   (ingest → `/graph?format=nt` → re-parse with the star parser, no `_:id`
   leak). loka-proto green (11 tests).
-- **B5. SPARQL-star query coverage.** Tests + fixes for bound
-  `<< <s> <p> <o> >> ?qp ?qv`, unbound `<< ?s ?p ?o >> ?qp ?qv`, and
-  projecting a quoted-bound variable through JSON/CSV/TSV/XML results.
+- **B5. ✅ DONE — SPARQL-star query coverage.** `resolve_term` already
+  computes the content hash for a concrete `<< s p o >>`, so bound + unbound
+  query logic was sound; locked in with tests: loka-sparql
+  `sparql_star_bound_quoted_subject`, `sparql_star_unbound_binds_inner_and_annotation`,
+  `sparql_star_projected_quoted_var_renders_faithfully`; loka-proto
+  `rdf_star_quoted_var_renders_in_csv` (CSV format; JSON covered by the B0
+  test). All green (sparql 88, proto 12).
 - **B6. Cascade Phase 2 — `POST /retract/preview`** (read-only, non-destructive).
 - **B7. Cascade Phase 3 — `retract_node` MCP tool.** `commit:false` default →
   preview; `commit:true` → delete via existing path + `VectorRegistry::delete`.
