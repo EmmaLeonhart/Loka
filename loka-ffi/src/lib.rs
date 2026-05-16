@@ -714,7 +714,8 @@ fn string_to_c(s: &str) -> *mut c_char {
 fn resolve_id(id: loka_core::TermId, dict: &loka_core::TermDictionary) -> String {
     // render_term resolves plain terms exactly as `resolve` would and an
     // RDF-star quoted-triple id to faithful `<< s p o >>` (no more _:idN).
-    dict.render_term(id).unwrap_or_else(|| format!("_:id{}", id))
+    dict.render_term(id)
+        .unwrap_or_else(|| format!("_:id{}", id))
 }
 
 #[cfg(test)]
@@ -796,8 +797,7 @@ mod tests {
         assert!(!sval.is_null());
         let s = unsafe { CStr::from_ptr(sval) }.to_str().unwrap();
         assert_eq!(
-            s,
-            "<< <http://wd/Q42> <http://wd/P20> <http://wd/Q31> >>",
+            s, "<< <http://wd/Q42> <http://wd/P20> <http://wd/Q31> >>",
             "quoted subject renders faithfully, not _:idN / sentinel"
         );
 
