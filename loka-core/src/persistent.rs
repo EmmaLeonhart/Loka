@@ -823,12 +823,11 @@ mod tests {
             "faithful render survives reopen"
         );
         // The annotation triple is still on disk.
-        let conf = dict.lookup("http://loka.dev/provenance/propositionConfidence").unwrap();
+        let conf = dict
+            .lookup("http://loka.dev/provenance/propositionConfidence")
+            .unwrap();
         assert!(!ps.find_by_subject(qid).is_empty());
-        assert!(ps
-            .find_by_subject(qid)
-            .iter()
-            .any(|t| t.predicate == conf));
+        assert!(ps.find_by_subject(qid).iter().any(|t| t.predicate == conf));
     }
 
     #[test]
