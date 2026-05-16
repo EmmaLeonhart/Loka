@@ -1514,21 +1514,37 @@ async fn tool_insert_triples(ctx: &McpContext, args: &Value) -> Result<String, S
 
         let mut inserted = 0usize;
         let mut errors = 0usize;
+        // Resolve one S/O position that may be an RDF-star quoted triple:
+        // intern + store the inner triple and register the reverse map,
+        // mirroring the proto/CLI ingest paths (RDF-star Bug B fix — this
+        // path used to use the non-star parser and silently drop the
+        // inner triple while interning the <<QUOTED_TRIPLE>> sentinel).
+        let resolve_pos = |ps: &loka_core::PersistentStore,
+                           plain: &str,
+                           quoted: &Option<(String, String, String)>|
+         -> Result<loka_core::TermId, String> {
+            match quoted {
+                Some((is, ip, io)) => {
+                    let is_id = ps.intern(is).map_err(|e| format!("Intern error: {}", e))?;
+                    let ip_id = ps.intern(ip).map_err(|e| format!("Intern error: {}", e))?;
+                    let io_id = ps.intern(io).map_err(|e| format!("Intern error: {}", e))?;
+                    let _ = ps.insert(loka_core::Triple::new(is_id, ip_id, io_id));
+                    ps.register_quoted(is_id, ip_id, io_id)
+                        .map_err(|e| format!("Quoted register error: {}", e))
+                }
+                None => ps.intern(plain).map_err(|e| format!("Intern error: {}", e)),
+            }
+        };
         for line in data.lines() {
-            let parsed = match loka_core::parse_ntriples_line(line) {
+            let parsed = match loka_core::parse_ntriples_star_line(line) {
                 Some(t) => t,
                 None => continue,
             };
-            let (subj_str, pred_str, obj_str) = parsed;
-            let s_id = ps
-                .intern(&subj_str)
-                .map_err(|e| format!("Intern error: {}", e))?;
+            let s_id = resolve_pos(&ps, &parsed.subject, &parsed.inner_subject)?;
             let p_id = ps
-                .intern(&pred_str)
+                .intern(&parsed.predicate)
                 .map_err(|e| format!("Intern error: {}", e))?;
-            let o_id = ps
-                .intern(&obj_str)
-                .map_err(|e| format!("Intern error: {}", e))?;
+            let o_id = resolve_pos(&ps, &parsed.object, &parsed.inner_object)?;
             match ps.insert(loka_core::Triple::new(s_id, p_id, o_id)) {
                 Ok(()) => inserted += 1,
                 Err(_) => errors += 1,

@@ -201,6 +201,45 @@ pub extern "C" fn loka_term_count(db: *const LokaDb) -> u64 {
     inner.dict.len() as u64
 }
 
+/// Intern a term into the persistent store and mirror it into the in-memory
+/// dictionary, returning the id (or a formatted error string).
+fn ffi_intern(inner: &mut DbInner, term: &str) -> std::result::Result<loka_core::TermId, String> {
+    let id = inner
+        .ps
+        .intern(term)
+        .map_err(|e| format!("Intern error: {}", e))?;
+    inner.dict.insert_with_id(term, id);
+    Ok(id)
+}
+
+/// Resolve one subject/object position that may be an RDF-star quoted
+/// triple. For a quoted position the inner triple is interned + stored and
+/// the reverse map registered (in both the persistent store and the
+/// in-memory dictionary), mirroring the proto/CLI ingest paths so a
+/// `<< s p o >>` position round-trips instead of being dropped.
+fn ffi_resolve_pos(
+    inner: &mut DbInner,
+    plain: &str,
+    quoted: &Option<(String, String, String)>,
+) -> std::result::Result<loka_core::TermId, String> {
+    match quoted {
+        Some((is, ip, io)) => {
+            let is_id = ffi_intern(inner, is)?;
+            let ip_id = ffi_intern(inner, ip)?;
+            let io_id = ffi_intern(inner, io)?;
+            let inner_t = loka_core::Triple::new(is_id, ip_id, io_id);
+            let _ = inner.ps.insert(inner_t);
+            let _ = inner.store.insert(inner_t);
+            inner.dict.register_quoted(is_id, ip_id, io_id);
+            inner
+                .ps
+                .register_quoted(is_id, ip_id, io_id)
+                .map_err(|e| format!("Quoted register error: {}", e))
+        }
+        None => ffi_intern(inner, plain),
+    }
+}
+
 /// Insert triples in N-Triples format.
 ///
 /// Returns the number of triples inserted, or -1 on error.
@@ -231,38 +270,33 @@ pub extern "C" fn loka_insert_ntriples(db: *mut LokaDb, data: *const c_char) -> 
 
     let mut inserted = 0i64;
     for line in data_str.lines() {
-        let parsed = match loka_core::parse_ntriples_line(line) {
+        // RDF-star aware (Bug B fix): this path used the non-star parser,
+        // which returns the <<QUOTED_TRIPLE>> sentinel and silently drops
+        // the inner triple for `<< s p o >> p o` input. Use the star parser
+        // and mirror the proto/CLI ingest: intern + store the inner triple
+        // and register the quoted reverse map.
+        let parsed = match loka_core::parse_ntriples_star_line(line) {
             Some(t) => t,
             None => continue,
         };
-        let (subj_str, pred_str, obj_str) = parsed;
-        let s_id = match inner.ps.intern(&subj_str) {
-            Ok(id) => {
-                inner.dict.insert_with_id(&subj_str, id);
-                id
-            }
+        let s_id = match ffi_resolve_pos(&mut inner, &parsed.subject, &parsed.inner_subject) {
+            Ok(id) => id,
             Err(e) => {
-                set_error(&format!("Intern error: {}", e));
+                set_error(&e);
                 return -1;
             }
         };
-        let p_id = match inner.ps.intern(&pred_str) {
-            Ok(id) => {
-                inner.dict.insert_with_id(&pred_str, id);
-                id
-            }
+        let p_id = match ffi_intern(&mut inner, &parsed.predicate) {
+            Ok(id) => id,
             Err(e) => {
-                set_error(&format!("Intern error: {}", e));
+                set_error(&e);
                 return -1;
             }
         };
-        let o_id = match inner.ps.intern(&obj_str) {
-            Ok(id) => {
-                inner.dict.insert_with_id(&obj_str, id);
-                id
-            }
+        let o_id = match ffi_resolve_pos(&mut inner, &parsed.object, &parsed.inner_object) {
+            Ok(id) => id,
             Err(e) => {
-                set_error(&format!("Intern error: {}", e));
+                set_error(&e);
                 return -1;
             }
         };
@@ -330,10 +364,11 @@ pub extern "C" fn loka_resolve(db: *const LokaDb, id: u64) -> *mut c_char {
         return string_to_c(&b.to_string());
     }
 
+    // render_term also reverses RDF-star quoted-triple ids to `<< s p o >>`.
     inner
         .dict
-        .resolve(id)
-        .map(string_to_c)
+        .render_term(id)
+        .map(|s| string_to_c(&s))
         .unwrap_or(std::ptr::null_mut())
 }
 
@@ -677,15 +712,9 @@ fn string_to_c(s: &str) -> *mut c_char {
 }
 
 fn resolve_id(id: loka_core::TermId, dict: &loka_core::TermDictionary) -> String {
-    if let Some(n) = loka_core::decode_inline_integer(id) {
-        return n.to_string();
-    }
-    if let Some(b) = loka_core::decode_inline_boolean(id) {
-        return b.to_string();
-    }
-    dict.resolve(id)
-        .map(|s| s.to_string())
-        .unwrap_or_else(|| format!("_:id{}", id))
+    // render_term resolves plain terms exactly as `resolve` would and an
+    // RDF-star quoted-triple id to faithful `<< s p o >>` (no more _:idN).
+    dict.render_term(id).unwrap_or_else(|| format!("_:id{}", id))
 }
 
 #[cfg(test)]
@@ -726,6 +755,51 @@ mod tests {
         assert!(!result.is_null());
         assert_eq!(loka_result_row_count(result), 1);
         assert_eq!(loka_result_column_count(result), 3);
+
+        loka_result_free(result);
+        loka_db_close(db);
+    }
+
+    #[test]
+    fn test_rdf_star_insert_round_trips_not_dropped() {
+        // Bug B regression: the FFI insert path used the non-star parser,
+        // which dropped the inner triple and interned the
+        // <<QUOTED_TRIPLE>> sentinel. Now it must store the inner triple
+        // AND render the quoted subject faithfully.
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("star.sdb");
+        let path_c = CString::new(path.to_str().unwrap()).unwrap();
+        let db = loka_db_open(path_c.as_ptr());
+        assert!(!db.is_null());
+
+        let data = CString::new(
+            "<< <http://wd/Q42> <http://wd/P20> <http://wd/Q31> >> \
+             <http://loka.dev/provenance/propositionConfidence> \"0.9\" .",
+        )
+        .unwrap();
+        let inserted = loka_insert_ntriples(db, data.as_ptr());
+        assert_eq!(inserted, 1, "the annotation row");
+        // 2 triples on disk: the inner asserted triple + the annotation.
+        // (Pre-fix this was 1 — the inner triple was silently lost.)
+        assert_eq!(loka_triple_count(db), 2);
+
+        let query = CString::new(
+            "SELECT ?s ?v WHERE { ?s \
+             <http://loka.dev/provenance/propositionConfidence> ?v }",
+        )
+        .unwrap();
+        let result = loka_query(db, query.as_ptr());
+        assert!(!result.is_null());
+        assert_eq!(loka_result_row_count(result), 1);
+
+        let sval = loka_result_value(result, 0, 0);
+        assert!(!sval.is_null());
+        let s = unsafe { CStr::from_ptr(sval) }.to_str().unwrap();
+        assert_eq!(
+            s,
+            "<< <http://wd/Q42> <http://wd/P20> <http://wd/Q31> >>",
+            "quoted subject renders faithfully, not _:idN / sentinel"
+        );
 
         loka_result_free(result);
         loka_db_close(db);
