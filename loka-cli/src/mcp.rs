@@ -1308,7 +1308,8 @@ fn open_serverless(
 /// plain terms exactly as `resolve` would and an RDF-star quoted-triple id
 /// to faithful `<< s p o >>` (no more `_:idN`).
 fn resolve_id(id: loka_core::TermId, dict: &loka_core::TermDictionary) -> String {
-    dict.render_term(id).unwrap_or_else(|| format!("_:id{}", id))
+    dict.render_term(id)
+        .unwrap_or_else(|| format!("_:id{}", id))
 }
 
 // ─── Tool implementations ────────────────────────────────────────────────────
