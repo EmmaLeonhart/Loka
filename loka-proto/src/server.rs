@@ -293,9 +293,9 @@ fn resolve_term_for_csv(id: loka_core::TermId, dict: &TermDictionary) -> String 
     if let Some(b) = loka_core::decode_inline_boolean(id) {
         return b.to_string();
     }
-    dict.resolve(id)
-        .map(|s| s.to_string())
-        .unwrap_or_else(|| format!("_:id{}", id))
+    // render_term resolves plain terms exactly as `resolve` would and an
+    // RDF-star quoted-triple id to faithful `<< s p o >>` (no more _:idN).
+    dict.render_term(id).unwrap_or_else(|| format!("_:id{}", id))
 }
 
 // ─── SPARQL XML ─────────────────────────────────────────────────────────────
@@ -479,12 +479,14 @@ fn execute_insert_data(
                 let qp_id = resolve_term_to_id(qp, &mut dict, &query.prefixes)?;
                 let qo_id = resolve_term_to_id(qo, &mut dict, &query.prefixes)?;
                 let inner = loka_core::Triple::new(qs_id, qp_id, qo_id);
+                dict.register_quoted(qs_id, qp_id, qo_id);
                 if store.insert(inner).is_ok() {
                     if let Some(ref ps_lock) = state.persistent {
                         let ps = ps_lock
                             .write()
                             .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?;
                         let _ = ps.insert(inner);
+                        let _ = ps.register_quoted(qs_id, qp_id, qo_id);
                     }
                 }
             }
@@ -498,12 +500,14 @@ fn execute_insert_data(
                 let qp_id = resolve_term_to_id(qp, &mut dict, &query.prefixes)?;
                 let qo_id = resolve_term_to_id(qo, &mut dict, &query.prefixes)?;
                 let inner = loka_core::Triple::new(qs_id, qp_id, qo_id);
+                dict.register_quoted(qs_id, qp_id, qo_id);
                 if store.insert(inner).is_ok() {
                     if let Some(ref ps_lock) = state.persistent {
                         let ps = ps_lock
                             .write()
                             .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?;
                         let _ = ps.insert(inner);
+                        let _ = ps.register_quoted(qs_id, qp_id, qo_id);
                     }
                 }
             }
@@ -669,7 +673,9 @@ fn resolve_term_to_id(
             let s_id = resolve_term_to_id(subject, dict, prefixes)?;
             let p_id = resolve_term_to_id(predicate, dict, prefixes)?;
             let o_id = resolve_term_to_id(object, dict, prefixes)?;
-            Ok(loka_core::quoted_triple_id(s_id, p_id, o_id))
+            // Register the reverse mapping (idempotent) so the content-hash
+            // id can be reversed for faithful rendering + provenance cascade.
+            Ok(dict.register_quoted(s_id, p_id, o_id))
         }
         _ => Err(ProtoError::BadRequest(
             "variables not allowed in INSERT/DELETE DATA".into(),
@@ -706,6 +712,14 @@ fn resolve_term_to_json(id: loka_core::TermId, dict: &TermDictionary) -> serde_j
                 "value": term
             })
         }
+    } else if dict.resolve_quoted(id).is_some() {
+        // RDF-star quoted triple. Loka's result JSON has no dedicated
+        // triple type; expose the faithful `<< s p o >>` lexical form
+        // (was previously an opaque `_:idN` blank node).
+        serde_json::json!({
+            "type": "triple",
+            "value": dict.render_term(id).unwrap_or_default()
+        })
     } else {
         serde_json::json!({
             "type": "uri",
@@ -939,16 +953,21 @@ async fn insert_triples(
             let io_id = intern_object(&mut dict, inner_o);
             let inner_triple = loka_core::Triple::new(is_id, ip_id, io_id);
             let _ = store.insert(inner_triple);
+            // Register the quoted-triple reverse mapping in the in-memory
+            // dictionary so the content-hash id can be reversed (faithful
+            // rendering + provenance cascade). `register_quoted` returns the
+            // same id `quoted_triple_id` would.
+            let qid = dict.register_quoted(is_id, ip_id, io_id);
+            // The inner-triple BatchInsert carries the reverse mapping so it
+            // is persisted inside insert_batch's single transaction.
             let inner_batch = state.persistent.as_ref().map(|_| loka_core::BatchInsert {
                 triple: inner_triple,
                 subject: inner_s.clone(),
                 predicate: inner_p.clone(),
                 object: inner_o.clone(),
+                quoted: Some((is_id, ip_id, io_id)),
             });
-            (
-                loka_core::quoted_triple_id(is_id, ip_id, io_id),
-                inner_batch,
-            )
+            (qid, inner_batch)
         } else {
             (dict.intern(&parsed.subject), None)
         };
@@ -966,16 +985,15 @@ async fn insert_triples(
             let io_id = intern_object(&mut dict, inner_o);
             let inner_triple = loka_core::Triple::new(is_id, ip_id, io_id);
             let _ = store.insert(inner_triple);
+            let qid = dict.register_quoted(is_id, ip_id, io_id);
             let inner_batch = state.persistent.as_ref().map(|_| loka_core::BatchInsert {
                 triple: inner_triple,
                 subject: inner_s.clone(),
                 predicate: inner_p.clone(),
                 object: inner_o.clone(),
+                quoted: Some((is_id, ip_id, io_id)),
             });
-            (
-                loka_core::quoted_triple_id(is_id, ip_id, io_id),
-                inner_batch,
-            )
+            (qid, inner_batch)
         } else {
             (intern_object(&mut dict, &parsed.object), None)
         };
@@ -987,11 +1005,28 @@ async fn insert_triples(
         match store.insert(triple) {
             Ok(()) => {
                 if state.persistent.is_some() {
+                    // Bug A fix: for a quoted subject/object, persist a
+                    // faithful `<< s p o >>` term string instead of the
+                    // `<<QUOTED_TRIPLE>>` sentinel `parsed.*` carries, so a
+                    // WAL-replayed store renders the quoted id correctly.
+                    let subject = if parsed.inner_subject.is_some() {
+                        dict.render_term(s_id)
+                            .unwrap_or_else(|| parsed.subject.clone())
+                    } else {
+                        parsed.subject.clone()
+                    };
+                    let object = if parsed.inner_object.is_some() {
+                        dict.render_term(o_id)
+                            .unwrap_or_else(|| parsed.object.clone())
+                    } else {
+                        parsed.object.clone()
+                    };
                     batch.push(loka_core::BatchInsert {
                         triple,
-                        subject: parsed.subject.clone(),
+                        subject,
                         predicate: parsed.predicate.clone(),
-                        object: parsed.object.clone(),
+                        object,
+                        quoted: None,
                     });
                 }
                 inserted_in_memory += 1;
@@ -1477,6 +1512,57 @@ mod tests {
         let json: serde_json::Value = serde_json::from_slice(&resp_body).unwrap();
         assert_eq!(json["inserted"], 3);
         assert_eq!(json["errors"].as_array().unwrap().len(), 0);
+    }
+
+    #[tokio::test]
+    async fn rdf_star_quoted_subject_renders_faithfully_not_blank_node() {
+        // Phase-0 / Bug-A end-to-end: ingest an RDF-star annotation, query
+        // it back, and assert the quoted-triple subject renders as faithful
+        // `<< s p o >>` (was previously an opaque `_:idN` because the
+        // content-hash id had no reverse map).
+        let state = test_state();
+        let app = router(state.clone());
+        let body = concat!(
+            "<< <http://example.org/Q42> <http://example.org/P20> ",
+            "<http://example.org/Q31> >> ",
+            "<http://loka.dev/provenance/propositionConfidence> \"0.9\" .\n",
+        );
+        let req = Request::builder()
+            .method("POST")
+            .uri("/triples")
+            .header("content-type", "text/plain")
+            .body(Body::from(body))
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        // Query the annotation row back.
+        let app = router(state.clone());
+        let q = "SELECT ?s ?v WHERE { ?s \
+                 <http://loka.dev/provenance/propositionConfidence> ?v }";
+        let req = Request::builder()
+            .method("POST")
+            .uri("/sparql")
+            .header("content-type", "application/sparql-query")
+            .body(Body::from(q))
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        let bindings = json["results"]["bindings"].as_array().unwrap();
+        assert_eq!(bindings.len(), 1, "exactly the annotation row");
+        let s = &bindings[0]["s"];
+        assert_eq!(s["type"], "triple", "quoted subject is an RDF-star triple");
+        assert_eq!(
+            s["value"],
+            "<< <http://example.org/Q42> <http://example.org/P20> \
+             <http://example.org/Q31> >>",
+            "faithful << s p o >>, not _:idN or the <<QUOTED_TRIPLE>> sentinel"
+        );
+        assert_eq!(bindings[0]["v"]["value"], "0.9");
     }
 
     #[tokio::test]

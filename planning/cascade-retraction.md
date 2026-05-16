@@ -184,7 +184,7 @@ the preview-then-confirm gate is mandatory there.
 
 | Phase | Deliverable | Crate | Destructive? | Gating |
 |---|---|---|---|---|
-| **0** | Persisted `quoted_triple_id → (s,p,o)` reverse index; mint it on every quoted-id creation; faithful term rendering (also fixes Bug A) | `loka-core`, `loka-proto`, `loka-cli`, `loka-ffi` | no | none — do first |
+| **0** ✅ **DONE 2026-05-16** | Persisted `quoted_triple_id → (s,p,o)` reverse index; minted on every quoted-id creation; faithful `<< s p o >>` rendering (**also fixes Bug A**) | `loka-core`, `loka-proto`, `loka-cli` | no | — |
 | **1** | Pure `retract_set(root_id, store, qindex) -> Vec<Triple>` cascade fn + unit tests (provenance DAG, cycle, real→real isolation, namespace bound) | `loka-sparql` or `loka-core` | no | Phase 0 |
 | **2** | `POST /retract/preview` read-only endpoint | `loka-proto` | no | Phase 1 |
 | **3** | `retract_node` MCP tool (`commit:false` default → preview; `commit:true` → delete via existing path + `VectorRegistry::delete`) | `loka-cli` | yes (commit only) | Phase 2 |
@@ -194,9 +194,47 @@ Each phase is independently shippable and the destructive surface (Phases 3–4)
 is gated behind the non-destructive preview (Phases 1–2) and an explicit
 `commit` flag.
 
-## 7. Why nothing destructive ships in the 2026-05-16 sweep
+## 6a. Phase 0 — implemented 2026-05-16
 
-Phase 0 is unbuilt and is a hard correctness prerequisite (a hash cannot be
+Built and tested:
+
+- **`loka-core/id.rs`** — `TermDictionary` gained an in-memory
+  `quoted: HashMap<TermId,[TermId;3]>` with `register_quoted` (mint + record,
+  idempotent), `resolve_quoted`, `insert_quoted_with_id` (hydration), and
+  `render_term` (recursive, depth-bounded, faithful N-Triples-star).
+- **`loka-core/persistent.rs`** — new `quoted` sled tree (id LE 8B →
+  s|p|o LE 24B). `BatchInsert` gained `quoted: Option<(TermId,TermId,TermId)>`,
+  written **inside `insert_batch`'s existing multi-tree transaction** (7-tuple
+  now) so the mapping can never be lost relative to its rows and no new
+  per-row sled txn is introduced (wedge-fix invariant preserved).
+  `register_quoted` (non-batch path), `load_quoted_into`, and `load_terms_into`
+  now also hydrates the quoted map so every existing hydration call site gets
+  reversal for free. `flush` covers the new tree.
+- **`loka-proto/server.rs`** — bulk `/triples` + `INSERT DATA` mint sites call
+  `register_quoted`; the annotation row now persists a faithful `<< s p o >>`
+  subject/object string instead of the `<<QUOTED_TRIPLE>>` sentinel (**Bug A
+  fixed**); `resolve_term_to_json` (now emits `"type":"triple"` with the
+  `<< >>` value) and `resolve_term_for_csv` render via `render_term`.
+- **`loka-cli/main.rs`** — import path registers quoted on the star path.
+- Tests: `loka-core` id/persistent unit tests (register/resolve/render/nested/
+  rehydrate/persistence round-trip); `loka-proto` end-to-end
+  `rdf_star_quoted_subject_renders_faithfully_not_blank_node`. Full
+  core+proto+sparql suites green, zero regressions.
+
+Out of scope (deliberately, documented): Turtle/graph **export** serializers
+still use `resolve` (not `render_term`) — RDF-star Turtle export is a separate
+serializer concern, not on the query/cascade path. The non-star
+`parse_ntriples_line` in `loka-ffi`/`loka-cli mcp.rs` (Bug B) is a parser-choice
+bug, separate from the reverse map. Nested-quoted persistence on the rarely
+used `INSERT DATA` path registers only the top level (the recursive in-memory
+map is still correct in-process).
+
+Phases 1–4 (pure cascade fn → preview endpoint → MCP tool → Studio) are now
+unblocked.
+
+## 7. Why nothing destructive shipped before Phase 0
+
+Phase 0 was a hard correctness prerequisite (a hash cannot be
 reversed). Wiring a destructive cascade on top of a store that cannot reverse
 quoted-triple ids would be the exact "parallel half-implementation" the
 project's discipline rules forbid, and it deletes data. The honest, correct

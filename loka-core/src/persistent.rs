@@ -13,7 +13,7 @@ use std::path::Path;
 use sled::Transactional;
 
 use crate::error::{CoreError, Result};
-use crate::id::TermId;
+use crate::id::{quoted_triple_id, TermId};
 use crate::temporal::{decode_tspo_key, tspo_key, TemporalSignifier};
 use crate::triple::Triple;
 
@@ -27,6 +27,11 @@ pub struct BatchInsert {
     pub subject: String,
     pub predicate: String,
     pub object: String,
+    /// If this row involves an RDF-star quoted triple, the inner
+    /// `(s, p, o)` term ids to register in the reverse map so the
+    /// content-addressed `quoted_triple_id` can be reversed (faithful
+    /// rendering + provenance cascade). `None` for ordinary rows.
+    pub quoted: Option<(TermId, TermId, TermId)>,
 }
 
 /// A persistent triple store backed by sled.
@@ -46,6 +51,11 @@ pub struct PersistentStore {
     terms_forward: sled::Tree,
     /// Term dictionary: reverse map (u64 ID → string).
     terms_reverse: sled::Tree,
+    /// RDF-star quoted-triple reverse map: quoted_triple_id (8-byte LE key)
+    /// → inner (s, p, o) ids (24-byte LE value). Lets a content-addressed
+    /// quoted-triple id be reversed to its components — required for
+    /// faithful rendering and provenance cascade-retraction.
+    quoted: sled::Tree,
     /// Next term ID counter, stored persistently.
     meta: sled::Tree,
 }
@@ -86,6 +96,7 @@ impl PersistentStore {
         let tspo = db.open_tree("tspo")?;
         let terms_forward = db.open_tree("terms_fwd")?;
         let terms_reverse = db.open_tree("terms_rev")?;
+        let quoted = db.open_tree("quoted")?;
         let meta = db.open_tree("meta")?;
 
         // Initialize next_id if not present (start at 1, 0 is INVALID_ID)
@@ -101,6 +112,7 @@ impl PersistentStore {
             tspo,
             terms_forward,
             terms_reverse,
+            quoted,
             meta,
         })
     }
@@ -114,6 +126,7 @@ impl PersistentStore {
         let tspo = db.open_tree("tspo")?;
         let terms_forward = db.open_tree("terms_fwd")?;
         let terms_reverse = db.open_tree("terms_rev")?;
+        let quoted = db.open_tree("quoted")?;
         let meta = db.open_tree("meta")?;
 
         meta.insert(NEXT_ID_KEY, &1u64.to_le_bytes())?;
@@ -126,6 +139,7 @@ impl PersistentStore {
             tspo,
             terms_forward,
             terms_reverse,
+            quoted,
             meta,
         })
     }
@@ -192,10 +206,11 @@ impl PersistentStore {
             &self.osp,
             &self.terms_forward,
             &self.terms_reverse,
+            &self.quoted,
             &self.meta,
         )
             .transaction(
-                |(spo, pos, osp, terms_fwd, terms_rev, meta)| -> sled::transaction::ConflictableTransactionResult<usize, ()> {
+                |(spo, pos, osp, terms_fwd, terms_rev, quoted, meta)| -> sled::transaction::ConflictableTransactionResult<usize, ()> {
                     let mut next_id_counter = match meta.get(NEXT_ID_KEY)? {
                         Some(b) if b.len() == 8 => {
                             let mut arr = [0u8; 8];
@@ -226,6 +241,19 @@ impl PersistentStore {
                             pos.insert(item.triple.pos_key().as_ref(), &[] as &[u8])?;
                             osp.insert(item.triple.osp_key().as_ref(), &[] as &[u8])?;
                             inserted_this_attempt += 1;
+                        }
+
+                        // RDF-star quoted-triple reverse map. Written in the
+                        // same transaction as the triple so the mapping can
+                        // never be lost relative to the rows that need it.
+                        if let Some((qs, qp, qo)) = item.quoted {
+                            let qid = quoted_triple_id(qs, qp, qo);
+                            if quoted.get(qid.to_le_bytes())?.is_none() {
+                                quoted.insert(
+                                    &qid.to_le_bytes(),
+                                    &encode_spo(qs, qp, qo),
+                                )?;
+                            }
                         }
                     }
 
@@ -457,6 +485,36 @@ impl PersistentStore {
         Ok(id)
     }
 
+    /// Register an RDF-star quoted triple's reverse mapping
+    /// (`quoted_triple_id(s,p,o) → (s,p,o)`). Idempotent. Used by the
+    /// non-batch insert path (e.g. SPARQL `INSERT DATA`); the bulk
+    /// `/triples` path registers via `BatchInsert::quoted` inside
+    /// `insert_batch`'s transaction instead.
+    pub fn register_quoted(&self, s: TermId, p: TermId, o: TermId) -> Result<TermId> {
+        let id = quoted_triple_id(s, p, o);
+        if self.quoted.get(id.to_le_bytes())?.is_none() {
+            self.quoted.insert(&id.to_le_bytes(), &encode_spo(s, p, o))?;
+        }
+        Ok(id)
+    }
+
+    /// Rehydrate the in-memory quoted reverse map from disk. Returns the
+    /// number of quoted triples loaded.
+    pub fn load_quoted_into(&self, dict: &mut crate::id::TermDictionary) -> usize {
+        let mut count = 0;
+        for (key_bytes, val_bytes) in self.quoted.iter().flatten() {
+            let id = match bytes_to_u64(key_bytes.as_ref()) {
+                Ok(id) => id,
+                Err(_) => continue,
+            };
+            if let Some((s, p, o)) = decode_spo(val_bytes.as_ref()) {
+                dict.insert_quoted_with_id(id, s, p, o);
+                count += 1;
+            }
+        }
+        count
+    }
+
     /// Look up a term by its ID.
     pub fn resolve(&self, id: TermId) -> Result<Option<String>> {
         match self.terms_reverse.get(id.to_le_bytes())? {
@@ -486,6 +544,9 @@ impl PersistentStore {
             dict.insert_with_id(&term, id);
             count += 1;
         }
+        // Hydrate the quoted reverse map too, so every existing
+        // `load_terms_into` call site gets RDF-star reversal for free.
+        let _ = self.load_quoted_into(dict);
         count
     }
 
@@ -546,6 +607,7 @@ impl PersistentStore {
         self.tspo.flush()?;
         self.terms_forward.flush()?;
         self.terms_reverse.flush()?;
+        self.quoted.flush()?;
         self.meta.flush()?;
         Ok(())
     }
@@ -564,6 +626,26 @@ impl PersistentStore {
             })?;
         bytes_to_u64(old.as_ref())
     }
+}
+
+/// Encode a quoted triple's inner (s, p, o) ids as a 24-byte LE value.
+fn encode_spo(s: TermId, p: TermId, o: TermId) -> [u8; 24] {
+    let mut v = [0u8; 24];
+    v[0..8].copy_from_slice(&s.to_le_bytes());
+    v[8..16].copy_from_slice(&p.to_le_bytes());
+    v[16..24].copy_from_slice(&o.to_le_bytes());
+    v
+}
+
+/// Decode a 24-byte LE value into (s, p, o) ids. `None` on length mismatch.
+fn decode_spo(bytes: &[u8]) -> Option<(TermId, TermId, TermId)> {
+    if bytes.len() != 24 {
+        return None;
+    }
+    let s = u64::from_le_bytes(bytes[0..8].try_into().ok()?);
+    let p = u64::from_le_bytes(bytes[8..16].try_into().ok()?);
+    let o = u64::from_le_bytes(bytes[16..24].try_into().ok()?);
+    Some((s, p, o))
 }
 
 /// Convert a byte slice to a u64 term ID, returning an error on length mismatch.
@@ -697,5 +779,39 @@ mod tests {
         let store = make_store();
         let all: Vec<_> = store.iter().collect();
         assert_eq!(all.len(), 4);
+    }
+
+    #[test]
+    fn quoted_register_and_hydrate() {
+        let store = PersistentStore::temporary().unwrap();
+        // Non-batch path.
+        let qid = store.register_quoted(11, 22, 33).unwrap();
+        assert_eq!(qid, quoted_triple_id(11, 22, 33));
+        // Idempotent.
+        assert_eq!(store.register_quoted(11, 22, 33).unwrap(), qid);
+
+        // Batch path carries the mapping inside insert_batch's transaction.
+        let qid2 = quoted_triple_id(44, 55, 66);
+        store
+            .insert_batch(&[BatchInsert {
+                triple: Triple::new(qid2, 77, 88),
+                subject: "<< a b c >>".into(),
+                predicate: "http://loka.dev/provenance/propositionConfidence".into(),
+                object: "\"0.9\"".into(),
+                quoted: Some((44, 55, 66)),
+            }])
+            .unwrap();
+
+        // Rehydrate into a fresh dictionary.
+        let mut dict = crate::id::TermDictionary::new();
+        let n = store.load_quoted_into(&mut dict);
+        assert_eq!(n, 2);
+        assert_eq!(dict.resolve_quoted(qid), Some((11, 22, 33)));
+        assert_eq!(dict.resolve_quoted(qid2), Some((44, 55, 66)));
+
+        // load_terms_into also hydrates quoted (free for all call sites).
+        let mut dict2 = crate::id::TermDictionary::new();
+        store.load_terms_into(&mut dict2);
+        assert_eq!(dict2.resolve_quoted(qid2), Some((44, 55, 66)));
     }
 }

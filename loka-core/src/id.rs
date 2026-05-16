@@ -123,6 +123,13 @@ pub fn inline_type(id: TermId) -> Option<InlineType> {
 pub struct TermDictionary {
     forward: HashMap<String, TermId>,
     reverse: HashMap<TermId, String>,
+    /// Reverse map for RDF-star quoted triples. `quoted_triple_id(s,p,o)` is a
+    /// content hash (one-way), so without this map a quoted-triple TermId
+    /// cannot be rendered back to `<< s p o >>` and provenance cascades can't
+    /// dereference a `propositionInferredFrom` source id. Populated whenever a
+    /// quoted triple is registered; persisted via the `quoted` sled tree and
+    /// rehydrated on startup.
+    quoted: HashMap<TermId, [TermId; 3]>,
     next_id: AtomicU64,
 }
 
@@ -132,6 +139,7 @@ impl TermDictionary {
         Self {
             forward: HashMap::new(),
             reverse: HashMap::new(),
+            quoted: HashMap::new(),
             next_id: AtomicU64::new(1),
         }
     }
@@ -171,6 +179,86 @@ impl TermDictionary {
         let next = self.next_id.load(Ordering::Relaxed);
         if id >= next {
             self.next_id.store(id + 1, Ordering::Relaxed);
+        }
+    }
+
+    /// Register an RDF-star quoted triple `<< s p o >>` and return its
+    /// content-addressed TermId. Idempotent: re-registering the same (s,p,o)
+    /// returns the same id and re-records the (now identical) reverse entry.
+    pub fn register_quoted(&mut self, s: TermId, p: TermId, o: TermId) -> TermId {
+        let id = quoted_triple_id(s, p, o);
+        self.quoted.insert(id, [s, p, o]);
+        id
+    }
+
+    /// Resolve a quoted-triple id back to its inner `(s, p, o)`.
+    /// Returns `None` for non-quoted ids.
+    pub fn resolve_quoted(&self, id: TermId) -> Option<(TermId, TermId, TermId)> {
+        self.quoted.get(&id).map(|&[s, p, o]| (s, p, o))
+    }
+
+    /// Insert a quoted-triple mapping with a pre-computed id. Used when
+    /// rehydrating the reverse map from a persistent store. The caller
+    /// guarantees `id == quoted_triple_id(s, p, o)`.
+    pub fn insert_quoted_with_id(&mut self, id: TermId, s: TermId, p: TermId, o: TermId) {
+        self.quoted.insert(id, [s, p, o]);
+    }
+
+    /// Number of registered quoted triples.
+    pub fn quoted_len(&self) -> usize {
+        self.quoted.len()
+    }
+
+    /// Render a TermId to a display string, resolving quoted-triple ids
+    /// recursively to N-Triples-star `<< s p o >>` form. This is a faithful
+    /// drop-in for `resolve` for plain terms (same bare string) and the
+    /// reason a quoted-triple subject no longer has to fall back to a
+    /// `_:idN` blank node or a `<<QUOTED_TRIPLE>>` sentinel.
+    /// Returns `None` only for ids that are neither inline, interned, nor
+    /// a registered quoted triple.
+    pub fn render_term(&self, id: TermId) -> Option<String> {
+        if let Some(n) = decode_inline_integer(id) {
+            return Some(n.to_string());
+        }
+        if let Some(b) = decode_inline_boolean(id) {
+            return Some(b.to_string());
+        }
+        if let Some(t) = self.reverse.get(&id) {
+            return Some(t.clone());
+        }
+        if self.quoted.contains_key(&id) {
+            return Some(self.quoted_component_str(id, 0));
+        }
+        None
+    }
+
+    /// Format a single position of a quoted triple. IRIs are angle-bracketed
+    /// so the result is parseable N-Triples-star; literals/blank nodes are
+    /// emitted verbatim (they are stored with their lexical markers). Bounded
+    /// recursion: nested quoting deeper than 8 is treated as opaque (content
+    /// hashes make a real cycle astronomically unlikely, but crafted data
+    /// must not be able to blow the stack).
+    fn quoted_component_str(&self, id: TermId, depth: u8) -> String {
+        if let Some(n) = decode_inline_integer(id) {
+            return n.to_string();
+        }
+        if let Some(b) = decode_inline_boolean(id) {
+            return b.to_string();
+        }
+        if depth < 8 {
+            if let Some(&[s, p, o]) = self.quoted.get(&id) {
+                return format!(
+                    "<< {} {} {} >>",
+                    self.quoted_component_str(s, depth + 1),
+                    self.quoted_component_str(p, depth + 1),
+                    self.quoted_component_str(o, depth + 1),
+                );
+            }
+        }
+        match self.reverse.get(&id) {
+            Some(t) if t.starts_with('"') || t.starts_with("_:") => t.clone(),
+            Some(t) => format!("<{}>", t),
+            None => format!("_:id{}", id),
         }
     }
 
@@ -261,6 +349,85 @@ mod tests {
         assert_ne!(id_a, id_c);
         assert_ne!(id_a, INVALID_ID);
         assert!(!is_inline(id_a), "quoted triple ID should not be inline");
+    }
+
+    #[test]
+    fn register_and_resolve_quoted() {
+        let mut dict = TermDictionary::new();
+        let s = dict.intern("http://example.org/Q42");
+        let p = dict.intern("http://example.org/P20");
+        let o = dict.intern("\"Belgium\"");
+
+        let qid = dict.register_quoted(s, p, o);
+        assert_eq!(qid, quoted_triple_id(s, p, o), "id is the content hash");
+        assert_eq!(dict.resolve_quoted(qid), Some((s, p, o)));
+        // Idempotent.
+        assert_eq!(dict.register_quoted(s, p, o), qid);
+        assert_eq!(dict.quoted_len(), 1);
+        // A non-quoted id resolves to None.
+        assert_eq!(dict.resolve_quoted(s), None);
+    }
+
+    #[test]
+    fn render_term_quoted_is_faithful_ntriples_star() {
+        let mut dict = TermDictionary::new();
+        let s = dict.intern("http://example.org/Q42");
+        let p = dict.intern("http://example.org/P20");
+        let o = dict.intern("\"Belgium\"");
+        let qid = dict.register_quoted(s, p, o);
+
+        // Plain terms render exactly as stored (drop-in for resolve).
+        assert_eq!(
+            dict.render_term(s).as_deref(),
+            Some("http://example.org/Q42")
+        );
+        // The quoted id renders faithfully, NOT as _:idN or a sentinel.
+        assert_eq!(
+            dict.render_term(qid).as_deref(),
+            Some("<< <http://example.org/Q42> <http://example.org/P20> \"Belgium\" >>")
+        );
+        // Unknown id → None.
+        assert_eq!(dict.render_term(999_999), None);
+    }
+
+    #[test]
+    fn render_term_nested_quoted() {
+        // << << s p o >> qp qo >>  — RDF-star annotation on a quoted triple.
+        let mut dict = TermDictionary::new();
+        let s = dict.intern("http://example.org/s");
+        let p = dict.intern("http://example.org/p");
+        let o = dict.intern("http://example.org/o");
+        let inner = dict.register_quoted(s, p, o);
+        let qp = dict.intern("http://loka.dev/provenance/propositionConfidence");
+        let qo = dict.intern("\"0.9\"");
+        let outer = dict.register_quoted(inner, qp, qo);
+
+        assert_eq!(
+            dict.render_term(outer).as_deref(),
+            Some(
+                "<< << <http://example.org/s> <http://example.org/p> <http://example.org/o> >> \
+                 <http://loka.dev/provenance/propositionConfidence> \"0.9\" >>"
+            )
+        );
+    }
+
+    #[test]
+    fn insert_quoted_with_id_rehydrates() {
+        // Simulate persistence rehydration: a fresh dict gets the mapping
+        // injected with a pre-computed id (as load_quoted_into would do).
+        let mut src = TermDictionary::new();
+        let s = src.intern("http://example.org/a");
+        let p = src.intern("http://example.org/b");
+        let o = src.intern("http://example.org/c");
+        let qid = src.register_quoted(s, p, o);
+
+        let mut fresh = TermDictionary::new();
+        fresh.intern("http://example.org/a");
+        fresh.intern("http://example.org/b");
+        fresh.intern("http://example.org/c");
+        fresh.insert_quoted_with_id(qid, s, p, o);
+        assert_eq!(fresh.resolve_quoted(qid), Some((s, p, o)));
+        assert_eq!(fresh.render_term(qid), src.render_term(qid));
     }
 
     #[test]
