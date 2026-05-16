@@ -16,7 +16,7 @@ A neuro-symbolic world model. **Loka** is the engine (Rust, this repo): a lean R
 
 ### Background processes in flight
 
-**None.** v11–v14 are all shipped-final; the supervisor, trainer, and epoch-snapshot pusher were cleanly stopped. The GPU is intentionally idle (released for the maintainer's other use). No training, ingest, or `loka serve` running. The only actionable work while the GPU is paused is code-only (engine bug #2, fine-tuning scaffolding, cascade-retraction) and docs (this currency sweep) — see `queue.md`.
+**None.** v11–v14 are all shipped-final; the supervisor, trainer, and epoch-snapshot pusher were cleanly stopped. The GPU is intentionally idle (released for the maintainer's other use). No training, ingest, or `loka serve` running. The code-only barrel that ran while the GPU is paused is **complete**: engine bug #2 fully closed (query-layer invariant + ingest-side quoted-triple reverse index + ffi/mcp parser fix), RDF-star solid across ingest/persistence/query/export, fine-tuning track scaffolded, and **cascade-retraction shipped end-to-end** (pure `retract_set` → `/retract/preview` → `/retract` + `retract_node` MCP tool → Loka Studio action; destructive path opt-in). All Rust suites green; Studio analyzes clean. See `queue.md` (BARREL COMPLETE) and DEVLOG 2026-05-16.
 
 ### Current pinned model
 
@@ -111,7 +111,7 @@ Working:
 - Hardware-aware training params pinned in `CLAUDE.md` + project memory (batch 16, exclusive GPU).
 
 Known issues:
-- **Engine bug #2: Loka SPARQL occasionally returns literal values or entity IRIs in the predicate position.** Filtered at preprocess. Real engine bug to fix later.
+- ~~**Engine bug #2: Loka SPARQL occasionally returns literal values in the predicate position.**~~ **RESOLVED 2026-05-16** — query-layer invariant + ingest-side quoted-triple reverse index + ffi/mcp parser fix. RDF-star round-trips losslessly across ingest/persistence/query/export.
 - **The v11+ Loka data dir (`loka-data-cron-c1/`, 17.6 GB) is no longer in the training data path.** Kept on disk for reference.
 - **Mode collapse on common connector tokens.** Even with rep penalty, "of/and" still win when (S, P) coverage is thin. The v11→v14 corpus-scale series narrowed this (best ppl 279.12 → 202.01) but did not eliminate it; a clean 10-epoch v14 on bigger hardware is the next lever.
 - **v12 shipped at the epoch-6 snapshot** (ppl 250.82) rather than the epoch-4 best (226.86) — lost to an unrelated LLaMA 3.1 8B experiment sharing the GPU. A clean v12 retrain (~225 expected) remains a GPU-blocked queue item.
@@ -120,11 +120,11 @@ Known issues:
 
 ## Open levers in priority order
 
-_Series is shipped-final; GPU paused. Items 1–3 are code-only (actionable now); 4–6 are GPU-blocked._
+_The code-only barrel is complete (engine bug #2, RDF-star hardening, fine-tuning scaffold, cascade-retraction — all shipped 2026-05-16). Remaining levers are GPU-blocked._
 
-1. **Engine bug #2 root-cause fix.** Currently filtered at preprocess; should be fixed in `loka-sparql` so the database is honest. Code-only — the queue's flagged actionable item.
-2. **Fine-tuning track** (`planning/fine-tuning-track.md`) — Qwen 2.5 1.5B-Instruct + QLoRA on the same `triples_v{N}.txt` format. Scaffold `training/finetune/`.
-3. **World-model cascade-retraction** — `retract_node` MCP tool + engine prerequisites, cascade bounded to the `http://loka.dev/provenance/` namespace (`queue.md` Active #8).
+1. ✅ **DONE — Engine bug #2 fully closed** (query-layer + ingest-side reverse index + ffi/mcp parser).
+2. ✅ **DONE — Fine-tuning track scaffolded** (`training/finetune/`, current-pipeline aligned).
+3. ✅ **DONE — World-model cascade-retraction shipped end-to-end** (`retract_set` → `/retract/preview` → `/retract` + `retract_node` MCP tool → Studio; destructive opt-in). Spec: `planning/cascade-retraction.md`.
 4. **Donor clean-Adam 10-epoch v14** (`tools/contribute_v14_training.py`) — the explicit successor experiment per paper §5.12, expected to push below 202.01. Passive: waits for a contributor.
 5. **Retrain v12 cleanly** — exclusive-GPU time (~12 h) to get the trajectory v12 *should* have had at ppl ~225.
 6. **Propgen-test v11/v12/v13/v14 on the standard Q42 seed** — same evaluation as v6–v10; deferred from v11 onward because of GPU fragility. Catalog-predicate share expected to remain 0 % (cleaning is dataset-side).

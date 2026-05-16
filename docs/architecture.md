@@ -82,6 +82,31 @@ IRIs and blank nodes are interned at write time to 64-bit integer IDs. All index
 
 Quoted triples (RDF-star) are hashed as a tuple `(S, P, O) → u64` content ID using xxHash3. Collision probability is negligible at any realistic graph size.
 
+Because that hash is one-way, the engine also keeps a **persisted `quoted_triple_id → (s,p,o)` reverse index** (a dedicated sled tree, written inside the same batch transaction as the triples so it is never lost relative to its rows, rehydrated into the in-memory dictionary on reopen). Without it a quoted-triple subject cannot be rendered back to `<< s p o >>` (it would surface as an opaque `_:idN` blank node, and an ingest path could only persist a `<<QUOTED_TRIPLE>>` sentinel), and a provenance cascade could not dereference a `propositionInferredFrom` source. The reverse index is what makes RDF-star round-trip losslessly across ingest, persistence, query, and Turtle/N-Triples export. **All ingest paths mint quoted ids through `register_quoted`, never the bare hash function**, so the mapping is always recorded.
+
+### 3.3 Cascade-Retraction (Provenance-Bounded Deletion)
+
+Every model-generated triple carries `propositionInferredFrom` RDF-star edges to the context it was conditioned on (§ provenance schema). This makes the provenance graph not merely auditable but **actionable**: removing a node — real data or model-generated — also removes every generated inference that transitively cited it.
+
+`loka-core::retract_set(root, store, dict) → RetractSet` computes the set, grouped by cascade depth, **non-destructively**:
+
+1. **Depth 0** = the node's own rows (`find_by_subject ∪ find_by_object`).
+2. **Closure**: for each removed triple `T`, find `<<G>> propositionInferredFrom <<T>>` annotation rows; reverse `<<G>>` via the §3.2 reverse index; remove `G`'s asserted row plus all of `G`'s provenance annotation rows; recurse on `G`.
+
+Invariants: traversal follows **only** `propositionInferredFrom` and is bounded to the reserved `http://loka.dev/provenance/` namespace, so an ordinary data edge is never treated as a derivation — **real→real is not a dependency**, and **child→parent is not a dependency** (provenance points child→parent; the cascade only walks parent→child). It is cycle-safe (a triple is never processed twice) and terminates in ≤ provenance-DAG depth.
+
+Surfaces, destructive path opt-in at every one (dry-run preview is the default):
+
+| Surface | Destructive? |
+|---|---|
+| `retract_set` (engine fn) | no — pure computation |
+| `POST /retract/preview` | no — read-only |
+| `POST /retract` `{iri, commit}` | only when `commit:true`; deletes from in-memory + persistent store and flips HNSW entries via `VectorRegistry::delete` |
+| `retract_node` MCP tool | `commit:false` default → preview; `commit:true` → delete |
+| Loka Studio "Retract (cascade)" | preview dialog → explicit confirm |
+
+Design and phasing: `planning/cascade-retraction.md`.
+
 ---
 
 ## 4. HNSW Vector Index Design
@@ -526,7 +551,8 @@ Loka includes a native MCP server (`loka mcp`) that allows AI agents to interact
 | `verify_consistency` | Check SPO/POS/OSP index consistency, auto-repair |
 | `database_info` | Triple count, term count, vector index count |
 | `sparql_query` | Execute SPARQL+ queries |
-| `insert_triples` | Insert N-Triples data |
+| `insert_triples` | Insert N-Triples data (RDF-star aware) |
+| `retract_node` | Cascade-retraction: remove a node + every generated inference that transitively cited it. Dry-run preview by default; `commit:true` deletes (provenance-bounded, real→real not a dependency) |
 | `backup` | Create database snapshot |
 | `vector_search` | ANN search via VECTOR_SIMILAR |
 | `download_studio` | Download and install Loka Studio |

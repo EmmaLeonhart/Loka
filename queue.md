@@ -312,7 +312,7 @@ In strategic order. Top item is the current focus.
 
 1. **Engine bug #1: sled flusher panic at multi-GB scale.** ~~Surfaced~~ Surfaced on 2026-05-12 as a hard panic (Win32 `ERROR_NO_SYSTEM_RESOURCES` at 32.88 M triples / 5 GB). Probable fix shipped in `c36760b`: explicit `sled::Config` with 256 MB cache, 2 s flush, `Mode::HighThroughput`. **Reopen-in-place verified 2026-05-13 01:00 UTC**: WAL replay recovered 32,877,248 triples (1,150 more than `big-pull.log` last recorded). The fix is verified for the reopen case; the residual question is whether it also holds against a fresh sustained ingest past 32.88 M. If a re-test ingest panics at the next plateau, escalate to RocksDB migration (sled 0.34 unmaintained since 2021).
 
-2. **Engine bug #2: SPARQL returns literal values in the predicate slot.** ✅ **Fully resolved 2026-05-16.** (a) Query-layer invariant fixed in `loka-sparql` (commit `b63af81`, `engine_bug2_*` tests). (b) **Bug A fixed** by Cascade Phase 0: the quoted-triple reverse index means the proto bulk/INSERT-DATA paths now persist a faithful `<< s p o >>` term string instead of the `<<QUOTED_TRIPLE>>` sentinel, and quoted ids render faithfully (no more `_:idN`). Only **Bug B** remains: `loka-cli/src/mcp.rs:1518` and `loka-ffi/src/lib.rs:234` ingest via the non-star `parse_ntriples_line`, silently dropping inner triples for RDF-star input — a parser-choice bug, separate from the reverse map, low priority (those paths aren't the Wikidata ingest path). Fix = switch them to `parse_ntriples_star_line`.
+2. ✅ **DONE — Engine bug #2 fully closed 2026-05-16** (query-layer invariant + ingest-side quoted-triple reverse index + ffi/mcp parser fix; Bug A + Bug B both fixed). See the BARREL section above + DEVLOG 2026-05-16.
 
 3. **Bigger corpus, paused at 32.88 M triples.** `loka-data-cron-c1/` has 32,877,248 triples on disk; option B reopen verified 2026-05-13 01:00 UTC. Two remaining decisions:
    - **Resume ingest** from row 318,582 to push toward the 50 M-triple target — tests whether the sled tuning also holds under fresh sustained writes (not just reopen). Worst case: another panic at the next plateau, falls through to RocksDB migration.
@@ -320,25 +320,19 @@ In strategic order. Top item is the current focus.
 
 4. **Live `--post` end-to-end test of generative citation.** Attempted with `--max-subjects 30 --post`; script hung 7 min with no output, indicating engine bug #1 triggered during the POST phase. Re-attempt at lower scope after #1's fix is verified by option B.
 
-5. **Fine-tuning track scaffolding.** `planning/fine-tuning-track.md` defines the parallel near-term track: Qwen 2.5 1.5B-Instruct + QLoRA on the same `triples.txt` format, sharing the `propositionInferredFrom` output schema. Build `training/finetune/`.
+5. ✅ **DONE — Fine-tuning track scaffolded** (`training/finetune/`, current-pipeline aligned; `df8fb43` + the 2026-05-16 currency pass). First real QLoRA run is GPU-gated.
 
 6. **Submit paper revision v2 to clawRxiv post 2378.** Local edits done (see Done section); needs `POST /api/posts/2378/revise` to actually publish the v2. Review-flagged remaining concerns (mode collapse on connectors, anecdotal qualitative sample, "neuro-symbolic" framing) are partially addressed by the new §3.2 framing and §6.4 future-work block but would benefit from a v3 once a bigger corpus or entity-decoder lands.
 
 7. **Repo rename Loka → Loka.** Top of `TODO.md` has the full checklist.
 
-8. **World-model cascade-retraction.** Spec + 5-phase plan in
-   **`planning/cascade-retraction.md`**. **Phase 0 ✅ DONE 2026-05-16** — the persisted
-   `quoted_triple_id → (s,p,o)` reverse index landed and tested (also fixed Bug A); §6a of
-   the design doc has the writeup. Phases 1–4 are now unblocked:
-   - **Phase 1 (next):** pure `retract_set(root_id, store, qindex) -> Vec<Triple>` cascade
-     fn + unit tests (provenance DAG, cycle-safe, real→real isolation, namespace-bounded).
-     Non-destructive, code-only, GPU-independent.
-   - **Phase 2:** `POST /retract/preview` read-only endpoint.
-   - **Phase 3:** `retract_node` MCP tool (`commit:false` default → preview;
-     `commit:true` → delete via the existing path + `VectorRegistry::delete`).
-   - **Phase 4:** Studio dependency-tree preview + confirm.
-   The destructive surface (3–4) stays gated behind the non-destructive preview (1–2) and
-   an explicit `commit` flag. **Next concrete work: Phase 1.**
+8. ✅ **DONE — World-model cascade-retraction shipped end-to-end 2026-05-16.** All 5 phases:
+   reverse index → pure `retract_set` → `POST /retract/preview` → `POST /retract` +
+   `retract_node` MCP tool → Loka Studio "Retract (cascade)" action. Provenance-bounded,
+   cycle-safe, real→real not a dependency; destructive path opt-in everywhere. Spec:
+   `planning/cascade-retraction.md`; full arc in DEVLOG 2026-05-16. Docs synced across
+   paper §6.1/§6.3, website (history + /loka/ + homepage card), README, status.md,
+   CLAUDE.md, architecture.md.
 
 ---
 
