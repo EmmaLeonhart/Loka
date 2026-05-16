@@ -25,10 +25,13 @@ Ordered; barrel top-down. Each line = one commit+push.
   (transitive chain, real→real isolation, child→parent isolation, no-prov,
   cycle). loka-core green. `RESERVED_PROVENANCE_PREFIX`/`PROP_INFERRED_FROM`
   consts now in the engine.
-- **B2. Bug B — RDF-star ingest on the ffi/mcp paths.** `loka-ffi/src/lib.rs:234`
-  + `loka-cli/src/mcp.rs:1518` use the non-star `parse_ntriples_line` → drop
-  inner triples + intern the sentinel. Switch to `parse_ntriples_star_line`
-  + `register_quoted`, mirroring the proto bulk path.
+- **B2. ✅ DONE — Bug B, RDF-star ingest on ffi/mcp.** `loka-ffi` insert path
+  + `loka-cli/src/mcp.rs` serverless path now use `parse_ntriples_star_line`
+  + `register_quoted` (helpers `ffi_intern`/`ffi_resolve_pos`; an mcp closure).
+  FFI `resolve_id` + `loka_resolve` now render via `render_term` so quoted
+  subjects come back faithfully. End-to-end ffi test (insert annotation →
+  count==2 proves the inner triple is no longer dropped → query → faithful
+  `<< … >>`). All crates green.
 - **B3. Persistence reopen round-trip.** Integration test: ingest a quoted
   triple into a real (on-disk tempdir) `PersistentStore`, drop, reopen,
   assert `resolve_quoted`/`render_term` survive. (`temporary()` can't reopen —
