@@ -1666,10 +1666,7 @@ mod tests {
             .header("content-type", "text/plain")
             .body(Body::from(body))
             .unwrap();
-        assert_eq!(
-            app.oneshot(req).await.unwrap().status(),
-            StatusCode::OK
-        );
+        assert_eq!(app.oneshot(req).await.unwrap().status(), StatusCode::OK);
 
         let app = router(state.clone());
         let req = Request::builder()
@@ -1691,7 +1688,10 @@ mod tests {
                 assert_eq!(s, "http://wd/Q42");
                 assert_eq!(p, "http://wd/P20");
                 assert_eq!(o, "http://wd/Q31");
-                assert_eq!(parsed.predicate, "http://loka.dev/provenance/propositionConfidence");
+                assert_eq!(
+                    parsed.predicate,
+                    "http://loka.dev/provenance/propositionConfidence"
+                );
                 saw_annotation = true;
             }
             // No row should leak the blank-node fallback.
@@ -1700,7 +1700,10 @@ mod tests {
                 "quoted id leaked as a blank node: {line}"
             );
         }
-        assert!(saw_annotation, "the << Q42 P20 Q31 >> annotation round-tripped");
+        assert!(
+            saw_annotation,
+            "the << Q42 P20 Q31 >> annotation round-tripped"
+        );
     }
 
     #[tokio::test]
