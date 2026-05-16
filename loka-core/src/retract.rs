@@ -235,11 +235,29 @@ mod tests {
         let set = retract_set(q42, &store, &dict);
 
         // The real row Q42 P_pob Q350 is depth 0.
-        assert!(has(&set, &dict, "http://wd/Q42", "http://wd/P_pob", "http://wd/Q350"));
+        assert!(has(
+            &set,
+            &dict,
+            "http://wd/Q42",
+            "http://wd/P_pob",
+            "http://wd/Q350"
+        ));
         // G1's asserted row cascades out (reached via provenance, depth 1).
-        assert!(has(&set, &dict, "http://wd/Q350", "http://wd/G_died", "http://wd/Q999"));
+        assert!(has(
+            &set,
+            &dict,
+            "http://wd/Q350",
+            "http://wd/G_died",
+            "http://wd/Q999"
+        ));
         // G2 (cited G1) cascades transitively (depth 2).
-        assert!(has(&set, &dict, "http://wd/Q999", "http://wd/G_city", "http://wd/Q1"));
+        assert!(has(
+            &set,
+            &dict,
+            "http://wd/Q999",
+            "http://wd/G_city",
+            "http://wd/Q1"
+        ));
         // Provenance annotation rows for G1 are swept (reserved namespace).
         let g1 = quoted_triple_id(
             dict.lookup("http://wd/Q350").unwrap(),
@@ -248,7 +266,8 @@ mod tests {
         );
         let inferred = dict.lookup(PROP_INFERRED_FROM).unwrap();
         assert!(
-            set.all().any(|t| t.subject == g1 && t.predicate == inferred),
+            set.all()
+                .any(|t| t.subject == g1 && t.predicate == inferred),
             "G1's inferredFrom annotation is retracted"
         );
         assert!(set.max_depth() >= 2, "two provenance hops");
@@ -262,11 +281,23 @@ mod tests {
         // of Q42's depth-0 row) but it is NOT a derivation; deleting Q42
         // must not chase it.
         assert!(
-            !has(&set, &dict, "http://wd/Q350", "http://wd/P_in", "http://wd/Q1"),
+            !has(
+                &set,
+                &dict,
+                "http://wd/Q350",
+                "http://wd/P_in",
+                "http://wd/Q1"
+            ),
             "ordinary edges are never followed as derivations"
         );
         // Q42's second real row IS removed (it's the node's own row).
-        assert!(has(&set, &dict, "http://wd/Q42", "http://wd/P_name", "\"Douglas\""));
+        assert!(has(
+            &set,
+            &dict,
+            "http://wd/Q42",
+            "http://wd/P_name",
+            "\"Douglas\""
+        ));
     }
 
     #[test]
@@ -279,12 +310,36 @@ mod tests {
         let q1 = dict.lookup("http://wd/Q1").unwrap();
         let set = retract_set(q1, &store, &dict);
         // Q1's own rows (depth 0): the generated leaf and a real row.
-        assert!(has(&set, &dict, "http://wd/Q999", "http://wd/G_city", "http://wd/Q1"));
-        assert!(has(&set, &dict, "http://wd/Q350", "http://wd/P_in", "http://wd/Q1"));
+        assert!(has(
+            &set,
+            &dict,
+            "http://wd/Q999",
+            "http://wd/G_city",
+            "http://wd/Q1"
+        ));
+        assert!(has(
+            &set,
+            &dict,
+            "http://wd/Q350",
+            "http://wd/P_in",
+            "http://wd/Q1"
+        ));
         // Parent G1 must survive (we don't walk child→parent).
-        assert!(!has(&set, &dict, "http://wd/Q350", "http://wd/G_died", "http://wd/Q999"));
+        assert!(!has(
+            &set,
+            &dict,
+            "http://wd/Q350",
+            "http://wd/G_died",
+            "http://wd/Q999"
+        ));
         // The real source must survive.
-        assert!(!has(&set, &dict, "http://wd/Q42", "http://wd/P_pob", "http://wd/Q350"));
+        assert!(!has(
+            &set,
+            &dict,
+            "http://wd/Q42",
+            "http://wd/P_pob",
+            "http://wd/Q350"
+        ));
     }
 
     #[test]
