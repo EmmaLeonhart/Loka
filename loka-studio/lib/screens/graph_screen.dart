@@ -127,6 +127,83 @@ class _GraphScreenState extends State<GraphScreen> {
     }
   }
 
+  /// Cascade-retraction: preview the dependency set, confirm, then delete
+  /// the node and every generated inference that transitively cited it.
+  Future<void> _retractNode(String iri, String label) async {
+    final conn = context.read<ConnectionProvider>();
+    if (!conn.connected) return;
+
+    Map<String, dynamic> preview;
+    try {
+      preview = await conn.client.retractPreview(iri);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Retract preview failed: $e')),
+      );
+      return;
+    }
+    if (!mounted) return;
+
+    final total = preview['total'] as int? ?? 0;
+    if (total == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nothing to retract for this node.')),
+      );
+      return;
+    }
+    final maxDepth = preview['max_depth'] as int? ?? 0;
+    final hnsw = preview['hnsw_tombstones'] as int? ?? 0;
+    final byDepth = (preview['by_depth'] as List?) ?? [];
+    final summary = byDepth
+        .map((d) => '  depth ${d['depth']}: ${d['count']} triple(s)')
+        .join('\n');
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Retract "$label"?'),
+        content: SingleChildScrollView(
+          child: Text(
+            'This DELETES $total triple(s) across the provenance cascade '
+            '(max depth $maxDepth, $hnsw HNSW entr${hnsw == 1 ? "y" : "ies"}):\n\n'
+            '$summary\n\n'
+            "The node's own rows plus every generated inference that "
+            'transitively cited it disappear. This cannot be undone.',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: LokaTheme.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Delete $total triple(s)'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      final result = await conn.client.retractCommit(iri);
+      if (!mounted) return;
+      final removed = result['removed'] as int? ?? 0;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Retracted $removed triple(s).')),
+      );
+      setState(() => _selectedNodeId = null);
+      await _loadGraph();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Retract failed: $e')),
+      );
+    }
+  }
+
   void _buildGraph(List<Triple> triples) {
     final nodeIds = <String>{};
     final nodes = <GraphNode>[];
@@ -544,6 +621,23 @@ class _GraphScreenState extends State<GraphScreen> {
                     visualDensity: VisualDensity.compact,
                   ),
               ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.cut, size: 16),
+                label: const Text('Retract (cascade)'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: LokaTheme.red,
+                  side: const BorderSide(color: LokaTheme.red),
+                ),
+                onPressed: () => _retractNode(node.id, node.label),
+              ),
             ),
           ),
 

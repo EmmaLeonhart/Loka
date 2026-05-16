@@ -68,8 +68,20 @@ Ordered; barrel top-down. Each line = one commit+push.
   commit:false no-op, commit:true deletes the whole cascade incl. the
   transitively-cited child. All crates green (proto 14, cli 14). **The
   functional "cut off the branches" goal is achieved and agent-operable.**
-- **B8. Cascade Phase 4 — Studio dependency-tree preview + confirm.** GUI;
-  agent-first means this may land as a documented follow-up if scope runs long.
+- **B8. ✅ DONE — Cascade Phase 4, Studio preview + confirm.** `loka_client.dart`
+  gained `retractPreview` / `retractCommit` (HTTP to `/retract/preview` +
+  `/retract`). graph_screen selected-node panel has a "Retract (cascade)"
+  button → `_retractNode` previews, shows an AlertDialog with the per-depth
+  cascade + HNSW count, confirm → destructive commit → snackbar + reload.
+  `flutter analyze` clean (no errors; only pre-existing style infos).
+
+**BARREL COMPLETE.** RDF-star is solid across ingest (proto bulk / INSERT
+DATA / CLI import / ffi / mcp), persistence (reopen-durable), query
+(bound/unbound SPARQL-star + projection across JSON/CSV), and export
+(Turtle/N-Triples round-trip). Cascade-retraction ships end-to-end:
+pure engine fn → preview endpoint → `/retract` + `retract_node` MCP tool
+→ Studio action, destructive surface gated behind explicit commit. All
+Rust suites green; Studio analyzes clean.
 
 Mirrored to tasks #7 (B1) onward; new tasks created as items are reached.
 
