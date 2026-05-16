@@ -1651,6 +1651,47 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn rdf_star_quoted_var_renders_in_csv() {
+        // B5: projecting a quoted-bound variable through the CSV result
+        // format must give the faithful << … >>, not _:idN.
+        let state = test_state();
+        let app = router(state.clone());
+        let body = concat!(
+            "<< <http://wd/Q42> <http://wd/P20> <http://wd/Q31> >> ",
+            "<http://loka.dev/provenance/propositionConfidence> \"0.9\" .\n",
+        );
+        let req = Request::builder()
+            .method("POST")
+            .uri("/triples")
+            .header("content-type", "text/plain")
+            .body(Body::from(body))
+            .unwrap();
+        assert_eq!(app.oneshot(req).await.unwrap().status(), StatusCode::OK);
+
+        let app = router(state.clone());
+        let req = Request::builder()
+            .method("POST")
+            .uri("/sparql.csv")
+            .header("content-type", "application/sparql-query")
+            .body(Body::from(
+                "SELECT ?s WHERE { ?s \
+                 <http://loka.dev/provenance/propositionConfidence> ?v }",
+            ))
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let csv = String::from_utf8(bytes.to_vec()).unwrap();
+        assert!(
+            csv.contains("<< <http://wd/Q42> <http://wd/P20> <http://wd/Q31> >>"),
+            "CSV projects the quoted subject faithfully; got: {csv}"
+        );
+        assert!(!csv.contains("_:id"), "no blank-node fallback leak");
+    }
+
+    #[tokio::test]
     async fn rdf_star_export_round_trips() {
         // B4: ingest an RDF-star annotation, export N-Triples, re-parse —
         // the quoted triple must come back as `<< … >>`, not `_:idN`.
