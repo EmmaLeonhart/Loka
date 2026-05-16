@@ -38,9 +38,13 @@ Ordered; barrel top-down. Each line = one commit+push.
   `render_term` + the annotation row all survive. `tempfile` added to
   loka-core dev-deps. Proves Phase 0 durability (unit tests use `temporary()`
   which can't reopen).
-- **B4. RDF-star export round-trips.** Turtle (`resolve_term_for_turtle` +
-  `export_graph`) and N-Triples export render a quoted-triple position as
-  `<< … >>`, not `_:idN`. Test: export → re-parse → identical.
+- **B4. ✅ DONE — RDF-star export round-trips.** `resolve_term_for_turtle`
+  (used by both the Turtle and N-Triples `/graph` branches) now renders a
+  quoted id via `render_term` → parseable `<< <s> <p> "o" >>`; `compact_iri`
+  guards against treating `<<` as a compactable IRI. FFI `loka_export_ntriples`
+  already faithful via the B2 `resolve_id` fix. proto round-trip test
+  (ingest → `/graph?format=nt` → re-parse with the star parser, no `_:id`
+  leak). loka-proto green (11 tests).
 - **B5. SPARQL-star query coverage.** Tests + fixes for bound
   `<< <s> <p> <o> >> ?qp ?qv`, unbound `<< ?s ?p ?o >> ?qp ?qv`, and
   projecting a quoted-bound variable through JSON/CSV/TSV/XML results.

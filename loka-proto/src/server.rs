@@ -868,21 +868,24 @@ fn resolve_term_for_turtle(id: loka_core::TermId, dict: &TermDictionary) -> Stri
         return format!("\"{}\"^^<http://www.w3.org/2001/XMLSchema#boolean>", b);
     }
 
-    if let Some(term) = dict.resolve(id) {
-        if term.starts_with('"') {
-            // Already a literal with quotes — pass through
-            term.to_string()
-        } else {
-            // IRI — wrap in angle brackets
-            format!("<{}>", term)
-        }
-    } else {
-        format!("_:id{}", id)
+    match dict.render_term(id) {
+        // RDF-star quoted triple: render_term already produced parseable
+        // N-Triples-star / Turtle-star `<< <s> <p> "o" >>`.
+        Some(t) if t.starts_with("<<") => t,
+        // Literal (with quotes) or blank node — pass through.
+        Some(t) if t.starts_with('"') || t.starts_with("_:") => t,
+        // IRI — wrap in angle brackets.
+        Some(t) => format!("<{}>", t),
+        None => format!("_:id{}", id),
     }
 }
 
 /// Compact an IRI using known prefixes: `<http://...#Foo>` → `prefix:Foo`
 fn compact_iri(term: &str, prefixes: &std::collections::BTreeMap<String, String>) -> String {
+    // Never treat an RDF-star quoted triple `<< … >>` as a compactable IRI.
+    if term.starts_with("<<") {
+        return term.to_string();
+    }
     // Only compact IRIs (wrapped in <>)
     if let Some(iri) = term.strip_prefix('<').and_then(|t| t.strip_suffix('>')) {
         for (prefix, namespace) in prefixes {
@@ -1645,6 +1648,59 @@ mod tests {
         for line in text.lines() {
             assert!(line.trim().ends_with('.'), "bad line: {}", line);
         }
+    }
+
+    #[tokio::test]
+    async fn rdf_star_export_round_trips() {
+        // B4: ingest an RDF-star annotation, export N-Triples, re-parse —
+        // the quoted triple must come back as `<< … >>`, not `_:idN`.
+        let state = test_state();
+        let app = router(state.clone());
+        let body = concat!(
+            "<< <http://wd/Q42> <http://wd/P20> <http://wd/Q31> >> ",
+            "<http://loka.dev/provenance/propositionConfidence> \"0.9\" .\n",
+        );
+        let req = Request::builder()
+            .method("POST")
+            .uri("/triples")
+            .header("content-type", "text/plain")
+            .body(Body::from(body))
+            .unwrap();
+        assert_eq!(
+            app.oneshot(req).await.unwrap().status(),
+            StatusCode::OK
+        );
+
+        let app = router(state.clone());
+        let req = Request::builder()
+            .uri("/graph?format=nt")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let text = String::from_utf8(bytes.to_vec()).unwrap();
+
+        // Every exported line must re-parse with the RDF-star parser.
+        let mut saw_annotation = false;
+        for line in text.lines() {
+            let parsed = loka_core::parse_ntriples_star_line(line)
+                .unwrap_or_else(|| panic!("export line does not re-parse: {line}"));
+            if let Some((s, p, o)) = parsed.inner_subject {
+                assert_eq!(s, "http://wd/Q42");
+                assert_eq!(p, "http://wd/P20");
+                assert_eq!(o, "http://wd/Q31");
+                assert_eq!(parsed.predicate, "http://loka.dev/provenance/propositionConfidence");
+                saw_annotation = true;
+            }
+            // No row should leak the blank-node fallback.
+            assert!(
+                !line.contains("_:id"),
+                "quoted id leaked as a blank node: {line}"
+            );
+        }
+        assert!(saw_annotation, "the << Q42 P20 Q31 >> annotation round-tripped");
     }
 
     #[tokio::test]
