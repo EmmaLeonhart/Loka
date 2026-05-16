@@ -68,6 +68,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/vectors/health", get(vectors_health))
         .route("/vectors/rebuild", post(rebuild_hnsw))
         .route("/retract/preview", post(retract_preview))
+        .route("/retract", post(retract_apply))
         .route("/.well-known/void", get(service_description))
         .route("/service-description", get(service_description))
         .layer(middleware::from_fn_with_state(
@@ -1094,6 +1095,49 @@ pub struct RetractRequest {
     pub iri: String,
 }
 
+/// Request body for `POST /retract`. `commit` defaults to `false` — the
+/// destructive path is opt-in.
+#[derive(Deserialize)]
+pub struct RetractCommitRequest {
+    pub iri: String,
+    #[serde(default)]
+    pub commit: bool,
+}
+
+/// Render a `RetractSet` as the `by_depth` JSON array and count how many
+/// removed triples sit under a declared vector index (HNSW tombstones a
+/// commit would flip). Shared by `/retract/preview` and `/retract`.
+fn render_retract_by_depth(
+    set: &loka_core::RetractSet,
+    dict: &TermDictionary,
+    vectors: &VectorRegistry,
+) -> (Vec<serde_json::Value>, usize) {
+    let render = |id: loka_core::TermId| dict.render_term(id).unwrap_or_else(|| format!("_:id{}", id));
+    let mut hnsw = 0usize;
+    let by_depth = set
+        .by_depth
+        .iter()
+        .enumerate()
+        .map(|(depth, triples)| {
+            let rows: Vec<serde_json::Value> = triples
+                .iter()
+                .map(|t| {
+                    if vectors.has_index(t.predicate) {
+                        hnsw += 1;
+                    }
+                    serde_json::json!({
+                        "s": render(t.subject),
+                        "p": render(t.predicate),
+                        "o": render(t.object),
+                    })
+                })
+                .collect();
+            serde_json::json!({ "depth": depth, "count": rows.len(), "triples": rows })
+        })
+        .collect();
+    (by_depth, hnsw)
+}
+
 /// `POST /retract/preview` — compute the cascade-retraction set rooted at
 /// `iri` **without deleting anything**. Returns the would-be-removed triples
 /// grouped by cascade depth, plus a count of HNSW tombstones a commit would
@@ -1124,33 +1168,7 @@ async fn retract_preview(
         .vectors
         .read()
         .map_err(|e| ProtoError::BadRequest(format!("lock poisoned: {}", e)))?;
-    let render = |id: loka_core::TermId| {
-        dict.render_term(id)
-            .unwrap_or_else(|| format!("_:id{}", id))
-    };
-
-    let mut hnsw_tombstones = 0usize;
-    let by_depth: Vec<serde_json::Value> = set
-        .by_depth
-        .iter()
-        .enumerate()
-        .map(|(depth, triples)| {
-            let rows: Vec<serde_json::Value> = triples
-                .iter()
-                .map(|t| {
-                    if vectors.has_index(t.predicate) {
-                        hnsw_tombstones += 1;
-                    }
-                    serde_json::json!({
-                        "s": render(t.subject),
-                        "p": render(t.predicate),
-                        "o": render(t.object),
-                    })
-                })
-                .collect();
-            serde_json::json!({ "depth": depth, "count": rows.len(), "triples": rows })
-        })
-        .collect();
+    let (by_depth, hnsw_tombstones) = render_retract_by_depth(&set, &dict, &vectors);
 
     Ok(Json(serde_json::json!({
         "root": req.iri,
@@ -1160,6 +1178,77 @@ async fn retract_preview(
         "hnsw_tombstones": hnsw_tombstones,
         "by_depth": by_depth,
         "committed": false,
+    })))
+}
+
+/// `POST /retract` — cascade-retraction Phase 3. With `commit:false` (the
+/// default) this is identical to `/retract/preview`. With `commit:true` it
+/// **deletes** every triple in the cascade set from the in-memory store, the
+/// persistent store, and flips the corresponding HNSW entries via
+/// `VectorRegistry::delete` (the delete path that was wired but never
+/// invoked). Destructive — opt-in behind the explicit flag.
+async fn retract_apply(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<RetractCommitRequest>,
+) -> Result<Json<serde_json::Value>, ProtoError> {
+    // Write locks: a commit mutates store + vectors (+ persistent).
+    let mut store = state
+        .store
+        .write()
+        .map_err(|e| ProtoError::BadRequest(format!("lock poisoned: {}", e)))?;
+    let dict = state
+        .dict
+        .read()
+        .map_err(|e| ProtoError::BadRequest(format!("lock poisoned: {}", e)))?;
+    let mut vectors = state
+        .vectors
+        .write()
+        .map_err(|e| ProtoError::BadRequest(format!("lock poisoned: {}", e)))?;
+
+    let root_id = dict.lookup(&req.iri);
+    let set = match root_id {
+        Some(id) => loka_core::retract_set(id, &store, &dict),
+        None => loka_core::RetractSet::default(),
+    };
+    let (by_depth, hnsw_tombstones) = render_retract_by_depth(&set, &dict, &vectors);
+    let total = set.total();
+
+    let mut removed = 0usize;
+    let mut hnsw_flipped = 0usize;
+    if req.commit {
+        for t in set.all() {
+            if store.remove(t) {
+                removed += 1;
+            }
+            if vectors.has_index(t.predicate) && vectors.delete(t.predicate, t.object) {
+                hnsw_flipped += 1;
+            }
+            if let Some(ref ps_lock) = state.persistent {
+                let ps = ps_lock
+                    .write()
+                    .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?;
+                let _ = ps.remove(t);
+            }
+        }
+        if let Some(ref ps_lock) = state.persistent {
+            let ps = ps_lock
+                .read()
+                .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?;
+            ps.flush()
+                .map_err(|e| ProtoError::BadRequest(format!("flush: {}", e)))?;
+        }
+    }
+
+    Ok(Json(serde_json::json!({
+        "root": req.iri,
+        "root_found": root_id.is_some(),
+        "total": total,
+        "max_depth": set.max_depth(),
+        "hnsw_tombstones": hnsw_tombstones,
+        "by_depth": by_depth,
+        "committed": req.commit,
+        "removed": removed,
+        "hnsw_flipped": hnsw_flipped,
     })))
 }
 
@@ -1801,6 +1890,74 @@ mod tests {
 
         // NON-DESTRUCTIVE: store unchanged.
         assert_eq!(state.store.read().unwrap().len(), count_before);
+    }
+
+    #[tokio::test]
+    async fn retract_commit_deletes_the_cascade() {
+        // B7: POST /retract commit:false is a no-op; commit:true deletes the
+        // whole cascade (root row + transitively-cited generated rows).
+        let state = test_state();
+        let app = router(state.clone());
+        let body = concat!(
+            "<http://wd/Q42> <http://wd/P_pob> <http://wd/Q350> .\n",
+            "<< <http://wd/Q350> <http://wd/G_died> <http://wd/Q999> >> ",
+            "<http://loka.dev/provenance/propositionInferredFrom> ",
+            "<< <http://wd/Q42> <http://wd/P_pob> <http://wd/Q350> >> .\n",
+        );
+        let req = Request::builder()
+            .method("POST")
+            .uri("/triples")
+            .header("content-type", "text/plain")
+            .body(Body::from(body))
+            .unwrap();
+        assert_eq!(app.oneshot(req).await.unwrap().status(), StatusCode::OK);
+        let before = state.store.read().unwrap().len();
+
+        // commit:false — no-op.
+        let app = router(state.clone());
+        let req = Request::builder()
+            .method("POST")
+            .uri("/retract")
+            .header("content-type", "application/json")
+            .body(Body::from(r#"{"iri":"http://wd/Q42","commit":false}"#))
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        let j: serde_json::Value =
+            serde_json::from_slice(&axum::body::to_bytes(resp.into_body(), usize::MAX).await.unwrap())
+                .unwrap();
+        assert_eq!(j["committed"], false);
+        assert_eq!(state.store.read().unwrap().len(), before, "dry-run is a no-op");
+        let total = j["total"].as_u64().unwrap();
+        assert!(total >= 3);
+
+        // commit:true — destructive.
+        let app = router(state.clone());
+        let req = Request::builder()
+            .method("POST")
+            .uri("/retract")
+            .header("content-type", "application/json")
+            .body(Body::from(r#"{"iri":"http://wd/Q42","commit":true}"#))
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        let j: serde_json::Value =
+            serde_json::from_slice(&axum::body::to_bytes(resp.into_body(), usize::MAX).await.unwrap())
+                .unwrap();
+        assert_eq!(j["committed"], true);
+        assert!(j["removed"].as_u64().unwrap() >= 3);
+        assert_eq!(
+            state.store.read().unwrap().len(),
+            before - total as usize,
+            "the whole cascade is gone"
+        );
+        // The generated child specifically is gone.
+        assert!(!state
+            .store
+            .read()
+            .unwrap()
+            .find_by_subject(state.dict.read().unwrap().lookup("http://wd/Q350").unwrap())
+            .iter()
+            .any(|t| t.predicate
+                == state.dict.read().unwrap().lookup("http://wd/G_died").unwrap()));
     }
 
     #[tokio::test]
