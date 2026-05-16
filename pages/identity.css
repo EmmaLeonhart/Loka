@@ -1,0 +1,190 @@
+/* =====================================================================
+   emmaleonhart.com — CANONICAL VISUAL IDENTITY (the one shared file)
+   Every page links this: <link rel="stylesheet" href="/identity.css">
+   It owns the identity — palette, buttons, the dark/light toggle, type
+   and the signature primitives — so pages are genuinely the SAME, not
+   merely similar. Pages keep only their page-specific layout CSS.
+   Dark is the default. The toggle uses the exact MkDocs-Material
+   weather-sunny / weather-night icons (matches the Sutra docs site).
+   ===================================================================== */
+
+:root {
+  --bg: #07070c;
+  --bg-soft: #0c0c14;
+  --bg-card: #11111b;
+  --bg-elevated: #14141f;
+  --border: #1d1d2c;
+  --border-hover: #34344e;
+  --border-strong: #262638;
+
+  --text: #d4d4e0;
+  --text-strong: #f0f0f6;
+  --text-mute: #8c8caa;
+  --text-faint: #5d5d78;
+
+  --accent: #8b9bff;
+  --accent-bright: #b0bcff;
+  --accent-soft: rgba(139, 155, 255, 0.10);
+  --accent-glow: rgba(139, 155, 255, 0.28);
+  --on-accent: #07070c;            /* label on a solid --accent fill */
+
+  --sutra: #d4a76a;
+  --sutra-bright: #f5d9a8;
+
+  --serif: 'Instrument Serif', 'Times New Roman', serif;
+  --sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
+}
+
+html[data-theme="light"] {
+  --bg: #f4f4f8;
+  --bg-soft: #ebebf2;
+  --bg-card: #ffffff;
+  --bg-elevated: #fbfbfe;
+  --border: #dadae6;
+  --border-hover: #b6b6cf;
+  --border-strong: #c7c7d8;
+
+  --text: #2b2b38;
+  --text-strong: #14141f;
+  --text-mute: #5c5c74;
+  --text-faint: #8c8caa;
+
+  --accent: #5160dd;
+  --accent-bright: #3a48c4;
+  --accent-soft: rgba(81, 96, 221, 0.10);
+  --accent-glow: rgba(81, 96, 221, 0.22);
+  --on-accent: #ffffff;
+
+  --sutra: #9c6a22;
+  --sutra-bright: #7c5217;
+}
+
+/* ---- Base ---------------------------------------------------------- */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.005em;
+  transition: background 0.35s ease, color 0.35s ease;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-bright); }
+code, pre, .mono { font-family: var(--mono); }
+
+/* ---- Prominent buttons (the Pewter trait, on everything) ----------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 8px;
+  font-family: var(--sans); font-size: 0.95rem; font-weight: 600;
+  line-height: 1; text-decoration: none; white-space: nowrap;
+  padding: 12px 26px; border-radius: 8px;
+  border: 1px solid transparent; cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.2s;
+}
+.btn-primary {
+  background: var(--accent); color: var(--on-accent);
+  border-color: var(--accent);
+}
+.btn-primary:hover {
+  background: var(--accent-bright); border-color: var(--accent-bright);
+  color: var(--on-accent); transform: translateY(-1px);
+}
+.btn-secondary {
+  background: var(--bg-card); color: var(--text-strong);
+  border-color: var(--border);
+}
+.btn-secondary:hover {
+  border-color: var(--accent); color: var(--accent-bright);
+  transform: translateY(-1px);
+}
+
+/* ---- The dark/light toggle (exact Material icons) ------------------ */
+.theme-toggle {
+  position: fixed; top: 18px; right: 18px; z-index: 1000;
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 999px; color: var(--text-mute); cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s, transform 0.2s;
+}
+.theme-toggle:hover {
+  color: var(--accent-bright); border-color: var(--accent);
+  background: var(--accent-soft); transform: translateY(-1px);
+}
+.theme-toggle svg { width: 18px; height: 18px; display: none; }
+html[data-theme="dark"]  .theme-toggle .icon-sun  { display: block; }
+html[data-theme="light"] .theme-toggle .icon-moon { display: block; }
+
+/* ---- Signature primitives (use these for true sameness) ----------- */
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 9px;
+  font-family: var(--mono); font-size: 0.7rem; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 1.6px;
+  color: var(--accent-bright);
+  padding: 6px 13px 6px 11px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-soft);
+  border-radius: 999px;
+}
+.eyebrow::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent-bright); box-shadow: 0 0 12px var(--accent-glow);
+  animation: id-pulse 2.4s ease-in-out infinite;
+}
+@keyframes id-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+.card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 14px; padding: 28px 30px;
+  transition: border-color 0.2s, background 0.35s ease;
+}
+.card:hover { border-color: var(--border-hover); }
+.aurora { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.aurora::before, .aurora::after {
+  content: ''; position: absolute; border-radius: 50%;
+  filter: blur(90px); opacity: 0.5; mix-blend-mode: screen;
+}
+.aurora::before {
+  width: 700px; height: 700px; top: -260px; left: -120px;
+  background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+  animation: id-drift1 24s ease-in-out infinite alternate;
+}
+.aurora::after {
+  width: 620px; height: 620px; top: -170px; right: -90px;
+  background: radial-gradient(circle, rgba(212,167,106,0.18) 0%, transparent 70%);
+  animation: id-drift2 28s ease-in-out infinite alternate;
+}
+@keyframes id-drift1 { to { transform: translate(130px, 80px) scale(1.15); } }
+@keyframes id-drift2 { to { transform: translate(-90px, 110px) scale(1.1); } }
+
+/* ---- GitHub repo pill (shared widget, live stars + release) ------- */
+.gh {
+  display: inline-flex; align-items: center; gap: 8px;
+  color: var(--accent); text-decoration: none;
+  font-family: var(--mono); font-size: 0.8rem; font-weight: 500;
+  padding: 7px 14px; border-radius: 8px;
+  border: 1px solid var(--border-hover); background: var(--accent-soft);
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+.gh:hover { color: var(--accent-bright); border-color: var(--accent); }
+.gh svg { width: 15px; height: 15px; fill: currentColor; flex: none; }
+.gh .gh-stat {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding-left: 9px; border-left: 1px solid var(--border-hover);
+  color: var(--text-mute); font-variant-numeric: tabular-nums;
+}
+.gh .gh-stat svg { width: 13px; height: 13px; }
+.gh:hover .gh-stat { border-color: var(--accent); color: var(--accent-bright); }
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora::before, .aurora::after, .eyebrow::before { animation: none; }
+  html { scroll-behavior: auto; }
+}
