@@ -27,6 +27,12 @@
   --accent-soft: rgba(139, 155, 255, 0.10);
   --accent-glow: rgba(139, 155, 255, 0.28);
   --on-accent: #07070c;            /* label on a solid --accent fill */
+  /* Filled-button colour: a calmer mid-tone periwinkle + near-white
+     label. The old light-fill + near-black label was max-contrast and
+     read as garish (Emma flagged the Sutra/Loka primary buttons). */
+  --accent-deep: #5e6ad2;
+  --accent-deep-hover: #707cdf;
+  --on-accent-deep: #eceefb;
 
   --sutra: #d4a76a;
   --sutra-bright: #f5d9a8;
@@ -55,6 +61,9 @@ html[data-theme="light"] {
   --accent-soft: rgba(81, 96, 221, 0.10);
   --accent-glow: rgba(81, 96, 221, 0.22);
   --on-accent: #ffffff;
+  --accent-deep: #4b59c9;
+  --accent-deep-hover: #5160dd;
+  --on-accent-deep: #ffffff;
 
   --sutra: #9c6a22;
   --sutra-bright: #7c5217;
@@ -94,12 +103,12 @@ code, pre, .mono { font-family: var(--mono); }
   transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.2s;
 }
 .btn-primary {
-  background: var(--accent); color: var(--on-accent);
-  border-color: var(--accent);
+  background: var(--accent-deep); color: var(--on-accent-deep);
+  border-color: var(--accent-deep);
 }
 .btn-primary:hover {
-  background: var(--accent-bright); border-color: var(--accent-bright);
-  color: var(--on-accent); transform: translateY(-1px);
+  background: var(--accent-deep-hover); border-color: var(--accent-deep-hover);
+  color: var(--on-accent-deep); transform: translateY(-1px);
 }
 .btn-secondary {
   background: var(--bg-card); color: var(--text-strong);
