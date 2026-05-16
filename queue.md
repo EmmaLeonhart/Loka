@@ -6,53 +6,25 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ---
 
-## 🔨 Active sweep — 2026-05-16 (code-only + docs, GPU paused)
+## ✅ Code-only + docs sweep — 2026-05-16 session (complete)
 
-v11–v14 all shipped-final; GPU released for Minecraft. Barrelling through every non-GPU,
-non-external item, ordered by leverage:
+v11–v14 all shipped-final, GPU paused. Swept every non-GPU, non-external item:
 
-1. ✅ **DONE 2026-05-16 — Website + paper currency pass.** The public surfaces had stale
-   pre-v14 performance numbers (homepage said "current best v12 ppl 250.82"; `/loka/` showed
-   v13 as "training"; `/history/` + `/contribute/` framed v14 as untrained; README + status.md
-   stuck at 2026-05-14 with v12 pinned). Brought homepage, `/loka/`, `/history/`, `/contribute/`,
-   `README.md`, `status.md`, the contributor script, and the paper §5.9 forward-table all in
-   line with the shipped series (v11 350k→279.12, v12 672k→250.82, v13 2.5M→242.75,
-   v14 4M→**202.01**, 28% best-ppl drop). Paper abstract/§5.9–5.12/masthead tag list verified
-   already-consistent. Tokenizer pin moved v12→v14 (canonical) in script + docs.
-2. ✅ **DONE 2026-05-16 — Engine bug #2 root-cause fix in `loka-sparql`.** RDF/RDF-star
-   forbid literals in the predicate position; the executor was surfacing mis-keyed RDF-star
-   annotation rows as plain `?s ?p ?o` results with literals in the predicate slot (~1% of a
-   5M corpus — the documented "invalid output from the executor"). Fix: new
-   `term_id_is_literal` invariant guard applied at the basic-scan candidate loop **and** both
-   RDF-star wildcard outer-predicate binding loops (covers the `<< ?s ?p ?o >> ?qp ?qv`
-   "literal in ?qp" symptom). Two regression tests added (`engine_bug2_*`); full loka-sparql
-   suite green (119 tests). Legacy `tools/preprocess_streaming.py` mask comment updated to
-   note the engine now enforces the invariant (script is dormant — v11+ uses
-   `preprocess_from_hf.py`, no Loka in the data path; guard kept as a harmless stale-data-dir
-   safety net rather than ripped out of a non-pipeline script).
-   **Identified ingest-side follow-ups (deferred, not blocking — these are corruption
-   *sources*, the guard makes the query layer honest regardless):**
-   - **Bug A:** `loka-proto/src/server.rs` bulk `/triples` path persists the literal
-     `<<QUOTED_TRIPLE>>` sentinel string as the term for quoted-triple subjects/objects
-     (`BatchInsert.subject/object = parsed.subject/object`, lines ~990–995) — on WAL replay
-     this interns the sentinel and pollutes term resolution. Should persist a faithful
-     `<< s p o >>` term string instead.
-   - **Bug B:** `loka-cli/src/mcp.rs:1518` and `loka-ffi/src/lib.rs:234` ingest via the
-     non-star `parse_ntriples_line`, which returns the sentinel and silently drops the inner
-     triple for RDF-star input. Should use `parse_ntriples_star_line`.
-3. ✅ **DONE 2026-05-16 — Fine-tuning track scaffolding.** Already scaffolded in
-   `df8fb43` (`training/finetune/`: `prepare_jsonl.py` implemented + 3 CLI-shape stubs
-   per the documented scaffold contract). Brought current with the v11+ pipeline:
-   `prepare_jsonl.py --endpoint` no longer required (the `--fixture` TSV path consumes
-   the normalized-wikidata corpus directly — smoke-tested, emits spec-correct
-   masked-triple JSONL); README status block refreshed (engine bug #1/#2 blockers
-   cleared, only GPU-gated now); output-schema doc corrected to the real
-   `http://loka.dev/provenance/` predicates. First real QLoRA run is GPU-gated, same
-   as the donor v14 path.
-4. **World-model cascade-retraction** (Active #8) — `retract_node` MCP tool + engine
-   prerequisites, cascade bounded to the `http://loka.dev/provenance/` namespace.
-
-Mirrored into the task tool (tasks #1–#5). Delete items here as each lands.
+1. **Website + paper currency pass** — homepage, `/loka/`, `/history/`, `/contribute/`,
+   `README.md`, `status.md`, the contributor script, and the paper §5.9 table all brought
+   in line with the shipped series (v11 279.12 → v14 **202.01**, 28% best-ppl drop). Paper
+   abstract/§5.9–5.12/masthead verified already-consistent. Commit `190df09`.
+2. **Engine bug #2 root-cause fix in `loka-sparql`** — no-literal-predicate invariant
+   enforced at the basic scan + both RDF-star wildcard loops; `engine_bug2_*` regression
+   tests; 119-test suite green. Commit `b63af81`. Live follow-ups → **Active #2** (Bug A:
+   proto persists the `<<QUOTED_TRIPLE>>` sentinel; Bug B: mcp/ffi use the non-star parser).
+3. **Fine-tuning track** — already scaffolded (`df8fb43`); brought current with the v11+
+   pipeline (`prepare_jsonl.py --fixture` consumes the normalized-wikidata corpus, no
+   endpoint; README/schema refreshed). Commit `39e36c7`.
+4. **Cascade-retraction design** — `planning/cascade-retraction.md` fixes the algorithm +
+   5-phase plan; the gating prerequisite is **Phase 0** (quoted-triple reverse index — a
+   content hash can't be reversed; also fixes Bug A). Live → **Active #8** + task #6.
+   Nothing destructive shipped (correct, given Phase 0 is unbuilt).
 
 ---
 
@@ -272,10 +244,21 @@ In strategic order. Top item is the current focus.
 
 7. **Repo rename Loka → Loka.** Top of `TODO.md` has the full checklist.
 
-8. **World-model cascade-retraction: remove any node — real data or AI-generated — and all generated inferences that cite it disappear.** A node has two kinds of edges leaving it: ordinary data edges (`wdt:P31`, `:hasEmbedding`, etc.) and provenance back-edges from generated triples that cited it (`<<X p o>> loka-prov:propositionInferredFrom <<source-of-X>>`). Cascade-retraction propagates **only along provenance back-edges**, recursively, regardless of whether the deleted node was real data or model-emitted. So: deleting a real-data node drops the node's own triples *and* every generated triple whose `propositionInferredFrom` chain dereferences any of those rows, transitively. Deleting a generated node does the same plus removes the node's own row. Real data → real data is *not* a dependency: ordinary edges are not derivations. (RDFS/OWL closures stay out of scope per CLAUDE.md; this is purely about provenance bookkeeping.) Engine today supports per-triple `DELETE DATA` only — no entity cascade, no RDF-star annotation cleanup, and `VectorRegistry::delete` is wired but never called from `execute_delete_data` (manual `POST /vectors/rebuild` is the only HNSW cleanup). Surface the cascade twice:
-   - **MCP tool** (`retract_node` — name covers both real and generated cases). Accepts an IRI; returns count + IRIs of triples removed at each cascade depth, and a count of any HNSW tombstones flipped.
-   - **Loka Studio action**: click a node, see the dependency-tree preview (which generated rows would disappear), confirm.
-   Engine-side prerequisites: (a) back-reference from inner-triple ID to annotation rows so RDF-star cleanup is O(deg) not O(N); (b) `VectorRegistry::delete` actually invoked from the delete path so HNSW tombstones go live; (c) a preview endpoint that takes a root IRI and returns the would-be-deleted set without committing. Cascade traversal must be bounded to the reserved `http://loka.dev/provenance/` namespace — never follow a regular predicate as if it were a derivation edge.
+8. **World-model cascade-retraction.** Design + dependency analysis fixed in
+   **`planning/cascade-retraction.md`** (2026-05-16). The full feature (remove any node —
+   real or generated — and all generated inferences that transitively cite it, bounded to
+   the `http://loka.dev/provenance/` namespace; `retract_node` MCP tool + preview endpoint
+   + Studio action) is specced there with a 5-phase plan. **Gating prerequisite — Phase 0:
+   a persisted `quoted_triple_id → (s,p,o)` reverse index.** Rationale: `quoted_triple_id`
+   is a content hash with no reverse map (ingest-side Bug A); a hash cannot be reversed, so
+   the cascade's core test ("does this `propositionInferredFrom` source quoted-id
+   dereference a removed row?") is impossible without it. Phase 0 also fixes Bug A
+   (faithful `<< s p o >>` term rendering instead of the persisted `<<QUOTED_TRIPLE>>`
+   sentinel) and subsumes the spec's prerequisite (a) (the SPO prefix scan on a
+   now-reversible quoted id *is* the inner-triple→annotation back-reference). Phases 1–4
+   (pure cascade fn + tests → preview endpoint → MCP tool → Studio) each ship
+   independently; the destructive surface stays gated behind the non-destructive preview
+   and an explicit `commit` flag. **Next concrete work: Phase 0.**
 
 ---
 
