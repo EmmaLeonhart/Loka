@@ -77,13 +77,19 @@ a { color: var(--accent); text-decoration: none; }
 a:hover { color: var(--accent-bright); }
 code, pre, .mono { font-family: var(--mono); }
 
-/* ---- Prominent buttons (the Pewter trait, on everything) ----------- */
+/* ---- Prominent buttons — the ONE shared button (Loka feel) ---------
+   This is the single canonical button for the whole site + every
+   sister project. The "Loka feel" Emma wants everywhere lives here:
+   chunky 12px/28px, 1rem label, accent-filled primary, Pewter-filled
+   secondary. NO page or sister site may re-declare .btn locally —
+   that cascade-override is exactly what made the sites diverge. They
+   link this file and inherit; page CSS only does layout (.cta etc). */
 .btn {
   display: inline-flex; align-items: center; justify-content: center;
   gap: 8px;
-  font-family: var(--sans); font-size: 0.95rem; font-weight: 600;
+  font-family: var(--sans); font-size: 1rem; font-weight: 600;
   line-height: 1; text-decoration: none; white-space: nowrap;
-  padding: 12px 26px; border-radius: 8px;
+  padding: 12px 28px; border-radius: 8px;
   border: 1px solid transparent; cursor: pointer;
   transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.2s;
 }
