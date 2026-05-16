@@ -160,7 +160,11 @@ def write_jsonl(examples: list[dict], output: Path) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--endpoint", required=True, help="Loka SPARQL endpoint, e.g. http://localhost:3030")
+    ap.add_argument(
+        "--endpoint",
+        help="Loka SPARQL endpoint, e.g. http://localhost:3030 (legacy Loka-source path). "
+        "Not required when --fixture is given — v11+ uses the normalized-wikidata TSV corpus.",
+    )
     ap.add_argument("--output", required=True, type=Path, help="JSONL output path")
     ap.add_argument("--max-rows", type=int, default=0, help="Cap total examples (0 = no cap)")
     ap.add_argument("--context-k", type=int, default=5, help="Number of same-subject context rows per example")
@@ -169,9 +173,14 @@ def main() -> None:
     ap.add_argument(
         "--fixture",
         type=Path,
-        help="If set, read N-Triples-shaped tuples from this TSV file instead of hitting --endpoint (used by tests).",
+        help="Read tab-separated subject\\tpredicate\\tobject triples from this file "
+        "instead of hitting --endpoint. This is the current-pipeline path: point it at "
+        "a normalized-wikidata corpus (e.g. training/data/triples_v14.txt).",
     )
     args = ap.parse_args()
+
+    if not args.endpoint and not args.fixture:
+        ap.error("one of --fixture (normalized-wikidata TSV) or --endpoint (legacy Loka) is required")
 
     rng = random.Random(args.seed)
 
