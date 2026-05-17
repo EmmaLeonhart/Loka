@@ -6,21 +6,37 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ---
 
-## Website → common render pipeline — verify live
+## Website → reconstruct onto the shared branding kit
 
-All 39 `pages/**/*.html` are unified onto the shared render pipeline
-(identity.css via style.css): Inter/JetBrains-Mono, `.aurora`, theme-
-flipping tokens, gradient headings, the `← emmaleonhart.com` back-link
-+ live `.gh` repo pill in every nav. Content preserved verbatim. Done
-by the `style.css` fix + `scripts/unify_site.py` (idempotent; re-run
-to re-apply after editing pages). See `git log`.
+Rebuild the Loka site onto the canonical shared visual kit
+(<https://emmaleonhart.com/branding/>): fixed translucent `.site-nav`
+top-bar (brand · `.search` · `.theme-toggle` · prominent
+`.repo-widget`), `.aurora`, hero (cosmic `.glyph` + `.eyebrow` +
+gradient `h1` + `.tagline`), numbered `.section`/`h2`, `.sig`, and
+the search-filter + repo-facts scripts. Full analysis + phased plan:
+`planning/site-restructure-branding-kit.md`.
 
-Pending: confirm the Pages deploy landed and
-<https://loka.emmaleonhart.com> + a few sub-pages render correctly
-in BOTH themes (sister-subdomain pushes can stay invisible until
-Emma's manual GitHub Pages custom-domain re-set — verify the push
-landed, don't just re-push). If `README.md` describes the old site
-shell, update it.
+- [ ] **A** — kit components into `pages/style.css` (`.site-nav`,
+      `.search`, `.repo-widget`, hero/glyph/eyebrow, numbered
+      `h2`/`.section`, `.sig`).
+- [ ] **B** — every page links `/style.css`; homepage + self-contained
+      `/contribute/` carry the kit inline.
+- [ ] **C** — `scripts/restructure_site.py` (idempotent): swap old
+      `<nav>` → `.site-nav` top-bar, ensure `.aurora`, append scripts,
+      retire `.gh` pill + back-link.
+- [ ] **D** — hand-finish `pages/index.html` as the showcase hero.
+- [ ] **E** — `--check` no-op (both transformers), render-check both
+      themes, commit.
+
+Predecessor (DONE — `e97f933`, `18cbfbe`, `bdc6b80`): all 39 pages on
+identity.css via style.css; `/contribute/` repaired self-contained;
+`unify_site.py` hardened; circular `:root` scrubbed everywhere.
+
+Still pending from that work: confirm the Pages deploy landed and
+<https://loka.emmaleonhart.com> + sub-pages render in BOTH themes
+(sister-subdomain pushes can stay invisible until Emma's manual
+GitHub Pages custom-domain re-set — verify the push landed, don't
+just re-push). If `README.md` describes the old site shell, update it.
 
 ---
 
