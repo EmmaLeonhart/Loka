@@ -10,10 +10,20 @@
 <title>Contribute GPU time — Loka v14</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f4dc;</text></svg>">
 <style>
+  /* Page-specific tokens that are NOT in the canonical identity block
+     further down this <style>: the two semantic data colours + the
+     three font stacks. This page is deliberately self-contained (it
+     does not link /style.css), so it must define --serif/--sans/--mono
+     itself — values verbatim from /identity.css. The palette and the
+     dark/light flip come from the canonical :root appended last.
+     (Was corrupted into circular `--bg:var(--bg)` self-references by
+     an over-broad hex→token pass in scripts/unify_site.py; that pass
+     is now guarded against rewriting custom-property definitions.) */
   :root {
-    --bg: var(--bg); --surface: var(--bg-soft); --border: var(--border);
-    --text: var(--text-strong); --text-muted: var(--text-mute); --accent: var(--accent);
-    --accent-hover: var(--accent-bright); --green: #3fb950; --orange: #d29922;
+    --green: #3fb950; --orange: #d29922;
+    --serif: 'Instrument Serif', 'Times New Roman', serif;
+    --sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: var(--sans);
@@ -89,9 +99,60 @@
     .theme-toggle svg{width:18px;height:18px;display:none}
     html[data-theme="dark"] .theme-toggle .icon-sun{display:block}
     html[data-theme="light"] .theme-toggle .icon-moon{display:block}
+
+    /* ---- Shared primitives the unify pass injects into this page:
+       the .aurora backdrop + the live .gh repo pill + the back-link /
+       spacer. This page is self-contained, so they're inlined here
+       verbatim from /identity.css rather than inherited via a sheet.
+       Page content is lifted above the fixed aurora (z-index:0). ---- */
+    nav, header, .container, footer { position: relative; z-index: 1; }
+    .aurora { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+    .aurora::before, .aurora::after {
+      content: ''; position: absolute; border-radius: 50%;
+      filter: blur(90px); opacity: 0.5; mix-blend-mode: screen;
+    }
+    .aurora::before {
+      width: 700px; height: 700px; top: -260px; left: -120px;
+      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+      animation: id-drift1 24s ease-in-out infinite alternate;
+    }
+    .aurora::after {
+      width: 620px; height: 620px; top: -170px; right: -90px;
+      background: radial-gradient(circle, rgba(212,167,106,0.18) 0%, transparent 70%);
+      animation: id-drift2 28s ease-in-out infinite alternate;
+    }
+    @keyframes id-drift1 { to { transform: translate(130px, 80px) scale(1.15); } }
+    @keyframes id-drift2 { to { transform: translate(-90px, 110px) scale(1.1); } }
+    nav .home { color: var(--text-mute); }
+    nav .home:hover { color: var(--accent-bright); }
+    nav .spacer { flex: 1; }
+    .gh {
+      display: inline-flex; align-items: center; gap: 8px;
+      color: var(--accent); text-decoration: none;
+      font-family: var(--mono); font-size: 0.8rem; font-weight: 500;
+      padding: 7px 14px; border-radius: 8px;
+      border: 1px solid var(--border-hover); background: var(--accent-soft);
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+    }
+    .gh:hover { color: var(--accent-bright); border-color: var(--accent); text-decoration: none; }
+    .gh svg { width: 15px; height: 15px; fill: currentColor; flex: none; }
+    .gh .gh-stat {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding-left: 9px; border-left: 1px solid var(--border-hover);
+      color: var(--text-mute); font-variant-numeric: tabular-nums;
+    }
+    .gh .gh-stat svg { width: 13px; height: 13px; }
+    .gh:hover .gh-stat { border-color: var(--accent); color: var(--accent-bright); }
+    @media (prefers-reduced-motion: reduce) {
+      .aurora::before, .aurora::after { animation: none; }
+    }
   </style>
   <!-- Canonical identity: theme before first paint (dark default). See emmaleonhart.com/_identity/. -->
   <script>(function(){try{var t=localStorage.getItem('theme');if(t!=='light'&&t!=='dark')t='dark';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
+  <!-- Canonical webfonts (self-contained page → linked directly, not via /style.css). -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="aurora" aria-hidden="true"></div>

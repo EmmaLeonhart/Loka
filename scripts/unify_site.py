@@ -7,19 +7,28 @@ across emmaleonhart.com + sister sites) pulled in via `pages/style.css`
 unified by hand; this script applies the same shell to every other
 page, conservatively and idempotently:
 
-  1. Pages that link NEITHER style.css nor /identity.css get a
+  1. Pages that link NEITHER style.css nor /identity.css *and* don't
+     inline the canonical identity themselves get a
      `<link rel="stylesheet" href="/style.css">` (absolute → works at
      any depth on the live site), so they inherit the canonical
      palette, fonts, nav and typography.
   2. `theme-color` meta `#58a6ff` → canonical `#8b9bff`.
   3. Embedded `-apple-system` / `SFMono-Regular` font overrides →
-     `var(--sans)` / `var(--mono)`.
+     `var(--sans)` / `var(--mono)` — only where those tokens are or
+     will be defined.
   4. GitHub-dark chrome hexes that ignore the theme toggle → the
-     matching theme-flipping token.
+     matching theme-flipping token — but never a hex that IS a CSS
+     custom-property *definition* (rewriting `--bg:#0d1117` to
+     `--bg:var(--bg)` is a circular self-reference).
   5. A `<div class="aurora">` right after `<body>` (if absent).
   6. The shared `← emmaleonhart.com` back-link as the first nav
      child, a `.spacer`, and the live `.gh` GitHub repo pill as the
      last nav child + the gh-facts script (if absent).
+
+Self-contained pages — ones that inline the canonical identity block
+(they define the identity-only `--accent-glow` token in their own
+`<style>`) — own their palette and fonts; steps 1 and 3 leave them
+alone, step 4 still tokenises chrome but never their `:root`.
 
 Re-runnable: every step is guarded, so running twice is a no-op.
 
@@ -95,22 +104,77 @@ FONT_FIXES = {
     "'Segoe UI', system-ui, -apple-system, sans-serif": "var(--sans)",
 }
 
+# A real reference to a shared sheet — an actual <link>/@import, NOT a
+# bare substring (a `/identity.css` mention inside a CSS *comment* must
+# not count: that false-positive is what suppressed the corrective
+# wiring on the self-contained /contribute/ page).
+LINKS_SHARED = re.compile(
+    r"""<link\b[^>]*\bhref\s*=\s*["'][^"']*/(?:style|identity)\.css\b"""
+    r"""|@import\s+url\(\s*["']?[^"')]*/identity\.css""",
+    re.IGNORECASE,
+)
+
+# A page that inlines the canonical identity palette (it defines the
+# identity-only --accent-glow token in its own <style>) is deliberately
+# self-contained: it owns its palette/fonts and must NOT be wired to
+# /style.css or have its font stacks rewritten to var(--sans).
+INLINES_IDENTITY = re.compile(r"<style[^>]*>[\s\S]*?--accent-glow\s*:")
+
+# True when the text to the left puts us *inside a CSS custom-property
+# value* — a `--name:` declaration start with no `;`/`{`/`}` terminator
+# between it and here (so the match is somewhere in that property's
+# value, not necessarily right after the colon: `--sans: 'Inter', <x>`
+# counts). Those declarations ARE the palette/font tokens; rewriting
+# their value to a token that names the same property is a circular
+# self-reference. Only colours/stacks *consuming* a token (inline
+# style=, component rules) may be tokenised.
+INSIDE_CUSTOM_PROP = re.compile(r"--[\w-]+\s*:[^;{}]*$")
+
+
+def _guarded_sub(html: str, needle: str, repl_with: str) -> str:
+    """Replace `needle` with `repl_with`, but never when `needle` is the
+    value of a `--custom-property:` definition. Rewriting a definition's
+    RHS to a token that names that same property is a circular
+    self-reference — the exact bug that gutted /contribute/ (both its
+    `:root` palette hexes and, on re-run, the `--sans` font stack)."""
+    pat = re.compile(re.escape(needle), re.IGNORECASE)
+
+    def repl(m: "re.Match[str]") -> str:
+        left = html[max(0, m.start() - 400):m.start()]
+        if INSIDE_CUSTOM_PROP.search(left):
+            return m.group(0)
+        return repl_with
+
+    return pat.sub(repl, html)
+
 
 def unify(html: str) -> str:
     # 2. theme-color
     html = html.replace('name="theme-color" content="#58a6ff"',
                          'name="theme-color" content="#8b9bff"')
 
-    # 3. embedded font overrides
-    for bad, good in FONT_FIXES.items():
-        html = html.replace(bad, good)
+    links_shared = bool(LINKS_SHARED.search(html))
+    self_contained = bool(INLINES_IDENTITY.search(html))
+    # A link-neither, non-self-contained page gets /style.css wired
+    # below, so var(--sans)/var(--mono) WILL resolve for it too.
+    will_have_tokens = links_shared or not self_contained
 
-    # 4. non-flipping chrome hexes → tokens (skip data: URIs / SVG favicons)
+    # 3. embedded font overrides → var(--sans)/var(--mono), but only
+    #    where those tokens are (or will be) defined. Rewriting them on
+    #    a self-contained page that defines neither is what stripped
+    #    /contribute/ down to browser-default serif.
+    if will_have_tokens or "--sans" in html:
+        for bad, good in FONT_FIXES.items():
+            html = _guarded_sub(html, bad, good)
+
+    # 4. non-flipping chrome hexes → tokens (never a custom-property
+    #    *definition* — see _guarded_sub; skips data: URIs too).
     for hexv, tok in HEX_TOKENS.items():
-        html = re.sub(re.escape(hexv), tok, html, flags=re.IGNORECASE)
+        html = _guarded_sub(html, hexv, tok)
 
-    # 1. stylesheet wiring for pages that link neither shared sheet
-    if "style.css" not in html and "/identity.css" not in html:
+    # 1. stylesheet wiring — pages that neither link a shared sheet nor
+    #    inline the canonical identity themselves.
+    if not links_shared and not self_contained:
         html = html.replace("</head>", f"    {FONTS_LINK}</head>", 1)
 
     # 5. aurora right after <body ...>
