@@ -6,44 +6,21 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ---
 
-## Website → common render pipeline (Emma-directed, 2026-05-17)
+## Website → common render pipeline — verify live
 
-Bring the Loka website (`pages/`, 41 static HTML pages) onto the SAME
-render-pipeline/shell as emmaleonhart.com + yantra.emmaleonhart.com +
-sutra.emmaleonhart.com. **Content is good — PRESERVE it.** Only the
-shell/identity gets unified. `pages/identity.css` is already
-byte-identical to the canonical file — the gap is structural.
+All 39 `pages/**/*.html` are unified onto the shared render pipeline
+(identity.css via style.css): Inter/JetBrains-Mono, `.aurora`, theme-
+flipping tokens, gradient headings, the `← emmaleonhart.com` back-link
++ live `.gh` repo pill in every nav. Content preserved verbatim. Done
+by the `style.css` fix + `scripts/unify_site.py` (idempotent; re-run
+to re-apply after editing pages). See `git log`.
 
-Divergences found on `pages/index.html` (the exemplar to fix first):
-- body font hard-overridden to `-apple-system,…,'Segoe UI'` instead
-  of canonical `var(--sans)` (Inter); Google Fonts not linked.
-- bespoke `<nav>` with hardcoded hex (`#30363d`, theme-color
-  `#58a6ff`) instead of the shared Yantra-style `.topbar` (back-link
-  `← emmaleonhart.com` + live `.gh` GitHub repo pill for
-  EmmaLeonhart/Loka).
-- no `.aurora`; hero h1 uses flat `span{color:accent}` not the
-  shared gradient display type.
-- (theme-toggle + footer already present.)
-
-`pages/index.html` is done (exemplar): fonts linked, body→canonical
-sans, `.aurora` added, gradient hero h1, the bespoke hardcoded-hex
-`<nav>` retokenised to `nav.sitenav` (flips with the theme; gained
-the `← emmaleonhart.com` back-link, kept every section link + the
-`.gh` pill + gh-facts JS), the three hardcoded callout boxes
-retokenised to `.callout`, `pre`→`var(--mono)`. All content kept.
-
-Remaining steps (delete each line when its commit lands; Loka `main`):
-2. Apply the same shell pass to the other top-level pages: `playground.html`,
-   `404.html`, `contribute/index.html`, `loka/index.html`,
-   `history/index.html`, `creation/index.html`,
-   `benchmarks/index.html`, `roadmap/index.html`.
-3. Same shell pass on the ~28 `theory/**` + topic sub-pages
-   (`graph-vector`, `owl`, `sparql`, `rdf`, `serverless`, …). These
-   share a simpler template — do one, then batch-apply.
-4. Verify live (note: sister-subdomain pushes can stay invisible
-   until Emma's manual GitHub Pages custom-domain re-set — confirm
-   the push landed, don't just re-push). Update Loka `README.md` if
-   it describes the old site shell.
+Pending: confirm the Pages deploy landed and
+<https://loka.emmaleonhart.com> + a few sub-pages render correctly
+in BOTH themes (sister-subdomain pushes can stay invisible until
+Emma's manual GitHub Pages custom-domain re-set — verify the push
+landed, don't just re-push). If `README.md` describes the old site
+shell, update it.
 
 ---
 
