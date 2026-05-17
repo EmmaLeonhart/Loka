@@ -29,11 +29,21 @@ the search-filter + repo-facts scripts. Full analysis + phased plan:
       `unify_site.py` step 6 now stands down on kit pages (no more
       two-transformer fight). `playground.html` excluded (full-screen
       IDE, no nav by design). All three `--check` runs are no-ops.
-- [ ] **B** — homepage (`/identity.css`-direct) + self-contained
-      `/contribute/` onto the kit.
-- [ ] **D** — hand-finish `pages/index.html` as the showcase hero
-      (cosmic glyph + numbered sections).
-- [ ] **E** — final render-check both themes, Pages-deploy verify.
+- [x] **B** — homepage + `/contribute/` converged onto `/style.css`
+      (kit chrome applies; bespoke inline layout preserved; body
+      padding-top + scroll-padding added so content clears the fixed
+      bar).
+- [x] **D** — `pages/index.html`: canonical `.site-nav` bar + `.sig`
+      + kit scripts via the transformer; hero gains the spinning
+      cosmic `.glyph` + `.eyebrow`. (Deep body section-numbering into
+      `.section`/numbered-h2 is optional polish, deferred.)
+- [x] **E** — all three `--check` no-ops; structural sweep clean
+      across all 38 kit pages + playground; search.json 303 records.
+
+Remaining: render-check both themes in a browser + the Pages-deploy
+verify below. Deferred polish: numbered `.section` wrapping of the
+homepage body; full visual QA of `/contribute/`'s bespoke layout
+under the shared kit.
 
 Predecessor (DONE — `e97f933`, `18cbfbe`, `bdc6b80`): all 39 pages on
 identity.css via style.css; `/contribute/` repaired self-contained;
