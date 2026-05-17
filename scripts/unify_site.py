@@ -181,8 +181,12 @@ def unify(html: str) -> str:
     if 'class="aurora"' not in html:
         html = re.sub(r"(<body[^>]*>)", r"\1" + AURORA, html, count=1)
 
-    # 6. nav back-link + spacer + gh pill (+ gh-facts script)
-    if "data-gh-repo" not in html:
+    # 6. nav back-link + spacer + gh pill (+ gh-facts script).
+    #    SUPERSEDED by scripts/restructure_site.py: once a page carries
+    #    the kit bar (`class="site-nav"`) this step must stand down, or
+    #    the two transformers fight over the same <nav> — re-injecting
+    #    the retired pill into the new bar on every run.
+    if "data-gh-repo" not in html and 'class="site-nav"' not in html:
         m = re.search(r"<nav\b[^>]*>", html)
         if m:
             nav_open_end = m.end()

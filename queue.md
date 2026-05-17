@@ -16,17 +16,24 @@ gradient `h1` + `.tagline`), numbered `.section`/`h2`, `.sig`, and
 the search-filter + repo-facts scripts. Full analysis + phased plan:
 `planning/site-restructure-branding-kit.md`.
 
-- [ ] **A** — kit components into `pages/style.css` (`.site-nav`,
-      `.search`, `.repo-widget`, hero/glyph/eyebrow, numbered
-      `h2`/`.section`, `.sig`).
-- [ ] **B** — every page links `/style.css`; homepage + self-contained
-      `/contribute/` carry the kit inline.
-- [ ] **C** — `scripts/restructure_site.py` (idempotent): swap old
-      `<nav>` → `.site-nav` top-bar, ensure `.aurora`, append scripts,
-      retire `.gh` pill + back-link.
-- [ ] **D** — hand-finish `pages/index.html` as the showcase hero.
-- [ ] **E** — `--check` no-op (both transformers), render-check both
-      themes, commit.
+- [x] **A** — kit components in `pages/style.css` (`.site-nav`,
+      `.search` + results dropdown, `.repo-widget`, hero/glyph/eyebrow,
+      numbered `.section`/`h2`, `.sig`).
+- [x] **Search** — `scripts/build_search_index.py` → `pages/search.json`
+      (302 records / 38 pages); the bar box does client-side
+      search-as-you-type with a jump-to-section dropdown.
+- [x] **C** — `scripts/restructure_site.py` applied to all 36 content
+      pages: old `<nav>` → `.site-nav` bar (brand · nav-links ·
+      search · toggle · `.repo-widget`→EmmaLeonhart/Loka), `.sig`,
+      kit script; `.gh` pill/back-link/dead gh-facts retired.
+      `unify_site.py` step 6 now stands down on kit pages (no more
+      two-transformer fight). `playground.html` excluded (full-screen
+      IDE, no nav by design). All three `--check` runs are no-ops.
+- [ ] **B** — homepage (`/identity.css`-direct) + self-contained
+      `/contribute/` onto the kit.
+- [ ] **D** — hand-finish `pages/index.html` as the showcase hero
+      (cosmic glyph + numbered sections).
+- [ ] **E** — final render-check both themes, Pages-deploy verify.
 
 Predecessor (DONE — `e97f933`, `18cbfbe`, `bdc6b80`): all 39 pages on
 identity.css via style.css; `/contribute/` repaired self-contained;
