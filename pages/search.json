@@ -1,6 +1,6 @@
 {
  "generated_by": "scripts/build_search_index.py",
- "count": 302,
+ "count": 303,
  "records": [
   {
    "url": "/benchmarks/",
@@ -540,6 +540,13 @@
    "heading": "7. POST /triples wedge",
    "anchor": "",
    "text": "The persistent layer wedges after roughly every 5–6× growth in stored triples. We can't fix this in the importer; the workaround is automated stop-restart. Lesson: bugs found at ingest scale are real engine bugs that a smaller test suite wo"
+  },
+  {
+   "url": "/",
+   "page": "Loka — Neuro-Symbolic World Model on RDF-Star",
+   "heading": "Loka — Neuro-Symbolic World Model on RDF-Star",
+   "anchor": "",
+   "text": "World model"
   },
   {
    "url": "/",

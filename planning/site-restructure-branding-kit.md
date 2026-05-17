@@ -111,3 +111,19 @@ already in queue.md).
 3. **Breadth:** roll out to all 39 pages this pass — homepage
    hand-finished as the showcase (Phase D), sub-pages mechanised by
    `scripts/restructure_site.py` (Phase C).
+
+## Status — SHIPPED 2026-05-17 (commits d4d4c17 + this one)
+
+All phases done. 38 pages on the shared kit (36 mechanised + homepage
++ /contribute/); `playground.html` kept as the full-screen IDE shell
+(shared palette only, no fixed bar — would break its 100vh layout).
+`build_search_index.py` → `search.json` (303 records). All three
+transformers (`restructure_site.py`, `unify_site.py`,
+`build_search_index.py`) are mutually idempotent `--check` no-ops;
+`unify_site.py` step 6 stands down on kit pages so the two passes no
+longer fight over `<nav>`.
+
+Deferred polish (not blocking): numbered `.section` wrapping of the
+homepage body; visual QA of `/contribute/`'s bespoke layout under the
+kit; browser render-check in both themes; the GitHub-Pages custom-
+domain deploy verify (sister-subdomain caveat in queue.md).
