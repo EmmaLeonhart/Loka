@@ -9,11 +9,11 @@
     <title>Benchmarks &mdash; Loka</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f4dc;</text></svg>">
     <style>
-        :root {
-            --bg: var(--bg); --surface: var(--bg-soft); --border: var(--border);
-            --text: var(--text-strong); --text-muted: var(--text-mute); --accent: var(--accent);
-            --accent-hover: var(--accent-bright); --green: #3fb950; --orange: #d29922;
-        }
+        /* Palette, fonts and the dark/light flip come from /style.css
+           (→ /identity.css) plus the canonical :root appended at the
+           end of this <style>. The page-local :root that used to sit
+           here was fully redundant; the unify pass mangled it into
+           circular `--bg:var(--bg)` self-refs, so it was removed. */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: var(--sans); background: var(--bg); color: var(--text); line-height: 1.6; }
         a { color: var(--accent); text-decoration: none; }

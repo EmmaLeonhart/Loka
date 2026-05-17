@@ -5,20 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Loka Playground</title>
 <style>
-  :root {
-    --bg: var(--bg);
-    --surface: var(--bg-soft);
-    --surface2: var(--bg-card);
-    --border: var(--border);
-    --text: var(--text-strong);
-    --text-dim: var(--text-mute);
-    --accent: var(--accent);
-    --accent-dim: var(--accent);
-    --green: #3fb950;
-    --orange: #d29922;
-    --red: #f85149;
-    --purple: #bc8cff;
-  }
+  /* Palette, fonts and the dark/light flip come from /style.css
+     (→ /identity.css) plus the canonical :root appended at the end of
+     this <style>. The page-local :root that used to sit here was fully
+     redundant; the unify pass mangled it into circular `--bg:var(--bg)`
+     self-refs, so it was removed. */
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
