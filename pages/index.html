@@ -13,7 +13,7 @@
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="Loka — Neuro-Symbolic World Model on RDF-Star">
     <meta name="twitter:description" content="Two systems sharing one query language: an RDF-star triplestore plus a transformer trained on the same triples. Generated facts write back with cited inference chains.">
-    <meta name="theme-color" content="#58a6ff">
+    <meta name="theme-color" content="#8b9bff">
     <link rel="canonical" href="https://loka.emmaleonhart.com/">
     <script type="application/ld+json">
     {
@@ -37,6 +37,9 @@
     </script>
     <title>Loka &mdash; Neuro-Symbolic World Model on RDF-Star</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f4dc;</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <!-- Canonical identity: the ONE shared stylesheet (palette, light
          flip, .theme-toggle, .gh repo pill, type). Linked, not copied —
          same file as emmaleonhart.com/identity.css. -->
@@ -60,7 +63,6 @@
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
             background: var(--bg);
             color: var(--text);
             line-height: 1.6;
@@ -68,18 +70,53 @@
         a { color: var(--accent); text-decoration: none; }
         a:hover { color: var(--accent-hover); text-decoration: underline; }
 
+        /* Keep page sections above the fixed .aurora (z-index:0). */
+        nav.sitenav, .hero, .features, .superset, .code-example, .download, footer {
+            position: relative; z-index: 1;
+        }
+        /* Unified top nav — tokenised so it flips with the theme. The old
+           nav used hardcoded #30363d / #58a6ff and stayed dark in light
+           mode (that was the visible break). Same links preserved. */
+        nav.sitenav {
+            display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+            padding: 13px 24px; font-size: 0.9em;
+            border-bottom: 1px solid var(--border);
+            font-family: var(--mono);
+        }
+        nav.sitenav a { color: var(--text-mute); text-decoration: none; transition: color 0.2s; }
+        nav.sitenav a:hover { color: var(--accent-bright); text-decoration: none; }
+        nav.sitenav .brand { font-weight: 700; font-size: 1.1em; color: var(--text-strong); }
+        nav.sitenav .brand:hover { color: var(--accent-bright); }
+        nav.sitenav .contribute { color: var(--sutra-bright); }
+        nav.sitenav .spacer { flex: 1; }
+        /* Tokenised callout boxes (were hardcoded GitHub-dark hex). */
+        .callout {
+            margin: 16px auto 0; max-width: 720px;
+            padding: 16px 24px; border-radius: 10px;
+            background: var(--bg-card); border: 1px solid var(--border-hover);
+        }
+        .callout.first { margin-top: 32px; }
+        .callout.accent { border-color: var(--sutra); }
+        .callout h4 { font-size: 1em; margin-bottom: 6px; font-weight: 600; color: var(--accent-bright); }
+        .callout.accent h4 { color: var(--sutra-bright); }
+        .callout p { font-size: 0.95em; color: var(--text-mute); margin: 0 0 8px; }
+        .callout .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.9em; }
+        @media (max-width: 600px) { .callout .grid2 { grid-template-columns: 1fr; } }
+        .callout code { background: var(--bg-soft); padding: 1px 5px; border-radius: 4px; }
+
         .hero {
             text-align: center;
             padding: 80px 20px 60px;
             border-bottom: 1px solid var(--border);
         }
         .hero h1 {
-            font-size: 3em;
+            font-size: clamp(2.6rem, 7vw, 3.6rem);
             font-weight: 700;
             margin-bottom: 16px;
             letter-spacing: -0.02em;
+            background: linear-gradient(120deg, var(--text-strong) 0%, var(--accent-bright) 55%, var(--accent) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
         }
-        .hero h1 span { color: var(--accent); }
         .hero .tagline {
             font-size: 1.3em;
             color: var(--text-muted);
@@ -201,7 +238,7 @@
             border-radius: 12px;
             padding: 24px;
             overflow-x: auto;
-            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-family: var(--mono);
             font-size: 0.9em;
             line-height: 1.5;
             margin-bottom: 16px;
@@ -272,18 +309,22 @@
   </button>
 
 
-<nav style="padding:12px 24px;border-bottom:1px solid #30363d;display:flex;align-items:center;gap:24px;font-size:0.9em;flex-wrap:wrap;">
-    <a href="./" style="font-weight:700;font-size:1.1em;color:#e6edf3;text-decoration:none;"><span style="color:#58a6ff;">Loka</span></a>
-    <a href="./loka/" style="color:#8b949e;">World Model</a>
-    <a href="./history/" style="color:#8b949e;">History</a>
-    <a href="./#download" style="color:#8b949e;">Engine</a>
-    <a href="./graph-vector/" style="color:#8b949e;">Graph+Vector</a>
-    <a href="./theory/" style="color:#8b949e;">Theory</a>
-    <a href="./benchmarks/" style="color:#8b949e;">Benchmarks</a>
-    <a href="./codeofethics/" style="color:#8b949e;">Code of Ethics</a>
-    <a href="./contribute/" style="color:#f0883e;">Contribute GPU</a>
-    <a href="https://huggingface.co/datasets/EmmaLeonhart/loka" style="color:#8b949e;">HF: Models</a>
-    <a href="https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata" style="color:#8b949e;">HF: Corpus</a>
+  <div class="aurora" aria-hidden="true"></div>
+
+<nav class="sitenav">
+    <a class="home" href="https://emmaleonhart.com">&larr; emmaleonhart.com</a>
+    <a class="brand" href="./">Loka</a>
+    <a href="./loka/">World Model</a>
+    <a href="./history/">History</a>
+    <a href="./#download">Engine</a>
+    <a href="./graph-vector/">Graph+Vector</a>
+    <a href="./theory/">Theory</a>
+    <a href="./benchmarks/">Benchmarks</a>
+    <a href="./codeofethics/">Code of Ethics</a>
+    <a class="contribute" href="./contribute/">Contribute GPU</a>
+    <a href="https://huggingface.co/datasets/EmmaLeonhart/loka">HF: Models</a>
+    <a href="https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata">HF: Corpus</a>
+    <span class="spacer"></span>
     <a class="gh" href="https://github.com/EmmaLeonhart/Loka" data-gh-repo="EmmaLeonhart/Loka" aria-label="EmmaLeonhart/Loka on GitHub">
       <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
       <span class="gh-name">GitHub</span>
@@ -293,7 +334,7 @@
 </nav>
 
 <div class="hero">
-    <h1><span>Loka</span></h1>
+    <h1>Loka</h1>
     <p class="tagline">
         A <strong>neuro-symbolic world model</strong>. Two systems sharing one query language: an RDF-star
         triplestore (explicit memory, exact answers) plus a transformer trained on the same triples (implicit memory,
@@ -312,28 +353,28 @@
         <a href="https://github.com/EmmaLeonhart/Loka/releases/latest" class="btn btn-secondary" id="download-btn">Engine release</a>
     </div>
 
-    <div style="margin-top: 32px; padding: 16px 24px; background: #1a2332; border: 1px solid #2d4a6f; border-radius: 10px; max-width: 720px; margin-left: auto; margin-right: auto;">
-        <p style="font-size: 1em; color: #79c0ff; margin-bottom: 8px; font-weight: 600;">Two Hugging Face datasets</p>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.9em;">
+    <div class="callout first">
+        <h4>Two Hugging Face datasets</h4>
+        <div class="grid2">
             <div>
                 <a href="https://huggingface.co/datasets/EmmaLeonhart/loka" style="font-weight: 600;">EmmaLeonhart/loka</a>
-                <p style="color: #8b949e; margin-top: 2px;">Trained model checkpoints (v3 → v14, current best <strong>v14</strong> ppl 202.01). 44.5 M-param BPE transformer. Pull via <code style="background:#1c2128;padding:1px 4px;border-radius:3px;">MODEL.json</code>.</p>
+                <p>Trained model checkpoints (v3 → v14, current best <strong>v14</strong> ppl 202.01). 44.5 M-param BPE transformer. Pull via <code>MODEL.json</code>.</p>
             </div>
             <div>
                 <a href="https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata" style="font-weight: 600;">EmmaLeonhart/normalized-wikidata</a>
-                <p style="color: #8b949e; margin-top: 2px;">Clean text-form Wikidata triples for world-model training, four scale tiers (<code>v11-50k</code> through <code>v14-1M</code>). CC-BY-SA 4.0.</p>
+                <p>Clean text-form Wikidata triples for world-model training, four scale tiers (<code>v11-50k</code> through <code>v14-1M</code>). CC-BY-SA 4.0.</p>
             </div>
         </div>
     </div>
 
-    <div style="margin-top: 16px; padding: 16px 24px; background: #2c1810; border: 1px solid #f0883e; border-radius: 10px; max-width: 720px; margin-left: auto; margin-right: auto;">
-        <p style="font-size: 1em; color: #f0883e; margin-bottom: 4px; font-weight: 600;">Have a GPU and ~2 days to donate? Push v14 below its floor.</p>
-        <p style="font-size: 0.95em; color: #8b949e; margin-bottom: 8px;">v11&ndash;v14 are all shipped (v14 = epoch-4, ppl 202.01, series best). But v14 floored at epoch 4 because a full clean 10-epoch run won't fit the maintainer's 8 GB power-capped laptop GPU &mdash; ~40 h on an RTX 4090 of <em>exclusive</em> GPU. A single clean optimizer over the full 10 epochs should push below 202. The data is already on HF; the contributor script is one command. Your name on the artifact, ack in the paper. <a href="./contribute/">Full instructions →</a></p>
+    <div class="callout accent">
+        <h4>Have a GPU and ~2 days to donate? Push v14 below its floor.</h4>
+        <p>v11&ndash;v14 are all shipped (v14 = epoch-4, ppl 202.01, series best). But v14 floored at epoch 4 because a full clean 10-epoch run won't fit the maintainer's 8 GB power-capped laptop GPU &mdash; ~40 h on an RTX 4090 of <em>exclusive</em> GPU. A single clean optimizer over the full 10 epochs should push below 202. The data is already on HF; the contributor script is one command. Your name on the artifact, ack in the paper. <a href="./contribute/">Full instructions →</a></p>
     </div>
 
-    <div style="margin-top: 16px; padding: 16px 24px; background: #1c2128; border: 1px solid #30363d; border-radius: 10px; max-width: 720px; margin-left: auto; margin-right: auto;">
-        <p style="font-size: 1em; color: #79c0ff; margin-bottom: 4px; font-weight: 600;">AI Agent?</p>
-        <p style="font-size: 0.95em; color: #8b949e; margin-bottom: 8px;">Loka is serverless by default &mdash; open a <code>.sdb</code> file, no daemon, no config. Install, configure, and query entirely from the command line. The agent installer (<code>loka install-agent</code>) walks an LLM through configuration via structured Markdown prompts. <strong>Start here:</strong> the GitHub repo's <a href="https://github.com/EmmaLeonhart/Loka/blob/main/README.md">README</a> documents the engine and the model series; <a href="https://github.com/EmmaLeonhart/Loka/blob/main/CLAUDE.md">CLAUDE.md</a> is the canonical context file for agent assistants.</p>
+    <div class="callout">
+        <h4>AI Agent?</h4>
+        <p>Loka is serverless by default &mdash; open a <code>.sdb</code> file, no daemon, no config. Install, configure, and query entirely from the command line. The agent installer (<code>loka install-agent</code>) walks an LLM through configuration via structured Markdown prompts. <strong>Start here:</strong> the GitHub repo's <a href="https://github.com/EmmaLeonhart/Loka/blob/main/README.md">README</a> documents the engine and the model series; <a href="https://github.com/EmmaLeonhart/Loka/blob/main/CLAUDE.md">CLAUDE.md</a> is the canonical context file for agent assistants.</p>
         <a href="https://github.com/EmmaLeonhart/Loka/blob/main/docs/AGENT_SETUP.md" class="btn btn-primary" style="padding: 8px 20px; font-size: 0.9em;">Agent Setup Guide</a>
     </div>
 </div>

@@ -6,6 +6,47 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ---
 
+## Website → common render pipeline (Emma-directed, 2026-05-17)
+
+Bring the Loka website (`pages/`, 41 static HTML pages) onto the SAME
+render-pipeline/shell as emmaleonhart.com + yantra.emmaleonhart.com +
+sutra.emmaleonhart.com. **Content is good — PRESERVE it.** Only the
+shell/identity gets unified. `pages/identity.css` is already
+byte-identical to the canonical file — the gap is structural.
+
+Divergences found on `pages/index.html` (the exemplar to fix first):
+- body font hard-overridden to `-apple-system,…,'Segoe UI'` instead
+  of canonical `var(--sans)` (Inter); Google Fonts not linked.
+- bespoke `<nav>` with hardcoded hex (`#30363d`, theme-color
+  `#58a6ff`) instead of the shared Yantra-style `.topbar` (back-link
+  `← emmaleonhart.com` + live `.gh` GitHub repo pill for
+  EmmaLeonhart/Loka).
+- no `.aurora`; hero h1 uses flat `span{color:accent}` not the
+  shared gradient display type.
+- (theme-toggle + footer already present.)
+
+`pages/index.html` is done (exemplar): fonts linked, body→canonical
+sans, `.aurora` added, gradient hero h1, the bespoke hardcoded-hex
+`<nav>` retokenised to `nav.sitenav` (flips with the theme; gained
+the `← emmaleonhart.com` back-link, kept every section link + the
+`.gh` pill + gh-facts JS), the three hardcoded callout boxes
+retokenised to `.callout`, `pre`→`var(--mono)`. All content kept.
+
+Remaining steps (delete each line when its commit lands; Loka `main`):
+2. Apply the same shell pass to the other top-level pages: `playground.html`,
+   `404.html`, `contribute/index.html`, `loka/index.html`,
+   `history/index.html`, `creation/index.html`,
+   `benchmarks/index.html`, `roadmap/index.html`.
+3. Same shell pass on the ~28 `theory/**` + topic sub-pages
+   (`graph-vector`, `owl`, `sparql`, `rdf`, `serverless`, …). These
+   share a simpler template — do one, then batch-apply.
+4. Verify live (note: sister-subdomain pushes can stay invisible
+   until Emma's manual GitHub Pages custom-domain re-set — confirm
+   the push landed, don't just re-push). Update Loka `README.md` if
+   it describes the old site shell.
+
+---
+
 ## 🚀 Multi-version pipeline — 2026-05-13 evening pivot
 
 After hitting Loka SPARQL OFFSET-cost (page-N is O(N) on sled — 25h projected for pass 1 alone), pivoted to a no-Loka HF-source preprocessor (`tools/preprocess_from_hf.py`). The plan now is to ship a series of normalized-wikidata snapshots and train a model on each.
