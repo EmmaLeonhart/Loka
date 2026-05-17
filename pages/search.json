@@ -1,0 +1,2120 @@
+{
+ "generated_by": "scripts/build_search_index.py",
+ "count": 302,
+ "records": [
+  {
+   "url": "/benchmarks/",
+   "page": "Benchmarks — Loka",
+   "heading": "Benchmarks",
+   "anchor": "",
+   "text": "Criterion benchmarks run daily and on each release. Charts show daily averages with release milestones marked. All numbers from GitHub Actions (ubuntu-latest). Loading latest results..."
+  },
+  {
+   "url": "/benchmarks/",
+   "page": "Benchmarks — Loka",
+   "heading": "loka-core — Triple Store — Lower is better",
+   "anchor": "",
+   "text": "The storage engine: how fast can we insert, look up, and scan triples? These benchmarks measure the SPO/POS/OSP index performance, IRI interning, pseudo-table discovery (auto-detected relational structure), and SIMD column scans. All values"
+  },
+  {
+   "url": "/benchmarks/",
+   "page": "Benchmarks — Loka",
+   "heading": "loka-hnsw — Vector Index — Lower is better",
+   "anchor": "",
+   "text": "The HNSW approximate nearest neighbor index: how fast can we insert vectors, search for similar ones, and how does it handle deletions and high dimensions? These are the numbers that matter if you're storing embeddings. What each benchmark "
+  },
+  {
+   "url": "/benchmarks/",
+   "page": "Benchmarks — Loka",
+   "heading": "Search Quality — Higher is better",
+   "anchor": "",
+   "text": "Recall measures how many of the true nearest neighbors HNSW actually finds, compared to brute-force. 1.0 = perfect, meaning all 10 true nearest neighbors were returned. BenchmarkRecall@10"
+  },
+  {
+   "url": "/benchmarks/",
+   "page": "Benchmarks — Loka",
+   "heading": "loka-sparql — Query Engine — Lower is better",
+   "anchor": "",
+   "text": "End-to-end SPARQL query performance: parsing, planning, and execution. Includes pure graph traversal, vector similarity search, and the combined graph+vector queries that are Loka's core differentiator. All values are nanoseconds per query."
+  },
+  {
+   "url": "/codeofethics/",
+   "page": "Code of Ethics — Loka",
+   "heading": "Code of Ethics",
+   "anchor": "",
+   "text": "Instruments of good work."
+  },
+  {
+   "url": "/codeofethics/",
+   "page": "Code of Ethics — Loka",
+   "heading": "1. Purpose",
+   "anchor": "",
+   "text": "The founder of Loka, and all of the current developers at the time when this document was composed, have pledged to govern their interactions with each other, with their clients, and with the larger Loka user community in accordance with th"
+  },
+  {
+   "url": "/codeofethics/",
+   "page": "Code of Ethics — Loka",
+   "heading": "1.1. Scope of Application",
+   "anchor": "",
+   "text": "No one is required to follow The Way, to know The Way, or even to think that The Way is a good idea. The founder of Loka and all current developers have pledged to follow the spirit of The Way to the best of their ability. This is a one-way"
+  },
+  {
+   "url": "/codeofethics/",
+   "page": "Code of Ethics — Loka",
+   "heading": "2. The Way",
+   "anchor": "",
+   "text": "Honor all persons. Do not do to another what you would not have done to yourself. Do not steal. Do not bear false witness. Utter only truth from heart and mouth. Do not give way to anger. Do not nurse a grudge. Do not entertain deceit in yo"
+  },
+  {
+   "url": "/contribute/",
+   "page": "Contribute GPU time — Loka v14",
+   "heading": "Contribute GPU time — Loka v14",
+   "anchor": "",
+   "text": "v11–v14 are all shipped. v14 floored at its epoch-4 checkpoint (ppl 202.01, the series best) because a full clean 10-epoch run on the 4 M-triple top tier doesn't fit a laptop GPU. If you have a GPU with ≥8 GB VRAM and roughly two days of wa"
+  },
+  {
+   "url": "/contribute/",
+   "page": "Contribute GPU time — Loka v14",
+   "heading": "Why this page exists",
+   "anchor": "",
+   "text": "The maintainer of this project is Emma Leonhart. The development hardware is a laptop with an NVIDIA RTX 4070 Laptop GPU (8 GB VRAM, 35–115 W TGP). The four rungs of the normalized-wikidata model series — v11 (350 k triples, ppl 279.12), v1"
+  },
+  {
+   "url": "/contribute/",
+   "page": "Contribute GPU time — Loka v14",
+   "heading": "What you'd be doing, in one command",
+   "anchor": "",
+   "text": "git clone https://github.com/EmmaLeonhart/Loka cd Loka # Authenticate with YOUR Hugging Face account huggingface-cli login # Run the contributor script python tools/contribute_v14_training.py --hf-user YOUR_HF_USERNAME The script handles ev"
+  },
+  {
+   "url": "/contribute/",
+   "page": "Contribute GPU time — Loka v14",
+   "heading": "Estimated wall-time, by hardware",
+   "anchor": "",
+   "text": "GPUPer epoch10 epochs total RTX 4090 (24 GB)~4 h~40 h RTX 4080 (16 GB)~5 h~50 h RTX 3090 (24 GB)~6 h~60 h RTX 4070 Laptop (8 GB) — the project's box~8 h~80 h A100 / H100 (cloud)~1–2 h~10–20 h If you have less than 8 GB VRAM, the script will"
+  },
+  {
+   "url": "/contribute/",
+   "page": "Contribute GPU time — Loka v14",
+   "heading": "Before you start — please raise a GitHub issue",
+   "anchor": "",
+   "text": "Please raise an issue at github.com/EmmaLeonhart/Loka/issues before kicking off training. Otherwise the maintainer has no idea anyone is running this, and two contributors might duplicate the work. Issue template (copy-paste, fill in the pl"
+  },
+  {
+   "url": "/contribute/",
+   "page": "Contribute GPU time — Loka v14",
+   "heading": "What gets pushed to your HF account, and who owns it",
+   "anchor": "",
+   "text": "Each epoch's checkpoint is pushed to your Hugging Face account as <your-user>/loka-v14-contribution, tagged v14.N. You own that repo and the upload uses your token, not Emma's. The training script never has access to EmmaLeonhart/loka's wri"
+  },
+  {
+   "url": "/contribute/",
+   "page": "Contribute GPU time — Loka v14",
+   "heading": "Observed hardware constraints — and why your hardware might converge differently",
+   "anchor": "",
+   "text": "The numbers reported in the project's DEVLOG and paper are laptop numbers. The 4070 Laptop's sustained TGP cap is ~80 W, hit consistently during training (verified via nvidia-smi while v13 was running — 74 W actual / 80 W cap, 74 °C, 83 % G"
+  },
+  {
+   "url": "/contribute/",
+   "page": "Contribute GPU time — Loka v14",
+   "heading": "Cost (if you don't have hardware locally)",
+   "anchor": "",
+   "text": "If you're considering a cloud GPU, the rough budget: ProviderGPU classApprox hourlyApprox total (10 epochs) RunPodRTX 4090~$0.40~$16 RunPod / Vast.aiRTX 3090~$0.30~$18 Lambda LabsA100 (40 GB)~$1.10~$15 Emma is not paying for cloud GPU on th"
+  },
+  {
+   "url": "/contribute/",
+   "page": "Contribute GPU time — Loka v14",
+   "heading": "What you get out of it",
+   "anchor": "",
+   "text": "The training run is your repo on Hugging Face — <your-user>/loka-v14-contribution. Your name on the artifact. Acknowledgement in the paper draft (paper/paper.md) when v14 is folded into the model series. A reproducible reference run on the "
+  },
+  {
+   "url": "/contribute/",
+   "page": "Contribute GPU time — Loka v14",
+   "heading": "Anything else?",
+   "anchor": "",
+   "text": "If something fails or you want to do something different from the default recipe (more epochs, different architecture, a different corpus tier), open an issue and we'll figure it out. The contributor script is intentionally simple — one cor"
+  },
+  {
+   "url": "/creation/",
+   "page": "The Creation of Loka — Emma Leonhart",
+   "heading": "The Creation of Loka",
+   "anchor": "",
+   "text": "How a frustration with two-database architectures led to one that does both. EL Emma Leonhart Creator of Loka"
+  },
+  {
+   "url": "/creation/",
+   "page": "The Creation of Loka — Emma Leonhart",
+   "heading": "The Problem",
+   "anchor": "",
+   "text": "I was building knowledge graphs. Not toy ones — real ones, with millions of triples extracted from structured and unstructured sources. The kind where you need to traverse relationships and search by semantic similarity in the same breath. "
+  },
+  {
+   "url": "/creation/",
+   "page": "The Creation of Loka — Emma Leonhart",
+   "heading": "The Insight",
+   "anchor": "",
+   "text": "The breakthrough wasn't a clever algorithm. It was noticing something obvious that everyone seemed to overlook. HNSW — Hierarchical Navigable Small World — is the algorithm behind almost every production vector database. Qdrant uses it. Pin"
+  },
+  {
+   "url": "/creation/",
+   "page": "The Creation of Loka — Emma Leonhart",
+   "heading": "Why Rust, Why SQLite's Philosophy",
+   "anchor": "",
+   "text": "The choice of Rust wasn't about performance cult. It was about two things: correctness guarantees for concurrent HNSW reads (the borrow checker is the best tool for this), and single-binary distribution. No JVM, no Python runtime, no shared"
+  },
+  {
+   "url": "/creation/",
+   "page": "The Creation of Loka — Emma Leonhart",
+   "heading": "The Key Decision: Vectors Are Triples",
+   "anchor": "",
+   "text": "The most important design decision in Loka is that a vector embedding is just a triple with a typed literal. # An embedding on a node — it's just a triple :paper_42 :hasEmbedding \"0.23 -0.11 0.87 ...\"^^loka:f32vec . # An embedding on an edg"
+  },
+  {
+   "url": "/creation/",
+   "page": "The Creation of Loka — Emma Leonhart",
+   "heading": "The Architecture",
+   "anchor": "",
+   "text": "loka-core The triple storage engine. SPO/POS/OSP indexes on interned u64 IDs. IRI interning, RDF-star quoted triple support, LSM-tree persistence. This is the foundation everything else sits on. loka-hnsw The HNSW vector index. Completely i"
+  },
+  {
+   "url": "/creation/",
+   "page": "The Creation of Loka — Emma Leonhart",
+   "heading": "What I Learned",
+   "anchor": "",
+   "text": "Building Loka taught me that the gap in the ecosystem wasn't a missing algorithm or a missing optimization. It was a missing opinion. Everyone agreed that knowledge graphs need vectors. Nobody was willing to say: \"these should be the same d"
+  },
+  {
+   "url": "/graph-vector/",
+   "page": "Graph + Vector Databases Explained — Loka",
+   "heading": "Graph + Vector Databases",
+   "anchor": "",
+   "text": "What they are, why they matter, and how Loka combines them into one system."
+  },
+  {
+   "url": "/graph-vector/",
+   "page": "Graph + Vector Databases Explained — Loka",
+   "heading": "If You're Coming from SQL",
+   "anchor": "",
+   "text": "Most developers know SQL databases (PostgreSQL, MySQL, SQLite). Data lives in tables with rows and columns. This works great when your data fits neatly into a spreadsheet shape. But some data doesn't. SQL Database (Tables) | person_id | nam"
+  },
+  {
+   "url": "/graph-vector/",
+   "page": "Graph + Vector Databases Explained — Loka",
+   "heading": "When to use what",
+   "anchor": "",
+   "text": "Your data looks like...Use Spreadsheets, invoices, accountingSQL (PostgreSQL, SQLite) Documents, nested JSON, catalogsDocument DB (MongoDB) Relationships, networks, knowledge, ontologiesGraph DB (Loka) Embeddings, similarity search, recomme"
+  },
+  {
+   "url": "/graph-vector/",
+   "page": "Graph + Vector Databases Explained — Loka",
+   "heading": "If You're Coming from MongoDB",
+   "anchor": "",
+   "text": "MongoDB stores documents — nested JSON objects. It's schema-flexible and fast for key-based lookups. But it goes in almost the opposite direction from a graph database: MongoDB (Documents) { \"name\": \"Alice\", \"knows\": [\"Bob\", \"Carol\"], \"inte"
+  },
+  {
+   "url": "/graph-vector/",
+   "page": "Graph + Vector Databases Explained — Loka",
+   "heading": "What Is a Vector Database?",
+   "anchor": "",
+   "text": "A vector database stores embeddings — arrays of numbers that represent the \"meaning\" of text, images, or other data in a high-dimensional space. Things with similar meanings have similar vectors. -- These vectors are close together (similar"
+  },
+  {
+   "url": "/graph-vector/",
+   "page": "Graph + Vector Databases Explained — Loka",
+   "heading": "The Problem: Two Databases",
+   "anchor": "",
+   "text": "Today, if you want both graph traversal and vector similarity, you need two separate databases: A triplestore (Apache Jena, Oxigraph, Neo4j) for your knowledge graph A vector database (Qdrant, Pinecone, Weaviate) for your embeddings Then yo"
+  },
+  {
+   "url": "/graph-vector/",
+   "page": "Graph + Vector Databases Explained — Loka",
+   "heading": "Loka: One Database for Both",
+   "anchor": "",
+   "text": "In Loka, a vector embedding is just another triple — a relationship between an entity and its embedding: -- Regular graph data: :paper42 rdf:type :Paper . :paper42 :title \"Attention Is All You Need\" . :paper42 :author :Vaswani . :paper42 :c"
+  },
+  {
+   "url": "/graph-vector/",
+   "page": "Graph + Vector Databases Explained — Loka",
+   "heading": "Vector Hopping: Wormhole Queries",
+   "anchor": "",
+   "text": "The unique capability this unlocks is vector hopping — traversing between graph space and vector space within a single query. We call these \"wormhole queries\" because they let you jump through a shortcut in the data space."
+  },
+  {
+   "url": "/graph-vector/",
+   "page": "Graph + Vector Databases Explained — Loka",
+   "heading": "How it works",
+   "anchor": "",
+   "text": "Imagine you have a knowledge graph of academic papers with their relationships (citations, authors, topics) and their embeddings (semantic meaning of the paper's content). Traditional approach (two databases): Query the vector DB: \"find pap"
+  },
+  {
+   "url": "/graph-vector/",
+   "page": "Graph + Vector Databases Explained — Loka",
+   "heading": "Types of wormhole traversals",
+   "anchor": "",
+   "text": "PatternDescriptionExample Vector → Graph Start with similarity search, then traverse graph \"Find entities similar to X, then get their properties\" Graph → Vector Traverse graph first, then filter by vector similarity \"Get all Papers by this"
+  },
+  {
+   "url": "/graph-vector/",
+   "page": "Graph + Vector Databases Explained — Loka",
+   "heading": "Entity Resolution via Vectors",
+   "anchor": "",
+   "text": "An important property: in Loka, multiple entities can share the same vector. This enables automatic entity resolution through vector search. -- Two different entities, same word, same embedding: :bank_financial :hasEmbedding \"0.5 0.3 ...\"^^"
+  },
+  {
+   "url": "/graph-vector/",
+   "page": "Graph + Vector Databases Explained — Loka",
+   "heading": "How HNSW Indexing Works",
+   "anchor": "",
+   "text": "Loka uses HNSW (Hierarchical Navigable Small World) for vector search. Here's the intuition: Imagine all your vectors as points in a high-dimensional space HNSW builds a multi-layer graph connecting nearby points The top layer has few point"
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "Development History",
+   "anchor": "",
+   "text": "The full narrative of how a lean RDF-star triplestore became a neuro-symbolic world-model engine. What worked, what didn't, and why each call got made."
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "Contents",
+   "anchor": "",
+   "text": "2026-05 — The neuro-symbolic world-model pivot 2026-05 — Data layer rebuild (BFS → Hugging Face parquet) 2026-05 — Training: v0–v5 2026-05 — Cumulative repetition penalty 2026-05 — Loka rebrand and Hugging Face mirror 2026-04 — ManuForge in"
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "2026-05 (mid-to-late) — Catalog cleanup, cron loop, and the normalized-wikidata pipeline (2026-05-10 to 2026-05-14)",
+   "anchor": "may-2026-pipeline-rebuild",
+   "text": "After v3/v4/v5 (covered below), the world-model line moved through a sequence of corpus and pipeline improvements that changed the headline numbers by 5× and added a second Hugging Face dataset for the cleaned training corpus."
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "v6 → v7: catalog-noise discovery and corpus cleanup",
+   "anchor": "",
+   "text": "v6 added the BPE tokenizer, fixing the v5 word-level tokenizer's unicode-chopping (Saint-Léger → Saint - Lé ger) and unlocking proper sub-word handling. v6 also revealed the real problem with the v3–v5 corpus: a post-training behavioural sw"
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "v9 → v10: cron-loop automation and the steady state",
+   "anchor": "",
+   "text": "v9 and v10 are trained on fresh 2 M-triple slices, processed under a per-data-dir state file design and the POST /triples wedge-fix (single sled multi-tree transaction per request instead of three or four). Final ppl: v9 57.15, v10 55.52. v"
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "v11 → v14: pipeline pivot and the normalized-wikidata dataset",
+   "anchor": "",
+   "text": "The v11 cycle pivoted the shape of the preprocessing pipeline. Earlier versions extracted training triples from a Loka store via SPARQL ?s ?p ?o paging. At the v11 scale (a fresh 50 M-triple Loka slice) this hit two structural problems: LIM"
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "Two hardware lessons from this cycle",
+   "anchor": "",
+   "text": "The training box is a laptop, not a desktop. A separate diagnostic triage caught it: the 4070 in this machine is the Laptop variant (8 GB VRAM, 35–115 W TGP), not the desktop 4070 (12 GB, 200 W). Earlier plans inherited desktop thermal-head"
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "2026-05 — The neuro-symbolic world-model pivot (weeks of 2026-05-07 to 2026-05-09)",
+   "anchor": "may-2026-pivot",
+   "text": "The earlier framing was \"lean RDF-star triplestore that handles vector queries natively.\" That's still true mechanically, but the purpose moved: the engine is now one half of a two-system composition. The store = explicit memory. Stores wha"
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "RDF-star as the citation mechanism",
+   "anchor": "",
+   "text": "RDF-star moved from \"one feature among many\" to load-bearing. It's how every kind of citation in the system is expressed: VerbUsed for propositionInferredFrommodel-generated triple → context that informed it wdt:P854 / wdt:P248 / wdt:P813ex"
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "2026-05 — Data layer rebuild (2026-05-07 to 2026-05-09)",
+   "anchor": "may-2026-data-rebuild",
+   "text": ""
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "BFS importer learned RDF-star qualifiers + references",
+   "anchor": "",
+   "text": "Before: each Wikidata claim emitted one flat triple, dropping all qualifier and reference data. After: each claim emits the main triple plus an RDF-star annotation per qualifier and per reference snak, all sharing the <<S P O>> quoted-tripl"
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "BFS → Hugging Face parquet stream",
+   "anchor": "",
+   "text": "The Wikidata API rate-limit (1.5s per request) made BFS the bottleneck — 5M triples needed days at that rate. Switched to streaming philippesaade/wikidata (CC0, ~30M entities, JSON-shaped per-entity rows in parquet) via the HuggingFace data"
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "propositionImportedFrom dropped",
+   "anchor": "",
+   "text": "Initially every imported triple got <<S P O>> loka:propositionImportedFrom <wikidata.org/wiki/Q...>. For a database where every row came from Wikidata, that's redundant noise — 22,593 rows after the first hour of re-walk (~46% of all annota"
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "Multilingual labels",
+   "anchor": "",
+   "text": "Previously hardcoded en/ja/de/fr/zh; now iterates every language in entity.labels and entity.descriptions. The training preprocessor still filters to English, but the database keeps the multilingual richness for future work."
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "Embeddings: gone",
+   "anchor": "",
+   "text": "The original BFS importer called Ollama (mxbai-embed-large) per entity. The world-model loop tokenizes English labels — vectors don't enter the training corpus. Stripped from the importer. The HNSW index in loka-core stays — that's an engin"
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "2026-05 — Training: v0–v5",
+   "anchor": "may-2026-training",
+   "text": "v0/v1/v2 were the early smoke-test checkpoints on a 6,300-triple shrine-only corpus. v3 onward use the 5M-triple HF-derived corpus. ModelArchitectureCorpusFinal pplNotes v316M params (256 / 4 layers)779k label-substituted53.43Pre-cleanup. M"
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "Two corpus quality fixes between v3 and v4",
+   "anchor": "",
+   "text": "Strip ^^<datatype> suffixes from typed literals. Loka's SPARQL serialization embeds the datatype URI in the literal value string. Without stripping, datatype-URI fragments (xmlschema, decimal, org) reached the tokenizer as if they were enti"
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "v4 vs v5 capacity scaling",
+   "anchor": "",
+   "text": "Epochv4 (16M) pplv5 (44M) ppl 11150.71528.7 2196.0147.3 3133.5104.2 4100.790.7 592.584.85 v5 starts higher (epoch 1) — more parameters mean a harder optimisation landscape and slower initial convergence. It crosses under v4 at epoch 2 and p"
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "2026-05 — Cumulative repetition penalty",
+   "anchor": "may-2026-decoder",
+   "text": "Masked-S/P/O training produces models that \"know\" the answer category (university, museum, https-URL) but degenerate during greedy decoding to fillers like of of of of or museum museum. We didn't retrain. We changed the decoder. Cumulative "
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "2026-05 — Loka rebrand and Hugging Face mirror",
+   "anchor": "may-2026-loka",
+   "text": "\"Loka\" is a name for the engine. The project that's emerging (engine + corpus + trained world model + inference layer) needs its own identity. Loka is the name on Hugging Face. The GitHub repo will be renamed to match later. tools/hf_snapsh"
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "2026-04 — ManuForge integration → v0.3.7",
+   "anchor": "apr-2026",
+   "text": "Brief period of production-readiness fixes after testing Loka against the ManuForge SDK consumer. Surfaced a small set of real issues: RDF-star query support fixes — quoted-triple wildcards weren't matching correctly. HTTP star import — N-T"
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "2026-03 (late) — Ontochronology + Loka Studio + FFI",
+   "anchor": "mar-2026-late",
+   "text": ""
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "Loka Studio (Flutter desktop/web/mobile client)",
+   "anchor": "",
+   "text": "loka-ffi crate wraps the engine in a C-compatible shared library so non-Rust consumers (Flutter, in particular) can embed the database in-process. Studio uses dart:ffi to load loka_ffi.dll/.so/.dylib and runs the engine on a background thre"
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "Ontochronology",
+   "anchor": "",
+   "text": "A non-trivial extension: every triple is conceptually contained in a temporal interval, and queries can ask \"what was true at time T\" or \"what changed between T1 and T2\" without reifying every statement individually. Implementation phases: "
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "Other March-late items",
+   "anchor": "",
+   "text": "Pseudo-tables to deep subgraph columnar indexes — generalised the columnar shortcut so multi-hop subgraph queries can run vectorised SIMD scans where the structure repeats. Cost-based query planning — predicate pushdown, HNSW edge labelling"
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "2026-03 (mid) — v0.2.0 Developer Preview",
+   "anchor": "mar-2026-mid",
+   "text": "A consolidating release. Headlines: query planner, agent installer, Java SDK, Loka Studio first cut. All four SDKs (Go, Rust, Java, .NET) had endpoint mismatches caught and fixed. SDK publish workflow + integration test CI added. Pseudo-tab"
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "2026-03-15 — The SPARQL completeness sweep",
+   "anchor": "mar-2026-sweep",
+   "text": "A single very productive day. Brought SPARQL coverage from \"minimum viable\" to roughly feature-complete for SPARQL 1.1 over RDF-star."
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "Core engine",
+   "anchor": "",
+   "text": "First-query cold-start fix — Vec<bool> visited list to HashSet, cut ~2s page-fault overhead at 200K+ HNSW nodes. HNSW cross-cluster search — multiple entry points (up to 8). Fixed bias toward first-inserted cluster. Persistence — Persistent"
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "SPARQL completeness",
+   "anchor": "",
+   "text": "FILTER NOT EXISTS / EXISTS ASK queries GROUP BY + aggregates (COUNT, SUM, AVG, MIN, MAX) BIND / VALUES Boolean operators (&&, ||, !), comparison ops, type checks LANG() / LANGMATCHES() String functions (CONTAINS, STRSTARTS, STRENDS, REGEX) "
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "CLI, distribution, ecosystem",
+   "anchor": "",
+   "text": "loka import / export / info / install-agent Install scripts, Dockerfile, GraphStoreProtocol, content negotiation Protégé plugin (Java OSGi) MCP server for AI-agent ↔ Loka integration Client-side OWL validation, OWL verification query genera"
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "2026-03 (early) — Foundation + 1M embedding stress test",
+   "anchor": "mar-2026-foundation",
+   "text": "Project began on 2026-03-13 with the cleanvibe scaffold. Within 24 hours: architecture docs, normalised loka-* workspace structure, loka-core and loka-hnsw foundations. Apache 2.0 license. CI workflow. Borrowed patterns explicitly from Qdra"
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "Dead ends — what didn't work, and why",
+   "anchor": "dead-ends",
+   "text": ""
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "1. BFS-only Wikidata ingest",
+   "anchor": "",
+   "text": "The original ingest crawled Wikidata's API at the 1.5s rate limit. At that rate, 5M triples would take ~3.3 hours per million entries with an exponential queue growth from qualifier-discovered links. We pushed through ~870 entities then swi"
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "2. propositionImportedFrom on every imported triple",
+   "anchor": "",
+   "text": "When all your data comes from one source, tagging every row with that source is redundant noise. 22,593 rows of propositionImportedFrom <wikidata.org> after one hour of import — ~46% of all RDF-star annotations. Lesson: provenance is most u"
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "3. Set-based (non-cumulative) repetition penalty",
+   "anchor": "",
+   "text": "The first repetition-penalty implementation tracked emitted tokens in a set: each prior emission penalized the token's later probability once, regardless of how many times it had already been emitted. Penalty 1.5 didn't break loops because "
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "4. v3 trained on the unclean corpus",
+   "anchor": "",
+   "text": "We didn't catch the embedded datatype-suffix leak until v3 had finished training. v3's perplexity (53) was numerically better than v4's (92) but qualitatively dramatically worse — v3 was memorising URI fragments. Lesson: perplexity is a pro"
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "5. The token-leak retry loop",
+   "anchor": "",
+   "text": "The user pasted an HF token in chat to enable an upload. The first use worked. The auto-classifier blocked the second use of the same token, correctly — re-transmitting a leaked credential is the pattern it's designed to stop. Lesson: never"
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "6. Embedded Ollama in the importer",
+   "anchor": "",
+   "text": "The original Wikidata BFS importer called Ollama for a 1024-dim embedding per entity (~2s per call, plus the Wikidata 1.5s = ~3.5s/entity). Vectors didn't enter the training corpus. Removing them roughly doubled effective import throughput "
+  },
+  {
+   "url": "/history/",
+   "page": "Loka — Development History",
+   "heading": "7. POST /triples wedge",
+   "anchor": "",
+   "text": "The persistent layer wedges after roughly every 5–6× growth in stored triples. We can't fix this in the importer; the workaround is automated stop-restart. Lesson: bugs found at ingest scale are real engine bugs that a smaller test suite wo"
+  },
+  {
+   "url": "/",
+   "page": "Loka — Neuro-Symbolic World Model on RDF-Star",
+   "heading": "Loka",
+   "anchor": "",
+   "text": "A neuro-symbolic world model. Two systems sharing one query language: an RDF-star triplestore (explicit memory, exact answers) plus a transformer trained on the same triples (implicit memory, plausible answers). Generated facts write back i"
+  },
+  {
+   "url": "/",
+   "page": "Loka — Neuro-Symbolic World Model on RDF-Star",
+   "heading": "What's inside the engine",
+   "anchor": "",
+   "text": ""
+  },
+  {
+   "url": "/",
+   "page": "Loka — Neuro-Symbolic World Model on RDF-Star",
+   "heading": "🔗 Vectors Are Triples",
+   "anchor": "",
+   "text": "Vector embeddings are stored as RDF triples and indexed by HNSW. Not a sidecar — a first-class part of the graph. One query language for both."
+  },
+  {
+   "url": "/",
+   "page": "Loka — Neuro-Symbolic World Model on RDF-Star",
+   "heading": "🔍 Hybrid SPARQL",
+   "anchor": "",
+   "text": "VECTOR_SIMILAR and VECTOR_SCORE extend standard SPARQL. Traverse the graph, jump into vector space, come back — all in one query."
+  },
+  {
+   "url": "/",
+   "page": "Loka — Neuro-Symbolic World Model on RDF-Star",
+   "heading": "📦 Serverless by Default",
+   "anchor": "",
+   "text": "Like SQLite for graph+vector data. Open a .sdb file, query it. No daemon, no config. Server mode is opt-in when you need HTTP access."
+  },
+  {
+   "url": "/",
+   "page": "Loka — Neuro-Symbolic World Model on RDF-Star",
+   "heading": "⭐ RDF-star Native",
+   "anchor": "",
+   "text": "Triples about triples, natively. Annotate edges with confidence scores, embeddings, provenance — no reification hacks."
+  },
+  {
+   "url": "/",
+   "page": "Loka — Neuro-Symbolic World Model on RDF-Star",
+   "heading": "⚡ Lean & Fast",
+   "anchor": "",
+   "text": "SPO/POS/OSP indexes on interned u64 IDs. HNSW with cosine/euclidean/dot product. No bloat, no ORMs, no magic."
+  },
+  {
+   "url": "/",
+   "page": "Loka — Neuro-Symbolic World Model on RDF-Star",
+   "heading": "🌐 Standards Compatible",
+   "anchor": "",
+   "text": "A superset of RDF 1.2 and SPARQL 1.1. Any valid standard query works. Extensions add what the standards can't express."
+  },
+  {
+   "url": "/",
+   "page": "Loka — Neuro-Symbolic World Model on RDF-Star",
+   "heading": "✂️ Cascade-Retraction",
+   "anchor": "",
+   "text": "Remove a node and every model-generated inference that transitively cited it disappears — bounded to provenance edges, real→real is never a dependency. Preview-by-default; commit explicitly. How it works →"
+  },
+  {
+   "url": "/",
+   "page": "Loka — Neuro-Symbolic World Model on RDF-Star",
+   "heading": "A Superset, Not a Fork",
+   "anchor": "",
+   "text": "Everything the W3C standards do, plus what they can't."
+  },
+  {
+   "url": "/",
+   "page": "Loka — Neuro-Symbolic World Model on RDF-Star",
+   "heading": "Data Model",
+   "anchor": "",
+   "text": "RDF 1.2: triple terms in object position only + Loka: triple terms in any position (RDF-star) + Native vector literals (loka:f32vec) + HNSW index per vector predicate"
+  },
+  {
+   "url": "/",
+   "page": "Loka — Neuro-Symbolic World Model on RDF-Star",
+   "heading": "Query Language",
+   "anchor": "",
+   "text": "SPARQL 1.1: SELECT, FILTER, OPTIONAL, UNION... + VECTOR_SIMILAR() — ANN search in graph patterns + VECTOR_SCORE() — similarity ranking in ORDER BY + ef:= and k:= query hints for HNSW tuning"
+  },
+  {
+   "url": "/",
+   "page": "Loka — Neuro-Symbolic World Model on RDF-Star",
+   "heading": "Graph + Vector in One Query",
+   "anchor": "",
+   "text": "Find academic papers similar to a query vector that cite papers by a specific author: PREFIX ex: <http://example.org/> SELECT ?paper ?title WHERE { # Jump into vector space: find similar papers VECTOR_SIMILAR(?paper ex:hasEmbedding \"0.23 -0"
+  },
+  {
+   "url": "/",
+   "page": "Loka — Neuro-Symbolic World Model on RDF-Star",
+   "heading": "Get Loka",
+   "anchor": "",
+   "text": "Loka is in Developer Preview. Download the engine, or pull the corpus + model from Hugging Face."
+  },
+  {
+   "url": "/",
+   "page": "Loka — Neuro-Symbolic World Model on RDF-Star",
+   "heading": "Windows",
+   "anchor": "",
+   "text": "x86_64 Download .zip"
+  },
+  {
+   "url": "/",
+   "page": "Loka — Neuro-Symbolic World Model on RDF-Star",
+   "heading": "macOS",
+   "anchor": "",
+   "text": "Apple Silicon (ARM64) Download .tar.gz"
+  },
+  {
+   "url": "/",
+   "page": "Loka — Neuro-Symbolic World Model on RDF-Star",
+   "heading": "macOS",
+   "anchor": "",
+   "text": "Intel (x64) Download .tar.gz"
+  },
+  {
+   "url": "/",
+   "page": "Loka — Neuro-Symbolic World Model on RDF-Star",
+   "heading": "Linux",
+   "anchor": "",
+   "text": "x86_64 Download .tar.gz"
+  },
+  {
+   "url": "/",
+   "page": "Loka — Neuro-Symbolic World Model on RDF-Star",
+   "heading": "From Source",
+   "anchor": "",
+   "text": "Any platform with Rust cargo install --git https://github.com/EmmaLeonhart/Loka loka-cli File format: .sdb — a superset of RDF containing triples + HNSW vector indexes. Query directly (no server needed): loka query \"SELECT * WHERE { ?s ?p ?"
+  },
+  {
+   "url": "/libraries/",
+   "page": "Libraries & Extensions — Loka",
+   "heading": "Libraries & Extensions",
+   "anchor": "",
+   "text": "Official SDKs, tools, and integrations for Loka — all in one monorepo. Monorepo approach All SDKs and extensions live in a single repository with CI/CD that builds and publishes to each platform's package registry. One repo, one set of test"
+  },
+  {
+   "url": "/libraries/",
+   "page": "Libraries & Extensions — Loka",
+   "heading": "Client SDKs",
+   "anchor": "",
+   "text": "Official client libraries for connecting to Loka from any language. Each SDK provides: SPARQL query execution (including VECTOR_SIMILAR extensions) Triple insertion (N-Triples format) Vector predicate declaration and vector insertion Health"
+  },
+  {
+   "url": "/libraries/",
+   "page": "Libraries & Extensions — Loka",
+   "heading": "SDK Usage Pattern",
+   "anchor": "",
+   "text": "All SDKs follow the same pattern regardless of language: Python from loka import LokaClient db = LokaClient(\"http://localhost:3030\") # Insert triples db.insert_triples(\"\"\" :Alice :knows :Bob . :Bob :knows :Carol . \"\"\") # Declare vector pred"
+  },
+  {
+   "url": "/libraries/",
+   "page": "Libraries & Extensions — Loka",
+   "heading": "Extensions & Integrations",
+   "anchor": "",
+   "text": "ExtensionDescriptionStatus Protégé Plugin Connect the Protégé OWL ontology editor to Loka. Author ontologies visually, query the live database, browse inferred triples. Since Loka supports OWL reasoning (planned), Protégé becomes a natural "
+  },
+  {
+   "url": "/libraries/",
+   "page": "Libraries & Extensions — Loka",
+   "heading": "Monorepo Structure",
+   "anchor": "",
+   "text": "All SDKs and extensions are developed in a single monorepo with shared CI: Loka/ sdks/ python/ # loka (PyPI) typescript/ # loka (npm) rust/ # loka (crates.io) java/ # dev.loka:loka-java (Maven Central) dotnet/ # Loka.Client (NuGet) go/ # gi"
+  },
+  {
+   "url": "/libraries/",
+   "page": "Libraries & Extensions — Loka",
+   "heading": "Contributing",
+   "anchor": "",
+   "text": "SDKs are thin HTTP clients — they wrap the REST API (/sparql, /triples, /vectors). Adding a new language SDK is straightforward: Implement the HTTP client (GET/POST to the Loka endpoints) Add SPARQL result parsing (JSON format) Add type-saf"
+  },
+  {
+   "url": "/loka/",
+   "page": "Loka — Neuro-Symbolic World Model",
+   "heading": "Loka — a neuro-symbolic world model",
+   "anchor": "",
+   "text": "Two systems sharing one query language. Explicit memory (an RDF-star triplestore, exact answers) plus implicit memory (a transformer trained on the same triples, plausible answers). Generated facts write back into the store as RDF-star anno"
+  },
+  {
+   "url": "/loka/",
+   "page": "Loka — Neuro-Symbolic World Model",
+   "heading": "The pivot in one paragraph",
+   "anchor": "",
+   "text": "Loka started as Loka, a lean RDF-star triplestore with native vector indexing. Over time the purpose shifted: the engine is now one half of a neuro-symbolic world-model engine. The other half is a small role-aware transformer trained from s"
+  },
+  {
+   "url": "/loka/",
+   "page": "Loka — Neuro-Symbolic World Model",
+   "heading": "The two-system loop",
+   "anchor": "",
+   "text": "┌───────────────────┐ │ Curated triples │ (Wikidata, philippesaade/wikidata HF parquet) │ (RDF-star) │ └─────────┬─────────┘ ▼ ┌───────────────────┐ ┌──────────────────────┐ │ Loka store │ ──────► │ Training corpus │ │ (.sdb file) │ SPARQL+"
+  },
+  {
+   "url": "/loka/",
+   "page": "Loka — Neuro-Symbolic World Model",
+   "heading": "Generative citation",
+   "anchor": "",
+   "text": "When the inference layer accepts a candidate (S, P) and emits a predicted object \"X\", it writes a fixed-shape annotation block. The block's subject is the quoted generated triple. Its objects include the metadata predicates plus one or more"
+  },
+  {
+   "url": "/loka/",
+   "page": "Loka — Neuro-Symbolic World Model",
+   "heading": "Cascade-retraction — the citation graph is actionable",
+   "anchor": "cascade",
+   "text": "Auditable is the floor; the real payoff is that the citation graph is actionable. Remove a node — real data or model-generated — and every generated inference that transitively cited it disappears with it. When a source turns out to be wron"
+  },
+  {
+   "url": "/loka/",
+   "page": "Loka — Neuro-Symbolic World Model",
+   "heading": "Cumulative repetition penalty",
+   "anchor": "",
+   "text": "Masked-S/P/O training produces models that \"know\" the answer category (university, museum, https-URL) but degenerate during greedy decoding into fillers like of of of of or museum museum. We don't fix this at training time. We fix it at dec"
+  },
+  {
+   "url": "/loka/",
+   "page": "Loka — Neuro-Symbolic World Model",
+   "heading": "Same checkpoint, different decoder",
+   "anchor": "",
+   "text": "Subject / predicateNo penaltyCumulative penalty 3.0 Comtesse de Die / educated atuniversity of of of of of of ofuniversity of halle (correctly identifies Halle, where she studied) canton of Romilly / Commons categorycanton of of sur surcant"
+  },
+  {
+   "url": "/loka/",
+   "page": "Loka — Neuro-Symbolic World Model",
+   "heading": "Trained checkpoints",
+   "anchor": "",
+   "text": "All checkpoints share the same architecture from v5 onward: 44.5 M parameters, BPE tokenizer from v6 onward, role-aware masked S/P/O transformer. v3–v10 trained on Wikidata slices ingested into Loka; v11 onward train on the standalone norma"
+  },
+  {
+   "url": "/loka/",
+   "page": "Loka — Neuro-Symbolic World Model",
+   "heading": "Run the full loop",
+   "anchor": "",
+   "text": "# 1. Engine (optional — v11+ training doesn't need Loka serve) cargo build --release -p loka-cli # 2. Pull the latest model + tokenizer (auto-downloads on first inference) python training/loader.py # 3. Generative-citation inference python "
+  },
+  {
+   "url": "/loka/",
+   "page": "Loka — Neuro-Symbolic World Model",
+   "heading": "Read more",
+   "anchor": "",
+   "text": "Full development history — the pivot, the corpus rebuild, every checkpoint, every dead end. world-model-thesis.md — canonical vision document. fine-tuning-track.md — parallel near-term track admitting Qwen-style fine-tuning. paper draft — L"
+  },
+  {
+   "url": "/owl/",
+   "page": "OWL Reasoning — Loka",
+   "heading": "OWL Reasoning",
+   "anchor": "",
+   "text": "Opt-in, query-time ontology reasoning — planned, not yet implemented. Status: Planned OWL reasoning is on the roadmap but not yet implemented. This page describes the design philosophy and planned approach."
+  },
+  {
+   "url": "/owl/",
+   "page": "OWL Reasoning — Loka",
+   "heading": "What Is OWL?",
+   "anchor": "",
+   "text": "The Web Ontology Language (OWL) is a W3C standard for defining ontologies — formal descriptions of the types, properties, and relationships in a domain. OWL lets you express things like: Class hierarchies: \"A Mountain is a subclass of LandF"
+  },
+  {
+   "url": "/owl/",
+   "page": "OWL Reasoning — Loka",
+   "heading": "Loka's Approach",
+   "anchor": "",
+   "text": "Loka's core philosophy is \"store first, reason second.\" The database stores exactly what you put in — nothing more. OWL reasoning is planned as an opt-in, query-time layer that never modifies stored data. Typical Approach (Not Ours) Many tr"
+  },
+  {
+   "url": "/owl/",
+   "page": "OWL Reasoning — Loka",
+   "heading": "Configurable reasoning",
+   "anchor": "",
+   "text": "The planned design lets you control reasoning per-query. When reasoning is off (the default), Loka behaves as a pure RDF-star store. When on, the query engine expands patterns to include inferred facts: -- Without reasoning: only explicit M"
+  },
+  {
+   "url": "/owl/",
+   "page": "OWL Reasoning — Loka",
+   "heading": "Planned OWL Features",
+   "anchor": "",
+   "text": "FeatureOWL ConstructWhat It Does Class hierarchy rdfs:subClassOf If A subClassOf B and X rdf:type A, infer X rdf:type B Property hierarchy rdfs:subPropertyOf If P1 subPropertyOf P2 and X P1 Y, infer X P2 Y Equivalence owl:equivalentClass Tw"
+  },
+  {
+   "url": "/owl/",
+   "page": "OWL Reasoning — Loka",
+   "heading": "Why Not RDFS?",
+   "anchor": "",
+   "text": "Loka explicitly does not implement RDFS inference as a separate layer. RDFS inference (domain/range propagation, subclass/subproperty closure) is a subset of what OWL provides. Rather than implementing two reasoning systems, Loka plans to i"
+  },
+  {
+   "url": "/owl/",
+   "page": "OWL Reasoning — Loka",
+   "heading": "OWL and Vectors",
+   "anchor": "",
+   "text": "An interesting future direction is combining OWL reasoning with vector search. For example: -- \"Find things similar to this embedding that are Landforms\" -- With OWL reasoning on, this includes Mountains, Volcanoes, -- Plateaus, etc. (all s"
+  },
+  {
+   "url": "/owl/",
+   "page": "OWL Reasoning — Loka",
+   "heading": "Protégé Compatibility",
+   "anchor": "",
+   "text": "Loka plans to be compatible with Protégé, the standard OWL ontology editor. This means: OWL ontologies authored in Protégé can be loaded into Loka Class hierarchies, property definitions, and restrictions are recognized Protégé can connect "
+  },
+  {
+   "url": "/playground.html",
+   "page": "Loka Playground",
+   "heading": "Loka Playground",
+   "anchor": "",
+   "text": "v0.3.5 Connected Graph Browser Loka Studio Example Queries SPARQL+ Schema"
+  },
+  {
+   "url": "/playground.html",
+   "page": "Loka Playground",
+   "heading": "Classes",
+   "anchor": "",
+   "text": "ex:Shrine — Ise Jingu, Izumo Taisha, Fushimi Inari, Meiji Jingu, Kasuga Taisha ex:Deity — Amaterasu, Okuninushi, Inari, Takemikazuchi ex:Person — Tanaka, Suzuki (shrine priests) ex:Myth — Kojiki, Nihon Shoki"
+  },
+  {
+   "url": "/playground.html",
+   "page": "Loka Playground",
+   "heading": "Properties",
+   "anchor": "",
+   "text": "ex:name, ex:alternateName — text labels ex:foundedYear — integer (e.g. 711) ex:rank — integer 1-5 ex:locatedIn — Mie, Shimane, Kyoto, Tokyo, Nara, Osaka ex:enshrines — shrine → deity ex:domain — deity → Sun/Earth/Harvest/Thunder ex:appearsI"
+  },
+  {
+   "url": "/playground.html",
+   "page": "Loka Playground",
+   "heading": "RDF-star Edges",
+   "anchor": "",
+   "text": "<< shrine enshrines deity >> ex:confidence — \"0.99\", \"0.95\", \"0.70\" << shrine enshrines deity >> ex:source — provenance string"
+  },
+  {
+   "url": "/playground.html",
+   "page": "Loka Playground",
+   "heading": "Temporal Annotations",
+   "anchor": "",
+   "text": "Tanaka servesAt Ise: valid [1900, 1950] Suzuki servesAt Ise: valid [1950, ∞) Fushimi locatedIn Osaka: valid [1467, 1499] (Onin War) Fushimi locatedIn Kyoto: valid [711, ∞) Meiji locatedIn Tokyo: valid [1920, ∞) PREFIX ex: <http://example.or"
+  },
+  {
+   "url": "/protocols/",
+   "page": "Protocols & Standards — Loka",
+   "heading": "Protocols & Standards",
+   "anchor": "",
+   "text": "What Loka follows, extends, and deliberately skips. Superset philosophy Loka is a superset of W3C standards — both in data model (RDF-star ⊃ RDF 1.2) and query language (SPARQL + VECTOR_SIMILAR ⊃ SPARQL 1.1). Any valid standard query or dat"
+  },
+  {
+   "url": "/protocols/",
+   "page": "Protocols & Standards — Loka",
+   "heading": "Standards We Follow",
+   "anchor": "",
+   "text": "StandardStatusNotes RDF 1.1 / RDF-star Superset Full RDF-star support (triples in any position). All RDF 1.2 data is valid. Details → SPARQL 1.1 Superset Standard queries work as-is. Extensions: VECTOR_SIMILAR, VECTOR_SCORE. Details → SPARQ"
+  },
+  {
+   "url": "/protocols/",
+   "page": "Protocols & Standards — Loka",
+   "heading": "ACID Compliance",
+   "anchor": "",
+   "text": "Loka targets full ACID compliance: PropertyStatusImplementation Atomicity Yes Triple insertions are atomic — a triple is either fully inserted into all three indexes (SPO/POS/OSP) or not at all. Vector insertions atomically create both the "
+  },
+  {
+   "url": "/protocols/",
+   "page": "Protocols & Standards — Loka",
+   "heading": "Deployment Modes",
+   "anchor": "",
+   "text": "Serverless (Default) Like SQLite. Open a .sdb file directly from your application. No daemon, no port, no configuration. Single-process access. loka query \"SELECT * WHERE { ?s ?p ?o }\" --data my.sdb Server Mode Like PostgreSQL. Start a SPAR"
+  },
+  {
+   "url": "/protocols/",
+   "page": "Protocols & Standards — Loka",
+   "heading": "What We Deliberately Skip",
+   "anchor": "",
+   "text": "TechnologyStatusRationale SQL Never Wrong model for graph data. Use PostgreSQL. MongoDB Query Language Never Wrong model for graph data. Use MongoDB. GraphQL Never Application-layer concern. Build a GraphQL wrapper over SPARQL if needed. Cy"
+  },
+  {
+   "url": "/protocols/",
+   "page": "Protocols & Standards — Loka",
+   "heading": "File Format",
+   "anchor": "",
+   "text": "Loka uses the .sdb file extension. This is deliberately not a standard RDF serialization format — it's a binary storage format containing: SPO/POS/OSP triple indexes (sorted u64 keys) Term dictionary (IRI interning) HNSW vector indexes (one"
+  },
+  {
+   "url": "/rdf/",
+   "page": "RDF & RDF-star — Loka",
+   "heading": "RDF, RDF 1.2, and RDF-star",
+   "anchor": "",
+   "text": "Why Loka uses RDF-star — the most expressive superset of the W3C data model."
+  },
+  {
+   "url": "/rdf/",
+   "page": "RDF & RDF-star — Loka",
+   "heading": "The Three Levels of RDF",
+   "anchor": "",
+   "text": "The RDF data model has evolved through three stages. Each is a strict superset of the one before: RDF-star ⊃ RDF 1.2 ⊃ Legacy RDF 1.1"
+  },
+  {
+   "url": "/rdf/",
+   "page": "RDF & RDF-star — Loka",
+   "heading": "Legacy RDF 1.1",
+   "anchor": "",
+   "text": "The original W3C standard. Data is organized as triples: (subject, predicate, object). Simple and powerful, but with one major limitation — if you want to make a statement about a statement, you need reification, which is verbose and awkwar"
+  },
+  {
+   "url": "/rdf/",
+   "page": "RDF & RDF-star — Loka",
+   "heading": "RDF 1.2 (W3C Working Draft)",
+   "anchor": "",
+   "text": "The W3C's in-progress update to RDF. Introduces triple terms — a triple can be referenced as a value, but only in the object position: -- The fact: :Alice :knows :Bob . -- In RDF 1.2, annotate via rdf:reifies: :statement1 rdf:reifies << :Al"
+  },
+  {
+   "url": "/rdf/",
+   "page": "RDF & RDF-star — Loka",
+   "heading": "RDF-star (What Loka Uses)",
+   "anchor": "",
+   "text": "RDF-star removes the restriction. Triple terms can appear in any position — subject, predicate, or object. This is the most natural way to annotate triples: -- The fact: :Alice :knows :Bob . -- In RDF-star, annotate directly: << :Alice :kno"
+  },
+  {
+   "url": "/rdf/",
+   "page": "RDF & RDF-star — Loka",
+   "heading": "Comparison Table",
+   "anchor": "",
+   "text": "FeatureLegacy RDFRDF 1.2RDF-star Basic triples (S, P, O) Yes Yes Yes Triple terms as objects No Yes Yes Triple terms as subjects No No Yes Direct edge annotation Reification (verbose) Via rdf:reifies Native Triples to annotate one fact 5 3 "
+  },
+  {
+   "url": "/rdf/",
+   "page": "RDF & RDF-star — Loka",
+   "heading": "Why RDF-star?",
+   "anchor": "",
+   "text": "Loka's primary use case is storing vector embeddings alongside graph structure. The << s p o >> :hasEmbedding ... pattern is the natural representation for \"this edge has an embedding.\" RDF 1.2's object-only restriction would require an ext"
+  },
+  {
+   "url": "/rdf/",
+   "page": "RDF & RDF-star — Loka",
+   "heading": "Practical impact",
+   "anchor": "",
+   "text": "Embeddings on edges: << :paper :cites :other >> :hasEmbedding \"...\"^^loka:f32vec — one triple, not three Provenance: << :Alice :birthDate \"1990\" >> :source :Wikipedia — directly attach source to the fact Confidence scores: << :model :predic"
+  },
+  {
+   "url": "/rdf/",
+   "page": "RDF & RDF-star — Loka",
+   "heading": "How Loka Stores RDF-star",
+   "anchor": "",
+   "text": "Quoted triples are handled efficiently using content-addressed hashing: Each IRI and literal is interned to a 64-bit integer ID at write time A quoted triple << S P O >> is hashed as xxHash3(S_id, P_id, O_id) → u64 This hash becomes the tri"
+  },
+  {
+   "url": "/rdf/",
+   "page": "RDF & RDF-star — Loka",
+   "heading": "Oxigraph's Different Choice",
+   "anchor": "",
+   "text": "Oxigraph, the closest existing Rust triplestore, migrated from RDF-star to RDF 1.2 in v0.5. Their rationale was alignment with the W3C working draft. Loka took the opposite position: RDF-star's direct edge annotation is essential for the ve"
+  },
+  {
+   "url": "/roadmap/",
+   "page": "Roadmap — Loka",
+   "heading": "Roadmap",
+   "anchor": "",
+   "text": "Loka is in Developer Preview. Core engine, SPARQL+, vector indexing, and HTTP server are fully functional. Here's what's done and what's next. 215 / 232 items complete (93%)"
+  },
+  {
+   "url": "/roadmap/",
+   "page": "Roadmap — Loka",
+   "heading": "Active Work",
+   "anchor": "",
+   "text": ""
+  },
+  {
+   "url": "/roadmap/",
+   "page": "Roadmap — Loka",
+   "heading": "AI Agent Installer In Progress",
+   "anchor": "",
+   "text": "The loka install-agent command sets up a database interactively for AI agents. Currently debugging path handling, HNSW index rebuild on startup, and error messaging for non-interactive environments. Goal: any AI agent says \"set up a databas"
+  },
+  {
+   "url": "/roadmap/",
+   "page": "Roadmap — Loka",
+   "heading": "Cost-Based Query Planning In Progress",
+   "anchor": "",
+   "text": "Cardinality estimation and predicate pushdown are done. Remaining: planner should choose HNSW index scan vs SPO triple scan based on cost, and adaptive execution should observe intermediate result sizes at runtime and reorder mid-query."
+  },
+  {
+   "url": "/roadmap/",
+   "page": "Roadmap — Loka",
+   "heading": "HNSW Traversal via SPARQL Property Paths In Progress",
+   "anchor": "",
+   "text": "HNSW topology is exposed as virtual RDF triples (loka:hnswNeighbor). Remaining: make property path evaluation produce correct ANN results by letting greedy descent + beam search emerge from the graph structure."
+  },
+  {
+   "url": "/roadmap/",
+   "page": "Roadmap — Loka",
+   "heading": "Predicate-Based Exit Conditions (UNTIL) Design Phase",
+   "anchor": "",
+   "text": "Standard SPARQL property paths can't express \"traverse and stop when a condition is met.\" The UNTIL extension adds per-step predicate evaluation during traversal with backtracking support and ordered traversal semantics."
+  },
+  {
+   "url": "/roadmap/",
+   "page": "Roadmap — Loka",
+   "heading": "Background Maintenance Cycle In Progress",
+   "anchor": "",
+   "text": "During low-usage periods, rebuild HNSW indexes and rediscover pseudo-tables in the background. Old indexes stay live until the new ones are ready, then atomic swap."
+  },
+  {
+   "url": "/roadmap/",
+   "page": "Roadmap — Loka",
+   "heading": "SDK Publishing",
+   "anchor": "",
+   "text": ""
+  },
+  {
+   "url": "/roadmap/",
+   "page": "Roadmap — Loka",
+   "heading": "Java SDK → Maven Central Priority",
+   "anchor": "",
+   "text": "The semantic web ecosystem runs on Java. The SDK code is complete; publishing to Maven Central requires GPG signing configuration, Sonatype account setup, and pom.xml updates for distribution management. This is the highest-priority SDK to "
+  },
+  {
+   "url": "/roadmap/",
+   "page": "Roadmap — Loka",
+   "heading": "Other SDKs Planned",
+   "anchor": "",
+   "text": "Python (PyPI), TypeScript (npm), Rust (crates.io), Go (pkg.go.dev), and .NET (NuGet). All SDK code is complete and tested. Publishing requires registry account setup for each platform. See SDK Accounts Setup."
+  },
+  {
+   "url": "/roadmap/",
+   "page": "Roadmap — Loka",
+   "heading": "What's Done",
+   "anchor": "",
+   "text": ""
+  },
+  {
+   "url": "/roadmap/",
+   "page": "Roadmap — Loka",
+   "heading": "Triple Storage Engine Complete",
+   "anchor": "",
+   "text": "SPO/POS/OSP indexes over interned u64 IDs. sled LSM-tree persistence with crash recovery. RDF-star quoted triple support. Bulk insert at 20K triples/sec."
+  },
+  {
+   "url": "/roadmap/",
+   "page": "Roadmap — Loka",
+   "heading": "HNSW Vector Index Complete",
+   "anchor": "",
+   "text": "Per-predicate HNSW indexes with cosine, Euclidean, and dot product distance metrics. SIMD acceleration (AVX2/SSE). Tombstone-based deletion. Multiple entry points for search quality."
+  },
+  {
+   "url": "/roadmap/",
+   "page": "Roadmap — Loka",
+   "heading": "SPARQL+ Query Engine Complete",
+   "anchor": "",
+   "text": "Full SPARQL 1.1 parser, cost-based query planner, and iterator-based executor. Extensions: VECTOR_SIMILAR, VECTOR_SCORE, metric-specific search operators. Property paths, subqueries, aggregates, all working."
+  },
+  {
+   "url": "/roadmap/",
+   "page": "Roadmap — Loka",
+   "heading": "HTTP Server & Protocol Complete",
+   "anchor": "",
+   "text": "SPARQL endpoint, Graph Store Protocol, REST API for triples and vectors. Content negotiation (JSON, XML, CSV, TSV, Turtle). Optional passcode auth, rate limiting, query timeouts, periodic backups."
+  },
+  {
+   "url": "/roadmap/",
+   "page": "Roadmap — Loka",
+   "heading": "Pseudo-Tables & Vectorized Execution Complete",
+   "anchor": "",
+   "text": "Automatic discovery of columnar indexes from graph structure. SIMD-accelerated column scans, zonemap pruning, segment-level storage. Deep subgraph pattern mining with fan-in detection."
+  },
+  {
+   "url": "/roadmap/",
+   "page": "Roadmap — Loka",
+   "heading": "6 Client SDKs Complete",
+   "anchor": "",
+   "text": "Python, TypeScript, Go, Rust, Java, .NET. All with client-side OWL validation, typed error handling, and vector search support. Code complete, awaiting registry publishing."
+  },
+  {
+   "url": "/roadmap/",
+   "page": "Roadmap — Loka",
+   "heading": "Loka Studio (Flutter GUI) Complete",
+   "anchor": "",
+   "text": "Desktop and web client. Graph visualization, SPARQL editor, HNSW health dashboard, triple editor, OWL ontology viewer, backup management. 90% feature complete."
+  },
+  {
+   "url": "/roadmap/",
+   "page": "Roadmap — Loka",
+   "heading": "CI/CD & Benchmarks Complete",
+   "anchor": "",
+   "text": "6 GitHub Actions workflows. Clippy + rustfmt enforcement. 256 tests, 50+ Criterion benchmarks tracked historically. Docker image. Cross-platform install scripts."
+  },
+  {
+   "url": "/roadmap/",
+   "page": "Roadmap — Loka",
+   "heading": "Self-Update & Version Management Complete",
+   "anchor": "",
+   "text": "loka update command, --version flag, startup version check, and HNSW rebuild endpoint. The CLI can check for new releases, self-update in place, and trigger index rebuilds after version upgrades."
+  },
+  {
+   "url": "/roadmap/",
+   "page": "Roadmap — Loka",
+   "heading": "MCP Server Complete",
+   "anchor": "",
+   "text": "Dual-mode MCP server supporting both serverless and server configurations. Provides 8 maintenance tools for AI agents to manage Loka instances through the Model Context Protocol."
+  },
+  {
+   "url": "/roadmap/",
+   "page": "Roadmap — Loka",
+   "heading": "ACID Compliance Complete",
+   "anchor": "",
+   "text": "Atomic transactions, startup verification, durability guarantees, and isolation. All write operations are fully transactional with crash recovery support."
+  },
+  {
+   "url": "/roadmap/",
+   "page": "Roadmap — Loka",
+   "heading": "Future",
+   "anchor": "",
+   "text": ""
+  },
+  {
+   "url": "/roadmap/",
+   "page": "Roadmap — Loka",
+   "heading": "Query Language Wrappers Future",
+   "anchor": "",
+   "text": "Cypher and GQL (ISO 39075) as translation layers over SPARQL. The database still speaks SPARQL+ internally; these wrappers let users query with familiar graph query syntax. SQL and MQL are deliberately excluded."
+  },
+  {
+   "url": "/roadmap/",
+   "page": "Roadmap — Loka",
+   "heading": "Premium Tier Future",
+   "anchor": "",
+   "text": "RBAC, encryption at rest, TLS, audit logging, replication, clustering, multi-tenancy. These will be shaped by customer feedback. The open-source core is designed to be sufficient for most use cases."
+  },
+  {
+   "url": "/sdb-format/",
+   "page": "The .sdb File Format — Loka",
+   "heading": "The .sdb File Format",
+   "anchor": "",
+   "text": "A single file containing triples, vector indexes, and everything needed to query a graph+vector database."
+  },
+  {
+   "url": "/sdb-format/",
+   "page": "The .sdb File Format — Loka",
+   "heading": "Why a New Format?",
+   "anchor": "",
+   "text": "Existing RDF serialization formats (Turtle, N-Triples, JSON-LD, RDF/XML) are text-based exchange formats. They can represent triples, but they cannot represent: Pre-built indexes (SPO, POS, OSP) for fast query execution HNSW vector indexes "
+  },
+  {
+   "url": "/sdb-format/",
+   "page": "The .sdb File Format — Loka",
+   "heading": "What's Inside a .sdb File",
+   "anchor": "",
+   "text": "ComponentPurposeStructure SPO Index Subject → Predicate → Object lookups Sorted B-tree of 24-byte keys (3 × u64, big-endian) POS Index Predicate → Object → Subject (type lookups, vector reverse traversal) Same structure, different key order"
+  },
+  {
+   "url": "/sdb-format/",
+   "page": "The .sdb File Format — Loka",
+   "heading": "Comparison with Other Formats",
+   "anchor": "",
+   "text": ""
+  },
+  {
+   "url": "/sdb-format/",
+   "page": "The .sdb File Format — Loka",
+   "heading": "vs. RDF Serialization Formats",
+   "anchor": "",
+   "text": "FormatTypeIndexesVectorsQueryableUse Case .sdb Database file Yes (3) Yes (HNSW) Directly Live database, serverless access .ttl (Turtle) Text exchange No No Must parse first Human-readable data exchange .nt (N-Triples) Text exchange No No Mu"
+  },
+  {
+   "url": "/sdb-format/",
+   "page": "The .sdb File Format — Loka",
+   "heading": "vs. Other Database Files",
+   "anchor": "",
+   "text": "FormatData ModelVectorsQuery Language .sdb (Loka) RDF-star triples Native HNSW SPARQL + vector extensions .db / .sqlite (SQLite) Relational tables No SQL TDB2 (Jena) RDF quads No SPARQL (requires Fuseki server) .oxigraph (Oxigraph) RDF 1.2 "
+  },
+  {
+   "url": "/sdb-format/",
+   "page": "The .sdb File Format — Loka",
+   "heading": "The .sdb Name",
+   "anchor": "",
+   "text": "The extension .sdb stands for Loka Database. We chose a distinct extension rather than reusing .db or .rdf because: It contains more than standard RDF — vector indexes, HNSW graphs, and IRI lookup tables It should not be confused with SQLit"
+  },
+  {
+   "url": "/sdb-format/",
+   "page": "The .sdb File Format — Loka",
+   "heading": "Working with .sdb Files",
+   "anchor": "",
+   "text": "# Create a new database loka import data.nt --data my_graph.sdb # Query it directly (serverless) loka query \"SELECT * WHERE { ?s ?p ?o } LIMIT 10\" --data my_graph.sdb # Start a server for HTTP access loka serve --port 3030 --data my_graph.s"
+  },
+  {
+   "url": "/serverless/",
+   "page": "Serverless vs Server Mode — Loka",
+   "heading": "Deployment: Embedded & Server",
+   "anchor": "",
+   "text": "Serverless is the default. Use server mode only when you need multi-client or remote access."
+  },
+  {
+   "url": "/serverless/",
+   "page": "Serverless vs Server Mode — Loka",
+   "heading": "Two Modes, One Database",
+   "anchor": "",
+   "text": "Loka can run as an embedded database (open a .sdb file directly, like SQLite) or as a server (HTTP SPARQL endpoint). Both use the same storage format, the same query engine, and the same indexes. The difference is how you access the data. E"
+  },
+  {
+   "url": "/serverless/",
+   "page": "Serverless vs Server Mode — Loka",
+   "heading": "When to Use Each Mode",
+   "anchor": "",
+   "text": "Use CaseRecommended ModeWhy Personal project, scripts, prototypingEmbeddedZero setup, fastest possible path to querying AI agents (Claude Code, Cursor, etc.)EmbeddedNo process management, no port conflicts, deterministic Jupyter notebook ex"
+  },
+  {
+   "url": "/serverless/",
+   "page": "Serverless vs Server Mode — Loka",
+   "heading": "Benefits of Embedded Mode",
+   "anchor": "",
+   "text": "Embedded mode follows the SQLite philosophy: download one binary, run one command, you have a working database. This is the default because it removes every obstacle between you and your data. Instant setup. No service installation, configu"
+  },
+  {
+   "url": "/serverless/",
+   "page": "Serverless vs Server Mode — Loka",
+   "heading": "Benefits of Server Mode",
+   "anchor": "",
+   "text": "Server mode adds capabilities that embedded mode cannot provide. For anything beyond single-user local access, server mode is the right choice. Concurrent access. Multiple clients, multiple processes, multiple machines — all querying the sa"
+  },
+  {
+   "url": "/serverless/",
+   "page": "Serverless vs Server Mode — Loka",
+   "heading": "Tradeoffs",
+   "anchor": "",
+   "text": "EmbeddedServer Setup complexityNoneMinimal (one command, but you manage a process) Concurrent accessSingle process onlyMultiple clients Network accessLocal onlyRemote + local Auth & securityFile system permissionsPasscode auth, rate limitin"
+  },
+  {
+   "url": "/serverless/",
+   "page": "Serverless vs Server Mode — Loka",
+   "heading": "Comparison with Other Databases",
+   "anchor": "",
+   "text": "DatabaseEmbeddedServerData Model Loka Yes (default) Yes RDF-star + vectors SQLite Yes No Relational PostgreSQL No Yes Relational Apache Jena Fuseki No Yes RDF Neo4j Yes (embedded Java) Yes Property graph Qdrant No Yes Vectors"
+  },
+  {
+   "url": "/sparql/",
+   "page": "SPARQL & Vector Extensions — Loka",
+   "heading": "SPARQL & Vector Extensions",
+   "anchor": "",
+   "text": "A superset of SPARQL 1.1 — any standard query works, plus vector similarity search. Backward compatible Every valid SPARQL 1.1 query runs unchanged on Loka. The extensions below are purely additive — they add new operators that standard SPA"
+  },
+  {
+   "url": "/sparql/",
+   "page": "SPARQL & Vector Extensions — Loka",
+   "heading": "Standard SPARQL 1.1 Support",
+   "anchor": "",
+   "text": "Loka implements the core of SPARQL 1.1 Query Language: FeatureStatus SELECT with projection, *, DISTINCTImplemented Basic Graph Patterns (triple patterns)Implemented PREFIX declarationsImplemented FILTER (=, !=, <, >, bound, !bound)Implemen"
+  },
+  {
+   "url": "/sparql/",
+   "page": "SPARQL & Vector Extensions — Loka",
+   "heading": "Vector Extensions",
+   "anchor": "",
+   "text": "Loka adds two new operators to SPARQL for approximate nearest neighbor (ANN) search over vector embeddings. These operators integrate directly into graph patterns — you can traverse the graph, jump into vector space, and come back in a sing"
+  },
+  {
+   "url": "/sparql/",
+   "page": "SPARQL & Vector Extensions — Loka",
+   "heading": "VECTOR_SIMILAR",
+   "anchor": "",
+   "text": "Finds entities whose vector embeddings are similar to a query vector, above a cosine similarity threshold. -- Basic usage: find entities similar to a query vector SELECT ?entity WHERE { VECTOR_SIMILAR(?entity :hasEmbedding \"0.23 -0.11 0.87 "
+  },
+  {
+   "url": "/sparql/",
+   "page": "SPARQL & Vector Extensions — Loka",
+   "heading": "VECTOR_SCORE",
+   "anchor": "",
+   "text": "Returns the similarity score for ranking in ORDER BY clauses: SELECT ?paper WHERE { ?paper a :Paper . VECTOR_SIMILAR(?paper :hasEmbedding \"...\"^^loka:f32vec, 0.7) } ORDER BY DESC(VECTOR_SCORE(?paper :hasEmbedding \"...\"^^loka:f32vec)) LIMIT "
+  },
+  {
+   "url": "/sparql/",
+   "page": "SPARQL & Vector Extensions — Loka",
+   "heading": "Wormhole Queries",
+   "anchor": "",
+   "text": "\"Wormhole\" queries traverse between graph space and vector space in a single query. This is what makes Loka unique — no other triplestore can express these patterns."
+  },
+  {
+   "url": "/sparql/",
+   "page": "SPARQL & Vector Extensions — Loka",
+   "heading": "Graph → Vector → Graph",
+   "anchor": "",
+   "text": "Start with a graph pattern, jump into vector space to find similar entities, then traverse back into the graph: -- Find papers by a specific author, then find papers with similar -- embeddings, then get their titles SELECT ?similar_paper ?t"
+  },
+  {
+   "url": "/sparql/",
+   "page": "SPARQL & Vector Extensions — Loka",
+   "heading": "Vector → Graph",
+   "anchor": "",
+   "text": "Start in vector space, then use graph patterns to filter or enrich: -- Find entities similar to a query, then check what type they are SELECT ?entity ?type WHERE { VECTOR_SIMILAR(?entity ex:hasEmbedding \"...\"^^loka:f32vec, 0.9) ?entity a ?t"
+  },
+  {
+   "url": "/sparql/",
+   "page": "SPARQL & Vector Extensions — Loka",
+   "heading": "How Vectors Live in the Graph",
+   "anchor": "",
+   "text": "Vectors are not a separate system — they are primitive objects in the graph, like strings or integers. An entity connects to its vector via an ordinary triple: -- A vector is the object of a triple :paper42 :hasEmbedding \"0.23 -0.11 0.87 .."
+  },
+  {
+   "url": "/sparql/",
+   "page": "SPARQL & Vector Extensions — Loka",
+   "heading": "Query Planner",
+   "anchor": "",
+   "text": "The query planner automatically decides execution order based on pattern selectivity: SituationStrategy Subject unbound at VECTOR_SIMILAR Execute vector search first (top-K), then evaluate graph patterns over candidates. Vector pattern gets"
+  },
+  {
+   "url": "/sparql/",
+   "page": "SPARQL & Vector Extensions — Loka",
+   "heading": "SPARQL Protocol",
+   "anchor": "",
+   "text": "Loka implements the SPARQL 1.1 Protocol over HTTP: EndpointMethodDescription /sparqlGETQuery via ?query= URL parameter /sparqlPOSTQuery in request body /triplesPOSTBulk insert N-Triples data /vectors/declarePOSTDeclare a vector predicate wi"
+  },
+  {
+   "url": "/theory/client-side-owl/",
+   "page": "Client-Side OWL Validation — Loka",
+   "heading": "Client-Side OWL Validation",
+   "anchor": "",
+   "text": "Store first, reason second."
+  },
+  {
+   "url": "/theory/client-side-owl/",
+   "page": "Client-Side OWL Validation — Loka",
+   "heading": "The Design Decision",
+   "anchor": "",
+   "text": "Loka will never reject a triple for violating an OWL constraint. The database accepts everything. It is a store, not a reasoner. OWL validation happens in the SDKs (Python, TypeScript, Rust, etc.), not in the database engine. When you inser"
+  },
+  {
+   "url": "/theory/client-side-owl/",
+   "page": "Client-Side OWL Validation — Loka",
+   "heading": "Why Not Validate in the Database?",
+   "anchor": "",
+   "text": "Performance: OWL reasoning can be computationally expensive (OWL DL is decidable but worst-case exponential). Putting this in the write path would make inserts unpredictably slow. Flexibility: Sometimes you want to store data that violates "
+  },
+  {
+   "url": "/theory/client-side-owl/",
+   "page": "Client-Side OWL Validation — Loka",
+   "heading": "SDK Behavior",
+   "anchor": "",
+   "text": "SettingBehavior OWL validation enabled (default)SDK throws on constraint violation before sending to database OWL validation disabledSDK sends all triples directly, no checking Direct HTTP/SPARQL accessNo validation — database accepts every"
+  },
+  {
+   "url": "/theory/client-side-owl/",
+   "page": "Client-Side OWL Validation — Loka",
+   "heading": "OWL as Data",
+   "anchor": "",
+   "text": "The OWL ontology is stored in the database as regular RDF triples. The SDKs read it from the database and use it for validation. This means: The ontology is queryable via SPARQL like any other data The ontology can be updated by inserting/d"
+  },
+  {
+   "url": "/theory/cost-based-planning/",
+   "page": "Cost-Based Query Planning — Loka",
+   "heading": "Cost-Based Query Planning",
+   "anchor": "",
+   "text": "The order you evaluate patterns matters more than how fast you evaluate each one."
+  },
+  {
+   "url": "/theory/cost-based-planning/",
+   "page": "Cost-Based Query Planning — Loka",
+   "heading": "The Problem",
+   "anchor": "",
+   "text": "A SPARQL query with three triple patterns can be evaluated in six different orders. The wrong order might produce millions of intermediate results that the next pattern filters down to ten. The right order might produce ten results immediat"
+  },
+  {
+   "url": "/theory/cost-based-planning/",
+   "page": "Cost-Based Query Planning — Loka",
+   "heading": "Structural Heuristic Weights",
+   "anchor": "",
+   "text": "Before looking at any data statistics, the planner assigns each pattern a structural weight based on which positions are bound or unbound: All positions bound: weight 0 (point lookup, cheapest possible) Each unbound position adds weight pro"
+  },
+  {
+   "url": "/theory/cost-based-planning/",
+   "page": "Cost-Based Query Planning — Loka",
+   "heading": "Cardinality Estimation",
+   "anchor": "",
+   "text": "When data statistics are available (per-predicate cardinality from the store), the planner refines structural weights with actual selectivity estimates. The combined score is: cost = structural_weight × cardinality_estimate Patterns are eva"
+  },
+  {
+   "url": "/theory/cost-based-planning/",
+   "page": "Cost-Based Query Planning — Loka",
+   "heading": "Predicate Pushdown",
+   "anchor": "",
+   "text": "FILTER expressions are repositioned to execute immediately after the pattern that binds their last required variable. A filter like FILTER(?age > 25) is pushed down to run right after the ?person :age ?age pattern, not at the end of the que"
+  },
+  {
+   "url": "/theory/cost-based-planning/",
+   "page": "Cost-Based Query Planning — Loka",
+   "heading": "Pattern Ordering Rules",
+   "anchor": "",
+   "text": "Pattern TypePlacementReason Bound subject patternFirstPoint lookup, O(1) VECTOR_SIMILAR (unbound)EarlyReturns top-k, very selective Regular pattern (unbound)MiddleOrdered by cardinality estimate VECTOR_SIMILAR (bound)LateSubject already bou"
+  },
+  {
+   "url": "/theory/four-index-architecture/",
+   "page": "Four-Index Architecture — Loka",
+   "heading": "Four-Index Architecture",
+   "anchor": "",
+   "text": "HNSW is not a separate system. It is the fourth index."
+  },
+  {
+   "url": "/theory/four-index-architecture/",
+   "page": "Four-Index Architecture — Loka",
+   "heading": "The Standard Approach: Three Indexes",
+   "anchor": "",
+   "text": "Every RDF triplestore maintains three permutation indexes over its triples. Each index sorts the same data in a different key order, enabling efficient lookups regardless of which positions are bound in a query pattern: IndexKey OrderAnswer"
+  },
+  {
+   "url": "/theory/four-index-architecture/",
+   "page": "Four-Index Architecture — Loka",
+   "heading": "The Problem: Vectors Don't Fit",
+   "anchor": "",
+   "text": "When you add vector search to a triplestore, the traditional approach is to bolt on a separate vector database. This creates two systems with different APIs, different storage, and a JSON handoff between them. The query planner has no visib"
+  },
+  {
+   "url": "/theory/four-index-architecture/",
+   "page": "Four-Index Architecture — Loka",
+   "heading": "Loka's Approach: HNSW as a Fourth Index",
+   "anchor": "",
+   "text": "Loka treats the HNSW index as a fourth index type that sits alongside SPO/POS/OSP. The query planner sees all four indexes and chooses the best access path for each pattern: IndexKey OrderData StructureWhen Used SPOSubject → Predicate → Obj"
+  },
+  {
+   "url": "/theory/four-index-architecture/",
+   "page": "Four-Index Architecture — Loka",
+   "heading": "How It Works",
+   "anchor": "",
+   "text": "When a vector predicate (e.g., :hasEmbedding) is declared, Loka creates an HNSW index for that predicate. The vector literal is stored as a regular triple in SPO/POS/OSP, and the HNSW index maintains a parallel proximity graph keyed by the "
+  },
+  {
+   "url": "/theory/four-index-architecture/",
+   "page": "Four-Index Architecture — Loka",
+   "heading": "Why This Matters",
+   "anchor": "",
+   "text": "No separate vector database. One system, one storage format, one query language. Unified query planning. The planner can interleave vector and graph operations based on cost, not API boundaries. No JSON handoff. Results from the HNSW index "
+  },
+  {
+   "url": "/theory/graph-databases/",
+   "page": "How Graph Databases Work",
+   "heading": "How Graph Databases Work",
+   "anchor": "",
+   "text": "← Theory"
+  },
+  {
+   "url": "/theory/graph-databases/",
+   "page": "How Graph Databases Work",
+   "heading": "How Graph Databases Work",
+   "anchor": "",
+   "text": "Graph databases store data as RDF triples — subject, predicate, object. SPARQL queries traverse these relationships systematically. Click \"Run Query\" to watch SPARQL find the great-grandfathers of people named \"John\" by following :hasFather"
+  },
+  {
+   "url": "/theory/health-diagnostics/",
+   "page": "Health Diagnostics — Loka",
+   "heading": "Health Diagnostics",
+   "anchor": "",
+   "text": "Designed for AI agents to read, not just humans to glance at."
+  },
+  {
+   "url": "/theory/health-diagnostics/",
+   "page": "Health Diagnostics — Loka",
+   "heading": "Agent-First Health Reports",
+   "anchor": "",
+   "text": "Loka's health endpoint produces structured text designed for AI agent consumption. Instead of dashboards with charts, it outputs context-rich text that an agent can read, reason about, and act on: $ loka health --data my_graph.sdb Overall: "
+  },
+  {
+   "url": "/theory/health-diagnostics/",
+   "page": "Health Diagnostics — Loka",
+   "heading": "What Gets Measured",
+   "anchor": "",
+   "text": "CategoryMetricsWhy It Matters HNSW HealthTombstone ratio, layer distribution, avg/min/max connectivity, entry point diversityHigh tombstone ratio degrades search quality. Low connectivity indicates graph fragmentation. Pseudo-Table Coverage"
+  },
+  {
+   "url": "/theory/health-diagnostics/",
+   "page": "Health Diagnostics — Loka",
+   "heading": "Actionable Recommendations",
+   "anchor": "",
+   "text": "The health report suggests specific actions based on thresholds: Tombstone ratio > 30%: \"HNSW rebuild recommended\" — too many deleted nodes degrading search paths Cliff steepness < 3: \"Data schema is inconsistent\" — pseudo-tables provide di"
+  },
+  {
+   "url": "/theory/health-diagnostics/",
+   "page": "Health Diagnostics — Loka",
+   "heading": "Three Severity Levels",
+   "anchor": "",
+   "text": "LevelMeaningAction HEALTHYAll metrics within normal rangeNo action needed WARNINGSome metrics approaching thresholdsSchedule maintenance during next low-usage period CRITICALMetrics exceed thresholds, performance impactedImmediate maintenan"
+  },
+  {
+   "url": "/theory/hnsw-implementation/",
+   "page": "HNSW Implementation — Loka",
+   "heading": "HNSW Implementation",
+   "anchor": "",
+   "text": "Design decisions for deletion, entry points, persistence, and concurrency."
+  },
+  {
+   "url": "/theory/hnsw-implementation/",
+   "page": "HNSW Implementation — Loka",
+   "heading": "Tombstone-Based Lazy Deletion",
+   "anchor": "",
+   "text": "When a vector is deleted from the HNSW index, the node is not removed. It is flagged as deleted (tombstoned) but remains in the graph structure. Searches can still traverse through deleted nodes to reach their live neighbors. Why: removing "
+  },
+  {
+   "url": "/theory/hnsw-implementation/",
+   "page": "HNSW Implementation — Loka",
+   "heading": "Multiple Entry Points",
+   "anchor": "",
+   "text": "Standard HNSW uses a single entry point at the top layer. This can cause searches to get stuck in local optima on large, clustered vector spaces — if the entry point is far from the query region, greedy descent may converge to a suboptimal "
+  },
+  {
+   "url": "/theory/hnsw-implementation/",
+   "page": "HNSW Implementation — Loka",
+   "heading": "Ephemeral HNSW with Optional Snapshots",
+   "anchor": "",
+   "text": "The HNSW graph is not persisted to the .sdb file. On startup, it is rebuilt from the stored vector triples (which are persisted in SPO/POS/OSP). This guarantees the HNSW graph is always consistent with the stored data. For faster cold start"
+  },
+  {
+   "url": "/theory/hnsw-implementation/",
+   "page": "HNSW Implementation — Loka",
+   "heading": "Concurrency: Search is &self",
+   "anchor": "",
+   "text": "HNSW search takes &self (shared reference), meaning any number of searches can execute concurrently without blocking each other. Each search maintains its own visited set (thread-local allocation), following the Qdrant pattern. Insert and d"
+  },
+  {
+   "url": "/theory/hnsw-implementation/",
+   "page": "HNSW Implementation — Loka",
+   "heading": "Parameters",
+   "anchor": "",
+   "text": "ParameterDefaultRangeEffect M168–64Max connections per node per layer. Higher = better recall, more memory. ef_construction20050–500Beam width during build. Higher = better graph quality, slower construction. ef_searchTunable per query10–10"
+  },
+  {
+   "url": "/theory/hnsw-in-rdf/",
+   "page": "Implementing HNSW in RDF",
+   "heading": "Implementing HNSW in RDF",
+   "anchor": "",
+   "text": "← Theory"
+  },
+  {
+   "url": "/theory/hnsw-in-rdf/",
+   "page": "Implementing HNSW in RDF",
+   "heading": "Implementing HNSW in RDF",
+   "anchor": "",
+   "text": "Most databases treat vectors and graphs as separate systems. Loka stores vector embeddings as typed RDF literals (loka:f32vec) and exposes HNSW neighbor connections as virtual triples — making the vector index queryable by the same SPARQL e"
+  },
+  {
+   "url": "/theory/hybrid-databases/",
+   "page": "Traditional Hybrid Databases",
+   "heading": "Traditional Hybrid Databases",
+   "anchor": "",
+   "text": "← Theory"
+  },
+  {
+   "url": "/theory/hybrid-databases/",
+   "page": "Traditional Hybrid Databases",
+   "heading": "Traditional Hybrid Databases",
+   "anchor": "",
+   "text": "Most \"hybrid\" vector-graph systems bolt two separate databases together. A vector search finds similar names, then you jump to a completely different graph database by reading JSON metadata. Watch the clunky handoff as we try to find great-"
+  },
+  {
+   "url": "/theory/",
+   "page": "Loka Theory",
+   "heading": "Loka Theory",
+   "anchor": "",
+   "text": "← Home"
+  },
+  {
+   "url": "/theory/",
+   "page": "Loka Theory",
+   "heading": "Loka Theory",
+   "anchor": "",
+   "text": "Interactive visualizations of database theory — from how graph and vector databases work individually, to the innovations that make Loka different."
+  },
+  {
+   "url": "/theory/",
+   "page": "Loka Theory",
+   "heading": "Background: How Databases Work",
+   "anchor": "",
+   "text": "How Graph Databases Work SPARQL traverses RDF triples to answer multi-hop relationship queries. Watch a query find great-grandfathers step by step. RDFSPARQL How Vector Databases Work HNSW graph traversal finds nearest neighbors by hopping "
+  },
+  {
+   "url": "/theory/",
+   "page": "Loka Theory",
+   "heading": "Innovations",
+   "anchor": "",
+   "text": "Ontochronology: Time as a Structural Axis Time is not metadata on triples — it is a first-class index dimension. Query the complete world state at any moment with a single range scan. NovelTSPO IndexWorld State Implementing HNSW in RDF Vect"
+  },
+  {
+   "url": "/theory/",
+   "page": "Loka Theory",
+   "heading": "Architecture Deep Dives",
+   "anchor": "",
+   "text": "Four-Index Architecture HNSW as a first-class index type alongside SPO/POS/OSP. The query planner sees all four and picks the best access path. SPOPOSOSPHNSW IRI Interning & Content-Addressed RDF-star Every IRI becomes 8 bytes. Quoted tripl"
+  },
+  {
+   "url": "/theory/iri-interning/",
+   "page": "IRI Interning — Loka",
+   "heading": "IRI Interning & Content-Addressed RDF-star",
+   "anchor": "",
+   "text": "Every IRI becomes 8 bytes. Every quoted triple gets a deterministic ID."
+  },
+  {
+   "url": "/theory/iri-interning/",
+   "page": "IRI Interning — Loka",
+   "heading": "The Problem with Strings",
+   "anchor": "",
+   "text": "An IRI like http://www.wikidata.org/entity/Q11064932 is 46 bytes. A triple has three of them. Every index entry stores all three. With three indexes (SPO/POS/OSP), that is 46 × 3 × 3 = 414 bytes per triple just for the keys — before any dat"
+  },
+  {
+   "url": "/theory/iri-interning/",
+   "page": "IRI Interning — Loka",
+   "heading": "IRI Interning",
+   "anchor": "",
+   "text": "Loka interns every IRI, blank node, and literal to a u64 (8-byte integer) at write time. A bidirectional lookup table maps strings to IDs and back: Forward map: \"http://example.org/Tokyo\" → 42 Reverse map: 42 → \"http://example.org/Tokyo\" No"
+  },
+  {
+   "url": "/theory/iri-interning/",
+   "page": "IRI Interning — Loka",
+   "heading": "Inline Literals",
+   "anchor": "",
+   "text": "Small values are encoded directly into the TermId without a dictionary lookup: Integers that fit in 56 bits are packed inline (high bits tag the type) Booleans are packed inline (true = 1, false = 0, with type tag) This means a triple like "
+  },
+  {
+   "url": "/theory/iri-interning/",
+   "page": "IRI Interning — Loka",
+   "heading": "Content-Addressed RDF-star IDs",
+   "anchor": "",
+   "text": "RDF-star allows any triple to be used as a subject or object of another triple (a \"quoted triple\"). Loka assigns a deterministic u64 ID to each quoted triple by hashing its three components: quoted_id = hash(subject_id, predicate_id, object"
+  },
+  {
+   "url": "/theory/iri-interning/",
+   "page": "IRI Interning — Loka",
+   "heading": "Why This Matters",
+   "anchor": "",
+   "text": "3× smaller index entries compared to string-based keys Single-instruction comparison instead of byte-by-byte string comparison SIMD-friendly: packed u64 arrays enable AVX2 to compare 4 TermIds per CPU cycle Zero-overhead RDF-star: quoted tr"
+  },
+  {
+   "url": "/theory/loka/",
+   "page": "Loka: Integrated Vector-Graph Database",
+   "heading": "Loka: Integrated Vector-Graph Database",
+   "anchor": "",
+   "text": "← Theory"
+  },
+  {
+   "url": "/theory/loka/",
+   "page": "Loka: Integrated Vector-Graph Database",
+   "heading": "Loka: Integrated Vector-Graph",
+   "anchor": "",
+   "text": "Loka synthesizes the HNSW vector index directly with the relationship graph. As the vector traversal lands on each similar node, it immediately follows :hasFather edges — it doesn't wait for all vector results first. Graph hops happen durin"
+  },
+  {
+   "url": "/theory/ontochronology/",
+   "page": "Ontochronology — Loka",
+   "heading": "Ontochronology",
+   "anchor": "",
+   "text": "Time is not metadata on triples. Time is a structural axis of the database."
+  },
+  {
+   "url": "/theory/ontochronology/",
+   "page": "Ontochronology — Loka",
+   "heading": "The Problem: Time as an Afterthought",
+   "anchor": "",
+   "text": "Every knowledge graph has temporal data. Almost none of them can query it well. The dominant pattern is time as a qualifier: a triple like (:Napoleon :heldPosition :Emperor) gets a start date and end date as metadata hanging off it. This wo"
+  },
+  {
+   "url": "/theory/ontochronology/",
+   "page": "Ontochronology — Loka",
+   "heading": "The Insight: Time as a Leading Index Key",
+   "anchor": "",
+   "text": "Loka already maintains three index orderings over every triple — SPO, POS, and OSP — so that any access pattern hits an index. Ontochronology adds a fourth ordering with time as the leading key: IndexKey OrderAnswers SPOSubject → Predicate "
+  },
+  {
+   "url": "/theory/ontochronology/",
+   "page": "Ontochronology — Loka",
+   "heading": "Not Always a Clock",
+   "anchor": "",
+   "text": "The “T” in TSPO is not necessarily a UTC timestamp. It is an ordered scalar — any value that can be sorted and range-scanned. The B-tree doesn’t care what the bytes represent. It only needs a total ordering. DomainOrdering AxisExample Value"
+  },
+  {
+   "url": "/theory/ontochronology/",
+   "page": "Ontochronology — Loka",
+   "heading": "Three Ways to Say When",
+   "anchor": "",
+   "text": "Every triple can carry up to three temporal signifiers. None are required — some facts are intrinsically atemporal. A triple can have any combination, and can have multiple valid time intervals. SignifierMeaningWhen to Use Assertion time “K"
+  },
+  {
+   "url": "/theory/ontochronology/",
+   "page": "Ontochronology — Loka",
+   "heading": "Precision, Not Confidence",
+   "anchor": "",
+   "text": "Timestamps carry a precision level derived from their format: Precise \"1977-10-29\"^^loka:temporal → day precision Imprecise \"1909\"^^loka:temporal → year precision Precision is not confidence. A fact with year-level precision isn’t “less cer"
+  },
+  {
+   "url": "/theory/ontochronology/",
+   "page": "Ontochronology — Loka",
+   "heading": "RDF-star Representation",
+   "anchor": "",
+   "text": "Temporal data uses RDF-star annotations — statements about statements: # Assertion time only (the crutch) << :building_42 :locatedIn :MainStreet >> loka:assertedAt \"1847\"^^loka:temporal . # Full valid-time interval << :napoleon :heldPositio"
+  },
+  {
+   "url": "/theory/ontochronology/",
+   "page": "Ontochronology — Loka",
+   "heading": "SPARQL+ Temporal Operators",
+   "anchor": "",
+   "text": "New operators scope graph patterns to specific moments or intervals:"
+  },
+  {
+   "url": "/theory/ontochronology/",
+   "page": "Ontochronology — Loka",
+   "heading": "AT_TIME — Point-in-time query",
+   "anchor": "",
+   "text": "# Who was where at 10am on March 14th? SELECT ?person ?location WHERE { AT_TIME(\"2024-03-14T10:00:00\"^^xsd:dateTime) { ?person :locatedIn ?location . ?person rdf:type :Suspect . } }"
+  },
+  {
+   "url": "/theory/ontochronology/",
+   "page": "Ontochronology — Loka",
+   "heading": "DURING — Interval query",
+   "anchor": "",
+   "text": "# Who was at the courthouse during the hearing? SELECT ?person ?location WHERE { DURING(\"2024-03-14T09:00\", \"2024-03-14T11:00\") { ?person :locatedIn :Courthouse . } }"
+  },
+  {
+   "url": "/theory/ontochronology/",
+   "page": "Ontochronology — Loka",
+   "heading": "WORLD_STATE — Complete snapshot",
+   "anchor": "",
+   "text": "# Everything that was true at this moment SELECT ?s ?p ?o WHERE { WORLD_STATE(\"2024-03-14T10:00:00\"^^xsd:dateTime) { ?s ?p ?o . } }"
+  },
+  {
+   "url": "/theory/ontochronology/",
+   "page": "Ontochronology — Loka",
+   "heading": "TEMPORAL_DIFF — What changed?",
+   "anchor": "",
+   "text": "# What changed between scene 3 and scene 4? SELECT ?change ?s ?p ?o WHERE { TEMPORAL_DIFF(\"scene_3_end\", \"scene_4_start\") { ?s ?p ?o . BIND(loka:changeType AS ?change) } }"
+  },
+  {
+   "url": "/theory/ontochronology/",
+   "page": "Ontochronology — Loka",
+   "heading": "Composition with Vector Search",
+   "anchor": "",
+   "text": "# Find semantically similar documents about people # who existed at a specific time SELECT ?doc ?entity WHERE { AT_TIME(\"2024-06-01\"^^xsd:dateTime) { ?entity rdf:type :Person . ?doc :mentions ?entity . } VECTOR_SIMILAR(?doc :hasEmbedding \"."
+  },
+  {
+   "url": "/theory/ontochronology/",
+   "page": "Ontochronology — Loka",
+   "heading": "Use Cases",
+   "anchor": "",
+   "text": "Text-to-Video Continuity Track every entity across scenes. “Who is holding the knife? What are they wearing? Was the door open?” Continuity errors become constraint violations detected by query. Legal Investigation Reconstruct timelines fro"
+  },
+  {
+   "url": "/theory/ontochronology/",
+   "page": "Ontochronology — Loka",
+   "heading": "The Dimensional Spectrum",
+   "anchor": "",
+   "text": "Ontochronological indexing is one instance of a general pattern: promote the query axis to a leading index key. The same approach extends to coordinates, provenance, and confidence: DimensionIndexData StructureQuery Time (1D)TSPOB-tree“Ever"
+  },
+  {
+   "url": "/theory/ontochronology/",
+   "page": "Ontochronology — Loka",
+   "heading": "Architecture",
+   "anchor": "",
+   "text": "Ontochronological features are purely additive: Existing SPO/POS/OSP indexes are unaffected Existing HNSW vector indexes are unaffected Existing SPARQL+ queries work unchanged Databases without temporal data pay zero cost The TSPO index is "
+  },
+  {
+   "url": "/theory/pseudo-table-discovery/",
+   "page": "Pseudo-Table Discovery — Loka",
+   "heading": "Pseudo-Table Discovery",
+   "anchor": "",
+   "text": "RDF has no tables, but relational structure exists. Loka finds it automatically."
+  },
+  {
+   "url": "/theory/pseudo-table-discovery/",
+   "page": "Pseudo-Table Discovery — Loka",
+   "heading": "Characteristic Sets",
+   "anchor": "",
+   "text": "When many nodes share the same set of predicates — like all Person nodes having name, age, email — they form a \"characteristic set.\" This group behaves like rows in a relational table, even though no table was declared. Loka discovers these"
+  },
+  {
+   "url": "/theory/pseudo-table-discovery/",
+   "page": "Pseudo-Table Discovery — Loka",
+   "heading": "Discovery Criteria",
+   "anchor": "",
+   "text": "A group qualifies when: A statistically significant cluster of nodes (p < 0.05 vs. random co-occurrence) shares 5+ properties Each of those properties is held by ≥50% of the group The group has enough members to justify the overhead (minimu"
+  },
+  {
+   "url": "/theory/pseudo-table-discovery/",
+   "page": "Pseudo-Table Discovery — Loka",
+   "heading": "Segment-Level Zonemaps",
+   "anchor": "",
+   "text": "Rows are stored in segments of ~2048 rows. Each segment maintains per-column statistics (min, max, null count, distinct count). When a query filter doesn't overlap a segment's min/max range, the entire segment is skipped without examining a"
+  },
+  {
+   "url": "/theory/pseudo-table-discovery/",
+   "page": "Pseudo-Table Discovery — Loka",
+   "heading": "Cliff Steepness: Data Health Metric",
+   "anchor": "",
+   "text": "The distribution of property coverage across a pseudo-table reveals data quality: Sharp cliff (steepness > 10): 10 properties at 100%, everything else at <10%. Clean, consistent schema. Gradual slope (steepness 1–3): Properties spread acros"
+  },
+  {
+   "url": "/theory/pseudo-table-discovery/",
+   "page": "Pseudo-Table Discovery — Loka",
+   "heading": "Mixed Resolution",
+   "anchor": "",
+   "text": "When a query mixes pseudo-table columns with properties not in the pseudo-table, the planner uses a two-phase strategy: Columnar phase: Resolve pseudo-table columns first (vectorized scan, fast) Join phase: Use the bound subjects from step "
+  },
+  {
+   "url": "/theory/rdf-star-edges/",
+   "page": "RDF-star Edge Annotation — Loka",
+   "heading": "RDF-star Edge Annotation",
+   "anchor": "",
+   "text": "Metadata on edges without reification overhead."
+  },
+  {
+   "url": "/theory/rdf-star-edges/",
+   "page": "RDF-star Edge Annotation — Loka",
+   "heading": "The Problem with Standard RDF",
+   "anchor": "",
+   "text": "In standard RDF, you can attach metadata to nodes easily: :paper_42 :confidence 0.91 . :paper_42 :hasEmbedding \"0.23 -0.11 0.87 ...\"^^loka:f32vec . But attaching metadata to an edge (a relationship) requires reification — creating an interm"
+  },
+  {
+   "url": "/theory/rdf-star-edges/",
+   "page": "RDF-star Edge Annotation — Loka",
+   "heading": "RDF-star: Quoted Triples",
+   "anchor": "",
+   "text": "RDF-star lets you use a triple directly as the subject or object of another triple: # RDF-star: clean and direct << :paper_42 :discusses :TransformerArchitecture >> :confidence 0.91 . One triple. No intermediate node. The quoted triple << :"
+  },
+  {
+   "url": "/theory/rdf-star-edges/",
+   "page": "RDF-star Edge Annotation — Loka",
+   "heading": "Vector Embeddings on Edges",
+   "anchor": "",
+   "text": "This is where RDF-star becomes critical for Loka. You can attach a vector embedding to a relationship, not just a node: # Embedding on an edge << :paper_42 :discusses :TransformerArchitecture >> :hasEmbedding \"0.23 -0.11 0.87 ...\"^^loka:f32"
+  },
+  {
+   "url": "/theory/rdf-star-edges/",
+   "page": "RDF-star Edge Annotation — Loka",
+   "heading": "Implementation: Content-Addressed IDs",
+   "anchor": "",
+   "text": "Loka assigns each quoted triple a deterministic u64 ID by hashing its three component IDs. This means: Quoted triples are just another TermId — they participate in SPO/POS/OSP indexes like any other term The same quoted triple always gets t"
+  },
+  {
+   "url": "/theory/rhizomatic-description-framework/",
+   "page": "Rhizomatic Description Framework — Loka",
+   "heading": "Rhizomatic Description Framework",
+   "anchor": "",
+   "text": "RDF stands for Resource Description Framework. But it probably shouldn’t."
+  },
+  {
+   "url": "/theory/rhizomatic-description-framework/",
+   "page": "Rhizomatic Description Framework — Loka",
+   "heading": "The Accidental Rhizome",
+   "anchor": "",
+   "text": "In 1980, Gilles Deleuze and Félix Guattari published A Thousand Plateaus and introduced the concept of the rhizome — a structure with no beginning, no end, no hierarchy, and no center. Any point can connect to any other point. There is no t"
+  },
+  {
+   "url": "/theory/rhizomatic-description-framework/",
+   "page": "Rhizomatic Description Framework — Loka",
+   "heading": "Six Principles of the Rhizome",
+   "anchor": "",
+   "text": "Deleuze and Guattari defined six characteristics of a rhizome. Every single one maps directly onto RDF."
+  },
+  {
+   "url": "/theory/rhizomatic-description-framework/",
+   "page": "Rhizomatic Description Framework — Loka",
+   "heading": "1. Connection",
+   "anchor": "",
+   "text": "“Any point of a rhizome can be connected to any other, and must be.” In RDF, any IRI can be the subject or object of any triple. There are no type restrictions at the data model level. A person can be connected to a number, a concept, a geo"
+  },
+  {
+   "url": "/theory/rhizomatic-description-framework/",
+   "page": "Rhizomatic Description Framework — Loka",
+   "heading": "2. Heterogeneity",
+   "anchor": "",
+   "text": "“A rhizome ceaselessly establishes connections between semiotic chains, organizations of power, and circumstances.” RDF triples are radically heterogeneous. In the same graph, you can store a person’s name, a mathematical proof, an embeddin"
+  },
+  {
+   "url": "/theory/rhizomatic-description-framework/",
+   "page": "Rhizomatic Description Framework — Loka",
+   "heading": "3. Multiplicity",
+   "anchor": "",
+   "text": "“There are no points or positions in a rhizome, such as those found in a structure, tree, or root. There are only lines.” In RDF, nodes have no intrinsic properties. A node is nothing but the set of relationships it participates in. Remove "
+  },
+  {
+   "url": "/theory/rhizomatic-description-framework/",
+   "page": "Rhizomatic Description Framework — Loka",
+   "heading": "4. Asignifying Rupture",
+   "anchor": "",
+   "text": "“A rhizome may be broken, shattered at a given spot, but it will start up again on one of its old lines, or on new lines.” RDF graphs are robust to partial destruction. You can delete any subset of triples and the remaining graph is still a"
+  },
+  {
+   "url": "/theory/rhizomatic-description-framework/",
+   "page": "Rhizomatic Description Framework — Loka",
+   "heading": "5. Cartography",
+   "anchor": "",
+   "text": "“A rhizome is not amenable to any structural or generative model. It is a map, not a tracing.” An RDF graph is a map of a domain, not a schema that generates instances. You don’t define a “Person table” and then fill in rows. You make state"
+  },
+  {
+   "url": "/theory/rhizomatic-description-framework/",
+   "page": "Rhizomatic Description Framework — Loka",
+   "heading": "6. Decalcomania",
+   "anchor": "",
+   "text": "“A rhizome is not a tracing but a map that is always detachable, connectable, reversible, modifiable, and has multiple entryways and exits.” SPARQL queries can enter the graph from any node and traverse in any direction. There is no “starti"
+  },
+  {
+   "url": "/theory/rhizomatic-description-framework/",
+   "page": "Rhizomatic Description Framework — Loka",
+   "heading": "Trees vs. Rhizomes",
+   "anchor": "",
+   "text": "Arborescent (Tree) Relational databases, XML, JSON, file systems. Data flows from a root through branches. Every node has exactly one parent. The structure prescribes the data. CREATE TABLE person ( id INT PRIMARY KEY, name VARCHAR(255), pa"
+  },
+  {
+   "url": "/theory/rhizomatic-description-framework/",
+   "page": "Rhizomatic Description Framework — Loka",
+   "heading": "Why This Matters for AI",
+   "anchor": "",
+   "text": "Large language models and AI agents operate rhizomatically. They don’t traverse a tree from root to leaf — they associate across a network of concepts, following whatever connection seems most relevant in context. A query about Napoleon mig"
+  },
+  {
+   "url": "/theory/rhizomatic-description-framework/",
+   "page": "Rhizomatic Description Framework — Loka",
+   "heading": "The Open World",
+   "anchor": "",
+   "text": "The Open World Assumption is the rhizomatic default. In RDF, the absence of a statement means “we don’t know,” not “it’s false.” This is philosophically identical to the rhizome’s refusal of totality — the map is always incomplete, always e"
+  },
+  {
+   "url": "/theory/rhizomatic-description-framework/",
+   "page": "Rhizomatic Description Framework — Loka",
+   "heading": "A Note on Names",
+   "anchor": "",
+   "text": "RDF officially stands for Resource Description Framework. The “Resource” in the name comes from the web — URIs identify resources, and RDF describes relationships between them. But Rhizomatic Description Framework is arguably more accurate."
+  },
+  {
+   "url": "/theory/simd-acceleration/",
+   "page": "SIMD Acceleration — Loka",
+   "heading": "SIMD Acceleration",
+   "anchor": "",
+   "text": "Two places where SIMD matters in a graph+vector database, and one place where it doesn't."
+  },
+  {
+   "url": "/theory/simd-acceleration/",
+   "page": "SIMD Acceleration — Loka",
+   "heading": "What SIMD Does",
+   "anchor": "",
+   "text": "SIMD (Single Instruction, Multiple Data) applies the same operation to multiple values simultaneously. On modern x86 CPUs: AVX2 (256-bit): processes 8 floats or 4 u64 integers per instruction SSE (128-bit): processes 4 floats or 2 u64 integ"
+  },
+  {
+   "url": "/theory/simd-acceleration/",
+   "page": "SIMD Acceleration — Loka",
+   "heading": "Where Loka Uses SIMD",
+   "anchor": "",
+   "text": ""
+  },
+  {
+   "url": "/theory/simd-acceleration/",
+   "page": "SIMD Acceleration — Loka",
+   "heading": "1. Vector Distance Functions (HNSW hot path)",
+   "anchor": "",
+   "text": "During HNSW search, every candidate node requires a distance computation against the query vector. For a 1536-dimensional embedding, that is 1536 multiply-add operations per comparison. This is the single hottest loop in vector search. Loka"
+  },
+  {
+   "url": "/theory/simd-acceleration/",
+   "page": "SIMD Acceleration — Loka",
+   "heading": "2. Pseudo-Table Column Scanning (columnar hot path)",
+   "anchor": "",
+   "text": "When a SPARQL query hits a pseudo-table, the executor scans columnar arrays of u64 TermIds. Loka stores these as packed dense arrays (null values use a sentinel) and scans them with SIMD: OperationAVX2SSE2Use Equality scan4 u64/cycle2 u64/c"
+  },
+  {
+   "url": "/theory/simd-acceleration/",
+   "page": "SIMD Acceleration — Loka",
+   "heading": "Where SIMD Does NOT Help",
+   "anchor": "",
+   "text": ""
+  },
+  {
+   "url": "/theory/simd-acceleration/",
+   "page": "SIMD Acceleration — Loka",
+   "heading": "Triple index scans (SPO/POS/OSP)",
+   "anchor": "",
+   "text": "Regular triple pattern lookups traverse a B-tree or LSM tree. The bottleneck is pointer-chasing through tree nodes, not arithmetic comparison. The CPU is waiting on cache misses, not running out of comparison bandwidth. SIMD cannot help her"
+  },
+  {
+   "url": "/theory/simd-acceleration/",
+   "page": "SIMD Acceleration — Loka",
+   "heading": "Cosine via Normalized Dot Product",
+   "anchor": "",
+   "text": "Computing cosine similarity directly requires two norms and a dot product per comparison (3 passes over the data). Loka follows Qdrant's pattern: normalize vectors at insert time, then use dot product for all similarity computations at sear"
+  },
+  {
+   "url": "/theory/sparql-exit-conditions/",
+   "page": "SPARQL Exit Conditions (UNTIL)",
+   "heading": "SPARQL Exit Conditions (UNTIL)",
+   "anchor": "",
+   "text": "← Theory"
+  },
+  {
+   "url": "/theory/sparql-exit-conditions/",
+   "page": "SPARQL Exit Conditions (UNTIL)",
+   "heading": "SPARQL Exit Conditions (UNTIL)",
+   "anchor": "",
+   "text": "Standard SPARQL property paths (+, *) have no way to stop early — they exhaustively traverse the entire reachable graph. Loka adds UNTIL: a predicate evaluated at each step that terminates traversal the moment a condition is met. Compare bo"
+  },
+  {
+   "url": "/theory/subgraph-indexing/",
+   "page": "Subgraph Indexing for SIMD in Graph Databases",
+   "heading": "Subgraph Indexing for SIMD in Graph Databases",
+   "anchor": "",
+   "text": "← Theory"
+  },
+  {
+   "url": "/theory/subgraph-indexing/",
+   "page": "Subgraph Indexing for SIMD in Graph Databases",
+   "heading": "Subgraph Indexing for SIMD",
+   "anchor": "",
+   "text": "Graph databases normally answer multi-hop queries by pointer-chasing through indexes — one hop at a time. Loka auto-discovers repeated subgraph shapes and flattens them into columnar pseudo-tables, turning 3-hop joins into SIMD-accelerated "
+  },
+  {
+   "url": "/theory/traversal-indexing/",
+   "page": "PageRank Entry Points & Traversal Counters",
+   "heading": "PageRank Entry Points & Traversal Counters",
+   "anchor": "",
+   "text": "← Theory"
+  },
+  {
+   "url": "/theory/traversal-indexing/",
+   "page": "PageRank Entry Points & Traversal Counters",
+   "heading": "PageRank Entry Points & Traversal Counters",
+   "anchor": "",
+   "text": "Graph traversals have to start somewhere. Loka uses PageRank to pick structurally important starting nodes, and runtime traversal counters to identify hot areas that deserve materialized adjacency lists. Two complementary optimizations: one"
+  },
+  {
+   "url": "/theory/vector-databases/",
+   "page": "How Vector Databases Work",
+   "heading": "How Vector Databases Work",
+   "anchor": "",
+   "text": "← Theory"
+  },
+  {
+   "url": "/theory/vector-databases/",
+   "page": "How Vector Databases Work",
+   "heading": "How Vector Databases Work",
+   "anchor": "",
+   "text": "Vector databases store items as high-dimensional vectors and find similar ones using HNSW — a hierarchical navigable small world graph. Instead of scanning everything, they hop through layers of a graph, getting closer with each jump. Click"
+  },
+  {
+   "url": "/theory/vector-sparql-operators/",
+   "page": "VECTOR_SIMILAR & VECTOR_SCORE — Loka",
+   "heading": "VECTOR_SIMILAR & VECTOR_SCORE",
+   "anchor": "",
+   "text": "Vector search as SPARQL operators, not a separate API."
+  },
+  {
+   "url": "/theory/vector-sparql-operators/",
+   "page": "VECTOR_SIMILAR & VECTOR_SCORE — Loka",
+   "heading": "The Operators",
+   "anchor": "",
+   "text": "Loka extends SPARQL 1.1 with two operators that integrate vector similarity search directly into graph query patterns:"
+  },
+  {
+   "url": "/theory/vector-sparql-operators/",
+   "page": "VECTOR_SIMILAR & VECTOR_SCORE — Loka",
+   "heading": "VECTOR_SIMILAR",
+   "anchor": "",
+   "text": "Filters results to those with similarity above a threshold: # Find documents similar to a query vector that discuss AI entities SELECT ?doc ?entity WHERE { ?entity rdf:type :Person . ?doc :mentions ?entity . VECTOR_SIMILAR(?doc :hasEmbeddin"
+  },
+  {
+   "url": "/theory/vector-sparql-operators/",
+   "page": "VECTOR_SIMILAR & VECTOR_SCORE — Loka",
+   "heading": "VECTOR_SCORE",
+   "anchor": "",
+   "text": "Returns the similarity score for use in ORDER BY and projections: SELECT ?doc ?score WHERE { ?doc :hasEmbedding ?emb . BIND(VECTOR_SCORE(?doc :hasEmbedding \"0.23 -0.11 ...\"^^loka:f32vec) AS ?score) } ORDER BY DESC(?score) LIMIT 10"
+  },
+  {
+   "url": "/theory/vector-sparql-operators/",
+   "page": "VECTOR_SIMILAR & VECTOR_SCORE — Loka",
+   "heading": "Query Hints",
+   "anchor": "",
+   "text": "Both operators accept optional hints for fine-tuning HNSW search behavior: # Explicit ef_search for higher recall VECTOR_SIMILAR(?doc :hasEmbedding \"...\"^^loka:f32vec, 0.85, ef:=200) # Explicit k limit VECTOR_SIMILAR(?doc :hasEmbedding \"..."
+  },
+  {
+   "url": "/theory/vector-sparql-operators/",
+   "page": "VECTOR_SIMILAR & VECTOR_SCORE — Loka",
+   "heading": "How It Integrates with Graph Patterns",
+   "anchor": "",
+   "text": "The query planner treats VECTOR_SIMILAR as another pattern with a cost estimate. The planning rules: SituationStrategy Subject unbound before VECTOR_SIMILARRun vector search first (returns top-k candidates), then evaluate graph patterns ove"
+  },
+  {
+   "url": "/theory/vector-sparql-operators/",
+   "page": "VECTOR_SIMILAR & VECTOR_SCORE — Loka",
+   "heading": "Why Not a Separate API?",
+   "anchor": "",
+   "text": "A separate vector search API (like Qdrant's REST API) requires the application to: Call the vector API to get candidate IDs Parse the JSON response Feed those IDs into a SPARQL query Execute the SPARQL query With VECTOR_SIMILAR in SPARQL, i"
+  }
+ ]
+}

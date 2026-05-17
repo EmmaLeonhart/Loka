@@ -22,26 +22,114 @@ body {
 a { color: var(--accent); text-decoration: none; }
 a:hover { color: var(--accent-hover); text-decoration: underline; }
 
-/* Keep page content above the fixed .aurora (identity.css, z-index:0). */
-nav, .container, .page-header, footer { position: relative; z-index: 1; }
+/* The fixed .site-nav bar overlaps the top of the viewport; clear it
+   and offset in-page anchor jumps. */
+html { scroll-padding-top: 88px; }
+body { padding-top: 66px; }
+/* Keep page content above the fixed .aurora (identity.css, z-index:0).
+   .site-nav is fixed with its own z-index, so it is not in this list. */
+.container, .page-header, .hero, .section, footer { position: relative; z-index: 1; }
 
-/* Nav — tokenised; flips with the theme. Adds the shared cross-site
-   '\2190  emmaleonhart.com' back-link + the .gh repo pill (the pill
-   styling itself lives in identity.css). */
-nav {
-    padding: 13px 24px; border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; gap: 20px; font-size: 0.9em;
-    flex-wrap: wrap; font-family: var(--mono);
+/* ===================================================================
+   The shared branding kit — same parts as emmaleonhart.com/branding/,
+   tokenised through identity.css so it flips with the theme. Three
+   components identity.css does not (yet) own: the .site-nav top bar,
+   the Material .search box (+ its site-wide results dropdown), and
+   the prominent .repo-widget. One file → every page that links it.
+   =================================================================== */
+
+/* ---- Top bar: brand left · search · [toggle + repo widget] ---- */
+.site-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    display: flex; align-items: center; gap: 16px; padding: 12px 24px;
+    background: color-mix(in srgb, var(--bg) 72%, transparent);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
 }
-nav .logo { font-weight: 700; font-size: 1.1em; text-decoration: none !important; color: var(--text-strong); }
-nav .logo span { color: var(--accent); }
-nav .logo::before { content: '\1F4DC '; }
-nav .home { color: var(--text-mute); }
-nav .home:hover { color: var(--accent-bright); }
-nav .spacer { flex: 1; }
-nav a { color: var(--muted); }
-nav a:hover { color: var(--accent-bright); text-decoration: none; }
-nav a.active { color: var(--accent); }
+.site-nav .brand {
+    font-family: var(--mono); font-size: 0.82rem; font-weight: 600;
+    color: var(--text-strong); text-decoration: none; white-space: nowrap;
+}
+.site-nav .brand::before { content: '\1F4DC  '; }
+.site-nav .brand span { color: var(--accent); }
+.site-nav .brand:hover { color: var(--accent-bright); }
+.site-nav .nav-links { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; font-family: var(--mono); font-size: 0.8rem; }
+.site-nav .nav-links a { color: var(--text-mute); text-decoration: none; }
+.site-nav .nav-links a:hover { color: var(--accent-bright); }
+.site-nav .nav-links a.active { color: var(--accent); }
+.nav-spacer { flex: 1; }
+.site-nav .nav-right { display: flex; align-items: center; gap: 10px; }
+/* the canonical toggle, lifted out of its fixed corner into the bar */
+.site-nav .theme-toggle { position: static; top: auto; right: auto; }
+@media (max-width: 760px) { .site-nav .nav-links { display: none; } }
+
+/* ---- Material search box + site-wide results dropdown ---- */
+.search {
+    position: relative;
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 7px 12px; border-radius: 8px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    transition: border-color 0.2s, background 0.2s, width 0.25s ease;
+    width: 168px;
+}
+.search:focus-within { border-color: var(--accent); background: var(--bg-elevated); width: 248px; }
+.search > svg { width: 14px; height: 14px; fill: var(--text-mute); flex: none; }
+.search input {
+    border: none; outline: none; background: transparent; width: 100%;
+    font-family: var(--sans); font-size: 0.82rem; color: var(--text);
+}
+.search input::placeholder { color: var(--text-faint); }
+.search-results {
+    position: absolute; top: calc(100% + 8px); right: 0;
+    width: min(420px, 86vw); max-height: 60vh; overflow-y: auto;
+    background: var(--bg-card); border: 1px solid var(--border-hover);
+    border-radius: 10px; padding: 6px; z-index: 60;
+    box-shadow: 0 24px 60px -24px rgba(0,0,0,0.55);
+    display: none;
+}
+.search-results.open { display: block; }
+.search-results .sr-item {
+    display: block; padding: 9px 12px; border-radius: 7px;
+    text-decoration: none; color: var(--text);
+}
+.search-results .sr-item:hover,
+.search-results .sr-item.active { background: var(--accent-soft); color: var(--text-strong); }
+.search-results .sr-title { font-size: 0.85rem; font-weight: 600; color: var(--text-strong); }
+.search-results .sr-ctx { font-size: 0.74rem; color: var(--text-mute); margin-top: 2px; line-height: 1.45; }
+.search-results .sr-crumb { font-family: var(--mono); font-size: 0.66rem; color: var(--accent); margin-top: 3px; }
+.search-results .sr-empty { padding: 14px 12px; font-size: 0.8rem; color: var(--text-mute); }
+@media (max-width: 680px) {
+    .search { width: 132px; } .search:focus-within { width: 168px; }
+    .site-nav .brand span, .site-nav .brand { font-size: 0.74rem; }
+}
+
+/* ---- The prominent GitHub repo widget (replaces the small pill) --- */
+.repo-widget {
+    display: inline-flex; align-items: center; gap: 11px;
+    padding: 8px 15px; border-radius: 8px; text-decoration: none;
+    background: var(--accent-soft); border: 1px solid var(--border-hover);
+    color: var(--text-strong);
+    transition: border-color 0.2s, background 0.2s, transform 0.2s;
+}
+.repo-widget:hover { border-color: var(--accent); transform: translateY(-1px); color: var(--text-strong); text-decoration: none; }
+.repo-widget .rw-icon { display: flex; flex: none; }
+.repo-widget .rw-icon svg { width: 23px; height: 23px; fill: var(--accent); }
+.repo-widget .rw-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.repo-widget .rw-repo {
+    font-family: var(--sans); font-size: 0.8rem; font-weight: 700;
+    line-height: 1.2; color: var(--text-strong);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.repo-widget .rw-facts {
+    display: flex; align-items: center; gap: 11px;
+    font-family: var(--sans); font-size: 0.66rem; color: var(--text-mute);
+}
+.repo-widget .rw-fact { display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; }
+.repo-widget .rw-fact svg { width: 12px; height: 12px; fill: currentColor; flex: none; }
+.repo-widget .rw-fact.is-empty { display: none; }
+@media (max-width: 680px) { .repo-widget .rw-facts { display: none; } }
+
+.hide { display: none !important; }
 
 /* Content */
 .container { max-width: 820px; margin: 0 auto; padding: 0 24px; }
@@ -53,6 +141,53 @@ nav a.active { color: var(--accent); }
 }
 .page-header h1 span { color: inherit; }
 .page-header .subtitle { color: var(--muted); font-size: 1.1em; }
+
+/* ---- Hero (homepage = full; sub-pages = eyebrow + gradient h1).
+   .eyebrow / .card / .aurora come from identity.css. ---- */
+.hero { padding: 24px 0 40px; margin-bottom: 24px; }
+.hero .eyebrow { margin-bottom: 18px; }
+.hero h1, .page-header h1 {
+    background: linear-gradient(120deg, var(--text-strong) 0%, var(--accent-bright) 55%, var(--sutra) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.hero h1 {
+    font-size: clamp(2.3rem, 6vw, 3.4rem); font-weight: 700;
+    margin: 18px 0; letter-spacing: -1.1px; line-height: 1.05;
+}
+.serif { font-family: var(--serif); font-style: italic; font-weight: 400; }
+.tagline { font-size: 1.12rem; color: var(--text-mute); line-height: 1.65; max-width: 660px; }
+.tagline strong { color: var(--text-strong); font-weight: 600; }
+/* Cosmic orbital glyph — homepage hero only; spins, calms on request. */
+.hero { position: relative; }
+.glyph {
+    position: absolute; top: -6px; right: -6px;
+    width: 150px; height: 150px; opacity: 0.85;
+    filter: drop-shadow(0 0 18px var(--accent-glow));
+    animation: kit-spin 60s linear infinite;
+}
+@keyframes kit-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@media (max-width: 720px) { .glyph { display: none; } }
+@media (prefers-reduced-motion: reduce) { .glyph { animation: none; } }
+
+/* ---- Numbered section header (opt-in: only inside .section, so
+   prose-page h2s keep the heading style defined just below). ---- */
+.section { margin-bottom: 56px; }
+.section > h2 {
+    display: flex; align-items: center; gap: 14px;
+    font-family: var(--mono); font-size: 0.72rem; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 2px; color: var(--text-mute);
+    margin: 0 0 24px; padding: 0; border: 0;
+}
+.section > h2 .num { color: var(--accent); }
+.section > h2::after { content: ''; flex: 1; height: 1px; background: linear-gradient(to right, var(--border-strong), transparent); }
+
+/* ---- Signature line (every page, just before footer) ---- */
+.sig {
+    margin-top: 56px; display: flex; align-items: center; gap: 14px;
+    color: var(--text-faint); font-family: var(--mono);
+    font-size: 0.72rem; letter-spacing: 1px;
+}
+.sig::before { content: ''; width: 24px; height: 1px; background: var(--border-strong); }
 
 h2 { font-size: 1.5em; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
 h3 { font-size: 1.15em; margin: 28px 0 12px; color: var(--accent); }

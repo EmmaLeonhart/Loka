@@ -94,13 +94,20 @@ pages; `unify_site.py --check` still no-op; spot-check render in both
 themes; commit; note Pages-deploy verify (sister-subdomain caveat
 already in queue.md).
 
-## Open decisions (asked before executing Phase C/D)
+## Decisions (resolved with Emma 2026-05-17)
 
-1. **Search**: real site-wide search (build a page/section JSON
-   index, client-side search-as-you-type) vs. the visual bar box that
-   filters on-page where applicable + is consistent chrome elsewhere.
-2. **Hero/glyph breadth**: full hero + spinning cosmic glyph on the
-   homepage only, lighter eyebrow+gradient-h1 header on sub-pages
-   (default) — vs. glyph on every page.
-3. Default for the rest: roll out to all 39 pages this pass, homepage
-   hand-finished as the showcase, sub-pages mechanised.
+1. **Search → real site-wide search.** A build step
+   (`scripts/build_search_index.py`) walks `pages/**/*.html` and emits
+   `pages/search.json` (per page: url, title, headings, section text,
+   anchors). The `.search` bar box does client-side search-as-you-type
+   with a `.search-results` dropdown that jumps to any page/section.
+   Fully static, agent-operable, regenerated in CI / by the
+   transformer's verify step.
+2. **Hero/glyph → homepage only.** `pages/index.html` gets the full
+   hero: spinning cosmic `.glyph` + `.eyebrow` + gradient `h1` +
+   `.tagline`. Sub-pages get the same `.site-nav` bar + a lighter
+   header (`.eyebrow` + gradient `h1`, **no** glyph). All pages:
+   `.site-nav` + `.aurora` + `.sig`.
+3. **Breadth:** roll out to all 39 pages this pass — homepage
+   hand-finished as the showcase (Phase D), sub-pages mechanised by
+   `scripts/restructure_site.py` (Phase C).
