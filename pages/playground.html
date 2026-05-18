@@ -1084,8 +1084,10 @@ Studio connects to this playground at:
 }
 
 function openBrowser() {
-  // Try opening the graph browser tool
-  window.open('/graph', '_blank');
+  // The interactive vis-network graph viewer, served by the engine.
+  // (Was '/graph' — the raw Turtle dump — which is why the good
+  //  viewer looked "gone". /browse is the real one.)
+  window.open('/browse', '_blank');
 }
 
 // ── Fetch triple count on load ──

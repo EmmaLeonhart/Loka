@@ -17,7 +17,7 @@ use std::sync::{Arc, RwLock};
 use axum::extract::{Query as AxumQuery, State};
 use axum::http::{header, StatusCode};
 use axum::middleware::{self, Next};
-use axum::response::{IntoResponse, Json, Response};
+use axum::response::{Html, IntoResponse, Json, Response};
 use axum::routing::{get, post};
 use axum::Router;
 use serde::{Deserialize, Serialize};
@@ -57,6 +57,7 @@ pub fn router(state: Arc<AppState>) -> Router {
     Router::new()
         .route("/sparql", get(sparql_get).post(sparql_post))
         .route("/graph", get(export_graph))
+        .route("/browse", get(serve_browse))
         .route("/sparql.csv", get(sparql_csv_get).post(sparql_csv_post))
         .route("/sparql.tsv", get(sparql_tsv_get).post(sparql_tsv_post))
         .route("/sparql.xml", get(sparql_xml_get).post(sparql_xml_post))
@@ -739,6 +740,16 @@ pub struct GraphQueryParams {
     /// Optional: request a specific format. Defaults to Turtle.
     #[serde(default)]
     format: Option<String>,
+}
+
+/// GET /browse — the interactive vis-network graph browser.
+///
+/// The rich force-directed viewer (click-to-expand, HNSW edges,
+/// RDF-star detail panel). `/graph` is the raw Turtle export for
+/// Protégé; `/browse` is the one humans look at. Served from the
+/// engine so it is a first-class surface, not an orphaned loose file.
+async fn serve_browse() -> impl IntoResponse {
+    Html(include_str!("../../tools/browse.html"))
 }
 
 /// GET /graph — export all triples as Turtle.
