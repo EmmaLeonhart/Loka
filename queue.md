@@ -4,6 +4,13 @@
 
 See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is *update this file in the same commit as the work, and mirror items into the task tool.*
 
+
+## Stuff Emma is saying to do
+
+I want a replication of the flutter app in JS, but all of the existing html things are tabs in it.
+
+JS knowledge graph is best
+
 ---
 
 ## Website → reconstruct onto the shared branding kit
