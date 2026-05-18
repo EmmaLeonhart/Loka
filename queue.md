@@ -24,14 +24,21 @@ for clean resume. Quality verified on the epoch-2 adapter (CPU probe,
 GPU-safe): 3/4 real facts correct ("Asia", "Germany", "English";
 numeric facts weak) — vs the from-scratch v14's "M :" at ppl 202.
 
-**Emma's decision 2026-05-18: STOP CLEANLY AFTER EPOCH 5.** Not a cap
-from config (`--epochs 12`) nor from the optimizer issue — purely
-diminishing returns + overfit risk on a fixed 35k slice (ppl 4.83 →
-3.74 → ~3.0, deltas shrinking). `tools/stop_after_epoch.py --epoch 5`
-is running in the background: waits for "epoch 5 done" + its HF push
-to resolve, then kills trainer (+ any watchdog) so epoch 6 never
-starts; appends a "training complete." marker. ~12 h out from now
-(epoch 3 in progress).
+**Emma's decision 2026-05-18 (revised): RUN THE FULL 12 EPOCHS.** "Leave
+it on; might restart, then we have the latest one; definitely ≥5." So:
+- stop-at-5 monitor **cancelled/killed** (superseded).
+- `tools/finetune_watchdog.py` **running** (`logs/watchdog.log`): if
+  the trainer dies it relaunches on the fixed finetune.py — first
+  crash = one fresh-Adam resume from the latest HF/disk epoch (QLoRA
+  recoverable bump, and there are many epochs left to heal), clean
+  optimizer resume every time after. ≥epoch 5 is the guaranteed floor
+  (banked on HF regardless).
+- Windows AC sleep/hibernate/monitor-timeout set to never (`powercfg`,
+  reversible) so an idle timeout can't kill a ~2-day run.
+- Timeline: 12 × ~4.5 h ≈ ~54 h total; ~10 h elapsed → **~44 h
+  remaining** if uninterrupted (restarts add fresh-Adam recovery).
+  finetune.py prints "training complete." at epoch 12 → the watchdog
+  then exits on its own.
 
 Remaining:
 1. Wire `tools/infer_server.py` to use the fine-tuned adapter (latest
