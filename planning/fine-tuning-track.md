@@ -197,5 +197,26 @@ If you'd rather start clean: delete `loka-data/` first.
 
 ## Status
 
-Track approved 2026-05-08. Code not yet written. Next step: confirm base-model
-choice, then build `training/finetune/prepare_jsonl.py` and `finetune.py`.
+Track approved 2026-05-08. `prepare_jsonl.py` implemented 2026-05-16.
+
+**2026-05-18 — track activated for real.** Emma directed an overnight
+QLoRA run on the big HF normalized-wikidata corpus after discovering the
+double-click feature was driving the weak from-scratch v14 (ppl ~202)
+because the fine-tune was only ever scaffolded, never trained.
+Implementation decisions (deviations from this doc, all permitted by
+"subject to revision"):
+
+- **No `trl`.** Not installed; `transformers` 5.4.0 is new and trl
+  compatibility on Windows is a needless risk. `finetune.py` uses a
+  direct `transformers`+`peft` SFT loop instead of `trl.SFTTrainer`.
+- **8 GB-laptop QLoRA knobs.** bnb 4-bit nf4, batch 1 + grad
+  accumulation, `max_seq_length` ~768 (not 2048), gradient
+  checkpointing, `paged_adamw_8bit`, bf16. The doc assumed a 16 GB GPU.
+- **Resilience over completeness.** Per-epoch adapter checkpoints
+  (`<output>/epochN/`), per-epoch loss log, resume-from-latest — a
+  thermal cutoff (CLAUDE.md hardware reality) costs time, not the run.
+- **Corpus capped to finish epochs overnight.** The full v14-1M (4 M
+  triples) won't complete one epoch on this GPU in a night; a large
+  capped slice does several *recorded* epochs (Emma's explicit ask).
+- Sidecar uses the latest-epoch adapter when present, else falls back
+  to from-scratch. Plan + tasks: `queue.md`.
