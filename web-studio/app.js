@@ -1,9 +1,10 @@
 // Loka Studio — JS/HTML replica of the Flutter app (real DOM).
 // Emma's spec: "replication of the flutter app in JS, but all of the
 // existing html things are tabs in it. JS knowledge graph is best."
-// So: a tabbed shell; the engine's existing HTML surfaces (/browse
-// vis-network graph, the playground IDE) are tabs; the rest of the
-// Flutter screens are ported to JS modules under screens/.
+// So: a side-rail shell; the engine's vis-network graph (/browse)
+// is a tab; the rest of the Flutter screens are ported to JS modules
+// under screens/. (The engine's old :3030/ SPARQL IDE is NOT a tab —
+// the SPARQL screen replaces it; the example no longer serves /.)
 
 const DEFAULT_ENDPOINT = 'http://localhost:3030';
 
@@ -81,7 +82,6 @@ const TABS = [
   { id: 'triples',    label: 'Triples',         kind: 'screen' },
   { id: 'health',     label: 'Health',          kind: 'screen' },
   { id: 'ontology',   label: 'Ontology',        kind: 'screen' },
-  { id: 'playground', label: 'Playground',      kind: 'embed', src: e => `${e}/` },
 ];
 
 /* ── Connection state (localStorage, mirrors connection_provider.dart) ── */

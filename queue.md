@@ -165,14 +165,23 @@ Emma's refinement: tabbed app; existing engine HTML surfaces
       Electron window up on :8091 serving the JS Studio.
 
 **JS Studio = SHIPPED end to end** (commits 3d10fc5, 5bbe3b4,
-b572321, + slice 6). Six tabs (Knowledge Graph `/browse` + SPARQL +
-Triples + Health + Ontology + Playground), browser **and** Electron.
-Flutter Studio left frozen as spec/fallback.
+b572321, + slice 6). Five tabs (Knowledge Graph `/browse` + SPARQL +
+Triples + Health + Ontology) in a **left sidebar** (not a top
+nav), browser **and** Electron. Flutter Studio left frozen as
+spec/fallback.
 
-Running locally: playground_server :3030 (Shinto demo, 73 triples),
-JS Studio static server :8091, Electron. Full plan/spec:
-`planning/js-studio.md`. Optional follow-ups: repo-README mention;
-deeper per-screen parity with the Dart screens; auth/passcode field.
+Emma's 2026-05-17 refinement applied: the Playground tab (an iframe
+of the engine's `:3030/` SPARQL IDE) was dropped as redundant bloat —
+the SPARQL tab already covers it — and the `playground_server`
+example no longer serves an HTML page at `/` (real `loka serve`
+never did). The studio at `:8091` is the single integrated UI; tabs
+are a side rail.
+
+Running locally: playground_server :3030 (Shinto demo, 73 triples;
+SPARQL/API only, no `/` page), JS Studio static server :8091,
+Electron. Full plan/spec: `planning/js-studio.md`. Optional
+follow-ups: repo-README mention; deeper per-screen parity with the
+Dart screens; auth/passcode field.
 
 ## 🚀 Multi-version pipeline — 2026-05-13 evening pivot
 

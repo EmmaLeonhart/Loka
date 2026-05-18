@@ -11,7 +11,6 @@
 <body>
   <header class="bar">
     <a class="brand" href="#graph"><span class="logo">&#x1f4dc;</span> Loka <b>Studio</b></a>
-    <nav class="tabs" id="tabs" aria-label="Screens"></nav>
     <span class="spacer"></span>
     <label class="endpoint" title="Loka endpoint">
       <span class="dot" id="conn-dot" data-state="unknown"></span>
@@ -21,7 +20,10 @@
     <button id="theme-toggle" type="button" title="Toggle light / dark"
             aria-label="Toggle light and dark theme">&#9680;</button>
   </header>
-  <main id="view" role="main"></main>
+  <div class="appbody">
+    <nav class="sidebar" id="tabs" aria-label="Screens"></nav>
+    <main id="view" role="main"></main>
+  </div>
   <script type="module" src="app.js"></script>
 </body>
 </html>
