@@ -58,3 +58,8 @@ loka_error.log
 chats/*.html
 chats/*_files/
 chats/*-raw.md
+
+# Fine-tune track — heavy/derived artifacts (corpus, JSONL, adapters, base cache)
+training/finetune/data/
+training/finetune/adapters/
+training/finetune/logs/
