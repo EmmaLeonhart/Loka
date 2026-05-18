@@ -102,6 +102,31 @@ Optional follow-ups (Emma's call): make `/browse` (or playground)
 the default landing; embed the graph view inside the playground IDE;
 bring browse.html's strengths into Loka Studio's Flutter canvas.
 
+### Move Loka Studio out of Flutter → web + Electron (2026-05-17)
+
+Direction: Flutter→web→Electron is the easy port (vs Electron→Flutter).
+Keep HNSW viz. Studio is ~100% web-portable — only ONE web blocker:
+`loka-studio/lib/main.dart` `import 'dart:io' show Platform` +
+`Platform.environment['LOKA_ENDPOINT']`. Node 22/npm present, Flutter
+web scaffolding (`loka-studio/web/`) present.
+
+SHIPPED 2026-05-17 — Studio now has a Flutter→web→Electron path:
+- `loka-studio/lib/env_endpoint{,_io}.dart` + conditional import in
+  `main.dart` — only web blocker (`dart:io Platform`) removed; desktop
+  still reads `LOKA_ENDPOINT`, no regression. Whole `lib/` was
+  otherwise 100% web-portable (no FFI/File/Process).
+- `flutter build web --release` → `loka-studio/build/web` (gitignored).
+- `loka-studio/electron/` — `server.js` (static, correct wasm MIME,
+  SPA fallback, EADDRINUSE-tolerant so the browser tab + Electron
+  share one :8090 server), `main.js` (Electron shell), `package.json`
+  (electron ^33). `node_modules/` gitignored.
+- Live now: full Studio UI in the browser (`http://localhost:8090`)
+  AND in an Electron window, both on the :3030 Shinto demo.
+
+Follow-up (Emma's call): the graph screen still uses Flutter's canvas
+— swapping it for vis-network (the `/browse` engine) inside the web
+Studio is the next step toward "browser knowledge graph everywhere".
+
 ## 🚀 Multi-version pipeline — 2026-05-13 evening pivot
 
 After hitting Loka SPARQL OFFSET-cost (page-N is O(N) on sled — 25h projected for pass 1 alone), pivoted to a no-Loka HF-source preprocessor (`tools/preprocess_from_hf.py`). The plan now is to ship a series of normalized-wikidata snapshots and train a model on each.

@@ -1,4 +1,5 @@
-import 'dart:io' show Platform;
+import 'env_endpoint.dart'
+    if (dart.library.io) 'env_endpoint_io.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'services/connection_provider.dart';
@@ -11,8 +12,9 @@ import 'screens/health_screen.dart';
 import 'theme/loka_theme.dart';
 
 void main() {
-  // Read LOKA_ENDPOINT env var (set by MCP launch_studio tool)
-  final envEndpoint = Platform.environment['LOKA_ENDPOINT'];
+  // Read LOKA_ENDPOINT on desktop/mobile; null on web (no process
+  // env — falls back to the default endpoint / auth screen).
+  final envEndpoint = readEnvEndpoint();
   runApp(LokaStudioApp(initialEndpoint: envEndpoint));
 }
 
