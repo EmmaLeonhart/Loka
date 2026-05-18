@@ -63,6 +63,33 @@ body { padding-top: 66px; }
 .site-nav .theme-toggle { position: static; top: auto; right: auto; }
 @media (max-width: 760px) { .site-nav .nav-links { display: none; } }
 
+/* ---- Live training-run banner (placed by hand below .site-nav while a
+   big run is in flight; one block, removed when the run ships) ---- */
+.run-banner {
+    position: relative; z-index: 1;
+    max-width: 1100px; margin: 16px auto 0;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 12px 20px;
+    background: color-mix(in srgb, var(--accent) 13%, var(--bg-card));
+    border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--border));
+    border-radius: 12px;
+    font-family: var(--mono); font-size: 0.82rem; color: var(--text);
+}
+.run-banner .dot {
+    width: 9px; height: 9px; border-radius: 50%; flex: none;
+    background: var(--accent);
+    animation: run-pulse 1.8s ease-out infinite;
+}
+@keyframes run-pulse {
+    0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); }
+    70%  { box-shadow: 0 0 0 10px color-mix(in srgb, var(--accent) 0%, transparent); }
+    100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent); }
+}
+.run-banner strong { color: var(--accent-bright); font-weight: 700; }
+.run-banner a { color: var(--accent); border-bottom: 1px dotted currentColor; text-decoration: none; }
+.run-banner a:hover { color: var(--accent-bright); }
+@media (max-width: 760px) { .run-banner { font-size: 0.76rem; padding: 10px 14px; } }
+
 /* ---- Material search box + site-wide results dropdown ---- */
 .search {
     position: relative;
