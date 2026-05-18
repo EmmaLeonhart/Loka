@@ -139,13 +139,27 @@ Flutter Studio frozen as spec+fallback. Incremental, commit per
 slice. **Full self-contained plan: `planning/js-studio.md`** (read
 it first — chat context is gone in the resuming session).
 
-Resume order (slices): 1 shell + embedded `/browse` graph →
-2 SPARQL (adapt `pages/playground.html`) → 3 triples → 4 health →
-5 ontology → 6 polish. Target dir `web-studio/`; reuse
-`loka-studio/electron/server.js` (repoint ROOT via env).
+Emma's refinement: tabbed app; existing engine HTML surfaces
+(`/browse`, playground `/`) are tabs; "JS knowledge graph is best".
 
-A CronCreate fires ~1 h from now to barrel through this locally.
-Running processes + restart commands are in `planning/js-studio.md`.
+- [x] **Slice 1** — `web-studio/` shell (index.html + style.css +
+      app.js): tabbed UI, endpoint state + conn dot + theme toggle,
+      JS `LokaClient` (1:1 port of `loka_client.dart`). Graph tab =
+      iframe `/browse` (vis-network), Playground tab = iframe `/`.
+      `electron/server.js` ROOT now overridable via `STUDIO_WEB_ROOT`
+      (Flutter path unchanged). Live + verified `http://localhost:8091`
+      (`STUDIO_WEB_ROOT=web-studio STUDIO_WEB_PORT=8091 node
+      loka-studio/electron/server.js`).
+- [ ] **Slice 2** — `web-studio/screens/sparql.js` (adapt
+      `pages/playground.html` editor+results via LokaClient).
+- [ ] **Slice 3-5** — `screens/triples.js` (paged SELECT),
+      `health.js` (`/vectors/health`+`/health`+stats),
+      `ontology.js` (`/graph` Turtle). app.js auto-loads
+      `screens/<id>.js` (placeholder until present — no app.js churn).
+- [ ] **Slice 6** — polish; point Electron at the JS Studio; docs.
+
+Running locally: playground_server :3030 (Shinto demo, 73 triples),
+JS Studio static server :8091. Full plan: `planning/js-studio.md`.
 
 ## 🚀 Multi-version pipeline — 2026-05-13 evening pivot
 
