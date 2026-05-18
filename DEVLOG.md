@@ -7,6 +7,17 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-05-17 — Studio leaves Flutter: site branding kit, /browse un-orphaned, JS Studio shipped
+
+A UI-day, three threads, one trajectory: **the graph viewer stops being a Flutter problem.**
+
+First, the website. A botched identity-standardization pass had gutted the self-contained `/contribute/` page (an over-broad hex→token regex rewrote its own `:root` palette into circular `--bg:var(--bg)` and swapped working font stacks for undefined `var(--sans)`). Repaired it, hardened `unify_site.py` (never rewrite a custom-property *definition*; real-`<link>` shared-sheet detection), scrubbed the same dead `:root` from `benchmarks`/`playground`. Then reconstructed all 38 content pages onto the shared branding kit from emmaleonhart.com/branding/ (`scripts/restructure_site.py` — `.site-nav` bar, `.repo-widget`, hero/glyph, `.sig`; `scripts/build_search_index.py` → real site-wide search), homepage hand-finished as the showcase. Three transformers, mutually idempotent.
+
+Then the viewer forensics. Emma remembered a *good* graph visualization that felt gone. Git history settled it: `tools/browse.html` (vis-network) was never visually degraded — only the SutraDB→Loka rebrand touched it (7 name strings) — and `/graph` was *never* a viewer (born as a Protégé Turtle export). The good viewer was **orphaned**: the engine never served it and the playground's "Graph Browser" button pointed at the Turtle dump. Fixed: shared router serves it at `GET /browse`; button repointed. (History even showed the Flutter Studio graph view was once explicitly built "toward browse.html parity" — the team already knew browse.html was the gold standard.)
+
+Then the strategic turn. Comparing browser vs Flutter Studio, Emma's call: the JS knowledge graph is best, and Flutter→web→Electron is the easy direction. First proved Flutter-web-in-Electron works (one `dart:io` conditional-import shim — the app was otherwise 100% web-portable) — but she flagged the real issue herself: CanvasKit renders the whole UI to one `<canvas>`, so vis-network can't compose. So: **a plain HTML/JS Studio** (`web-studio/`, real DOM), `LokaClient` a 1:1 port of `loka_client.dart`, six tabs — Knowledge Graph (the `/browse` vis-network viewer in an iframe), SPARQL, Triples, Health, Ontology, Playground — built incrementally (slices 1–6, commit each), running in the browser **and** Electron. The Flutter Studio is frozen as spec + fallback, not deleted. Built autonomously via a resume cron after a usage-limit pause; full spec in `planning/js-studio.md`.
+
+---
 ## 2026-05-16 — RDF-star hardened across every path; cascade-retraction ships end-to-end
 
 Headline: **a continuous barrel (B0–B8) took RDF-star from "works on the proto

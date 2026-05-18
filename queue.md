@@ -158,10 +158,21 @@ Emma's refinement: tabbed app; existing engine HTML surfaces
       HNSW `/vectors/health` cards), `ontology.js` (`/graph` Turtle/
       N-Triples view + download). All served + endpoints verified vs
       :3030 (Turtle export, 4 types, /vectors/health 200).
-- [ ] **Slice 6** — point Electron at the JS Studio; docs.
+- [x] **Slice 6** — `electron/run-js.js` + `studio:js` npm script +
+      root `!studio.bat` launch Electron pointed at `web-studio`
+      (STUDIO_WEB_ROOT + :8091); plain `npm start` still loads the
+      frozen Flutter build. `web-studio/README.md` written. Verified:
+      Electron window up on :8091 serving the JS Studio.
+
+**JS Studio = SHIPPED end to end** (commits 3d10fc5, 5bbe3b4,
+b572321, + slice 6). Six tabs (Knowledge Graph `/browse` + SPARQL +
+Triples + Health + Ontology + Playground), browser **and** Electron.
+Flutter Studio left frozen as spec/fallback.
 
 Running locally: playground_server :3030 (Shinto demo, 73 triples),
-JS Studio static server :8091. Full plan: `planning/js-studio.md`.
+JS Studio static server :8091, Electron. Full plan/spec:
+`planning/js-studio.md`. Optional follow-ups: repo-README mention;
+deeper per-screen parity with the Dart screens; auth/passcode field.
 
 ## 🚀 Multi-version pipeline — 2026-05-13 evening pivot
 
