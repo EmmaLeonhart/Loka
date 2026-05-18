@@ -359,6 +359,52 @@ def build_inference_state(triples, property_cache="training/property_label_cache
     return labels, subj_facts, pred_usage, n_reserved_skipped
 
 
+def candidate_predicates(
+    s_uri,
+    *,
+    labels,
+    subj_facts,
+    pred_usage,
+    max_candidates_per_subject=5,
+    fallback_candidates=False,
+):
+    """Predicates worth trying to generate for S: those used by graph-
+    neighbours (subjects sharing a (p, o-key) with S) but missing from S,
+    ranked by shared-neighbour count; optionally topped up from global
+    predicate frequency on sparse graphs. Shared by the from-scratch
+    `generate_for_subject` and the fine-tune `training/finetune/infer.py`
+    so both model paths see the same candidate set (no parallel impl)."""
+    s_existing_preds = {p for p, _ in subj_facts.get(s_uri, [])}
+    neighbor_pred_score: dict[str, int] = defaultdict(int)
+    for p, o_term in subj_facts.get(s_uri, []):
+        ok = o_key(o_term)
+        for s2, o2_term in pred_usage.get(p, []):
+            if s2 == s_uri:
+                continue
+            if o_key(o2_term) != ok:
+                continue
+            for p2, _ in subj_facts.get(s2, []):
+                if p2 in s_existing_preds:
+                    continue
+                if p2 not in labels:
+                    continue
+                neighbor_pred_score[p2] += 1
+    ranked = sorted(neighbor_pred_score.items(), key=lambda kv: -kv[1])
+    cand = [p for p, _ in ranked if not is_reserved_predicate(p)][
+        :max_candidates_per_subject
+    ]
+    if fallback_candidates and len(cand) < max_candidates_per_subject:
+        have = set(cand) | s_existing_preds
+        for p, _users in sorted(pred_usage.items(), key=lambda kv: -len(kv[1])):
+            if len(cand) >= max_candidates_per_subject:
+                break
+            if p in have or p not in labels or is_reserved_predicate(p):
+                continue
+            cand.append(p)
+            have.add(p)
+    return cand
+
+
 def generate_for_subject(
     model,
     s_uri,
@@ -400,39 +446,11 @@ def generate_for_subject(
         return out_lines, log
 
     s_label = labels[s_uri]
-    s_existing_preds = {p for p, _ in subj_facts[s_uri]}
-
-    # Graph-neighbours: subjects that share at least one (p, o-key) with S.
-    # Their predicates are the candidate predicates for S.
-    neighbor_pred_score: dict[str, int] = defaultdict(int)
-    for p, o_term in subj_facts[s_uri]:
-        ok = o_key(o_term)
-        for s2, o2_term in pred_usage.get(p, []):
-            if s2 == s_uri:
-                continue
-            if o_key(o2_term) != ok:
-                continue
-            for p2, _ in subj_facts.get(s2, []):
-                if p2 in s_existing_preds:
-                    continue
-                if p2 not in labels:
-                    continue
-                neighbor_pred_score[p2] += 1
-
-    candidate_preds = sorted(neighbor_pred_score.items(), key=lambda kv: -kv[1])
-    candidate_preds = [
-        p for p, _ in candidate_preds if not is_reserved_predicate(p)
-    ][:max_candidates_per_subject]
-
-    if fallback_candidates and len(candidate_preds) < max_candidates_per_subject:
-        have = set(candidate_preds) | s_existing_preds
-        for p, _users in sorted(pred_usage.items(), key=lambda kv: -len(kv[1])):
-            if len(candidate_preds) >= max_candidates_per_subject:
-                break
-            if p in have or p not in labels or is_reserved_predicate(p):
-                continue
-            candidate_preds.append(p)
-            have.add(p)
+    candidate_preds = candidate_predicates(
+        s_uri, labels=labels, subj_facts=subj_facts, pred_usage=pred_usage,
+        max_candidates_per_subject=max_candidates_per_subject,
+        fallback_candidates=fallback_candidates,
+    )
 
     for p_uri in candidate_preds:
         if is_reserved_predicate(p_uri):
