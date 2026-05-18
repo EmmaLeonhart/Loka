@@ -150,8 +150,9 @@ Emma's refinement: tabbed app; existing engine HTML surfaces
       (Flutter path unchanged). Live + verified `http://localhost:8091`
       (`STUDIO_WEB_ROOT=web-studio STUDIO_WEB_PORT=8091 node
       loka-studio/electron/server.js`).
-- [ ] **Slice 2** — `web-studio/screens/sparql.js` (adapt
-      `pages/playground.html` editor+results via LokaClient).
+- [x] **Slice 2** — `web-studio/screens/sparql.js`: editor +
+      examples + Ctrl/Cmd-Enter, type-coloured results table via
+      `LokaClient.query`. Verified vs :3030.
 - [ ] **Slice 3-5** — `screens/triples.js` (paged SELECT),
       `health.js` (`/vectors/health`+`/health`+stats),
       `ontology.js` (`/graph` Turtle). app.js auto-loads
