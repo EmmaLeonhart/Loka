@@ -48,11 +48,13 @@ Remaining:
    LLM. **Defer the GPU load until training has stopped at epoch 5**
    (no concurrent GPU contention — that risks crashing the run).
 2. End-to-end test on the epoch-5 adapter; honest eval; commit.
-3. Website (safe to do WHILE training runs — no GPU): banner that a
-   big fine-tune run is in progress + "be patient about the new
-   model"; keep contribute material but restructure the contribute
-   script/page to reflect THIS run (QLoRA Qwen2.5-1.5B on normalized-
-   wikidata, per-epoch HF pushes) not only the old v14 donor path.
+3. Website follow-up: the `.run-banner` (kit component in `style.css`)
+   is live on the homepage + contribute page, and the contribute
+   lead now leads with the active fine-tune track (per-epoch HF) while
+   keeping the v14 from-scratch donor material. REMAINING: a dedicated
+   `tools/contribute_finetune.py` (mirror of `contribute_v14_training.py`
+   but for the QLoRA path) + a contribute-page section walking the
+   fine-tune donor command. Not time-critical; training is autonomous.
 
 ### Progression ladder (Emma's framing — scale the corpus up over runs)
 
