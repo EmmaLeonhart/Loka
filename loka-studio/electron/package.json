@@ -6,7 +6,8 @@
   "main": "main.js",
   "scripts": {
     "serve": "node server.js",
-    "start": "electron ."
+    "start": "electron .",
+    "studio:js": "node run-js.js"
   },
   "devDependencies": {
     "electron": "^33.0.0"
