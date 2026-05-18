@@ -152,6 +152,7 @@ def predict_object(
     per_token_floor=0.05,
     repetition_penalty: float = 3.0,
     encode_fn=None,
+    decode_fn=None,
 ):
     """Return (predicted_label, mean_confidence) or None if no usable prediction.
 
@@ -164,6 +165,13 @@ def predict_object(
     `encode_fn`, if provided, is a callable that maps a label string to a list
     of token IDs (e.g. a BPE tokenizer's encoder). If None, falls back to the
     word-level regex encoder against `vocab`.
+
+    `decode_fn`, if provided, maps the emitted token-id list back to a string
+    (a BPE tokenizer's `.decode`). Without it the output is the raw vocab
+    tokens space-joined — for a BPE checkpoint that surfaces subword pieces
+    and the `Ġ` space-marker as literal text (the "M :" artefact). The batch
+    pipeline leaves it None on purpose (the paper reports raw emissions); the
+    interactive sidecar passes a real decoder so the user sees readable text.
     """
     if encode_fn is not None:
         s_ids = encode_fn(s_label)
@@ -185,6 +193,7 @@ def predict_object(
 
     skip_ids = {PAD_ID, MASK_ID, UNK_ID, CLS_ID, SEP_S_ID, SEP_P_ID, SEP_O_ID}
     out_tokens: list[str] = []
+    out_ids: list[int] = []
     out_probs: list[float] = []
     emit_counts: dict[int, int] = {}
     for mp in masked_positions:
@@ -205,12 +214,18 @@ def predict_object(
         if prob < per_token_floor:
             break
         out_tokens.append(inv_vocab[idx])
+        out_ids.append(idx)
         out_probs.append(prob)
         emit_counts[idx] = emit_counts.get(idx, 0) + 1
 
     if not out_tokens:
         return None
-    label = " ".join(out_tokens)
+    if decode_fn is not None:
+        label = decode_fn(out_ids).strip()
+    else:
+        label = " ".join(out_tokens)
+    if not label:
+        return None
     confidence = sum(out_probs) / len(out_probs)
     return label, confidence
 
@@ -265,12 +280,16 @@ def load_model(checkpoint, vocab_path, device, bpe_tokenizer=None, model_version
     )
 
     encode_fn = None
+    decode_fn = None
     if bpe_tokenizer:
         from tokenizers import Tokenizer  # type: ignore
         bpe_tok = Tokenizer.from_file(bpe_tokenizer)
 
         def encode_fn(text: str) -> list[int]:  # noqa: E306
             return bpe_tok.encode(text, add_special_tokens=False).ids
+
+        def decode_fn(ids: list[int]) -> str:  # noqa: E306
+            return bpe_tok.decode(ids)
 
         print(f"Using BPE tokenizer: {bpe_tokenizer}", file=sys.stderr)
 
@@ -280,19 +299,37 @@ def load_model(checkpoint, vocab_path, device, bpe_tokenizer=None, model_version
         "inv_vocab": inv_vocab,
         "tokens_per_role": tokens_per_role,
         "encode_fn": encode_fn,
+        "decode_fn": decode_fn,
         "model_version": model_version,
         "checkpoint": checkpoint,
         "vocab_size": ckpt["vocab_size"],
     }
 
 
+def _is_vector_pred(p_iri: str) -> bool:
+    pl = p_iri.lower()
+    return "embedding" in pl or pl.endswith("f32vec") or pl.endswith("/vector")
+
+
+def _is_vector_obj(term: dict) -> bool:
+    """True for a vector literal. A text transformer cannot consume or predict
+    a float-array; worse, Loka renders f32vec through SPARQL JSON as a junk
+    string like ``vec_<iri>"^^<http://loka.dev/f32vec>``. Such rows must never
+    enter inference state (as facts, candidate predicates, or citations)."""
+    if term.get("type") != "literal":
+        return False
+    return "f32vec" in term.get("datatype", "") or "f32vec" in term.get("value", "")
+
+
 def build_inference_state(triples, property_cache="training/property_label_cache.json"):
     """Build ``(labels, subj_facts, pred_usage, n_reserved_skipped)`` from raw
     SPARQL-JSON triples.
 
-    ``rdfs:label`` and reserved-namespace (``http://loka.dev/provenance/``)
-    rows are kept out of inference state — defense in depth on top of the
-    SPARQL-star corpus filter in ``fetch_all_triples``.
+    ``rdfs:label``, reserved-namespace (``http://loka.dev/provenance/``), and
+    **vector/embedding** rows are kept out of inference state — defense in
+    depth on top of the SPARQL-star corpus filter in ``fetch_all_triples``.
+    (The Wikidata corpus has no f32vec, so this is a no-op there; it matters
+    for embedded graphs like the Shinto demo.)
     """
     labels = build_qid_label_map(triples)
     missing_props = collect_unlabeled_predicates(triples, labels)
@@ -313,6 +350,8 @@ def build_inference_state(triples, property_cache="training/property_label_cache
             continue
         if is_reserved_predicate(p_iri):
             n_reserved_skipped += 1
+            continue
+        if _is_vector_pred(p_iri) or _is_vector_obj(t["o"]):
             continue
         s_uri = t["s"]["value"]
         subj_facts[s_uri].append((p_iri, t["o"]))
@@ -337,7 +376,9 @@ def generate_for_subject(
     max_candidates_per_subject=5,
     max_citations=10,
     encode_fn=None,
+    decode_fn=None,
     fallback_candidates=False,
+    per_token_floor=0.05,
 ):
     """Generate provenance-tagged N-Triples-star for ONE subject.
 
@@ -399,8 +440,10 @@ def generate_for_subject(
         p_label = labels[p_uri]
         res = predict_object(
             model, s_label, p_label, vocab, inv_vocab, tokens_per_role, device,
+            per_token_floor=per_token_floor,
             repetition_penalty=repetition_penalty,
             encode_fn=encode_fn,
+            decode_fn=decode_fn,
         )
         if res is None:
             continue
