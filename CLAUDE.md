@@ -437,3 +437,6 @@ Loka Studio shows the ontology (Protege-like browser) and can highlight constrai
 - All public API must have doc comments
 - Benchmarks go in `benches/` using `criterion`
 - Tests use `#[cfg(test)]` modules inline, plus integration tests in `tests/`
+
+## Writing
+- Do not use the word "honest", "honesty", or "honestly". It is aggressively overused. Choose a more precise word that says what you actually mean (e.g. "accurate", "frank", "plainly", "truly").
