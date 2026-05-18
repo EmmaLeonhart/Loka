@@ -222,6 +222,226 @@ def o_key(term: dict) -> str:
     return parse_literal(term)[0]
 
 
+def load_model(checkpoint, vocab_path, device, bpe_tokenizer=None, model_version=None):
+    """Load the pinned/file checkpoint once and return a reusable bundle.
+
+    Shared by ``main()`` and the resident inference sidecar
+    (``tools/infer_server.py``) so model loading lives in exactly one place.
+    ``checkpoint``/``vocab_path`` of ``None`` fall back to the MODEL.json pin
+    (auto-downloaded from Hugging Face on first run).
+    """
+    if checkpoint is None or vocab_path is None:
+        from loader import resolve_checkpoint, resolve_vocab, info as pin_info
+        if checkpoint is None:
+            checkpoint = str(resolve_checkpoint())
+        if vocab_path is None:
+            vocab_path = str(resolve_vocab())
+        if model_version is None:
+            model_version = pin_info().get("name", Path(checkpoint).stem)
+    if model_version is None:
+        model_version = Path(checkpoint).stem
+
+    vocab: dict[str, int] = json.loads(Path(vocab_path).read_text(encoding="utf-8"))
+    inv_vocab: list[str] = [""] * len(vocab)
+    for tok, i in vocab.items():
+        inv_vocab[i] = tok
+
+    ckpt = torch.load(checkpoint, map_location=device, weights_only=False)
+    cfg = ckpt["config"]
+    tokens_per_role = cfg["tokens_per_role"]
+    model = TripleTransformer(
+        vocab_size=ckpt["vocab_size"],
+        d_model=cfg["d_model"],
+        nhead=cfg["nhead"],
+        num_layers=cfg["num_layers"],
+        max_len=cfg["max_len"],
+    ).to(device)
+    model.load_state_dict(ckpt["model_state"])
+    model.eval()
+    n_params = sum(p.numel() for p in model.parameters())
+    print(
+        f"Loaded {checkpoint} ({n_params:,} params, {ckpt['vocab_size']:,} vocab)",
+        file=sys.stderr,
+    )
+
+    encode_fn = None
+    if bpe_tokenizer:
+        from tokenizers import Tokenizer  # type: ignore
+        bpe_tok = Tokenizer.from_file(bpe_tokenizer)
+
+        def encode_fn(text: str) -> list[int]:  # noqa: E306
+            return bpe_tok.encode(text, add_special_tokens=False).ids
+
+        print(f"Using BPE tokenizer: {bpe_tokenizer}", file=sys.stderr)
+
+    return {
+        "model": model,
+        "vocab": vocab,
+        "inv_vocab": inv_vocab,
+        "tokens_per_role": tokens_per_role,
+        "encode_fn": encode_fn,
+        "model_version": model_version,
+        "checkpoint": checkpoint,
+        "vocab_size": ckpt["vocab_size"],
+    }
+
+
+def build_inference_state(triples, property_cache="training/property_label_cache.json"):
+    """Build ``(labels, subj_facts, pred_usage, n_reserved_skipped)`` from raw
+    SPARQL-JSON triples.
+
+    ``rdfs:label`` and reserved-namespace (``http://loka.dev/provenance/``)
+    rows are kept out of inference state — defense in depth on top of the
+    SPARQL-star corpus filter in ``fetch_all_triples``.
+    """
+    labels = build_qid_label_map(triples)
+    missing_props = collect_unlabeled_predicates(triples, labels)
+    prop_labels = fetch_wikidata_property_labels(missing_props, Path(property_cache))
+    labels.update(prop_labels)
+
+    # subject_uri -> [(predicate_uri, object_term)]
+    subj_facts: dict[str, list[tuple[str, dict]]] = defaultdict(list)
+    # predicate_uri -> [(subject_uri, object_term)]
+    pred_usage: dict[str, list[tuple[str, dict]]] = defaultdict(list)
+
+    n_reserved_skipped = 0
+    for t in triples:
+        if t["s"]["type"] != "uri":
+            continue
+        p_iri = t["p"]["value"]
+        if p_iri == RDFS_LABEL:
+            continue
+        if is_reserved_predicate(p_iri):
+            n_reserved_skipped += 1
+            continue
+        s_uri = t["s"]["value"]
+        subj_facts[s_uri].append((p_iri, t["o"]))
+        pred_usage[p_iri].append((s_uri, t["o"]))
+    return labels, subj_facts, pred_usage, n_reserved_skipped
+
+
+def generate_for_subject(
+    model,
+    s_uri,
+    *,
+    labels,
+    subj_facts,
+    pred_usage,
+    vocab,
+    inv_vocab,
+    tokens_per_role,
+    device,
+    model_version,
+    confidence=0.4,
+    repetition_penalty=3.0,
+    max_candidates_per_subject=5,
+    max_citations=10,
+    encode_fn=None,
+    fallback_candidates=False,
+):
+    """Generate provenance-tagged N-Triples-star for ONE subject.
+
+    Candidate predicates are those used by graph-neighbours (subjects sharing a
+    ``(p, o-key)`` with S) but missing from S. Returns ``(out_lines, log)``:
+    ``out_lines`` is N-Triples-star text, ``log`` is human-readable emission
+    lines (each accepted triple starts with ``"  + "``). Reserved-namespace
+    predicates are refused at every gate.
+
+    ``fallback_candidates`` (default off — the batch pipeline keeps its exact
+    behaviour) tops the candidate list up from global predicate frequency when
+    the neighbour heuristic underfills it. Small/symmetric graphs (e.g. an
+    interactive double-click on the 73-triple Shinto demo) otherwise yield no
+    candidates and emit nothing; this makes the gesture actually do something.
+    """
+    out_lines: list[str] = []
+    log: list[str] = []
+    if s_uri not in labels or s_uri not in subj_facts:
+        return out_lines, log
+
+    s_label = labels[s_uri]
+    s_existing_preds = {p for p, _ in subj_facts[s_uri]}
+
+    # Graph-neighbours: subjects that share at least one (p, o-key) with S.
+    # Their predicates are the candidate predicates for S.
+    neighbor_pred_score: dict[str, int] = defaultdict(int)
+    for p, o_term in subj_facts[s_uri]:
+        ok = o_key(o_term)
+        for s2, o2_term in pred_usage.get(p, []):
+            if s2 == s_uri:
+                continue
+            if o_key(o2_term) != ok:
+                continue
+            for p2, _ in subj_facts.get(s2, []):
+                if p2 in s_existing_preds:
+                    continue
+                if p2 not in labels:
+                    continue
+                neighbor_pred_score[p2] += 1
+
+    candidate_preds = sorted(neighbor_pred_score.items(), key=lambda kv: -kv[1])
+    candidate_preds = [
+        p for p, _ in candidate_preds if not is_reserved_predicate(p)
+    ][:max_candidates_per_subject]
+
+    if fallback_candidates and len(candidate_preds) < max_candidates_per_subject:
+        have = set(candidate_preds) | s_existing_preds
+        for p, _users in sorted(pred_usage.items(), key=lambda kv: -len(kv[1])):
+            if len(candidate_preds) >= max_candidates_per_subject:
+                break
+            if p in have or p not in labels or is_reserved_predicate(p):
+                continue
+            candidate_preds.append(p)
+            have.add(p)
+
+    for p_uri in candidate_preds:
+        if is_reserved_predicate(p_uri):
+            continue
+        p_label = labels[p_uri]
+        res = predict_object(
+            model, s_label, p_label, vocab, inv_vocab, tokens_per_role, device,
+            repetition_penalty=repetition_penalty,
+            encode_fn=encode_fn,
+        )
+        if res is None:
+            continue
+        o_label, conf = res
+        if conf < confidence:
+            continue
+        if len(o_label) < 2:
+            continue
+        # Skip if (S, P) already has an object whose label matches the
+        # prediction (the model is just memorising).
+        existing_labels = set()
+        for op, oo in subj_facts[s_uri]:
+            if op != p_uri:
+                continue
+            if oo["type"] == "uri":
+                existing_labels.add(labels.get(oo["value"], "").lower())
+            else:
+                existing_labels.add(parse_literal(oo)[0].lower())
+        if o_label.lower() in existing_labels:
+            continue
+        if is_reserved_predicate(p_uri):
+            log.append(f"  ! REFUSED to emit reserved-namespace predicate {p_uri!r}")
+            continue
+
+        s_term = f"<{s_uri}>"
+        p_term = f"<{p_uri}>"
+        o_term = f'"{escape_literal(o_label)}"'
+
+        out_lines.append(f"{s_term} {p_term} {o_term} .")
+        qt = quoted(s_term, p_term, o_term)
+        out_lines.append(f'{qt} <{LOKA_GENERATED}> "true"^^<{XSD_BOOLEAN}> .')
+        out_lines.append(f'{qt} <{LOKA_GENERATED_BY}> "{escape_literal(model_version)}" .')
+        out_lines.append(f'{qt} <{LOKA_CONFIDENCE}> "{conf:.4f}"^^<{XSD_DECIMAL}> .')
+        for cp_uri, co_term in subj_facts[s_uri][:max_citations]:
+            cited = quoted(s_term, f"<{cp_uri}>", fmt_term(co_term))
+            out_lines.append(f"{qt} <{LOKA_INFERRED_FROM}> {cited} .")
+        log.append(f"  + {s_label!s} | {p_label!s} | {o_label!s}  (conf={conf:.3f})")
+
+    return out_lines, log
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -283,82 +503,26 @@ def main() -> None:
         args.device = "cuda" if torch.cuda.is_available() else "cpu"
     device = torch.device(args.device)
 
-    if args.checkpoint is None or args.vocab is None:
-        from loader import resolve_checkpoint, resolve_vocab, info as pin_info
-        if args.checkpoint is None:
-            args.checkpoint = str(resolve_checkpoint())
-        if args.vocab is None:
-            args.vocab = str(resolve_vocab())
-        if args.model_version is None:
-            args.model_version = pin_info().get("name", Path(args.checkpoint).stem)
-    if args.model_version is None:
-        args.model_version = Path(args.checkpoint).stem
-
-    vocab: dict[str, int] = json.loads(Path(args.vocab).read_text(encoding="utf-8"))
-    inv_vocab: list[str] = [""] * len(vocab)
-    for tok, i in vocab.items():
-        inv_vocab[i] = tok
-
-    ckpt = torch.load(args.checkpoint, map_location=device, weights_only=False)
-    cfg = ckpt["config"]
-    tokens_per_role = cfg["tokens_per_role"]
-    model = TripleTransformer(
-        vocab_size=ckpt["vocab_size"],
-        d_model=cfg["d_model"],
-        nhead=cfg["nhead"],
-        num_layers=cfg["num_layers"],
-        max_len=cfg["max_len"],
-    ).to(device)
-    model.load_state_dict(ckpt["model_state"])
-    model.eval()
-    n_params = sum(p.numel() for p in model.parameters())
-    print(
-        f"Loaded {args.checkpoint} ({n_params:,} params, {ckpt['vocab_size']:,} vocab)",
-        file=sys.stderr,
+    bundle = load_model(
+        args.checkpoint, args.vocab, device,
+        bpe_tokenizer=args.bpe_tokenizer, model_version=args.model_version,
     )
-
-    encode_fn = None
-    if args.bpe_tokenizer:
-        from tokenizers import Tokenizer  # type: ignore
-        bpe_tok = Tokenizer.from_file(args.bpe_tokenizer)
-        def encode_fn(text: str) -> list[int]:
-            return bpe_tok.encode(text, add_special_tokens=False).ids
-        print(f"Using BPE tokenizer: {args.bpe_tokenizer}", file=sys.stderr)
+    model = bundle["model"]
+    vocab = bundle["vocab"]
+    inv_vocab = bundle["inv_vocab"]
+    tokens_per_role = bundle["tokens_per_role"]
+    encode_fn = bundle["encode_fn"]
+    args.model_version = bundle["model_version"]
 
     print(f"Fetching triples from {args.endpoint}...", file=sys.stderr)
     triples = fetch_all_triples(args.endpoint)
     print(f"  got {len(triples):,} triples", file=sys.stderr)
 
     print("Building label maps...", file=sys.stderr)
-    labels = build_qid_label_map(triples)
-    missing_props = collect_unlabeled_predicates(triples, labels)
-    prop_labels = fetch_wikidata_property_labels(missing_props, Path(args.property_cache))
-    labels.update(prop_labels)
+    labels, subj_facts, pred_usage, n_reserved_skipped = build_inference_state(
+        triples, args.property_cache
+    )
     print(f"  resolved {len(labels):,} URI -> label mappings", file=sys.stderr)
-
-    # subject_uri -> [(predicate_uri, object_term)]
-    subj_facts: dict[str, list[tuple[str, dict]]] = defaultdict(list)
-    # predicate_uri -> [(subject_uri, object_term)]
-    pred_usage: dict[str, list[tuple[str, dict]]] = defaultdict(list)
-
-    n_reserved_skipped = 0
-    for t in triples:
-        if t["s"]["type"] != "uri":
-            continue
-        p_iri = t["p"]["value"]
-        if p_iri == RDFS_LABEL:
-            continue
-        # Reserved-namespace predicates never enter inference state. The model
-        # cannot see them, propose them as candidate predicates, or learn that
-        # they exist. If `fetch_all_triples` happens to return any (which it
-        # shouldn't given the SPARQL-star filter, but defense in depth), drop
-        # them here too.
-        if is_reserved_predicate(p_iri):
-            n_reserved_skipped += 1
-            continue
-        s_uri = t["s"]["value"]
-        subj_facts[s_uri].append((p_iri, t["o"]))
-        pred_usage[p_iri].append((s_uri, t["o"]))
     if n_reserved_skipped:
         print(
             f"  dropped {n_reserved_skipped} reserved-namespace rows from inference state",
@@ -374,104 +538,30 @@ def main() -> None:
 
     out_lines: list[str] = []
     n_emitted = 0
-    n_attempted = 0
 
     for s_uri in candidate_subjects:
-        s_label = labels[s_uri]
-        s_existing_preds = {p for p, _ in subj_facts[s_uri]}
-
-        # Find graph-neighbors: subjects that share at least one (p, o-key) with S.
-        # Their predicates are the candidate predicates for S.
-        neighbor_pred_score: dict[str, int] = defaultdict(int)
-        for p, o_term in subj_facts[s_uri]:
-            ok = o_key(o_term)
-            for s2, o2_term in pred_usage.get(p, []):
-                if s2 == s_uri:
-                    continue
-                if o_key(o2_term) != ok:
-                    continue
-                for p2, _ in subj_facts.get(s2, []):
-                    if p2 in s_existing_preds:
-                        continue
-                    if p2 not in labels:
-                        continue
-                    neighbor_pred_score[p2] += 1
-
-        candidate_preds = sorted(neighbor_pred_score.items(), key=lambda kv: -kv[1])
-        # Hard guard: never propose a reserved-namespace predicate as a
-        # candidate. Belt-and-suspenders — `is_reserved_predicate` rows were
-        # already filtered out of `pred_usage` above, but if anything ever
-        # bypasses that, this gate stops it before the model sees it.
-        candidate_preds = [
-            p for p, _ in candidate_preds if not is_reserved_predicate(p)
-        ][: args.max_candidates_per_subject]
-
-        for p_uri in candidate_preds:
-            n_attempted += 1
-            # Final guard before running the model: refuse to even try.
-            if is_reserved_predicate(p_uri):
-                continue
-            p_label = labels[p_uri]
-            res = predict_object(
-                model, s_label, p_label, vocab, inv_vocab, tokens_per_role, device,
-                repetition_penalty=args.repetition_penalty,
-                encode_fn=encode_fn,
-            )
-            if res is None:
-                continue
-            o_label, confidence = res
-            if confidence < args.confidence:
-                continue
-            if len(o_label) < 2:
-                continue
-            # Skip if a triple with the same (S, P) already has an object whose
-            # label matches the prediction (the model is just memorising).
-            existing_labels = set()
-            for op, oo in subj_facts[s_uri]:
-                if op != p_uri:
-                    continue
-                if oo["type"] == "uri":
-                    existing_labels.add(labels.get(oo["value"], "").lower())
-                else:
-                    existing_labels.add(parse_literal(oo)[0].lower())
-            if o_label.lower() in existing_labels:
-                continue
-
-            # Final emit-time guard. Belt-suspenders-and-elastic: if any prior
-            # filter has been bypassed, this still refuses. Logged loudly so
-            # the regression is obvious.
-            if is_reserved_predicate(p_uri):
-                print(
-                    f"  ! REFUSED to emit reserved-namespace predicate {p_uri!r}",
-                    file=sys.stderr,
-                )
-                continue
-
-            s_term = f"<{s_uri}>"
-            p_term = f"<{p_uri}>"
-            o_term = f'"{escape_literal(o_label)}"'
-
-            out_lines.append(f"{s_term} {p_term} {o_term} .")
-            qt = quoted(s_term, p_term, o_term)
-            out_lines.append(f'{qt} <{LOKA_GENERATED}> "true"^^<{XSD_BOOLEAN}> .')
-            out_lines.append(f'{qt} <{LOKA_GENERATED_BY}> "{escape_literal(args.model_version)}" .')
-            out_lines.append(f'{qt} <{LOKA_CONFIDENCE}> "{confidence:.4f}"^^<{XSD_DECIMAL}> .')
-
-            for cp_uri, co_term in subj_facts[s_uri][: args.max_citations]:
-                cited = quoted(s_term, f"<{cp_uri}>", fmt_term(co_term))
-                out_lines.append(f"{qt} <{LOKA_INFERRED_FROM}> {cited} .")
-
-            n_emitted += 1
-            print(
-                f"  + {s_label!s} | {p_label!s} | {o_label!s}  (conf={confidence:.3f})",
-                file=sys.stderr,
-            )
+        lines, log = generate_for_subject(
+            model, s_uri,
+            labels=labels, subj_facts=subj_facts, pred_usage=pred_usage,
+            vocab=vocab, inv_vocab=inv_vocab, tokens_per_role=tokens_per_role,
+            device=device, model_version=args.model_version,
+            confidence=args.confidence,
+            repetition_penalty=args.repetition_penalty,
+            max_candidates_per_subject=args.max_candidates_per_subject,
+            max_citations=args.max_citations,
+            encode_fn=encode_fn,
+        )
+        out_lines.extend(lines)
+        for m in log:
+            print(m, file=sys.stderr)
+            if m.lstrip().startswith("+"):
+                n_emitted += 1
 
     out_path = Path(args.output)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text("\n".join(out_lines) + "\n", encoding="utf-8")
     print(
-        f"\n{n_emitted}/{n_attempted} predictions met threshold "
+        f"\n{n_emitted} predictions met threshold "
         f"-> {len(out_lines)} N-Triples lines written to {out_path}",
         file=sys.stderr,
     )

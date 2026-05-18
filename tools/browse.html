@@ -97,9 +97,12 @@
 
 <header>
     <span class="logo"><span>Loka</span> Browser</span>
-    <input id="endpoint" value="http://localhost:3030">
+    <input id="endpoint" value="http://localhost:3030" title="Loka data endpoint">
     <span id="status" class="off">...</span>
-    <span style="margin-left:auto;color:var(--muted);font-size:0.75em">Click node to expand | Double-click for detail | Drag to move</span>
+    <span style="color:var(--muted);font-size:0.8em">model:</span>
+    <input id="inferep" value="http://localhost:8092" title="World-model inference sidecar (tools/infer_server.py — !infer.bat)">
+    <span id="inferstatus" class="off">...</span>
+    <span style="margin-left:auto;color:var(--muted);font-size:0.75em">Click: expand &middot; Double-click: &#10024; world-model generate &middot; Drag: move</span>
 </header>
 
 <div class="layout">
@@ -127,6 +130,7 @@
             <span class="legend-item"><span class="dot" style="background:#3fb950"></span> Literal</span>
             <span class="legend-item"><span class="dot" style="background:#d29922"></span> Vector</span>
             <span class="legend-item"><span class="dot" style="background:#9b59b6"></span> HNSW Edge</span>
+            <span class="legend-item">&#10024;<span class="dot" style="background:#d29922;border-radius:2px"></span> Generated</span>
         </div>
         <div class="filters" id="filters"><strong>Edge filters:</strong> <label><input type="checkbox" id="toggleAll" checked> All</label><span id="filterBoxes"></span></div>
         <div class="gstatus" id="gstatus">No data loaded</div>
@@ -306,10 +310,11 @@ network.on('click', params => {
     expandNode(nid);
 });
 
-// ── Double-click for detail panel ──
+// ── Double-click: ask the world model to generate triples for this node ──
+// (Node detail is still available by clicking a row in the left results list.)
 network.on('doubleClick', params => {
     if (!params.nodes.length) return;
-    showDetail(params.nodes[0]);
+    generateFromNode(params.nodes[0]);
 });
 
 // ── Detail panel ──
@@ -474,6 +479,93 @@ function qk(t) {
 
 let isHnswMode = false;
 
+// ── World-model generation (double-click a node) ──
+// Talks to the resident inference sidecar (tools/infer_server.py, default
+// :8092). The sidecar generates provenance-tagged triples for the node,
+// persists them to the Loka endpoint, and returns them so we can draw them.
+const IEP = () => (localStorage.getItem('loka-infer-ep') || 'http://localhost:8092').replace(/\/$/,'');
+function setG(msg){ const g = document.getElementById('gstatus'); if (g) g.textContent = msg; }
+
+const GEN_LBL = '✨ generated';
+function addGenNode(id, label){
+    if (visNodes.get(id)) return;
+    const dl = label.length > 24 ? label.substring(0,21)+'…' : label;
+    visNodes.add({
+        id, label: '✨ '+dl, title: 'model-generated literal:\n'+label,
+        color: { background:'#3a2d12', border:'#d29922' }, shape:'box',
+        font: { color:'#f0d28a', size:10, strokeWidth:0 },
+        _type:'gen', _full:label
+    });
+}
+function addGenEdge(from, to, plabel, conf){
+    const eid = from+'|'+to+'|gen|'+plabel;
+    if (visEdges.get(eid)) return;
+    if (!knownEdgeLabels.has(GEN_LBL)) {
+        knownEdgeLabels.add(GEN_LBL);
+        if (!(GEN_LBL in filterState)) filterState[GEN_LBL] = true;
+        addFilterCheckbox(GEN_LBL);
+    }
+    visEdges.add({
+        id: eid, from, to, label: plabel,
+        title: '✨ world-model generated'+(conf!=null?(' · conf '+conf.toFixed(3)):''),
+        arrows:'to', dashes:[6,4],
+        color:{ color:'#d29922', highlight:'#f0c050' },
+        font:{ size:9, color:'#d29922', strokeWidth:0 },
+        smooth:{ type:'curvedCW', roundness:0.25 }, width:1.6,
+        hidden: filterState[GEN_LBL] === false, _lbl: GEN_LBL
+    });
+}
+
+let genBusy = false;
+async function generateFromNode(iri){
+    if (genBusy) return;
+    if (isVec(iri) || iri.startsWith('"') || !iri.startsWith('http')) {
+        setG('Double-click an IRI node to generate (not a literal / vector).');
+        return;
+    }
+    genBusy = true;
+    setG('✨ asking the world model about '+sh(iri)+' …');
+    try {
+        const r = await fetch(IEP()+'/generate', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ subject: iri, endpoint: EP(), confidence: 0.05, post: true })
+        });
+        const j = await r.json().catch(() => ({ error:'bad response from sidecar' }));
+        if (!r.ok) { setG('✨ generate failed: '+(j.error || ('HTTP '+r.status))); genBusy=false; return; }
+        const gen = j.generated || [];
+        if (!gen.length) {
+            setG('✨ model produced no high-confidence triples for '+sh(iri)+' — try another node.');
+            genBusy=false; return;
+        }
+        addNode(iri, sh(iri), 'iri');
+        for (const t of gen) {
+            const oId = 'gen::'+t.p+'::'+t.o;
+            addGenNode(oId, t.o);
+            addGenEdge(iri, oId, sh(t.p), (typeof t.confidence === 'number' ? t.confidence : null));
+        }
+        const persisted = j.inserted ? (' · '+j.inserted+' persisted to '+EP()) : '';
+        setG('✨ +'+gen.length+' generated for '+sh(iri)+persisted+' (model '+(j.model||'?')+')');
+    } catch(e) {
+        setG('✨ inference sidecar not reachable at '+IEP()+' — start it with !infer.bat ('+e.message+')');
+    }
+    genBusy = false;
+}
+
+async function checkInfer(){
+    const el = document.getElementById('inferstatus');
+    try {
+        const r = await fetch(IEP()+'/health');
+        if (r.ok) {
+            const j = await r.json();
+            el.textContent = 'ready'; el.className = 'on';
+            el.title = 'model '+(j.model||'?')+' on '+(j.device||'?');
+        } else { el.textContent = 'err'; el.className = 'off'; }
+    } catch {
+        el.textContent = 'offline'; el.className = 'off';
+        el.title = 'start tools/infer_server.py  (!infer.bat)';
+    }
+}
+
 // ── Health ──
 async function checkHealth() {
     try {
@@ -490,7 +582,14 @@ async function checkHealth() {
 document.getElementById('query').addEventListener('keydown', e => {
     if ((e.ctrlKey||e.metaKey) && e.key === 'Enter') { runQuery(); e.preventDefault(); }
 });
+const inferEpInput = document.getElementById('inferep');
+inferEpInput.value = IEP();
+inferEpInput.addEventListener('change', () => {
+    localStorage.setItem('loka-infer-ep', inferEpInput.value.trim().replace(/\/$/,''));
+    checkInfer();
+});
 checkHealth(); setInterval(checkHealth, 10000);
+checkInfer(); setInterval(checkInfer, 10000);
 </script>
 </body>
 </html>
