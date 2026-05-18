@@ -57,6 +57,51 @@ just re-push). If `README.md` describes the old site shell, update it.
 
 ---
 
+## Data-viewer 3-way comparison — LIVE, awaiting Emma's verdict
+
+Environment is **up** (2026-05-17). Three viewers on ONE database
+(built-in Shinto demo, 73 triples) for Emma to judge old-vs-new and
+decide whether to "go back to" the old vis-network viewer.
+
+**Running processes (do NOT kill on session resume — Emma is using
+them):**
+- `playground_server.exe` PID ~39852 — `target/debug/examples/
+  playground_server.exe`, serves Shinto KG on `http://localhost:3030`
+  (`/`, `/sparql`, `/graph-store`; CORS `*`). Re-launch: that exe, or
+  `cargo run --example playground_server -p loka-proto`.
+- `loka_studio.exe` PID ~40952 — Flutter Windows desktop, HTTP-only,
+  `LOKA_ENDPOINT=http://localhost:3030`. Re-launch: `PATH+=/c/Users/
+  Immanuelle/flutter/bin`, `LOKA_ENDPOINT=...`, `cd loka-studio &&
+  flutter run -d windows`. (No loka-ffi build needed.)
+- Browser: `tools/browse.html` (vis-network, the "good" old viewer,
+  endpoint field defaults :3030) + `http://localhost:3030/`
+  (playground IDE — confirmed: no graph viz, "Graph Browser" button
+  only dumps `/graph` Turtle).
+
+**Finding:** the "new browser" surface never had a graph
+visualization; `browse.html` (vis-network) vs Loka Studio (Flutter
+canvas) is the real old-vs-new question.
+
+**Resolved 2026-05-17 — old viewer un-orphaned.** Git forensics:
+`browse.html` was never visually degraded (only the `366e056`
+SutraDB→Loka rebrand touched it: 7 name strings, zero viz code);
+`/graph` was *never* a viewer (born as Turtle export, commit
+`9d88b13`). The good viewer was simply orphaned — not served by the
+engine, and the playground's "Graph Browser" button pointed at
+`/graph` (Turtle dump). Fix shipped:
+- `loka-proto/src/server.rs`: shared `router()` now serves the
+  vis-network viewer at `GET /browse` (covers `loka serve` AND the
+  playground_server example).
+- `pages/playground.html`: "Graph Browser" button → `/browse`.
+- `!serve.bat` worked all along — it just needed `loka.exe`; built
+  via `cargo build --release -p loka-cli` (`loka 0.4.0`).
+Verified live: `http://localhost:3030/browse` = 22 673 B vis-network
+viewer on the 73-triple Shinto demo; button repointed; loka.exe runs.
+
+Optional follow-ups (Emma's call): make `/browse` (or playground)
+the default landing; embed the graph view inside the playground IDE;
+bring browse.html's strengths into Loka Studio's Flutter canvas.
+
 ## 🚀 Multi-version pipeline — 2026-05-13 evening pivot
 
 After hitting Loka SPARQL OFFSET-cost (page-N is O(N) on sled — 25h projected for pass 1 alone), pivoted to a no-Loka HF-source preprocessor (`tools/preprocess_from_hf.py`). The plan now is to ship a series of normalized-wikidata snapshots and train a model on each.
