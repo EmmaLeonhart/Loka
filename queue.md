@@ -123,9 +123,22 @@ SHIPPED 2026-05-17 — Studio now has a Flutter→web→Electron path:
 - Live now: full Studio UI in the browser (`http://localhost:8090`)
   AND in an Electron window, both on the :3030 Shinto demo.
 
-Follow-up (Emma's call): the graph screen still uses Flutter's canvas
-— swapping it for vis-network (the `/browse` engine) inside the web
-Studio is the next step toward "browser knowledge graph everywhere".
+### NEXT (paused 2026-05-17, usage limits) → JS/HTML Studio
+
+Decision: Flutter-web carries CanvasKit interop limits. Build a
+plain HTML/JS Studio (real DOM), **port the Dart screens to JS**,
+**vis-network `/browse` as THE graph** (no Flutter canvas graph).
+Flutter Studio frozen as spec+fallback. Incremental, commit per
+slice. **Full self-contained plan: `planning/js-studio.md`** (read
+it first — chat context is gone in the resuming session).
+
+Resume order (slices): 1 shell + embedded `/browse` graph →
+2 SPARQL (adapt `pages/playground.html`) → 3 triples → 4 health →
+5 ontology → 6 polish. Target dir `web-studio/`; reuse
+`loka-studio/electron/server.js` (repoint ROOT via env).
+
+A CronCreate fires ~1 h from now to barrel through this locally.
+Running processes + restart commands are in `planning/js-studio.md`.
 
 ## 🚀 Multi-version pipeline — 2026-05-13 evening pivot
 
