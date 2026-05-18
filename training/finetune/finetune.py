@@ -118,8 +118,8 @@ def main() -> None:
     ap.add_argument("--epochs", type=int, default=1)
     ap.add_argument("--batch-size", type=int, default=4, help="Effective batch (micro-batch is 1; this many grad-accum steps)")
     ap.add_argument("--lr", type=float, default=2e-4)
-    ap.add_argument("--lora-r", type=int, default=16)
-    ap.add_argument("--lora-alpha", type=int, default=32)
+    ap.add_argument("--lora-r", type=int, default=32)
+    ap.add_argument("--lora-alpha", type=int, default=64)
     ap.add_argument("--lora-dropout", type=float, default=0.05)
     ap.add_argument("--max-seq-length", type=int, default=2048, help=f"Clamped to {SEQ_CAP} on 8 GB VRAM")
     ap.add_argument("--limit", type=int, default=0, help="Cap examples (0 = all in the JSONL)")
@@ -175,18 +175,38 @@ def main() -> None:
 
     start_epoch = latest_epoch(args.output)
     if start_epoch:
-        from peft import PeftModel  # noqa: F401
         adapter = args.output / f"epoch{start_epoch}"
         print(f"resuming: loading adapter weights from {adapter}", file=sys.stderr)
         from safetensors.torch import load_file
         sd_path = adapter / "adapter_model.safetensors"
         if sd_path.exists():
             model.load_state_dict(load_file(str(sd_path)), strict=False)
-        print(f"  resume -> starting at epoch {start_epoch + 1}", file=sys.stderr)
 
     device = next(model.parameters()).device
     trainable = [p for p in model.parameters() if p.requires_grad]
     optim = bnb.optim.PagedAdamW8bit(trainable, lr=args.lr)
+
+    # Optimizer + RNG state. Saved at the OUTPUT ROOT (one rolling file, NOT
+    # inside epochN/ — so the per-epoch HF push stays adapter-only) and
+    # reloaded here on resume. Without this a restart builds a FRESH Adam on
+    # top of good weights — the documented "fresh-Adam-after-good-weights"
+    # drift this project hit on the from-scratch v13/v14 resumes (loss drifts
+    # outward, not inward). With it, a crash costs time, not training state.
+    tstate = args.output / "trainer_state.pt"
+    if start_epoch and tstate.exists():
+        st = torch.load(tstate, map_location=device, weights_only=False)
+        if st.get("epoch") == start_epoch:
+            optim.load_state_dict(st["optim"])
+            random.setstate(st["py_rng"])
+            torch.set_rng_state(st["torch_rng"].cpu())
+            print(f"  resume -> optimizer + RNG restored (post-epoch "
+                  f"{start_epoch})", file=sys.stderr)
+        else:
+            print(f"  resume -> trainer_state epoch {st.get('epoch')} != "
+                  f"{start_epoch}; FRESH optimizer (expect a small loss bump)",
+                  file=sys.stderr)
+    if start_epoch:
+        print(f"  resume -> starting at epoch {start_epoch + 1}", file=sys.stderr)
 
     log_path = args.output / "train_log.jsonl"
     free, total = torch.cuda.mem_get_info()
@@ -233,6 +253,14 @@ def main() -> None:
         ep_dir.mkdir(parents=True, exist_ok=True)
         model.save_pretrained(str(ep_dir))
         tok.save_pretrained(str(ep_dir))
+        # Optimizer + RNG snapshot for clean resume (root-level, rolling —
+        # kept out of ep_dir so it is never pushed to HF).
+        torch.save(
+            {"optim": optim.state_dict(), "epoch": epoch,
+             "py_rng": random.getstate(),
+             "torch_rng": torch.get_rng_state()},
+            tstate,
+        )
         rec = {"epoch": epoch, "avg_loss": round(avg, 5),
                "ppl": round(math.exp(min(avg, 20)), 2),
                "examples": seen, "seconds": round(dt, 1),
