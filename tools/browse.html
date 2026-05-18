@@ -568,15 +568,16 @@ async function generateFromNode(iri){
     try {
         const r = await fetch(IEP()+'/generate', {
             method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ subject: iri, endpoint: EP(), confidence: 0.05, post: true })
+            // confidence:0 + low token floor → show the model's actual best
+            // guess (flagged low-confidence here) rather than discarding it.
+            body: JSON.stringify({ subject: iri, endpoint: EP(), confidence: 0, post: true })
         });
         const j = await r.json().catch(() => ({ error:'bad response from sidecar' }));
         clearPending(iri);
         if (!r.ok) { setG('✨ generate failed: '+(j.error || ('HTTP '+r.status))); genBusy=false; return; }
         const gen = j.generated || [];
         if (!gen.length) {
-            setG('✨ '+(j.model||'model')+' produced nothing for '+sh(iri)
-                 +' — out-of-distribution on this demo. Try double-clicking MeijiJingu.');
+            setG('✨ ' + (j.detail || ((j.model||'model')+' produced nothing for '+sh(iri))));
             genBusy=false; return;
         }
         for (const t of gen) {

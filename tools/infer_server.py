@@ -203,14 +203,20 @@ class Handler(BaseHTTPRequestHandler):
             self._send(400, {"error": "missing 'subject'"})
             return
         endpoint = (req.get("endpoint") or "http://localhost:3030").rstrip("/")
-        confidence = float(req.get("confidence", 0.15))
+        # Defaults are deliberately permissive for the interactive gesture:
+        # show the model's actual best guess (flagged low-confidence in the
+        # UI) rather than silently discarding it. The batch pipeline keeps
+        # its own stricter defaults — these only apply to /generate calls.
+        confidence = float(req.get("confidence", 0.0))
+        token_floor = float(req.get("min_token_prob", 0.01))
         max_candidates = int(req.get("max_candidates", 6))
         do_post = bool(req.get("post", True))
 
         try:
             with _GEN_LOCK:
                 result = self._generate(
-                    subject, endpoint, confidence, max_candidates, do_post
+                    subject, endpoint, confidence, token_floor,
+                    max_candidates, do_post,
                 )
             self._send(200, result)
         except requests.RequestException as e:
@@ -218,13 +224,15 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:  # noqa: BLE001 - surface to the browser
             self._send(500, {"error": f"{type(e).__name__}: {e}"})
 
-    def _generate(self, subject, endpoint, confidence, max_candidates, do_post):
+    def _generate(self, subject, endpoint, confidence, token_floor,
+                  max_candidates, do_post):
         triples = fetch_all_triples(endpoint)
         labels, subj_facts, pred_usage, _ = build_inference_state(
             triples, PROPERTY_CACHE
         )
         _enrich_labels(triples, labels)
 
+        n_facts = len(subj_facts.get(subject, []))
         lines, log = generate_for_subject(
             _STATE["model"], subject,
             labels=labels, subj_facts=subj_facts, pred_usage=pred_usage,
@@ -233,13 +241,36 @@ class Handler(BaseHTTPRequestHandler):
             device=_STATE["device_t"],
             model_version=_STATE["model_version"],
             confidence=confidence,
+            per_token_floor=token_floor,
             max_candidates_per_subject=max_candidates,
             encode_fn=_STATE["encode_fn"],
+            decode_fn=_STATE.get("decode_fn"),
             fallback_candidates=True,
         )
         generated = _parse_generated(lines)
         for m in log:
             sys.stderr.write(m + "\n")
+
+        # An honest, specific reason when nothing comes back — so the UI never
+        # says a vague "no high-quality result".
+        reason, detail = None, None
+        sl = labels.get(subject, subject)
+        if not generated:
+            if n_facts == 0:
+                reason = "no_subject_facts"
+                detail = (f"'{sl}' has no facts of its own in this graph "
+                          f"(it only appears as the object of other triples), "
+                          f"so there is nothing for the model to reason from. "
+                          f"Double-click a node that has outgoing edges.")
+            else:
+                reason = "model_low_confidence"
+                detail = (f"The model read {n_facts} fact(s) about '{sl}' but "
+                          f"its best guess for every candidate predicate stayed "
+                          f"below the probability floor. This model (v14, "
+                          f"perplexity ~202) is small and was trained on "
+                          f"Wikidata — it is out-of-distribution on this "
+                          f"example.org demo. Not a discarded good result: "
+                          f"there was no confident result to discard.")
 
         inserted, errors = 0, []
         if do_post and lines:
@@ -257,9 +288,12 @@ class Handler(BaseHTTPRequestHandler):
 
         return {
             "subject": subject,
-            "labeled_subject": labels.get(subject, subject),
+            "labeled_subject": sl,
             "model": _STATE.get("model_version"),
+            "subject_fact_count": n_facts,
             "generated": generated,
+            "reason": reason,
+            "detail": detail,
             "nt": "\n".join(lines),
             "inserted": inserted,
             "errors": errors,
