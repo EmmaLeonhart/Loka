@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loka Studio</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f4dc;</text></svg>">
+  <link rel="stylesheet" href="style.css">
+  <script>(function(){try{var t=localStorage.getItem('loka-studio-theme');if(t!=='light'&&t!=='dark')t='dark';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+</head>
+<body>
+  <header class="bar">
+    <a class="brand" href="#graph"><span class="logo">&#x1f4dc;</span> Loka <b>Studio</b></a>
+    <nav class="tabs" id="tabs" aria-label="Screens"></nav>
+    <span class="spacer"></span>
+    <label class="endpoint" title="Loka endpoint">
+      <span class="dot" id="conn-dot" data-state="unknown"></span>
+      <input id="endpoint" type="text" spellcheck="false" autocomplete="off"
+             aria-label="Loka endpoint URL">
+    </label>
+    <button id="theme-toggle" type="button" title="Toggle light / dark"
+            aria-label="Toggle light and dark theme">&#9680;</button>
+  </header>
+  <main id="view" role="main"></main>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+/* Loka Studio (JS/HTML, real DOM) — canonical palette inlined from
+   /identity.css so this is self-contained (the engine doesn't serve
+   the site stylesheet). Dark default; [data-theme=light] flips it. */
+:root{
+  --bg:#07070c; --bg-soft:#0c0c14; --bg-card:#11111b; --bg-elevated:#14141f;
+  --border:#1d1d2c; --border-hover:#34344e; --border-strong:#262638;
+  --text:#d4d4e0; --text-strong:#f0f0f6; --text-mute:#8c8caa; --text-faint:#5d5d78;
+  --accent:#8b9bff; --accent-bright:#b0bcff; --accent-soft:rgba(139,155,255,.10);
+  --accent-glow:rgba(139,155,255,.28); --green:#3fb950; --orange:#d29922;
+  --red:#f85149; --purple:#bc8cff;
+  --sans:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+  --mono:'JetBrains Mono','Consolas','Monaco',monospace;
+}
+html[data-theme="light"]{
+  --bg:#f4f4f8; --bg-soft:#ebebf2; --bg-card:#ffffff; --bg-elevated:#fbfbfe;
+  --border:#dadae6; --border-hover:#b6b6cf; --border-strong:#c7c7d8;
+  --text:#2b2b38; --text-strong:#14141f; --text-mute:#5c5c74; --text-faint:#8c8caa;
+  --accent:#5160dd; --accent-bright:#3a48c4; --accent-soft:rgba(81,96,221,.10);
+  --accent-glow:rgba(81,96,221,.22);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  font-family:var(--sans); background:var(--bg); color:var(--text);
+  display:flex; flex-direction:column; overflow:hidden;
+  transition:background .25s,color .25s;
+}
+a{color:var(--accent);text-decoration:none}
+a:hover{color:var(--accent-bright)}
+
+/* ── Top bar ── */
+.bar{
+  flex:none; display:flex; align-items:center; gap:14px;
+  padding:9px 16px; background:var(--bg-soft);
+  border-bottom:1px solid var(--border);
+}
+.brand{font-family:var(--mono);font-size:.92rem;font-weight:600;color:var(--text-strong);white-space:nowrap}
+.brand b{color:var(--accent);font-weight:600}
+.brand .logo{margin-right:2px}
+.tabs{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.tabs button{
+  font-family:var(--mono); font-size:.76rem; letter-spacing:.3px;
+  color:var(--text-mute); background:transparent; border:1px solid transparent;
+  padding:6px 12px; border-radius:7px; cursor:pointer; transition:.15s;
+}
+.tabs button:hover{color:var(--text-strong);background:var(--bg-card)}
+.tabs button.active{color:var(--accent);background:var(--accent-soft);border-color:var(--border-hover)}
+.spacer{flex:1}
+.endpoint{
+  display:inline-flex; align-items:center; gap:7px;
+  background:var(--bg-card); border:1px solid var(--border);
+  border-radius:8px; padding:5px 10px;
+}
+.endpoint:focus-within{border-color:var(--accent)}
+.endpoint .dot{width:8px;height:8px;border-radius:50%;background:var(--text-faint);flex:none}
+.endpoint .dot[data-state="ok"]{background:var(--green)}
+.endpoint .dot[data-state="down"]{background:var(--red)}
+.endpoint input{
+  border:0;outline:0;background:transparent;color:var(--text);
+  font-family:var(--mono);font-size:.76rem;width:188px;
+}
+#theme-toggle{
+  width:32px;height:32px;border-radius:8px;cursor:pointer;
+  background:var(--bg-card);border:1px solid var(--border);
+  color:var(--text-mute);font-size:14px;line-height:1;
+}
+#theme-toggle:hover{color:var(--accent-bright);border-color:var(--accent)}
+
+/* ── Content host ── */
+#view{flex:1;min-height:0;position:relative;display:flex;flex-direction:column}
+.screen{flex:1;min-height:0;display:flex;flex-direction:column;overflow:auto}
+.screen.embed{overflow:hidden}
+.screen iframe{flex:1;width:100%;height:100%;border:0;background:var(--bg)}
+
+/* shared screen primitives (sparql/triples/health/ontology) */
+.pad{padding:18px 22px}
+.muted{color:var(--text-mute)}
+h2.s-title{font-family:var(--mono);font-size:.74rem;font-weight:500;
+  text-transform:uppercase;letter-spacing:2px;color:var(--text-mute);margin-bottom:14px}
+textarea,.editor{
+  width:100%;background:var(--bg-card);color:var(--text);
+  border:1px solid var(--border);border-radius:8px;padding:12px 14px;
+  font-family:var(--mono);font-size:13px;line-height:1.5;resize:vertical;outline:0;
+}
+textarea:focus{border-color:var(--accent)}
+button.run{
+  background:var(--accent);color:var(--bg);border:0;border-radius:7px;
+  font-weight:600;font-size:13px;padding:8px 20px;cursor:pointer;font-family:var(--sans);
+}
+button.run:hover{background:var(--accent-bright)}
+button.run:disabled{opacity:.5;cursor:wait}
+table.grid{width:100%;border-collapse:collapse;font-size:12.5px;font-family:var(--mono)}
+table.grid th{position:sticky;top:0;background:var(--bg-soft);color:var(--text-mute);
+  text-align:left;padding:7px 11px;border-bottom:2px solid var(--border);white-space:nowrap}
+table.grid td{padding:6px 11px;border-bottom:1px solid var(--border);
+  max-width:520px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+table.grid tr:hover td{background:var(--bg-card)}
+.v-uri{color:var(--accent)} .v-lit{color:var(--green)}
+.v-num{color:var(--orange)} .v-blank{color:var(--text-faint);font-style:italic}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:16px 18px}
+.card .k{font-size:.7rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-mute)}
+.card .val{font-size:1.6rem;font-weight:700;color:var(--text-strong);margin-top:4px;font-variant-numeric:tabular-nums}
+.err{color:var(--red);font-family:var(--mono);font-size:12.5px;white-space:pre-wrap}
+pre.turtle{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;
+  padding:14px 16px;font-family:var(--mono);font-size:12.5px;line-height:1.55;
+  overflow:auto;white-space:pre}
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.count{color:var(--accent);font-family:var(--mono);font-size:12px}

@@ -10,7 +10,13 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = path.join(__dirname, '..', 'build', 'web');
+// STUDIO_WEB_ROOT lets this same server host the JS Studio
+// (../../web-studio) instead of the frozen Flutter web build
+// (../build/web) — set by the JS-Studio launcher; default keeps the
+// Flutter path working unchanged.
+const ROOT = process.env.STUDIO_WEB_ROOT
+  ? path.resolve(process.env.STUDIO_WEB_ROOT)
+  : path.join(__dirname, '..', 'build', 'web');
 const PORT = process.env.STUDIO_WEB_PORT || 8090;
 const MIME = {
   '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript',
