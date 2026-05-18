@@ -153,11 +153,12 @@ Emma's refinement: tabbed app; existing engine HTML surfaces
 - [x] **Slice 2** — `web-studio/screens/sparql.js`: editor +
       examples + Ctrl/Cmd-Enter, type-coloured results table via
       `LokaClient.query`. Verified vs :3030.
-- [ ] **Slice 3-5** — `screens/triples.js` (paged SELECT),
-      `health.js` (`/vectors/health`+`/health`+stats),
-      `ontology.js` (`/graph` Turtle). app.js auto-loads
-      `screens/<id>.js` (placeholder until present — no app.js churn).
-- [ ] **Slice 6** — polish; point Electron at the JS Studio; docs.
+- [x] **Slice 3-5** — `screens/triples.js` (paged SELECT, prev/next,
+      page size), `health.js` (reachable + triple count + type dist +
+      HNSW `/vectors/health` cards), `ontology.js` (`/graph` Turtle/
+      N-Triples view + download). All served + endpoints verified vs
+      :3030 (Turtle export, 4 types, /vectors/health 200).
+- [ ] **Slice 6** — point Electron at the JS Studio; docs.
 
 Running locally: playground_server :3030 (Shinto demo, 73 triples),
 JS Studio static server :8091. Full plan: `planning/js-studio.md`.
