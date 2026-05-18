@@ -8,7 +8,7 @@ interop Emma wants.
 
 **Tabs** (Emma's spec — *"replication of the flutter app in JS, but
 all of the existing html things are tabs in it; JS knowledge graph
-is best"*):
+is best"*) — a **left side rail**, not a top nav:
 
 | Tab | What it is |
 |---|---|
@@ -17,7 +17,12 @@ is best"*):
 | **Triples** | Paged `SELECT ?s ?p ?o` table |
 | **Health** | Reachability, triple count, type distribution, HNSW `/vectors/health` |
 | **Ontology** | Full graph as Turtle / N-Triples (`GET /graph`) + download |
-| **Playground** | `<iframe>` → the engine's `/` (the existing SPARQL IDE) |
+
+There is **no Playground tab**: the engine's old `:3030/` SPARQL IDE
+was redundant with the SPARQL tab, so it was dropped and the
+`playground_server` example no longer serves an HTML page at `/`
+(real `loka serve` never did). This studio is the single integrated
+UI; point it at any Loka endpoint.
 
 `app.js` carries `LokaClient` — a 1:1 JS port of
 `loka-studio/lib/services/loka_client.dart`. The Flutter app

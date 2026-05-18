@@ -1,19 +1,16 @@
 //! Loka Playground Server
 //!
 //! Starts a pre-loaded Loka instance with a Shinto shrine knowledge graph
-//! including vector embeddings and temporal annotations. Serves both the
-//! SPARQL endpoint and the interactive HTML playground.
+//! including vector embeddings and temporal annotations. Serves the
+//! SPARQL/API endpoints only (same surface as `loka serve`, plus the
+//! `/browse` graph viewer) — there is no HTML landing page at `/`. The
+//! UI is Loka Studio (the JS `web-studio/`), pointed at this endpoint.
 //!
 //! Run: cargo run --example playground_server -p loka-proto
-//! Then open: http://localhost:3030
+//! Endpoint: http://localhost:3030/sparql
 
 use std::sync::atomic::AtomicU64;
 use std::sync::{Arc, RwLock};
-
-use axum::http::{header, StatusCode};
-use axum::response::IntoResponse;
-use axum::routing::get;
-use axum::Router;
 
 use loka_core::{
     inline_integer, quoted_triple_id, TemporalSignifier, TermDictionary, TermId, Triple,
@@ -337,16 +334,6 @@ fn build_demo() -> (TripleStore, TermDictionary, VectorRegistry) {
     (store, dict, vectors)
 }
 
-const PLAYGROUND_HTML: &str = include_str!("../../pages/playground.html");
-
-async fn serve_playground() -> impl IntoResponse {
-    (
-        StatusCode::OK,
-        [(header::CONTENT_TYPE, "text/html; charset=utf-8")],
-        PLAYGROUND_HTML,
-    )
-}
-
 #[tokio::main]
 async fn main() {
     let (store, dict, vectors) = build_demo();
@@ -362,10 +349,8 @@ async fn main() {
         rate_counter: AtomicU64::new(0),
     });
 
-    // Combine the SPARQL API router with the playground page
-    let app = Router::new()
-        .route("/", get(serve_playground))
-        .merge(router(state));
+    // SPARQL/API surface only — no HTML page at `/` (same as `loka serve`).
+    let app = router(state);
 
     let port = std::env::var("LOKA_PORT")
         .ok()
@@ -375,37 +360,17 @@ async fn main() {
     let url = format!("http://localhost:{port}");
 
     println!();
-    println!("  Loka Playground");
+    println!("  Loka Playground (Shinto demo backend — no UI here)");
     println!("  {triple_count} triples loaded (shrines, deities, myths, vectors, temporal)");
     println!();
-    println!("  Playground:  {url}");
     println!("  SPARQL:      {url}/sparql");
     println!("  Graph Store: {url}/graph-store");
+    println!("  Graph view:  {url}/browse");
+    println!("  UI:          Loka Studio (web-studio/) pointed at {url}");
     println!();
     println!("  Press Ctrl+C to stop.");
     println!();
 
-    // Auto-open browser
-    let _ = open_browser(&url);
-
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
-}
-
-fn open_browser(url: &str) -> std::io::Result<()> {
-    #[cfg(target_os = "windows")]
-    {
-        std::process::Command::new("cmd")
-            .args(["/c", "start", "", url])
-            .spawn()?;
-    }
-    #[cfg(target_os = "macos")]
-    {
-        std::process::Command::new("open").arg(url).spawn()?;
-    }
-    #[cfg(target_os = "linux")]
-    {
-        std::process::Command::new("xdg-open").arg(url).spawn()?;
-    }
-    Ok(())
 }
