@@ -1,0 +1,14 @@
+{
+  "name": "loka-studio-electron",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Electron shell for the Loka Studio Flutter-web build (Flutter -> web -> Electron).",
+  "main": "main.js",
+  "scripts": {
+    "serve": "node server.js",
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^33.0.0"
+  }
+}
