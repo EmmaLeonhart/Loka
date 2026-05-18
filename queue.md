@@ -13,44 +13,61 @@ JS knowledge graph is best
 
 ---
 
-## ACTIVE: build + run the fine-tune track (overnight QLoRA, big corpus)
+## ACTIVE: fine-tune track — running, stop cleanly at epoch 5
 
-Emma 2026-05-18, emphatic: the fine-tuned LLM was approved (planning/
-fine-tuning-track.md) + scaffolded but NEVER trained — only the weak
-from-scratch v14 (ppl ~202) exists, which is why double-click output
-is noise. Build it for real, **overnight, on the big HF normalized-
-wikidata corpus, per-epoch recording**. Decision history this session:
-build-the-fine-tune-track. Base: Qwen2.5-1.5B-Instruct, QLoRA 4-bit.
+Built + running (Qwen2.5-1.5B-Instruct, QLoRA 4-bit, 35k SFT examples/
+epoch from the HF v14-1M normalized corpus). finetune.py + infer.py +
+sft_common.py + watchdog implemented; `candidate_predicates` extracted
+shared. Per-epoch adapter pushed to HF `EmmaLeonhart/loka-qwen2.5-1.5b`;
+optimizer+RNG checkpointed to a rolling root-level `trainer_state.pt`
+for clean resume. Quality verified on the epoch-2 adapter (CPU probe,
+GPU-safe): 3/4 real facts correct ("Asia", "Germany", "English";
+numeric facts weak) — vs the from-scratch v14's "M :" at ppl 202.
 
-Constraints honored: 8 GB laptop, thermally marginal (CLAUDE.md). So
-the run is resilient: per-epoch adapter checkpoints to disk,
-resumable, logged; corpus capped so epochs actually COMPLETE
-overnight (full 4 M won't finish one epoch on this GPU). No `trl`
-(missing; transformers 5.x compat risk) — direct transformers+peft
-SFT loop. No cron/cloud auto-step (CLAUDE.md).
+**Emma's decision 2026-05-18: STOP CLEANLY AFTER EPOCH 5.** Not a cap
+from config (`--epochs 12`) nor from the optimizer issue — purely
+diminishing returns + overfit risk on a fixed 35k slice (ppl 4.83 →
+3.74 → ~3.0, deltas shrinking). `tools/stop_after_epoch.py --epoch 5`
+is running in the background: waits for "epoch 5 done" + its HF push
+to resolve, then kills trainer (+ any watchdog) so epoch 6 never
+starts; appends a "training complete." marker. ~12 h out from now
+(epoch 3 in progress).
 
-1. Plan + planning-doc status bump + tasks (this commit).
-2. Data: download a large normalized-wikidata slice from HF
-   (`EmmaLeonhart/normalized-wikidata`), `prepare_jsonl.py --fixture`
-   → SFT JSONL, capped to a size that does several epochs overnight.
-   Gitignore the corpus/JSONL (heavy).
-3. Implement `training/finetune/finetune.py`: QLoRA (bnb 4-bit nf4
-   Qwen2.5-1.5B-Instruct + peft LoRA), manual SFT loop, chat-template
-   prompt with prompt tokens masked in labels, grad-checkpointing,
-   paged-adamw-8bit, bf16. **Save adapter after every epoch**
-   (`<output>/epochN/`), append per-epoch loss to a log, resume from
-   latest epoch if restarted.
-4. Implement `training/finetune/infer.py`: load base+adapter (latest
-   epoch), reusable `load_finetuned()` / `generate_for_subject_llm()`,
-   emit NT-star with the `http://loka.dev/provenance/` schema +
-   `loka:baseModel`. Mirrors infer_with_citations' shape so the
-   sidecar reuses it (no parallel impl).
-5. Launch the overnight run in the background; log per epoch.
-6. Wire `tools/infer_server.py` to use the fine-tuned adapter when
-   present (latest epoch), else fall back to from-scratch. Studio
-   double-click then uses the LLM.
-7. End-to-end test once ≥1 epoch is on disk; honest eval. Commit
-   per step; delete queue items as completed.
+Remaining:
+1. Wire `tools/infer_server.py` to use the fine-tuned adapter (latest
+   epoch under `adapters/qwen2.5-1.5b-loka-v1/`) via
+   `finetune/infer.py`'s `load_finetuned`/`generate_for_subject_llm`,
+   else fall back to from-scratch. Studio double-click then uses the
+   LLM. **Defer the GPU load until training has stopped at epoch 5**
+   (no concurrent GPU contention — that risks crashing the run).
+2. End-to-end test on the epoch-5 adapter; honest eval; commit.
+3. Website (safe to do WHILE training runs — no GPU): banner that a
+   big fine-tune run is in progress + "be patient about the new
+   model"; keep contribute material but restructure the contribute
+   script/page to reflect THIS run (QLoRA Qwen2.5-1.5B on normalized-
+   wikidata, per-epoch HF pushes) not only the old v14 donor path.
+
+### Progression ladder (Emma's framing — scale the corpus up over runs)
+
+Mirrors the from-scratch v-series (v11-50k → v12-100k → v13-500k →
+v14-1M). Each rung = a fine-tune run on a bigger slice, pushed to HF.
+Why not start at 4 M: measured QLoRA throughput on the 8 GB 4070
+Laptop is ~2.5 ex/s, so ONE epoch is:
+
+| rung | examples | ~time / epoch | venue |
+|---|---|---|---|
+| ft-10k (running now) | 10 k | ~1 h | laptop overnight (≈8 epochs) |
+| ft-50k | 50 k | ~5.5 h | laptop (1 epoch/night) or cloud |
+| ft-200k | 200 k | ~22 h | cloud |
+| ft-1M | 1 M | ~4.6 days | cloud |
+| ft-4M (full v14-1M corpus) | 4.02 M | ~18.6 days | cloud, multi-day |
+
+The laptop physically cannot do a single 4 M epoch overnight (~18
+days). So: this overnight run is rung 1 (validates the pipeline +
+yields a usable adapter by morning); bigger rungs are subsequent
+runs, the large ones on rented GPU (CLAUDE.md: laptop = dev box,
+cloud = training box). `--input`/`--limit` already parameterise the
+rung; no code change to climb the ladder.
 
 ---
 
