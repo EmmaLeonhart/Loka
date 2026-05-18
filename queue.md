@@ -13,6 +13,47 @@ JS knowledge graph is best
 
 ---
 
+## ACTIVE: build + run the fine-tune track (overnight QLoRA, big corpus)
+
+Emma 2026-05-18, emphatic: the fine-tuned LLM was approved (planning/
+fine-tuning-track.md) + scaffolded but NEVER trained — only the weak
+from-scratch v14 (ppl ~202) exists, which is why double-click output
+is noise. Build it for real, **overnight, on the big HF normalized-
+wikidata corpus, per-epoch recording**. Decision history this session:
+build-the-fine-tune-track. Base: Qwen2.5-1.5B-Instruct, QLoRA 4-bit.
+
+Constraints honored: 8 GB laptop, thermally marginal (CLAUDE.md). So
+the run is resilient: per-epoch adapter checkpoints to disk,
+resumable, logged; corpus capped so epochs actually COMPLETE
+overnight (full 4 M won't finish one epoch on this GPU). No `trl`
+(missing; transformers 5.x compat risk) — direct transformers+peft
+SFT loop. No cron/cloud auto-step (CLAUDE.md).
+
+1. Plan + planning-doc status bump + tasks (this commit).
+2. Data: download a large normalized-wikidata slice from HF
+   (`EmmaLeonhart/normalized-wikidata`), `prepare_jsonl.py --fixture`
+   → SFT JSONL, capped to a size that does several epochs overnight.
+   Gitignore the corpus/JSONL (heavy).
+3. Implement `training/finetune/finetune.py`: QLoRA (bnb 4-bit nf4
+   Qwen2.5-1.5B-Instruct + peft LoRA), manual SFT loop, chat-template
+   prompt with prompt tokens masked in labels, grad-checkpointing,
+   paged-adamw-8bit, bf16. **Save adapter after every epoch**
+   (`<output>/epochN/`), append per-epoch loss to a log, resume from
+   latest epoch if restarted.
+4. Implement `training/finetune/infer.py`: load base+adapter (latest
+   epoch), reusable `load_finetuned()` / `generate_for_subject_llm()`,
+   emit NT-star with the `http://loka.dev/provenance/` schema +
+   `loka:baseModel`. Mirrors infer_with_citations' shape so the
+   sidecar reuses it (no parallel impl).
+5. Launch the overnight run in the background; log per epoch.
+6. Wire `tools/infer_server.py` to use the fine-tuned adapter when
+   present (latest epoch), else fall back to from-scratch. Studio
+   double-click then uses the LLM.
+7. End-to-end test once ≥1 epoch is on disk; honest eval. Commit
+   per step; delete queue items as completed.
+
+---
+
 ## Website → reconstruct onto the shared branding kit
 
 Rebuild the Loka site onto the canonical shared visual kit
