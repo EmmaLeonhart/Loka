@@ -289,30 +289,35 @@ async function expandNode(iri) {
     } catch(e) { console.error('Expand failed:', e); }
 }
 
-// ── Click to expand ──
-let cooldown = false;
-network.on('click', params => {
-    if (cooldown || !params.nodes.length) return;
-    const nid = params.nodes[0];
-    cooldown = true; setTimeout(() => cooldown = false, 300);
-
-    // Highlight
+// ── Click = expand · Double-click = world-model generate ──
+// vis-network fires `click` BEFORE `doubleClick`, so a double-click would
+// otherwise also run the single-click expand. Defer the expand briefly and
+// let an arriving double-click cancel it — no more accidental expand-on-
+// generate. (Node detail is still available from the left results list.)
+let clickTimer = null;
+function selectAndExpand(nid) {
     if (selectedNode) {
         const old = visNodes.get(selectedNode);
-        if (old) {
+        if (old && old._type !== 'gen') {
             const t = old._type;
             visNodes.update({ id: selectedNode, color: isVec(selectedNode) ? COLORS.vector : (t === 'literal' ? COLORS.literal : COLORS.iri) });
         }
     }
     selectedNode = nid;
-    visNodes.update({ id: nid, color: COLORS.selected });
-
+    const cur = visNodes.get(nid);
+    if (cur && cur._type !== 'gen' && cur._type !== 'pending') {
+        visNodes.update({ id: nid, color: COLORS.selected });
+    }
     expandNode(nid);
+}
+network.on('click', params => {
+    if (!params.nodes.length) return;
+    const nid = params.nodes[0];
+    if (clickTimer) clearTimeout(clickTimer);
+    clickTimer = setTimeout(() => { clickTimer = null; selectAndExpand(nid); }, 320);
 });
-
-// ── Double-click: ask the world model to generate triples for this node ──
-// (Node detail is still available by clicking a row in the left results list.)
 network.on('doubleClick', params => {
+    if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; }
     if (!params.nodes.length) return;
     generateFromNode(params.nodes[0]);
 });
@@ -487,16 +492,23 @@ const IEP = () => (localStorage.getItem('loka-infer-ep') || 'http://localhost:80
 function setG(msg){ const g = document.getElementById('gstatus'); if (g) g.textContent = msg; }
 
 const GEN_LBL = '✨ generated';
+// Group identical generated objects into ONE node (keyed by value, not by
+// predicate) so e.g. three predicates that all emit "M :" become a single
+// box with three labelled edges instead of three overlapping blobs.
+function genNodeId(o){ return 'gen::' + o; }
+
 function addGenNode(id, label){
     if (visNodes.get(id)) return;
-    const dl = label.length > 24 ? label.substring(0,21)+'…' : label;
+    const v = label && label.length ? label : '∅ (empty)';
+    const dl = v.length > 28 ? v.substring(0,25)+'…' : v;
     visNodes.add({
-        id, label: '✨ '+dl, title: 'model-generated literal:\n'+label,
+        id, label: '✨ '+dl, title: 'model-generated value:\n'+label,
         color: { background:'#3a2d12', border:'#d29922' }, shape:'box',
-        font: { color:'#f0d28a', size:10, strokeWidth:0 },
+        font: { color:'#f0d28a', size:11, strokeWidth:0 },
         _type:'gen', _full:label
     });
 }
+let _genEdgeN = 0;
 function addGenEdge(from, to, plabel, conf){
     const eid = from+'|'+to+'|gen|'+plabel;
     if (visEdges.get(eid)) return;
@@ -505,47 +517,79 @@ function addGenEdge(from, to, plabel, conf){
         if (!(GEN_LBL in filterState)) filterState[GEN_LBL] = true;
         addFilterCheckbox(GEN_LBL);
     }
+    // Confidence on the edge label (not just hover) so it's readable at a
+    // glance, and spread parallel edges so they don't draw on top of each
+    // other when several predicates point at one grouped object node.
+    const lbl = plabel + (conf!=null ? '  '+conf.toFixed(2) : '');
+    const round = 0.18 + ((_genEdgeN++ % 5) * 0.13);
     visEdges.add({
-        id: eid, from, to, label: plabel,
-        title: '✨ world-model generated'+(conf!=null?(' · conf '+conf.toFixed(3)):''),
+        id: eid, from, to, label: lbl,
+        title: '✨ world-model generated · '+plabel+(conf!=null?(' · confidence '+conf.toFixed(3)):''),
         arrows:'to', dashes:[6,4],
         color:{ color:'#d29922', highlight:'#f0c050' },
-        font:{ size:9, color:'#d29922', strokeWidth:0 },
-        smooth:{ type:'curvedCW', roundness:0.25 }, width:1.6,
+        font:{ size:9, color:'#e8b94a', strokeWidth:3, strokeColor:'#0d1117' },
+        smooth:{ type:'curvedCW', roundness: round }, width:1.6,
         hidden: filterState[GEN_LBL] === false, _lbl: GEN_LBL
     });
 }
 
+// Transient placeholder so the seconds of CPU inference are visible in-graph.
+const PEND = '__pending__::';
+function showPending(iri){
+    const pid = PEND + iri;
+    if (visNodes.get(pid)) return;
+    visNodes.add({
+        id: pid, label:'⏳ asking world model…', shape:'box',
+        color:{ background:'#10243a', border:'#58a6ff' },
+        font:{ color:'#9fc5ff', size:10 }, _type:'pending'
+    });
+    visEdges.add({
+        id: pid+'|e', from: iri, to: pid, arrows:'', dashes:[2,3],
+        color:{ color:'#58a6ff' }, label:''
+    });
+}
+function clearPending(iri){
+    const pid = PEND + iri;
+    if (visEdges.get(pid+'|e')) visEdges.remove(pid+'|e');
+    if (visNodes.get(pid)) visNodes.remove(pid);
+}
+
 let genBusy = false;
 async function generateFromNode(iri){
-    if (genBusy) return;
+    if (genBusy) { setG('✨ already generating — one at a time…'); return; }
     if (isVec(iri) || iri.startsWith('"') || !iri.startsWith('http')) {
         setG('Double-click an IRI node to generate (not a literal / vector).');
         return;
     }
     genBusy = true;
-    setG('✨ asking the world model about '+sh(iri)+' …');
+    addNode(iri, sh(iri), 'iri');
+    showPending(iri);
+    setG('✨ asking the world model about '+sh(iri)+' …  (CPU — a few seconds)');
     try {
         const r = await fetch(IEP()+'/generate', {
             method:'POST', headers:{'Content-Type':'application/json'},
             body: JSON.stringify({ subject: iri, endpoint: EP(), confidence: 0.05, post: true })
         });
         const j = await r.json().catch(() => ({ error:'bad response from sidecar' }));
+        clearPending(iri);
         if (!r.ok) { setG('✨ generate failed: '+(j.error || ('HTTP '+r.status))); genBusy=false; return; }
         const gen = j.generated || [];
         if (!gen.length) {
-            setG('✨ model produced no high-confidence triples for '+sh(iri)+' — try another node.');
+            setG('✨ '+(j.model||'model')+' produced nothing for '+sh(iri)
+                 +' — out-of-distribution on this demo. Try double-clicking MeijiJingu.');
             genBusy=false; return;
         }
-        addNode(iri, sh(iri), 'iri');
         for (const t of gen) {
-            const oId = 'gen::'+t.p+'::'+t.o;
+            const oId = genNodeId(t.o);
             addGenNode(oId, t.o);
             addGenEdge(iri, oId, sh(t.p), (typeof t.confidence === 'number' ? t.confidence : null));
         }
-        const persisted = j.inserted ? (' · '+j.inserted+' persisted to '+EP()) : '';
-        setG('✨ +'+gen.length+' generated for '+sh(iri)+persisted+' (model '+(j.model||'?')+')');
+        updateGStatus();
+        const persisted = j.inserted ? (' · '+j.inserted+' triples persisted to Loka') : '';
+        setG('✨ '+gen.length+' generated for '+sh(iri)+persisted
+             +' — amber dashed edges (model '+(j.model||'?')+')');
     } catch(e) {
+        clearPending(iri);
         setG('✨ inference sidecar not reachable at '+IEP()+' — start it with !infer.bat ('+e.message+')');
     }
     genBusy = false;
