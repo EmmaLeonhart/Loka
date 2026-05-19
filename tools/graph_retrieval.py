@@ -87,30 +87,34 @@ def retrieve(endpoint, node, hops=2, vec_k=8, budget=60):
         if k not in gathered or score > gathered[k]:
             gathered[k] = score
 
-    # 1. graph BFS (depth 0..hops); closer depth = more related
+    def _vals(iris):
+        return " ".join(f"<{x}>" for x in iris)
+
+    # 1. graph BFS — BATCHED: one VALUES query per level per direction.
+    #    Per-node querying was ~26 round trips (the ~95s); batched is ~4,
+    #    and a VALUES{8} query measured the same ~0.2s as a single one.
     frontier, seen = [node], {node}
     for depth in range(hops + 1):
+        sc = 0.5 + 0.5 * (1.0 / (1.0 + depth))
         nxt = []
-        gw = 1.0 / (1.0 + depth)
-        for nd in frontier:
-            for b in _sparql(ep, f'SELECT ?p ?o WHERE {{ <{nd}> ?p ?o }} LIMIT 60'):
-                p, o = b["p"]["value"], b["o"]["value"]
-                if p == RDFS_LABEL:
-                    continue
-                add(nd, p, o, 0.5 + 0.5 * gw)
-                if b["o"]["type"] == "uri" and o not in seen and depth < hops:
-                    seen.add(o); nxt.append(o)
-            for b in _sparql(ep, f'SELECT ?s ?p WHERE {{ ?s ?p <{nd}> }} LIMIT 40'):
-                s, p = b["s"]["value"], b["p"]["value"]
-                if p == RDFS_LABEL:
-                    continue
-                add(s, p, nd, 0.5 + 0.5 * gw)
-                if s not in seen and depth < hops:
-                    seen.add(s); nxt.append(s)
-        # Hard-bound the next BFS level: a hub like Q42 has hundreds of
-        # neighbours and expanding all of them was the O(N) round-trip
-        # blow-up that timed out. 12/level keeps it to a few-second walk.
-        frontier = nxt[:12]
+        vv = _vals(frontier)
+        for b in _sparql(ep, f'SELECT ?s ?p ?o WHERE {{ VALUES ?s {{ {vv} }} '
+                              f'?s ?p ?o }} LIMIT 500'):
+            s, p, o = b["s"]["value"], b["p"]["value"], b["o"]["value"]
+            if p == RDFS_LABEL:
+                continue
+            add(s, p, o, sc)
+            if b["o"]["type"] == "uri" and o not in seen and depth < hops:
+                seen.add(o); nxt.append(o)
+        for b in _sparql(ep, f'SELECT ?s ?p ?o WHERE {{ VALUES ?o {{ {vv} }} '
+                              f'?s ?p ?o }} LIMIT 400'):
+            s, p, o = b["s"]["value"], b["p"]["value"], b["o"]["value"]
+            if p == RDFS_LABEL:
+                continue
+            add(s, p, o, sc)
+            if s not in seen and depth < hops:
+                seen.add(s); nxt.append(s)
+        frontier = nxt[:25]
     _mark(f"BFS done ({len(gathered)} triples)")
 
     # 2. embedding expansion from N's label
@@ -118,21 +122,20 @@ def retrieve(endpoint, node, hops=2, vec_k=8, budget=60):
                            normalize_embeddings=True)[0]
     _mark("encoder loaded+encoded")
     vstr = " ".join(f"{x:.6f}" for x in qv)
-    # 2a. nodes similar to N -> pull their direct triples. VECTOR_SIMILAR
-    # can bind the same ?n many times (multiple subjects share a vector
-    # object); dedupe + cap or we re-query the same node 3x at ~2s each
-    # (that was the timeout).
+    # 2a. nodes similar to N -> ONE batched query for all their triples
+    #     (VECTOR_SIMILAR rebinds the same ?n; dedupe).
     sim_nodes = []
     for b in _sparql(ep, f'SELECT ?n WHERE {{ VECTOR_SIMILAR(?n <{NODE_EMB}> '
                           f'"{vstr}"^^<http://loka.dev/f32vec>, 0.4, k:={vec_k}) }}'):
         v = b["n"]["value"]
         if v not in sim_nodes:
             sim_nodes.append(v)
-    for sim_n in sim_nodes[:5]:
-        for r in _sparql(ep, f'SELECT ?p ?o WHERE {{ <{sim_n}> ?p ?o }} LIMIT 12'):
+    if sim_nodes:
+        for r in _sparql(ep, f'SELECT ?s ?p ?o WHERE {{ VALUES ?s '
+                              f'{{ {_vals(sim_nodes[:10])} }} ?s ?p ?o }} LIMIT 200'):
             if r["p"]["value"] == RDFS_LABEL:
                 continue
-            add(sim_n, r["p"]["value"], r["o"]["value"], 0.6)
+            add(r["s"]["value"], r["p"]["value"], r["o"]["value"], 0.6)
     # 2b. triples similar to N's neighbourhood (idx-triple)
     for b in _sparql(ep, f'SELECT ?t WHERE {{ VECTOR_SIMILAR(?t <{TRIPLE_EMB}> '
                           f'"{vstr}"^^<http://loka.dev/f32vec>, 0.4, k:={vec_k}) }}'):
@@ -146,12 +149,23 @@ def retrieve(endpoint, node, hops=2, vec_k=8, budget=60):
                 add(s, p, o, 0.7)
 
     _mark(f"vec done ({len(gathered)} triples total)")
-    ranked = sorted(gathered.items(), key=lambda kv: kv[1])[-budget:]
+
+    def _lab_or_none(iri):
+        # The model must only ever see clean label text. An http IRI with
+        # no label (coverage gap) renders as a raw QID — the model then
+        # parrots that garbage. Drop such triples entirely.
+        if not iri.startswith("http"):
+            return iri
+        return _LABELS.get(iri)  # None if unlabeled -> triple dropped
+
+    ranked = sorted(gathered.items(), key=lambda kv: kv[1])
     out = []
     for (s, p, o), _ in ranked:  # least -> most related
-        out.append((_label(ep, s, cache), _label(ep, p, cache),
-                    _label(ep, o, cache) if o.startswith("http") else o))
-    return out
+        sl, pl, ol = _lab_or_none(s), _lab_or_none(p), _lab_or_none(o)
+        if sl is None or pl is None or ol is None:
+            continue  # unresolved term -> never feed a QID to the model
+        out.append((sl, pl, ol))
+    return out[-budget:]
 
 
 def main():
