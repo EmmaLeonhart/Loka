@@ -1459,8 +1459,13 @@ async fn insert_vector(
                 ps.intern(io)
                     .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
                 let _ = ps.register_quoted(is_id, ip_id, io_id);
-                ps.insert(it)
-                    .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
+                // The inner/base fact is very often already persisted
+                // (e.g. ingested via /triples before its triple-vector).
+                // A duplicate here is benign — tolerate it, exactly as the
+                // in-memory `let _ = store.insert(it)` above does. Failing
+                // hard returned a spurious 400 even though the vector was
+                // indexed in memory.
+                let _ = ps.insert(it);
             } else {
                 ps.intern(&req.subject)
                     .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
