@@ -75,11 +75,17 @@ def generate(endpoint, node, hops=2, budget=50, max_new_tokens=180,
     seen = {(s.lower(), p.lower(), str(o).lower()) for s, p, o in ctx}
     triples = []
     for ln in txt.splitlines():
+        # strip leading markdown bullets / numbering the model adds
+        ln = re.sub(r"^\s*(?:[-*•·]|\d+[.)])\s*", "", ln).strip()
         parts = [x.strip() for x in ln.split("|")]
         if len(parts) != 3 or not all(parts):
             continue
         s, p, o = parts
         if (s.lower(), p.lower(), o.lower()) in seen:
+            continue
+        # the retrieved context is now label-only; reject any QID that
+        # still slipped through so we never emit raw identifiers
+        if re.fullmatch(r"Q\d{2,}", o) or re.fullmatch(r"Q\d{2,}", s):
             continue
         triples.append({"s": s, "p": p, "o": o, "confidence": round(conf, 4)})
 
