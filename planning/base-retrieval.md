@@ -62,6 +62,28 @@ expressible with current primitives; may be a real engine change.
 If any gate fails, surface it and adjust — do not build on an unproven
 base, and do not silently substitute node-similarity for triple-similarity.
 
+### VERDICT 2026-05-19 (recon + runtime smoke)
+
+- **G2 ✓** — sentence-transformers 5.4.1 + Ollama `all-minilm` (offline, CPU).
+- **G1a ✓** — code + runtime: `VECTOR_SIMILAR` on the live
+  playground_server returned the 4 nearest shrines correctly. Multiple
+  independent vector predicates supported (VectorRegistry keyed by
+  predicate TermId; POST /vectors/declare + POST /vectors + parser/
+  executor all real). **idx-node-id + idx-node-name = green, existing
+  mechanism.**
+- **G1b — bounded ENGINE CHANGE required.** Read path works (HNSW keys
+  the vector-object TermId; executor binds `?subject` via
+  find_by_predicate_object; quoted triples render faithfully via the
+  reverse map). Gap = insert path only: `POST /vectors`
+  (`loka-proto/src/server.rs:1360-1434`) interns the subject as a plain
+  IRI string and never handles a `<< s p o >>` subject; INSERT DATA
+  registers quoted triples but does not auto-index a vector on one.
+  Fix (localized): in the vector-insert path, detect a quoted-triple
+  subject → `register_quoted(s,p,o)` → intern vec object → store
+  `<<s p o>> tripleEmb vecobj` → `vectors.insert(tripleEmb, vec,
+  vecobj_id)`. Then rebuild the engine. This is a real engine
+  modification (Emma anticipated it) — checkpoint before doing it.
+
 ## Build slices (commit per slice; queue.md mirrors)
 
 1. **Data + embeddings.** Small real-Wikidata seed via
