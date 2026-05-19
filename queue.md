@@ -45,11 +45,26 @@ via propositionConfidence/BaseModel). Strictly >> the lobotomised
 fine-tune. **Retrieval ~95 s** (Loka per-node prefix scans ~2 s at
 this scale) → double-click would be ~2–3 min: functional, not snappy.
 
-**Remaining — Slice 4 (decision pending):** wire
-`tools/infer_server.py` /generate to `retrieval_generate.generate()`
-against :3031 so the Studio double-click uses base+retrieval. Gated
-on Emma's call given the ~3-min latency (wire as-is / optimise
-retrieval first / leave as CLI).
+**COMPLETE 2026-05-19.** Emma: optimise-then-wire. Done:
+- Retrieval batched (VALUES per BFS level): ~95 s → **~14 s** recurring
+  (one-time ~23 s MiniLM load is resident in the sidecar). Context
+  cleaned: unlabeled-QID triples dropped, parser strips markdown.
+- Slice 4: `tools/infer_server.py` /generate now drives base
+  Qwen2.5-1.5B + the BFS+embedding retrieval (no fine-tune); startup
+  pre-warms both. Verified: /health → qwen2.5-1.5b-base; POST
+  /generate {Q42,:3031} → clean on-topic triples
+  (occupation/nationality/genre/works correct; birthPlace
+  hallucinated — expected 1.5B, auditable via
+  loka:propositionBaseModel/Confidence), shape matches browse.html.
+
+**Open engine loose-end (NOT blocking; pre-existing engine-bug-#2
+family, found while verifying):** a SPARQL BGP
+`<< ?s ?p ?o >> <specificPred> ?m` does **not** constrain the
+predicate for quoted-triple subjects — it returns *any* annotation on
+the quoted triple (verified: a query for `propositionBaseModel`
+returned `retrieval/tripleEmb` f32vec rows). Affects provenance /
+cascade-retraction / idx-triple filtering correctness. Belongs in the
+engine-bug-#2 work, not this pivot. Recorded for follow-up.
 
 **State now:** training dead (do not resume — it lobotomised the
 model). Kept as reference (negative result, not the asset):
