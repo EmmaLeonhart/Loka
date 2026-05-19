@@ -1377,15 +1377,39 @@ async fn insert_vector(
     let vec_str: Vec<String> = req.vector.iter().map(|f| format!("{:.6}", f)).collect();
     let literal = format!("\"{}\"^^<http://loka.dev/f32vec>", vec_str.join(" "));
 
-    let (predicate_id, subject_id, object_id) = {
+    // The subject may be a plain IRI OR an RDF-star quoted triple
+    // `<< <s> <p> <o> >>` — so a vector can be attached to the TRIPLE
+    // itself (idx-triple), not just a node. Parse the quoted form with the
+    // canonical N-Triples-star parser (same path /triples ingest uses) so
+    // the content-addressed id matches and the reverse map renders it
+    // faithfully as `<< s p o >>`. Plain IRIs behave exactly as before.
+    let quoted_inner: Option<(String, String, String)> =
+        if req.subject.trim_start().starts_with("<<") {
+            let synthetic = format!("{} <urn:loka:vsubj> <urn:loka:vsubj> .", req.subject);
+            loka_core::parse_ntriples_star_line(&synthetic).and_then(|p| p.inner_subject)
+        } else {
+            None
+        };
+
+    let (predicate_id, subject_id, object_id, inner) = {
         let mut dict = state
             .dict
             .write()
             .map_err(|e| ProtoError::BadRequest(format!("lock poisoned: {}", e)))?;
         let p = dict.intern(&req.predicate);
-        let s = dict.intern(&req.subject);
         let o = dict.intern(&literal);
-        (p, s, o)
+        let (s, inner) = if let Some((is, ip, io)) = &quoted_inner {
+            let is_id = dict.intern(is);
+            let ip_id = dict.intern(ip);
+            let io_id = intern_object(&mut dict, io);
+            // register_quoted returns the same id quoted_triple_id would,
+            // and records the reverse map for faithful `<< s p o >>` render.
+            let qid = dict.register_quoted(is_id, ip_id, io_id);
+            (qid, Some((loka_core::Triple::new(is_id, ip_id, io_id), is_id, ip_id, io_id)))
+        } else {
+            (dict.intern(&req.subject), None)
+        };
+        (p, s, o, inner)
     };
 
     // Hold both store and vectors locks together to ensure atomicity:
@@ -1399,6 +1423,13 @@ async fn insert_vector(
             .vectors
             .write()
             .map_err(|e| ProtoError::BadRequest(format!("lock poisoned: {}", e)))?;
+
+        // For a quoted-triple subject the inner triple must exist in the
+        // store so VECTOR_SIMILAR's subject-binding join + faithful render
+        // resolve correctly.
+        if let Some((it, ..)) = inner {
+            let _ = store.insert(it);
+        }
 
         let triple = loka_core::Triple::new(subject_id, predicate_id, object_id);
         // Ignore duplicate triple errors (allows multiple subjects to point to same vector)
@@ -1416,10 +1447,24 @@ async fn insert_vector(
                 .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?;
             ps.intern(&req.predicate)
                 .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
-            ps.intern(&req.subject)
-                .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
             ps.intern(&literal)
                 .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
+            if let (Some((it, is_id, ip_id, io_id)), Some((is, ip, io))) =
+                (inner, &quoted_inner)
+            {
+                ps.intern(is)
+                    .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
+                ps.intern(ip)
+                    .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
+                ps.intern(io)
+                    .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
+                let _ = ps.register_quoted(is_id, ip_id, io_id);
+                ps.insert(it)
+                    .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
+            } else {
+                ps.intern(&req.subject)
+                    .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
+            }
             ps.insert(triple)
                 .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
             ps.flush()

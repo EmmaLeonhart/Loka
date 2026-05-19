@@ -84,6 +84,17 @@ base, and do not silently substitute node-similarity for triple-similarity.
   vecobj_id)`. Then rebuild the engine. This is a real engine
   modification (Emma anticipated it) — checkpoint before doing it.
 
+  **G1b RESOLVED 2026-05-19 — engine change shipped + runtime-verified.**
+  Emma chose "modify the shipped engine". `loka-proto/src/server.rs`
+  `insert_vector` now parses a `<< s p o >>` subject via the canonical
+  `loka_core::parse_ntriples_star_line` (no forked parser), inserts the
+  inner triple, `register_quoted`s it (in-memory + persistent), keys the
+  vector by the vec-object TermId. Verified: declared `tripleEmb`,
+  POSTed vectors on two quoted triples, `VECTOR_SIMILAR` returned the
+  near one as `type=triple`, value `<< <IseJingu> <enshrines>
+  <Amaterasu> >>` — faithful render, correct discrimination. **All
+  three indexes now green.**
+
 ## Build slices (commit per slice; queue.md mirrors)
 
 1. **Data + embeddings.** Small real-Wikidata seed via
