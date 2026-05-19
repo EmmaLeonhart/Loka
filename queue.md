@@ -13,70 +13,50 @@ JS knowledge graph is best
 
 ---
 
-## ACTIVE: fine-tune track — running to full 12 epochs (watchdog active)
+## RESULT 2026-05-18: the masked-SFT fine-tune lobotomised the model — pivot to base + prompt + retrieval
 
-Built + running (Qwen2.5-1.5B-Instruct, QLoRA 4-bit, 35k SFT examples/
-epoch from the HF v14-1M normalized corpus). finetune.py + infer.py +
-sft_common.py + watchdog implemented; `candidate_predicates` extracted
-shared. Per-epoch adapter pushed to HF `EmmaLeonhart/loka-qwen2.5-1.5b`;
-optimizer+RNG checkpointed to a rolling root-level `trainer_state.pt`
-for clean resume. Quality verified on the epoch-2 adapter (CPU probe,
-GPU-safe): 3/4 real facts correct ("Asia", "Germany", "English";
-numeric facts weak) — vs the from-scratch v14's "M :" at ppl 202.
+Decisive CPU probe (`tools/_ft_probe3.py`, base Qwen2.5-1.5B vs our
+epoch-4 adapter, same "continue these RDF triples" prompt):
+- **BASE, no fine-tune:** Tokyo → 7 clean, mostly-correct triples
+  (`population | 13.9 million`, `currency | Japanese yen`, …). Capable.
+- **epoch-4 adapter:** bare fragments only (`University of Zurich`;
+  `UTC-09:00`, also factually wrong). Strictly WORSE than the base.
 
-**Emma's decision 2026-05-18 (revised): RUN THE FULL 12 EPOCHS.** "Leave
-it on; might restart, then we have the latest one; definitely ≥5." So:
-- stop-at-5 monitor **cancelled/killed** (superseded).
-- `tools/finetune_watchdog.py` **running** (`logs/watchdog.log`): if
-  the trainer dies it relaunches on the fixed finetune.py — first
-  crash = one fresh-Adam resume from the latest HF/disk epoch (QLoRA
-  recoverable bump, and there are many epochs left to heal), clean
-  optimizer resume every time after. ≥epoch 5 is the guaranteed floor
-  (banked on HF regardless).
-- Windows AC sleep/hibernate/monitor-timeout set to never (`powercfg`,
-  reversible) so an idle timeout can't kill a ~2-day run.
-- Timeline: 12 × ~4.5 h ≈ ~54 h total; ~10 h elapsed → **~44 h
-  remaining** if uninterrupted (restarts add fresh-Adam recovery).
-  finetune.py prints "training complete." at epoch 12 → the watchdog
-  then exits on its own.
+Verdict: the narrow masked-prediction SFT traded the base model's
+knowledge for format-mimicry — net-negative for the actual goal. The
+training run is dead (system event during epoch-5 fresh-Adam recovery;
+nothing of value lost — epoch 4 ppl 2.95 banked on HF but it is the
+lobotomised artifact, not the asset). DO NOT resume training.
 
-Remaining:
-1. Wire `tools/infer_server.py` to use the fine-tuned adapter (latest
-   epoch under `adapters/qwen2.5-1.5b-loka-v1/`) via
-   `finetune/infer.py`'s `load_finetuned`/`generate_for_subject_llm`,
-   else fall back to from-scratch. Studio double-click then uses the
-   LLM. **Defer the GPU load until training has stopped at epoch 5**
-   (no concurrent GPU contention — that risks crashing the run).
-2. End-to-end test on the epoch-5 adapter; honest eval; commit.
-3. Website follow-up: the `.run-banner` (kit component in `style.css`)
-   is live on the homepage + contribute page, and the contribute
-   lead now leads with the active fine-tune track (per-epoch HF) while
-   keeping the v14 from-scratch donor material. REMAINING: a dedicated
-   `tools/contribute_finetune.py` (mirror of `contribute_v14_training.py`
-   but for the QLoRA path) + a contribute-page section walking the
-   fine-tune donor command. Not time-critical; training is autonomous.
+**Validated path (zero further training):** base Qwen2.5-1.5B + Emma's
+BFS+embedding retrieval assembling a relevance-ranked triple sequence +
+a "continue the sequence" prompt. A format-only light adapter is a
+*maybe-later*, not knowledge transfer.
 
-### Progression ladder (Emma's framing — scale the corpus up over runs)
+Next: build the retrieval algorithm against the BASE model. Open gate
+before building — which endpoint/data + does it have real per-node
+vectors (the Shinto demo's were junk f32vec). Pending Emma's call.
 
-Mirrors the from-scratch v-series (v11-50k → v12-100k → v13-500k →
-v14-1M). Each rung = a fine-tune run on a bigger slice, pushed to HF.
-Why not start at 4 M: measured QLoRA throughput on the 8 GB 4070
-Laptop is ~2.5 ex/s, so ONE epoch is:
+**State now:** training dead (do not resume — it lobotomised the
+model). Built during the run, kept as reference: `finetune.py`,
+`finetune/infer.py`, `sft_common.py`, `finetune_watchdog.py`,
+`stop_after_epoch.py`, shared `candidate_predicates`, optimizer+RNG
+checkpointing. Adapter `EmmaLeonhart/loka-qwen2.5-1.5b` epochs 1–4 on
+HF (epoch 4 = best, ppl 2.95) — kept as the negative result, not the
+asset. The masked-SFT corpus-scale "progression ladder" is abandoned:
+scaling the wrong objective doesn't help.
 
-| rung | examples | ~time / epoch | venue |
-|---|---|---|---|
-| ft-10k (running now) | 10 k | ~1 h | laptop overnight (≈8 epochs) |
-| ft-50k | 50 k | ~5.5 h | laptop (1 epoch/night) or cloud |
-| ft-200k | 200 k | ~22 h | cloud |
-| ft-1M | 1 M | ~4.6 days | cloud |
-| ft-4M (full v14-1M corpus) | 4.02 M | ~18.6 days | cloud, multi-day |
+**Next (validated, zero training):** build Emma's BFS+embedding
+retrieval feeding the **base** Qwen2.5-1.5B with a "continue these
+RDF triples" prompt. Open gate before building: target endpoint/data
++ whether it has real per-node vectors (Shinto demo's were junk
+f32vec) → pure-BFS fallback when no vectors. Awaiting Emma's call on
+endpoint/data.
 
-The laptop physically cannot do a single 4 M epoch overnight (~18
-days). So: this overnight run is rung 1 (validates the pipeline +
-yields a usable adapter by morning); bigger rungs are subsequent
-runs, the large ones on rented GPU (CLAUDE.md: laptop = dev box,
-cloud = training box). `--input`/`--limit` already parameterise the
-rung; no code change to climb the ladder.
+Website: `.run-banner` is live (homepage + contribute) and the
+contribute lead reflects the run; the banner copy now overstates an
+"active" run (training is dead) — needs a quick truth pass. A
+`contribute_finetune.py` donor script is moot under the pivot.
 
 ---
 
