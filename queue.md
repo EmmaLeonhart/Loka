@@ -33,6 +33,24 @@ BFS+embedding retrieval assembling a relevance-ranked triple sequence +
 a "continue the sequence" prompt. A format-only light adapter is a
 *maybe-later*, not knowledge transfer.
 
+**BUILT + VERIFIED END-TO-END 2026-05-19 (Slices 1–3, committed).**
+3-index vectorised real-Wikidata Loka (:3031, 10.5k triples, node/name/
+triple embeddings; engine change for quoted-triple vectors shipped +
+fixed). `graph_retrieval.py` (BFS ∪ VECTOR_SIMILAR ∪ triple-sim,
+least→most ranked, labels.json render) + `retrieval_generate.py`
+(base Qwen continuation + provenance). On Q42: correct ranked context →
+8 coherent on-topic triples, nationality/occupation/genre/real-works
+right, birth-name/death-date hallucinated (expected 1.5B; auditable
+via propositionConfidence/BaseModel). Strictly >> the lobotomised
+fine-tune. **Retrieval ~95 s** (Loka per-node prefix scans ~2 s at
+this scale) → double-click would be ~2–3 min: functional, not snappy.
+
+**Remaining — Slice 4 (decision pending):** wire
+`tools/infer_server.py` /generate to `retrieval_generate.generate()`
+against :3031 so the Studio double-click uses base+retrieval. Gated
+on Emma's call given the ~3-min latency (wire as-is / optimise
+retrieval first / leave as CLI).
+
 **State now:** training dead (do not resume — it lobotomised the
 model). Kept as reference (negative result, not the asset):
 `finetune.py`, `finetune/infer.py`, `sft_common.py`,
