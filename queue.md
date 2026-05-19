@@ -33,25 +33,26 @@ BFS+embedding retrieval assembling a relevance-ranked triple sequence +
 a "continue the sequence" prompt. A format-only light adapter is a
 *maybe-later*, not knowledge transfer.
 
-Next: build the retrieval algorithm against the BASE model. Open gate
-before building — which endpoint/data + does it have real per-node
-vectors (the Shinto demo's were junk f32vec). Pending Emma's call.
-
 **State now:** training dead (do not resume — it lobotomised the
-model). Built during the run, kept as reference: `finetune.py`,
-`finetune/infer.py`, `sft_common.py`, `finetune_watchdog.py`,
-`stop_after_epoch.py`, shared `candidate_predicates`, optimizer+RNG
-checkpointing. Adapter `EmmaLeonhart/loka-qwen2.5-1.5b` epochs 1–4 on
-HF (epoch 4 = best, ppl 2.95) — kept as the negative result, not the
-asset. The masked-SFT corpus-scale "progression ladder" is abandoned:
-scaling the wrong objective doesn't help.
+model). Kept as reference (negative result, not the asset):
+`finetune.py`, `finetune/infer.py`, `sft_common.py`,
+`finetune_watchdog.py`, `stop_after_epoch.py`, shared
+`candidate_predicates`, optimizer+RNG ckpt; adapter
+`EmmaLeonhart/loka-qwen2.5-1.5b` epochs 1–4 on HF. Masked-SFT
+"progression ladder" abandoned.
 
-**Next (validated, zero training):** build Emma's BFS+embedding
-retrieval feeding the **base** Qwen2.5-1.5B with a "continue these
-RDF triples" prompt. Open gate before building: target endpoint/data
-+ whether it has real per-node vectors (Shinto demo's were junk
-f32vec) → pure-BFS fallback when no vectors. Awaiting Emma's call on
-endpoint/data.
+**ACTIVE BUILD — Emma chose FULL BFS+embedding** (not BFS-only). Plan:
+`planning/base-retrieval.md`. Base Qwen2.5-1.5B (no adapter) + Emma's
+retrieval + continue-the-sequence prompt; zero training. Emma's
+2026-05-19 architecture note: this indexes **three vector indexes** —
+node-by-id, node-by-name, and **the triple itself** (vector on the
+RDF-star quoted triple) — a real change to what the DB indexes.
+Validate feasibility gates BEFORE building (new CLAUDE.md rule):
+- G1a: two declared vector predicates both answer `VECTOR_SIMILAR`.
+- **G1b (decisive): vector on `<< s p o >>` + `VECTOR_SIMILAR` +
+  faithful reverse-render** — the fragile engine-bug-#2 area; if it
+  fails it IS an engine change, surface it, don't fake triple-sim.
+- G2: a local offline embedding model exists (CPU).
 
 Website: `.run-banner` is live (homepage + contribute) and the
 contribute lead reflects the run; the banner copy now overstates an
