@@ -13,7 +13,7 @@ JS knowledge graph is best
 
 ---
 
-## ACTIVE: fine-tune track — running, stop cleanly at epoch 5
+## ACTIVE: fine-tune track — running to full 12 epochs (watchdog active)
 
 Built + running (Qwen2.5-1.5B-Instruct, QLoRA 4-bit, 35k SFT examples/
 epoch from the HF v14-1M normalized corpus). finetune.py + infer.py +
