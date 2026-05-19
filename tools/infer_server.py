@@ -226,59 +226,30 @@ class Handler(BaseHTTPRequestHandler):
 
     def _generate(self, subject, endpoint, confidence, token_floor,
                   max_candidates, do_post):
-        triples = fetch_all_triples(endpoint)
-        labels, subj_facts, pred_usage, _ = build_inference_state(
-            triples, PROPERTY_CACHE
-        )
-        _enrich_labels(triples, labels)
+        # Pivot path: base Qwen + Emma's BFS+embedding retrieval against
+        # the vectorised Loka the double-click points at. No fine-tune.
+        # (confidence/token_floor/max_candidates kept for API compat —
+        # the base model doesn't use the from-scratch decoder knobs.)
+        from retrieval_generate import generate as rg_generate
+        triples, nt = rg_generate(endpoint, subject, hops=1, budget=28)
+        generated = [{"s": t["s"], "p": t["p"], "o": t["o"],
+                      "confidence": t.get("confidence")} for t in triples]
 
-        n_facts = len(subj_facts.get(subject, []))
-        lines, log = generate_for_subject(
-            _STATE["model"], subject,
-            labels=labels, subj_facts=subj_facts, pred_usage=pred_usage,
-            vocab=_STATE["vocab"], inv_vocab=_STATE["inv_vocab"],
-            tokens_per_role=_STATE["tokens_per_role"],
-            device=_STATE["device_t"],
-            model_version=_STATE["model_version"],
-            confidence=confidence,
-            per_token_floor=token_floor,
-            max_candidates_per_subject=max_candidates,
-            encode_fn=_STATE["encode_fn"],
-            decode_fn=_STATE.get("decode_fn"),
-            fallback_candidates=True,
-        )
-        generated = _parse_generated(lines)
-        for m in log:
-            sys.stderr.write(m + "\n")
-
-        # An honest, specific reason when nothing comes back — so the UI never
-        # says a vague "no high-quality result".
         reason, detail = None, None
-        sl = labels.get(subject, subject)
         if not generated:
-            if n_facts == 0:
-                reason = "no_subject_facts"
-                detail = (f"'{sl}' has no facts of its own in this graph "
-                          f"(it only appears as the object of other triples), "
-                          f"so there is nothing for the model to reason from. "
-                          f"Double-click a node that has outgoing edges.")
-            else:
-                reason = "model_low_confidence"
-                detail = (f"The model read {n_facts} fact(s) about '{sl}' but "
-                          f"its best guess for every candidate predicate stayed "
-                          f"below the probability floor. This model (v14, "
-                          f"perplexity ~202) is small and was trained on "
-                          f"Wikidata — it is out-of-distribution on this "
-                          f"example.org demo. Not a discarded good result: "
-                          f"there was no confident result to discard.")
+            reason = "no_generation"
+            detail = (f"The base model produced no parseable new triples for "
+                      f"{subject} from the retrieved context. Try a node with "
+                      f"a richer neighbourhood, or one that exists in the "
+                      f"vectorised graph this endpoint serves.")
 
         inserted, errors = 0, []
-        if do_post and lines:
+        if do_post and nt.strip():
             r = requests.post(
-                f"{endpoint}/triples",
-                data=("\n".join(lines) + "\n").encode("utf-8"),
+                f"{endpoint.rstrip('/')}/triples",
+                data=(nt + "\n").encode("utf-8"),
                 headers={"Content-Type": "text/plain; charset=utf-8"},
-                timeout=60,
+                timeout=120,
             )
             if r.status_code == 200:
                 j = r.json()
@@ -288,13 +259,13 @@ class Handler(BaseHTTPRequestHandler):
 
         return {
             "subject": subject,
-            "labeled_subject": sl,
-            "model": _STATE.get("model_version"),
-            "subject_fact_count": n_facts,
+            "labeled_subject": subject,
+            "model": _STATE.get("model_version", "qwen2.5-1.5b-base"),
+            "subject_fact_count": len(generated),
             "generated": generated,
             "reason": reason,
             "detail": detail,
-            "nt": "\n".join(lines),
+            "nt": nt,
             "inserted": inserted,
             "errors": errors,
         }
@@ -316,33 +287,24 @@ def main() -> None:
     )
     args = ap.parse_args()
 
-    if args.bpe_tokenizer is None:
-        # v6+ checkpoints are BPE — the S/P labels MUST be encoded with the
-        # same tokenizer the checkpoint was trained with, or predictions are
-        # garbage. MODEL.json pins it as files.tokenizer_bpe; resolve it the
-        # same way the checkpoint/vocab are resolved (auto-downloads from HF).
-        try:
-            from loader import _resolve
-            args.bpe_tokenizer = str(_resolve("tokenizer_bpe"))
-        except Exception as e:  # noqa: BLE001
-            print(f"[warn] no pinned BPE tokenizer ({e}); falling back to "
-                  "word-level encoding — predictions will be poor.",
-                  file=sys.stderr)
-
-    device = torch.device(args.device)
-    print(f"Loading world model on {device} (first run downloads ~180 MB)…",
-          file=sys.stderr)
-    bundle = load_model(
-        args.checkpoint, args.vocab, device,
-        bpe_tokenizer=args.bpe_tokenizer,
-    )
-    _STATE.update(bundle)
-    _STATE["device"] = str(device)
-    _STATE["device_t"] = device
+    # PIVOT: base Qwen + Emma's BFS+embedding retrieval, NO fine-tune.
+    # The masked-SFT adapter lobotomised the model (tools/_ft_probe3.py;
+    # planning/base-retrieval.md). Pre-warm base Qwen + the MiniLM
+    # retrieval encoder at startup so a double-click is ~retrieval(~14s)
+    # + generation, not + model-load.
+    sys.path.insert(0, str(REPO_ROOT / "tools"))
+    print("Pre-warming base Qwen2.5-1.5B + MiniLM retrieval encoder "
+          "(one-time)…", file=sys.stderr)
+    import retrieval_generate as _rg
+    from graph_retrieval import _encoder as _ge
+    _rg._load()   # base Qwen resident
+    _ge()         # MiniLM resident
+    _STATE["model_version"] = "qwen2.5-1.5b-base"
+    _STATE["device"] = "cpu"
 
     httpd = ThreadingHTTPServer((args.host, args.port), Handler)
     print(
-        f"\n  Loka inference sidecar  ·  model {_STATE['model_version']}  ·  {device}\n"
+        f"\n  Loka inference sidecar  ·  model {_STATE['model_version']}  ·  base+retrieval (no fine-tune)\n"
         f"  http://{args.host}:{args.port}/health\n"
         f"  POST http://{args.host}:{args.port}/generate  {{subject, endpoint}}\n"
         f"\n  Double-click a node in the :8091 Knowledge Graph tab to use it.\n"
