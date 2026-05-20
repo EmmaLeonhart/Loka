@@ -1405,7 +1405,15 @@ async fn insert_vector(
             // register_quoted returns the same id quoted_triple_id would,
             // and records the reverse map for faithful `<< s p o >>` render.
             let qid = dict.register_quoted(is_id, ip_id, io_id);
-            (qid, Some((loka_core::Triple::new(is_id, ip_id, io_id), is_id, ip_id, io_id)))
+            (
+                qid,
+                Some((
+                    loka_core::Triple::new(is_id, ip_id, io_id),
+                    is_id,
+                    ip_id,
+                    io_id,
+                )),
+            )
         } else {
             (dict.intern(&req.subject), None)
         };
@@ -1449,9 +1457,7 @@ async fn insert_vector(
                 .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
             ps.intern(&literal)
                 .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
-            if let (Some((it, is_id, ip_id, io_id)), Some((is, ip, io))) =
-                (inner, &quoted_inner)
-            {
+            if let (Some((it, is_id, ip_id, io_id)), Some((is, ip, io))) = (inner, &quoted_inner) {
                 ps.intern(is)
                     .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
                 ps.intern(ip)
