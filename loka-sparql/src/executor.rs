@@ -3507,6 +3507,54 @@ mod tests {
     }
 
     #[test]
+    fn sparql_star_wildcard_subject_filters_by_outer_predicate() {
+        // Pivot 2026-05-19 loose-end: `<< ?s ?p ?o >> <specificPred> ?m` must
+        // constrain the outer predicate to <specificPred>, not return every
+        // annotation that happens to live on the matched quoted triple.
+        //
+        // Setup: one inner triple, two annotations on it with different
+        // predicates. Query for one predicate. Result must include only that
+        // predicate's annotation; the other must be filtered out.
+        let mut dict = TermDictionary::new();
+        let mut store = TripleStore::new();
+        let q42 = dict.intern("http://wd/Q42");
+        let p20 = dict.intern("http://wd/P20");
+        let q31 = dict.intern("http://wd/Q31");
+        let base_model = dict.intern("http://loka.dev/provenance/propositionBaseModel");
+        let triple_emb = dict.intern("http://loka.dev/retrieval/tripleEmb");
+        let qwen = dict.intern("\"qwen2.5-1.5b\"");
+        let emb_lit = dict.intern("\"0.1 0.2 0.3\"^^loka:f32vec");
+
+        store.insert(Triple::new(q42, p20, q31)).unwrap();
+        let qid = dict.register_quoted(q42, p20, q31);
+        // Two annotations on the same quoted triple, different outer
+        // predicates.
+        store.insert(Triple::new(qid, base_model, qwen)).unwrap();
+        store.insert(Triple::new(qid, triple_emb, emb_lit)).unwrap();
+
+        let q = parser::parse(
+            "SELECT ?s ?p ?o ?m WHERE { << ?s ?p ?o >> \
+             <http://loka.dev/provenance/propositionBaseModel> ?m }",
+        )
+        .unwrap();
+        let result = execute(&q, &store, &dict).unwrap();
+        assert_eq!(
+            result.rows.len(),
+            1,
+            "outer predicate filter must reject the tripleEmb annotation"
+        );
+        let row = &result.rows[0];
+        assert_eq!(*row.get("s").unwrap(), q42);
+        assert_eq!(*row.get("p").unwrap(), p20);
+        assert_eq!(*row.get("o").unwrap(), q31);
+        assert_eq!(
+            *row.get("m").unwrap(),
+            qwen,
+            "?m must bind the propositionBaseModel value, not the tripleEmb vector"
+        );
+    }
+
+    #[test]
     fn vector_similar_unbound_subject() {
         use loka_hnsw::{VectorPredicateConfig, VectorRegistry};
 
