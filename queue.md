@@ -468,11 +468,11 @@ In strategic order. Top item is the current focus.
 
 4. **Live `--post` end-to-end test of generative citation.** Attempted with `--max-subjects 30 --post`; script hung 7 min with no output, indicating engine bug #1 triggered during the POST phase. Re-attempt at lower scope after #1's fix is verified by option B.
 
-5. ✅ **DONE — Fine-tuning track scaffolded** (`training/finetune/`, current-pipeline aligned; `df8fb43` + the 2026-05-16 currency pass). First real QLoRA run is GPU-gated.
+5. ⚰️ **RETIRED — Fine-tuning track**. Scaffold shipped (`training/finetune/`, `df8fb43`); QLoRA epochs 1-4 ran 2026-05-16 → 2026-05-18; epoch-4 adapter pushed to HF. Decisive probe 2026-05-18 (`tools/_ft_probe3.py`) showed the masked-SFT lobotomised the base model — strictly worse than untouched Qwen. **DO NOT RESUME.** Adapter kept on HF as negative-result reference only. Replaced by the base + BFS+embedding retrieval pivot (see top of file).
 
 6. **Submit paper revision v2 to clawRxiv post 2378.** Local edits done (see Done section); needs `POST /api/posts/2378/revise` to actually publish the v2. Review-flagged remaining concerns (mode collapse on connectors, anecdotal qualitative sample, "neuro-symbolic" framing) are partially addressed by the new §3.2 framing and §6.4 future-work block but would benefit from a v3 once a bigger corpus or entity-decoder lands.
 
-7. **Repo rename Loka → Loka.** Top of `TODO.md` has the full checklist.
+7. ✅ **DONE — Repo rebrand SutraDB → Loka** (commit `366e056`, 2026-05-10). All crates renamed (sutra-* → loka-*), SDKs renamed, FFI symbols renamed, IRI namespace migrated, env vars LOKA_*, pages/theory/sutradb → pages/theory/loka, GitHub repo is `EmmaLeonhart/Loka`. The orphaned `Loka → Loka` block in TODO.md was deleted 2026-05-20.
 
 8. ✅ **DONE — World-model cascade-retraction shipped end-to-end 2026-05-16.** All 5 phases:
    reverse index → pure `retract_set` → `POST /retract/preview` → `POST /retract` +
