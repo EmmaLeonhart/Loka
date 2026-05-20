@@ -4,13 +4,6 @@
 
 See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is *update this file in the same commit as the work, and mirror items into the task tool.*
 
-
-## Stuff Emma is saying to do
-
-I want a replication of the flutter app in JS, but all of the existing html things are tabs in it.
-
-JS knowledge graph is best
-
 ---
 
 ## RESULT 2026-05-18: the masked-SFT fine-tune lobotomised the model — pivot to base + prompt + retrieval
@@ -87,10 +80,12 @@ Validate feasibility gates BEFORE building (new CLAUDE.md rule):
   fails it IS an engine change, surface it, don't fake triple-sim.
 - G2: a local offline embedding model exists (CPU).
 
-Website: `.run-banner` is live (homepage + contribute) and the
-contribute lead reflects the run; the banner copy now overstates an
-"active" run (training is dead) — needs a quick truth pass. A
-`contribute_finetune.py` donor script is moot under the pivot.
+Website: banner truth-pass done 2026-05-20 — the .run-banner was
+removed from homepage and /contribute/, and the contribute lead now
+puts the from-scratch v14 donor run front and centre with a short
+retired-track footnote (the fine-tune is documented as retired
+2026-05-18, not "active"). `contribute_finetune.py` was never built
+and is moot under the pivot.
 
 ---
 
@@ -128,20 +123,19 @@ the search-filter + repo-facts scripts. Full analysis + phased plan:
 - [x] **E** — all three `--check` no-ops; structural sweep clean
       across all 38 kit pages + playground; search.json 303 records.
 
-Remaining: render-check both themes in a browser + the Pages-deploy
-verify below. Deferred polish: numbered `.section` wrapping of the
-homepage body; full visual QA of `/contribute/`'s bespoke layout
-under the shared kit.
+Pages-deploy verify done 2026-05-20: homepage + /contribute/ both
+load on https://loka.emmaleonhart.com after the truth-pass push;
+sitemap.xml repaired in the same pass (orphaned /theory/sutradb/
+fixed to /theory/loka/, missing /loka/ /history/ /contribute/
+/benchmarks/ added). Remaining: render-check both themes in a real
+browser — WebFetch can confirm the HTML loaded but can't render JS
+or test the theme-toggle visually. Deferred polish: numbered
+`.section` wrapping of the homepage body; full visual QA of
+`/contribute/`'s bespoke layout under the shared kit.
 
 Predecessor (DONE — `e97f933`, `18cbfbe`, `bdc6b80`): all 39 pages on
 identity.css via style.css; `/contribute/` repaired self-contained;
 `unify_site.py` hardened; circular `:root` scrubbed everywhere.
-
-Still pending from that work: confirm the Pages deploy landed and
-<https://loka.emmaleonhart.com> + sub-pages render in BOTH themes
-(sister-subdomain pushes can stay invisible until Emma's manual
-GitHub Pages custom-domain re-set — verify the push landed, don't
-just re-push). If `README.md` describes the old site shell, update it.
 
 ---
 
