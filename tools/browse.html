@@ -97,7 +97,7 @@
 
 <header>
     <span class="logo"><span>Loka</span> Browser</span>
-    <input id="endpoint" value="http://localhost:3030" title="Loka data endpoint">
+    <input id="endpoint" title="Loka data endpoint — defaults to whichever engine served this page (so opening :3031/browse points at :3031)">
     <span id="status" class="off">...</span>
     <span style="color:var(--muted);font-size:0.8em">model:</span>
     <input id="inferep" value="http://localhost:8092" title="World-model inference sidecar (tools/infer_server.py — !infer.bat)">
@@ -627,7 +627,29 @@ async function checkHealth() {
 document.getElementById('query').addEventListener('keydown', e => {
     if ((e.ctrlKey||e.metaKey) && e.key === 'Enter') { runQuery(); e.preventDefault(); }
 });
+// Endpoint resolution (data + inference) in priority order so the demo
+// just opens — no field-tweak needed for the retrieval-graph KG expand:
+//   1. ?ep=... / ?infer=... query string (shareable bookmark)
+//   2. localStorage (sticky after first override)
+//   3. page origin for data (when served by the engine at e.g. :3031)
+//   4. hardcoded final fallback
+const _qs = new URLSearchParams(location.search);
+const _qsEp = _qs.get('ep');
+const _qsInfer = _qs.get('infer');
+const _pageOrigin = (location.protocol === 'http:' || location.protocol === 'https:')
+    ? location.origin : null;
+const epInput = document.getElementById('endpoint');
+epInput.value = (_qsEp && _qsEp.replace(/\/$/,''))
+    || localStorage.getItem('loka-data-ep')
+    || _pageOrigin
+    || 'http://localhost:3030';
+if (_qsEp) localStorage.setItem('loka-data-ep', epInput.value);
+epInput.addEventListener('change', () => {
+    localStorage.setItem('loka-data-ep', epInput.value.trim().replace(/\/$/,''));
+    checkHealth();
+});
 const inferEpInput = document.getElementById('inferep');
+if (_qsInfer) localStorage.setItem('loka-infer-ep', _qsInfer.replace(/\/$/,''));
 inferEpInput.value = IEP();
 inferEpInput.addEventListener('change', () => {
     localStorage.setItem('loka-infer-ep', inferEpInput.value.trim().replace(/\/$/,''));
