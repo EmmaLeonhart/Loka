@@ -89,6 +89,70 @@ and is moot under the pivot.
 
 ---
 
+## ⏳ IN-FLIGHT 2026-05-20 15:30: retrieval-graph reload + persistence
+## bug investigation
+
+Emma asked to kill+restart :3031 so she could see the double-click KG
+expand demo. The restart surfaced **a real engine persistence bug**:
+on sled rehydrate the vector predicate registry came back wrong —
+predicate ID 10711 (was `nameEmb`) resolved to an f32vec literal
+string instead of its IRI, predicate 10712 (was `tripleEmb`) didn't
+rehydrate at all, only 10710 (`nodeEmb`) survived intact. Triple
+count went 22142 -> 12700 across the restart. The corruption is
+visible in `/vectors/health` (the `predicate` field for the broken
+index shows `"-0.007669 0.080905 …"^^<http://loka.dev/f32vec>` — a
+vector LITERAL — instead of an IRI). Likely root cause: the predicate
+IRI -> id mapping shares term-dictionary slots with vector-literal
+interning, and the persisted slot for 10711/10712 got rewritten with
+the first vector-literal posted under that index.
+
+**Recovery in flight (background task b23rkxw6x):** stale data dir
+moved aside to `loka-retrieval-data-stale-20260520/`, fresh :3031
+launched on an empty `loka-retrieval-data/`, and
+`python tools/load_retrieval_loka.py --endpoint http://localhost:3031`
+is reloading from the source files (`graph.nt` 1.2 MB + `vectors_*.jsonl`
+node 8.2 MB / name 8.2 MB / triple 30 MB). ETA a few minutes for
+posting; full HNSW build then runs server-side.
+
+**To finish the demo task (cron-resumable):**
+1. Verify reload completed: `curl -s http://localhost:3031/vectors/health`
+   must show 3 indexes (nodeEmb / nameEmb / tripleEmb), each ~2 100
+   active_nodes for node+name and ~7 500 for triple. If it stalled
+   or died, re-run `python tools/load_retrieval_loka.py
+   --endpoint http://localhost:3031` (it's idempotent against an
+   already-populated store — duplicate-triple errors are expected).
+2. End-to-end probe: `curl -s -m 120 -X POST -H "Content-Type:
+   application/json" -d '{"subject":"http://www.wikidata.org/entity/Q42",
+   "endpoint":"http://localhost:3031","post":false}'
+   http://localhost:8092/generate` should return ~6 generated
+   triples with `model: qwen2.5-1.5b-base` in ~30-60 s.
+3. The new `/browse` is live on `:3031` (binary was rebuilt
+   `cargo build --release -p loka-cli` and restarted with the new
+   `tools/browse.html` baked in). Emma opens
+   `http://localhost:3031/browse` — endpoint field auto-fills to
+   `http://localhost:3031`, infer field to `http://localhost:8092`,
+   no manual tweak. Click "Run" on the default query to populate;
+   double-click any IRI to expand.
+4. Engine persistence bug (recorded): the vector-predicate-registry
+   corruption on sled rehydrate is now the open follow-up. Likely
+   lives in `loka-core/src/persistent.rs` term-dictionary slot
+   assignment or in `loka-hnsw`'s predicate-id persistence on
+   reopen. Belongs in the engine-bug-#2 family. Not blocking the
+   demo (reload + warm process is the workaround) but should be
+   fixed before any production restart story.
+
+**Other in-session housekeeping (2026-05-20):** clawRxiv paper
+resubmitted as post 2601 (the v7→v8 hop — the abstract was 6684
+chars vs the 5000-char cap and had been silently failing for 5
+consecutive auto-submission attempts; trimmed to 4160). New SPARQL
+regression test `sparql_star_wildcard_subject_filters_by_outer_predicate`
+guards the queue-claimed-but-not-reproduced quoted-triple-subject
+predicate-filter bug — test passes against the current executor,
+89 sparql tests green. README + status.md synced to mention the
+2026-05-19 base+retrieval pivot.
+
+---
+
 ## Website → reconstruct onto the shared branding kit
 
 Rebuild the Loka site onto the canonical shared visual kit
