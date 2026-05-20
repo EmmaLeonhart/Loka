@@ -32,6 +32,7 @@ loka-data/
 loka-data-backup-*/
 loka-data-cron-*/
 loka-import-data/
+loka-retrieval-data/
 sutra-data/
 sutra-data-backup-*/
 sutra-import-data/
@@ -53,6 +54,9 @@ training/data/generated_*.nt
 mnt/
 loka_error.log
 *.pyc
+
+# Throwaway probe scripts (underscore-prefixed = scratch, not tracked)
+tools/_*.py
 
 # Chat exports — commit only the extracted .md, not the bulky HTML and asset bundles
 chats/*.html
