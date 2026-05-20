@@ -2,7 +2,7 @@
 
 > Loka engine (RDF-star triplestore) + a small role-aware transformer trained on the same triples. Now in its multi-rung normalized-wikidata phase (v11 → v14). Models live at [`EmmaLeonhart/loka`](https://huggingface.co/datasets/EmmaLeonhart/loka); the training corpora live at [`EmmaLeonhart/normalized-wikidata`](https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata).
 
-Last touched: **2026-05-16**
+Last touched: **2026-05-20**
 
 ---
 
@@ -12,11 +12,21 @@ A neuro-symbolic world model. **Loka** is the engine (Rust, this repo): a lean R
 
 ---
 
-## Where we are RIGHT NOW (2026-05-16)
+## Where we are RIGHT NOW (2026-05-20)
 
 ### Background processes in flight
 
-**None.** v11–v14 are all shipped-final; the supervisor, trainer, and epoch-snapshot pusher were cleanly stopped. The GPU is intentionally idle (released for the maintainer's other use). No training, ingest, or `loka serve` running. The code-only barrel that ran while the GPU is paused is **complete**: engine bug #2 fully closed (query-layer invariant + ingest-side quoted-triple reverse index + ffi/mcp parser fix), RDF-star solid across ingest/persistence/query/export, fine-tuning track scaffolded, and **cascade-retraction shipped end-to-end** (pure `retract_set` → `/retract/preview` → `/retract` + `retract_node` MCP tool → Loka Studio action; destructive path opt-in). All Rust suites green; Studio analyzes clean. See `queue.md` (BARREL COMPLETE) and DEVLOG 2026-05-16.
+**None.** v11–v14 from-scratch series shipped-final; supervisor/trainer/pusher cleanly stopped. The GPU is idle.
+
+### Recent pivot (2026-05-18 → 2026-05-19): fine-tune retired, base + retrieval shipped
+
+A QLoRA fine-tune of Qwen 2.5 1.5B on the normalized-wikidata corpus was attempted as a parallel track and **retired 2026-05-18**: a decisive CPU probe (`tools/_ft_probe3.py`) showed the epoch-4 adapter produced bare fragments where the untouched base produced 7 clean Tokyo triples. The narrow masked-prediction SFT traded the base model's knowledge for format-mimicry. **Do not resume.** The adapter (`EmmaLeonhart/loka-qwen2.5-1.5b` epochs 1–4) is kept on HF only as a negative-result reference.
+
+The shipped world-model inference path is now **base Qwen 2.5 1.5B + BFS+embedding retrieval** (no fine-tune), wired into the resident `:8092` sidecar (`tools/infer_server.py`). Three vector indexes on a real-Wikidata Loka (`:3031`): node-by-id, node-by-name, and the **triple itself** (vector on the RDF-star quoted triple — a real engine change shipped + fixed). Retrieval optimised to ~14 s recurring. browse.html double-click drives it. Plan: `planning/base-retrieval.md`. See queue.md "RESULT 2026-05-18" + "COMPLETE 2026-05-19".
+
+### Earlier code-only barrel (still current)
+
+Engine bug #2 fully closed (query-layer invariant + ingest-side quoted-triple reverse index + ffi/mcp parser fix), RDF-star solid across ingest/persistence/query/export, fine-tuning track scaffolded (now retired per above), and **cascade-retraction shipped end-to-end** (pure `retract_set` → `/retract/preview` → `/retract` + `retract_node` MCP tool → Loka Studio action; destructive path opt-in). All Rust suites green; Studio analyzes clean. See DEVLOG 2026-05-16.
 
 ### Current pinned model
 
@@ -112,8 +122,9 @@ Working:
 
 Known issues:
 - ~~**Engine bug #2: Loka SPARQL occasionally returns literal values in the predicate position.**~~ **RESOLVED 2026-05-16** — query-layer invariant + ingest-side quoted-triple reverse index + ffi/mcp parser fix. RDF-star round-trips losslessly across ingest/persistence/query/export.
+- **Engine bug #2 family — open loose-end (found 2026-05-19 while verifying the pivot).** A SPARQL BGP `<< ?s ?p ?o >> <specificPred> ?m` does *not* constrain the predicate on the annotation side: a query for `propositionBaseModel` returned `retrieval/tripleEmb` f32vec rows. Affects provenance / cascade-retraction / idx-triple filtering correctness. Not blocking the pivot. Recorded for follow-up.
 - **The v11+ Loka data dir (`loka-data-cron-c1/`, 17.6 GB) is no longer in the training data path.** Kept on disk for reference.
-- **Mode collapse on common connector tokens.** Even with rep penalty, "of/and" still win when (S, P) coverage is thin. The v11→v14 corpus-scale series narrowed this (best ppl 279.12 → 202.01) but did not eliminate it; a clean 10-epoch v14 on bigger hardware is the next lever.
+- **Mode collapse on common connector tokens** (from-scratch v11-v14 series). The base + retrieval pivot sidesteps this since the world-model is now a base Qwen, not the from-scratch transformer. The from-scratch series remains GPU-blocked at v14 (ppl 202.01 floor); a clean 10-epoch donor run on bigger hardware is the next lever.
 - **v12 shipped at the epoch-6 snapshot** (ppl 250.82) rather than the epoch-4 best (226.86) — lost to an unrelated LLaMA 3.1 8B experiment sharing the GPU. A clean v12 retrain (~225 expected) remains a GPU-blocked queue item.
 
 ---
