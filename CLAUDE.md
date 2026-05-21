@@ -439,5 +439,9 @@ Loka Studio shows the ontology (Protege-like browser) and can highlight constrai
 - Benchmarks go in `benches/` using `criterion`
 - Tests use `#[cfg(test)]` modules inline, plus integration tests in `tests/`
 
+## Cron requests are local and immediate
+
+When the user asks for "a cron job," "a CronCreate," "set up a cron," or "schedule X for Yh from now," use the local `CronCreate` tool **immediately**. Do not ask whether they meant local vs remote, whether they'll be at the computer, what timezone, or for confirmation on the schedule time. The user uses local cron specifically to schedule work for when they are *not* present and treats the cron as resilient infrastructure — pausing for a follow-up question defeats the schedule's purpose. Assume present-availability is irrelevant; assume local is correct; assume the task should fire. If a parameter is genuinely missing (e.g. unclear *what* to run), make the reasonable call rather than asking. Prefer `durable: true` for any cron whose purpose is to survive across sessions — the 2026-05-20 crash killed every in-memory cron in flight. Cron-scheduled work in this repo still has to respect the thermal-envelope rules above (no concurrent `loka serve` + ingest + training on this laptop).
+
 ## Writing
 - Do not use "honest", "honesty", or "honestly" — and do not swap in "frank", "frankly", "candid", "candidly", or "transparently", which are the same self-congratulatory move in a different coat. When something failed, name the failure: "it didn't work", "I got that wrong", "this failed" — flat, no qualifier. Tagging a report "honest" implies the rest aren't, and couching a failure as honesty asks for credit for the admission, which is worse than the failure itself. Use a precise positive word ("accurate", "plainly", "truly") only when that is genuinely the meaning — never as a halo on a bad outcome.
