@@ -209,7 +209,9 @@ Resurrecting the demo (when Emma asks):
 3. `declare_vector_predicate` and `insert_vector` refactored to hold dict + ps locks together and use the synced helpers.
 4. `declare_and_insert_keeps_dict_and_ps_in_sync` regression test guards the alignment end-to-end.
 
-**Possibly still open:** other asymmetric-intern paths in `loka-proto`. The `/triples` handler uses `dict.intern` directly and lets `ps.insert_batch` re-intern inside its sled transaction — same drift potential. Worth auditing each `dict.intern` call site that has a persistent store attached to confirm there's no equivalent leak. Not blocking the demo (the loader path goes through `/vectors/declare` + `/vectors`, now fixed).
+**SPARQL `INSERT DATA` / `DELETE DATA` were carrying the same bug** (`resolve_term_to_id` called `dict.intern` only; subsequent `ps.insert(triple)` wrote a SPO key referencing an id whose string mapping was never persisted). Fix shipped in the same family: `resolve_term_to_id` now takes `Option<&PersistentStore>` and routes interns through `intern_synced`; `execute_insert_data` and `execute_delete_data` hold both dict + ps locks together. Regression test `sparql_insert_data_persists_term_strings` guards it.
+
+**Audit status:** `/triples` still uses `dict.intern` directly then hands `BatchInsert` to `ps.insert_batch` (which re-interns inside its sled transaction). When dict and ps are aligned at request entry and nothing else drifts dict during the request, both counters tick in lockstep across the same string set — so `/triples` is *currently* safe. With all known drift sources (`/vectors/declare`, `INSERT DATA`) now fixed, the precondition holds. But the latent risk remains: any future handler that interns in dict without persisting could re-introduce drift for the next `/triples` request. Worth a tighter invariant later (eg., a debug-mode assertion that dict.next_id == ps.next_id at the end of every write request).
 
 **Artifact:** `loka-retrieval-data-stale-20260520/` is preserved for any further forensic work, and `inspect_vector_triples` is the diagnostic tool for it.
 

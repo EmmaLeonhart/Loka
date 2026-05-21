@@ -463,6 +463,20 @@ fn execute_insert_data(
         .write()
         .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?;
 
+    // Acquire ps alongside dict + store so resolve_term_to_id can route
+    // every intern through both dictionaries. Without this, INSERT DATA
+    // wrote SPO rows referencing dict-only IDs whose string mapping was
+    // never persisted (related to the 2026-05-20 drift bug fixed in the
+    // /vectors handlers).
+    let ps_guard = match state.persistent.as_ref() {
+        Some(lock) => Some(
+            lock.write()
+                .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?,
+        ),
+        None => None,
+    };
+    let ps_opt = ps_guard.as_deref();
+
     let mut inserted = 0i64;
     for pattern in &query.patterns {
         if let Pattern::Triple {
@@ -479,16 +493,13 @@ fn execute_insert_data(
                 object: qo,
             } = subject
             {
-                let qs_id = resolve_term_to_id(qs, &mut dict, &query.prefixes)?;
-                let qp_id = resolve_term_to_id(qp, &mut dict, &query.prefixes)?;
-                let qo_id = resolve_term_to_id(qo, &mut dict, &query.prefixes)?;
+                let qs_id = resolve_term_to_id(qs, &mut dict, ps_opt, &query.prefixes)?;
+                let qp_id = resolve_term_to_id(qp, &mut dict, ps_opt, &query.prefixes)?;
+                let qo_id = resolve_term_to_id(qo, &mut dict, ps_opt, &query.prefixes)?;
                 let inner = loka_core::Triple::new(qs_id, qp_id, qo_id);
                 dict.register_quoted(qs_id, qp_id, qo_id);
                 if store.insert(inner).is_ok() {
-                    if let Some(ref ps_lock) = state.persistent {
-                        let ps = ps_lock
-                            .write()
-                            .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?;
+                    if let Some(ps) = ps_opt {
                         let _ = ps.insert(inner);
                         let _ = ps.register_quoted(qs_id, qp_id, qo_id);
                     }
@@ -500,25 +511,22 @@ fn execute_insert_data(
                 object: qo,
             } = object
             {
-                let qs_id = resolve_term_to_id(qs, &mut dict, &query.prefixes)?;
-                let qp_id = resolve_term_to_id(qp, &mut dict, &query.prefixes)?;
-                let qo_id = resolve_term_to_id(qo, &mut dict, &query.prefixes)?;
+                let qs_id = resolve_term_to_id(qs, &mut dict, ps_opt, &query.prefixes)?;
+                let qp_id = resolve_term_to_id(qp, &mut dict, ps_opt, &query.prefixes)?;
+                let qo_id = resolve_term_to_id(qo, &mut dict, ps_opt, &query.prefixes)?;
                 let inner = loka_core::Triple::new(qs_id, qp_id, qo_id);
                 dict.register_quoted(qs_id, qp_id, qo_id);
                 if store.insert(inner).is_ok() {
-                    if let Some(ref ps_lock) = state.persistent {
-                        let ps = ps_lock
-                            .write()
-                            .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?;
+                    if let Some(ps) = ps_opt {
                         let _ = ps.insert(inner);
                         let _ = ps.register_quoted(qs_id, qp_id, qo_id);
                     }
                 }
             }
 
-            let s_id = resolve_term_to_id(subject, &mut dict, &query.prefixes)?;
-            let p_id = resolve_term_to_id(predicate, &mut dict, &query.prefixes)?;
-            let o_id = resolve_term_to_id(object, &mut dict, &query.prefixes)?;
+            let s_id = resolve_term_to_id(subject, &mut dict, ps_opt, &query.prefixes)?;
+            let p_id = resolve_term_to_id(predicate, &mut dict, ps_opt, &query.prefixes)?;
+            let o_id = resolve_term_to_id(object, &mut dict, ps_opt, &query.prefixes)?;
 
             // Check for schema declarations: loka:declareVectorPredicate
             let pred_str = dict.resolve(p_id).unwrap_or("").to_string();
@@ -546,10 +554,7 @@ fn execute_insert_data(
 
             let triple = loka_core::Triple::new(s_id, p_id, o_id);
             if store.insert(triple).is_ok() {
-                if let Some(ref ps_lock) = state.persistent {
-                    let ps = ps_lock
-                        .write()
-                        .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?;
+                if let Some(ps) = ps_opt {
                     ps.insert(triple)
                         .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
                 }
@@ -558,12 +563,8 @@ fn execute_insert_data(
         }
     }
 
-    // Flush persistent store to ensure durability
-    if let Some(ref ps_lock) = state.persistent {
+    if let Some(ps) = ps_opt {
         if inserted > 0 {
-            let ps = ps_lock
-                .read()
-                .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?;
             ps.flush()
                 .map_err(|e| ProtoError::BadRequest(format!("flush: {}", e)))?;
         }
@@ -596,6 +597,17 @@ fn execute_delete_data(
         .store
         .write()
         .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?;
+    // Hold ps alongside dict so resolve_term_to_id stays counter-aligned
+    // even though DELETE itself rarely interns new terms (the strings
+    // usually already exist). Cheap insurance.
+    let ps_guard = match state.persistent.as_ref() {
+        Some(lock) => Some(
+            lock.write()
+                .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?,
+        ),
+        None => None,
+    };
+    let ps_opt = ps_guard.as_deref();
 
     let mut deleted = 0i64;
     for pattern in &query.patterns {
@@ -605,16 +617,13 @@ fn execute_delete_data(
             object,
         } = pattern
         {
-            let s_id = resolve_term_to_id(subject, &mut dict, &query.prefixes)?;
-            let p_id = resolve_term_to_id(predicate, &mut dict, &query.prefixes)?;
-            let o_id = resolve_term_to_id(object, &mut dict, &query.prefixes)?;
+            let s_id = resolve_term_to_id(subject, &mut dict, ps_opt, &query.prefixes)?;
+            let p_id = resolve_term_to_id(predicate, &mut dict, ps_opt, &query.prefixes)?;
+            let o_id = resolve_term_to_id(object, &mut dict, ps_opt, &query.prefixes)?;
 
             let triple = loka_core::Triple::new(s_id, p_id, o_id);
             if store.remove(&triple) {
-                if let Some(ref ps_lock) = state.persistent {
-                    let ps = ps_lock
-                        .write()
-                        .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?;
+                if let Some(ps) = ps_opt {
                     ps.remove(&triple)
                         .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
                 }
@@ -623,12 +632,8 @@ fn execute_delete_data(
         }
     }
 
-    // Flush persistent store to ensure durability
-    if let Some(ref ps_lock) = state.persistent {
+    if let Some(ps) = ps_opt {
         if deleted > 0 {
-            let ps = ps_lock
-                .read()
-                .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?;
             ps.flush()
                 .map_err(|e| ProtoError::BadRequest(format!("flush: {}", e)))?;
         }
@@ -647,39 +652,52 @@ fn execute_delete_data(
 }
 
 /// Resolve a parsed Term to a TermId, interning if necessary.
+///
+/// `ps` is the optional persistent store. When provided, every intern is
+/// routed through it so the in-memory dict and the persistent store
+/// share a single term-ID counter. This is the same fix as
+/// `intern_synced` — without it, SPARQL `INSERT DATA` would persist a
+/// triple referencing dict-only IDs that have no corresponding entry in
+/// ps's terms_fwd/terms_rev maps. On reopen those IDs would resolve to
+/// whatever else had been interned at the slot, or to nothing.
 fn resolve_term_to_id(
     term: &loka_sparql::parser::Term,
     dict: &mut TermDictionary,
+    ps: Option<&loka_core::PersistentStore>,
     prefixes: &std::collections::HashMap<String, String>,
 ) -> std::result::Result<loka_core::TermId, ProtoError> {
     use loka_sparql::parser::Term;
     match term {
-        Term::Iri(iri) => Ok(dict.intern(iri)),
+        Term::Iri(iri) => intern_synced(dict, ps, iri),
         Term::PrefixedName { prefix, local } => {
             let ns = prefixes
                 .get(prefix.as_str())
                 .ok_or_else(|| ProtoError::BadRequest(format!("unknown prefix: {}", prefix)))?;
-            Ok(dict.intern(&format!("{}{}", ns, local)))
+            intern_synced(dict, ps, &format!("{}{}", ns, local))
         }
-        Term::Literal(s) => Ok(dict.intern(&format!("\"{}\"", s))),
+        Term::Literal(s) => intern_synced(dict, ps, &format!("\"{}\"", s)),
         Term::TypedLiteral { value, datatype } => {
             let full = format!("\"{}\"^^<{}>", value, datatype);
-            Ok(intern_object(dict, &full))
+            intern_object_synced(dict, ps, &full)
         }
         Term::IntegerLiteral(n) => loka_core::inline_integer(*n)
             .ok_or_else(|| ProtoError::BadRequest("integer out of range".into())),
-        Term::A => Ok(dict.intern("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")),
+        Term::A => intern_synced(dict, ps, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
         Term::QuotedTriple {
             subject,
             predicate,
             object,
         } => {
-            let s_id = resolve_term_to_id(subject, dict, prefixes)?;
-            let p_id = resolve_term_to_id(predicate, dict, prefixes)?;
-            let o_id = resolve_term_to_id(object, dict, prefixes)?;
+            let s_id = resolve_term_to_id(subject, dict, ps, prefixes)?;
+            let p_id = resolve_term_to_id(predicate, dict, ps, prefixes)?;
+            let o_id = resolve_term_to_id(object, dict, ps, prefixes)?;
             // Register the reverse mapping (idempotent) so the content-hash
             // id can be reversed for faithful rendering + provenance cascade.
-            Ok(dict.register_quoted(s_id, p_id, o_id))
+            dict.register_quoted(s_id, p_id, o_id);
+            if let Some(ps) = ps {
+                let _ = ps.register_quoted(s_id, p_id, o_id);
+            }
+            Ok(loka_core::quoted_triple_id(s_id, p_id, o_id))
         }
         _ => Err(ProtoError::BadRequest(
             "variables not allowed in INSERT/DELETE DATA".into(),
@@ -2391,6 +2409,53 @@ mod tests {
                  rewritten by a drifted intern (the corruption mode)",
                 ps_id, resolved, term
             );
+        }
+    }
+
+    #[tokio::test]
+    async fn sparql_insert_data_persists_term_strings() {
+        // Parallel regression for SPARQL INSERT DATA. Pre-fix,
+        // execute_insert_data called resolve_term_to_id which interned
+        // in dict only; the subsequent ps.insert(triple) wrote an SPO
+        // row using dict-only IDs that had no matching entry in ps's
+        // terms_fwd/terms_rev. After reopen, the persisted triple's
+        // term IDs would resolve to whatever happened to land at those
+        // slots in ps — or to nothing.
+        let state = test_state_persistent();
+
+        let app = router(state.clone());
+        let req = Request::builder()
+            .method("POST")
+            .uri("/sparql")
+            .header("content-type", "application/sparql-query")
+            .body(Body::from(
+                "INSERT DATA { \
+                 <http://new.example.org/X> \
+                 <http://new.example.org/P> \
+                 <http://new.example.org/O> }",
+            ))
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let dict = state.dict.read().unwrap();
+        let ps = state.persistent.as_ref().unwrap().read().unwrap();
+
+        for term in [
+            "http://new.example.org/X",
+            "http://new.example.org/P",
+            "http://new.example.org/O",
+        ] {
+            let dict_id = dict
+                .lookup(term)
+                .unwrap_or_else(|| panic!("term {} missing from dict", term));
+            let ps_id = ps
+                .lookup(term)
+                .unwrap()
+                .unwrap_or_else(|| panic!("term {} missing from ps — INSERT DATA leaked", term));
+            assert_eq!(dict_id, ps_id, "term {} drifted between dict and ps", term);
+            let resolved = ps.resolve(ps_id).unwrap().unwrap();
+            assert_eq!(resolved, term, "ps.resolve must round-trip");
         }
     }
 }
