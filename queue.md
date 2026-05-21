@@ -195,20 +195,11 @@ Resurrecting the demo (when Emma asks):
 
 ## Open engine bugs
 
-### Engine persistence bug: vector predicate registry corruption on sled rehydrate (parked, has artifact)
+### Engine persistence bug: vector-registry rebuild now skips literal-id predicates
 
-On `loka serve` reopening a sled data dir that holds vector indexes, the predicate IRI ↔ ID mapping rehydrates wrong:
-- `predicate 10710` (`nodeEmb`) survives intact
-- `predicate 10711` (`nameEmb`) resolves to an f32vec **literal string** instead of its IRI
-- `predicate 10712` (`tripleEmb`) does not rehydrate at all
+**Mitigation shipped 2026-05-20.** The on-reopen `VectorRegistry` rebuild in `loka-cli serve` was unconditionally declaring a vector predicate for every triple whose object was an f32vec literal — including malformed rows whose *predicate slot* contained a literal-id (the engine-bug-#2 family). Visible in `/vectors/health` as a predicate field reading `"-0.007669 …"^^<…/f32vec>` instead of an IRI. The rebuild logic moved to `loka-hnsw::rebuild_from_store` with three filters: skip if `is_inline(predicate)`, skip if `dict.resolve(predicate)` starts with `"`, skip if the object isn't a parseable f32vec literal. Unit test `rebuild_skips_triples_with_literal_predicate` guards the corruption mode.
 
-Visible in `/vectors/health`: the `predicate` field for the broken index reads `"-0.007669 0.080905 …"^^<http://loka.dev/f32vec>` — a vector literal — instead of an IRI. Triple count also drops across the restart (22 142 → 12 700 in the observed run).
-
-Likely root cause: the predicate-IRI→ID mapping shares term-dictionary slots with vector-literal interning, and the persisted slot for 10711/10712 was rewritten with the first vector-literal posted under that index.
-
-Look at: `loka-core/src/persistent.rs` term-dictionary slot assignment, and `loka-hnsw`'s predicate-id persistence on reopen.
-
-Artifact: `loka-retrieval-data-stale-20260520/` (93.7 MB, preserved). Do not delete — it's the failing sled dir.
+**Still open (separate root cause investigation):** the malformed rows themselves. The parked artifact `loka-retrieval-data-stale-20260520/` (93.7 MB) contains f32vec-bearing triples whose predicate is a literal-id, not an IRI. Engine bug #2 was fully closed 2026-05-16 (query-layer invariant + ingest-side quoted-triple reverse index), so the rows on disk likely entered via either a pre-fix path or a still-unidentified ingest route. Worth dumping the offending rows from the parked sled DB to confirm the predicate-position content; if they share a structural signature, that points at the still-open ingest path. Not blocking: the rebuild filter prevents the registry from being poisoned regardless.
 
 ### Engine bug #1 sustained-ingest verification (open)
 

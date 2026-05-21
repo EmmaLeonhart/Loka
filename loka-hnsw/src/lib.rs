@@ -6,6 +6,7 @@ pub mod edges;
 pub mod error;
 pub mod index;
 pub mod node;
+pub mod rebuild;
 pub mod registry;
 pub mod vector;
 
@@ -15,6 +16,7 @@ pub use edges::{
 };
 pub use error::{HnswError, Result};
 pub use index::{HnswConfig, HnswIndex, SearchResult};
+pub use rebuild::{rebuild_from_store, RebuildDefaults};
 pub use registry::{VectorPredicateConfig, VectorRegistry};
 pub use vector::{
     cosine_similarity, dot_product, l2_norm, normalize, normalized, squared_euclidean,

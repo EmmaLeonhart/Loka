@@ -319,44 +319,17 @@ async fn main() -> anyhow::Result<()> {
                 }
                 tracing::info!("Loaded {} triples from disk", triple_count);
 
-                // Rebuild HNSW indexes from stored vector triples
-                let mut vectors = loka_hnsw::VectorRegistry::new();
-                let mut vec_count = 0usize;
-                let f32vec_suffix = "^^<http://loka.dev/f32vec>";
-                for triple in store.iter() {
-                    if let Some(obj_str) = dict.resolve(triple.object) {
-                        if obj_str.contains(f32vec_suffix) {
-                            // Parse the vector literal
-                            if let Some(start) = obj_str.find('"') {
-                                let end = obj_str[start + 1..].find('"').map(|p| p + start + 1);
-                                if let Some(end) = end {
-                                    let vec_str = &obj_str[start + 1..end];
-                                    let floats: Vec<f32> = vec_str
-                                        .split_whitespace()
-                                        .filter_map(|s| s.parse::<f32>().ok())
-                                        .collect();
-                                    if !floats.is_empty() {
-                                        let dims = floats.len();
-                                        // Ensure predicate is declared
-                                        if !vectors.has_index(triple.predicate) {
-                                            let config = loka_hnsw::VectorPredicateConfig {
-                                                predicate_id: triple.predicate,
-                                                dimensions: dims,
-                                                m: 16,
-                                                ef_construction: 200,
-                                                metric: loka_hnsw::DistanceMetric::Cosine,
-                                            };
-                                            let _ = vectors.declare(config);
-                                        }
-                                        let _ =
-                                            vectors.insert(triple.predicate, floats, triple.object);
-                                        vec_count += 1;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                // Rebuild HNSW indexes from stored vector triples. The
+                // helper skips malformed rows (predicate is a literal or
+                // inline value) — the corruption mode observed on the
+                // 2026-05-20 sled rehydrate, where /vectors/health
+                // reported predicate slots resolving to f32vec literals
+                // instead of IRIs.
+                let (vectors, vec_count) = loka_hnsw::rebuild_from_store(
+                    &store,
+                    &dict,
+                    &loka_hnsw::RebuildDefaults::default(),
+                );
                 if vec_count > 0 {
                     tracing::info!("Rebuilt {} vectors in HNSW indexes from disk", vec_count);
                 }
