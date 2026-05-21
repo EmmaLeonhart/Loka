@@ -210,16 +210,6 @@ Look at: `loka-core/src/persistent.rs` term-dictionary slot assignment, and `lok
 
 Artifact: `loka-retrieval-data-stale-20260520/` (93.7 MB, preserved). Do not delete — it's the failing sled dir.
 
-### Engine bug #2 follow-up: quoted-triple predicate filter does not constrain
-
-SPARQL BGP `<< ?s ?p ?o >> <specificPred> ?m` does NOT constrain the predicate for quoted-triple subjects — it returns *any* annotation on the quoted triple. Verified case: a query for `propositionBaseModel` returned `retrieval/tripleEmb` f32vec rows.
-
-Affects: provenance, cascade-retraction, idx-triple filtering correctness.
-
-The regression test `sparql_star_wildcard_subject_filters_by_outer_predicate` exists, **passes** against the current executor, and does NOT reproduce the bug — so it's guarding the wrong angle. Need to find the path that actually fails and add a test that reproduces, then fix the executor.
-
-Belongs in the same family as the now-closed engine bug #2 (query-layer invariant + ingest-side quoted-triple reverse index, fully fixed 2026-05-16) — but is a separate, still-open failure mode.
-
 ### Engine bug #1 sustained-ingest verification (open)
 
 Probable fix shipped in `c36760b`: explicit `sled::Config` with 256 MB cache, 2 s flush, `Mode::HighThroughput`. Reopen-in-place verified 2026-05-13 (WAL replay recovered 32,877,248 triples). Residual question: does the tuning also hold against fresh sustained ingest past 32.88 M triples? If a re-test ingest panics at the next plateau, escalate to RocksDB migration (sled 0.34 unmaintained since 2021). Not blocking under the current base+retrieval pivot — training corpus is no longer the bottleneck.
