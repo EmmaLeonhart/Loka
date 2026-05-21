@@ -1479,9 +1479,7 @@ fn evaluate_triple_pattern(
                 // find_by_subject(qt_id) returns EVERY annotation on the
                 // matched quoted triple regardless of predicate, which is
                 // the observed bug.
-                if is_unresolved_constant(predicate, p_id)
-                    || is_unresolved_constant(object, o_id)
-                {
+                if is_unresolved_constant(predicate, p_id) || is_unresolved_constant(object, o_id) {
                     continue;
                 }
 
@@ -1612,8 +1610,7 @@ fn evaluate_triple_pattern(
                 // above: if the outer subject or predicate is a constant
                 // IRI/literal not in the dictionary, no matches can exist —
                 // do NOT scan-everything via find_by_object(qt_id).
-                if is_unresolved_constant(subject, s_id)
-                    || is_unresolved_constant(predicate, p_id)
+                if is_unresolved_constant(subject, s_id) || is_unresolved_constant(predicate, p_id)
                 {
                     continue;
                 }
