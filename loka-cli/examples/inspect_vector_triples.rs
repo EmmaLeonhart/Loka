@@ -87,8 +87,9 @@ fn main() -> ExitCode {
                     }
                 }
             }
-            entry.sample_subject =
-                dict.resolve(triple.subject).map(|s| truncate(&s, 60).into());
+            entry.sample_subject = dict
+                .resolve(triple.subject)
+                .map(|s| truncate(&s, 60).into());
             entry.sample_object = Some(truncate(&obj_str, 60).into());
         }
     }
