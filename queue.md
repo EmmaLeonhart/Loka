@@ -195,11 +195,23 @@ Resurrecting the demo (when Emma asks):
 
 ## Open engine bugs
 
-### Engine persistence bug: vector-registry rebuild now skips literal-id predicates
+### Engine persistence bug: vector-registry corruption — root cause fixed
 
-**Mitigation shipped 2026-05-20.** The on-reopen `VectorRegistry` rebuild in `loka-cli serve` was unconditionally declaring a vector predicate for every triple whose object was an f32vec literal — including malformed rows whose *predicate slot* contained a literal-id (the engine-bug-#2 family). Visible in `/vectors/health` as a predicate field reading `"-0.007669 …"^^<…/f32vec>` instead of an IRI. The rebuild logic moved to `loka-hnsw::rebuild_from_store` with three filters: skip if `is_inline(predicate)`, skip if `dict.resolve(predicate)` starts with `"`, skip if the object isn't a parseable f32vec literal. Unit test `rebuild_skips_triples_with_literal_predicate` guards the corruption mode.
+**Symptom (2026-05-20):** after `loka serve` reopened a sled data dir holding vector indexes, `/vectors/health` rendered the `nameEmb` predicate slot as an f32vec literal string (`-0.007669 0.080905 …"^^<…/f32vec>`) and `tripleEmb` disappeared entirely. Triple count dropped 22142 → 12700 across the restart.
 
-**Still open (separate root cause investigation):** the malformed rows themselves. The parked artifact `loka-retrieval-data-stale-20260520/` (93.7 MB) contains f32vec-bearing triples whose predicate is a literal-id, not an IRI. Engine bug #2 was fully closed 2026-05-16 (query-layer invariant + ingest-side quoted-triple reverse index), so the rows on disk likely entered via either a pre-fix path or a still-unidentified ingest route. Worth dumping the offending rows from the parked sled DB to confirm the predicate-position content; if they share a structural signature, that points at the still-open ingest path. Not blocking: the rebuild filter prevents the registry from being poisoned regardless.
+**Diagnosis (`loka-cli/examples/inspect_vector_triples.rs`, run on the parked artifact `loka-retrieval-data-stale-20260520/` 93.7 MB):** 2113 f32vec-bearing rows have predicate=10710 (well-formed → `nodeEmb`) and 2113 have predicate=10711 (malformed → ID 10711 resolves to the first interned name-embedding literal). Same row count both sides → exactly one bad predicate per legitimate `nameEmb` row.
+
+**Root cause:** in-memory `TermDictionary` and `PersistentStore` have independent term-ID counters. After startup they're aligned (load_terms_into seeds dict from ps), but `/vectors/declare` interned the predicate IRI in the in-memory dict ONLY, drifting its counter past ps's counter. The subsequent `/vectors` POST called `dict.intern` and `ps.intern` independently and got DIFFERENT IDs for the same string. The triple was built from in-memory IDs and written to ps's SPO index — but ps's terms_rev resolved those IDs to whatever else happened to be at those slots (typically the next vector literal interned). On reopen, the corruption became visible.
+
+**Fixes shipped (commits 37ef41e + this one):**
+1. `loka-cli serve` rebuild now skips triples whose predicate is a literal-id or inline value (`loka_hnsw::rebuild_from_store`). Prevents poisoned registries on any future corrupt-on-disk state.
+2. New `intern_synced` / `intern_object_synced` helpers in `loka-proto` route every intern through `ps.intern` first, then mirror into the in-memory dict via `insert_with_id`. The persistent store becomes the source of truth for term IDs.
+3. `declare_vector_predicate` and `insert_vector` refactored to hold dict + ps locks together and use the synced helpers.
+4. `declare_and_insert_keeps_dict_and_ps_in_sync` regression test guards the alignment end-to-end.
+
+**Possibly still open:** other asymmetric-intern paths in `loka-proto`. The `/triples` handler uses `dict.intern` directly and lets `ps.insert_batch` re-intern inside its sled transaction — same drift potential. Worth auditing each `dict.intern` call site that has a persistent store attached to confirm there's no equivalent leak. Not blocking the demo (the loader path goes through `/vectors/declare` + `/vectors`, now fixed).
+
+**Artifact:** `loka-retrieval-data-stale-20260520/` is preserved for any further forensic work, and `inspect_vector_triples` is the diagnostic tool for it.
 
 ### Engine bug #1 sustained-ingest verification (open)
 

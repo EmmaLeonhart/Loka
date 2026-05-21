@@ -1070,6 +1070,44 @@ async fn insert_triples(
 }
 
 /// Intern an object term, handling typed literals specially.
+/// Intern `term` such that the in-memory `dict` and the optional
+/// `PersistentStore` always end up with the SAME `TermId`.
+///
+/// Root cause of the 2026-05-20 sled-rehydrate corruption (predicate
+/// 10711 resolving to a vector literal): `/vectors/declare` interned the
+/// predicate IRI in the in-memory dict only, drifting its counter past
+/// `ps`'s counter. Subsequent `/vectors` POSTs called `dict.intern` and
+/// `ps.intern` independently — and got different IDs back because the
+/// counters had drifted. The triple was built with in-memory IDs and
+/// then written to ps's SPO index, so the persisted SPO key referenced
+/// a term ID that resolved in `ps`'s `terms_rev` to whatever else had
+/// been interned at that ID — typically the next vector literal seen.
+/// On reopen the corruption became visible: `/vectors/health` showed
+/// a predicate slot rendering as the f32vec literal string.
+///
+/// The fix: when a persistent store is attached, route every intern
+/// through `ps.intern` and mirror the resulting id into the in-memory
+/// dict via `insert_with_id`. The persistent store becomes the source
+/// of truth for term IDs; the in-memory dict is a read-through cache.
+/// In memory-only mode there is no drift to begin with — fall through
+/// to the regular `dict.intern`.
+fn intern_synced(
+    dict: &mut TermDictionary,
+    ps: Option<&loka_core::PersistentStore>,
+    term: &str,
+) -> Result<loka_core::TermId, ProtoError> {
+    match ps {
+        Some(ps) => {
+            let id = ps
+                .intern(term)
+                .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
+            dict.insert_with_id(term, id);
+            Ok(id)
+        }
+        None => Ok(dict.intern(term)),
+    }
+}
+
 fn intern_object(dict: &mut TermDictionary, obj: &str) -> loka_core::TermId {
     // Check for typed literals: "value"^^<datatype>
     if let Some(caret_pos) = obj.find("\"^^<") {
@@ -1095,6 +1133,40 @@ fn intern_object(dict: &mut TermDictionary, obj: &str) -> loka_core::TermId {
         }
     }
     dict.intern(obj)
+}
+
+/// Counter-aligned version of `intern_object`: handles xsd:integer /
+/// xsd:boolean inlining the same way, but falls through to
+/// `intern_synced` for non-inline literals so the persistent store
+/// stays in sync with the in-memory dictionary.
+fn intern_object_synced(
+    dict: &mut TermDictionary,
+    ps: Option<&loka_core::PersistentStore>,
+    obj: &str,
+) -> Result<loka_core::TermId, ProtoError> {
+    if let Some(caret_pos) = obj.find("\"^^<") {
+        let value_str = &obj[1..caret_pos];
+        let datatype_start = caret_pos + 4;
+        let datatype_end = obj.len() - 1;
+        if datatype_end > datatype_start {
+            let datatype = &obj[datatype_start..datatype_end];
+            if datatype == XSD_INTEGER {
+                if let Ok(n) = value_str.parse::<i64>() {
+                    if let Some(id) = loka_core::inline_integer(n) {
+                        return Ok(id);
+                    }
+                }
+            }
+            if datatype == XSD_BOOLEAN {
+                match value_str {
+                    "true" => return Ok(loka_core::inline_boolean(true)),
+                    "false" => return Ok(loka_core::inline_boolean(false)),
+                    _ => {}
+                }
+            }
+        }
+    }
+    intern_synced(dict, ps, obj)
 }
 
 // ─── Cascade-retraction preview (non-destructive) ────────────────────────────
@@ -1316,7 +1388,18 @@ async fn declare_vector_predicate(
             .dict
             .write()
             .map_err(|e| ProtoError::BadRequest(format!("lock poisoned: {}", e)))?;
-        dict.intern(&req.predicate)
+        // Acquire ps inside the dict lock so that intern_synced sees a
+        // consistent counter pairing. Holding the dict write lock
+        // throughout means no other handler can advance dict.next_id
+        // between ps.intern and dict.insert_with_id.
+        let ps_guard = match state.persistent.as_ref() {
+            Some(lock) => Some(
+                lock.write()
+                    .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?,
+            ),
+            None => None,
+        };
+        intern_synced(&mut dict, ps_guard.as_deref(), &req.predicate)?
     };
 
     let config = loka_hnsw::VectorPredicateConfig {
@@ -1396,15 +1479,30 @@ async fn insert_vector(
             .dict
             .write()
             .map_err(|e| ProtoError::BadRequest(format!("lock poisoned: {}", e)))?;
-        let p = dict.intern(&req.predicate);
-        let o = dict.intern(&literal);
+        // Hold the ps lock alongside the dict lock so intern_synced sees
+        // aligned counters. Pre-2026-05-20, this handler interned in
+        // dict only, drifting the counters and causing the sled-rehydrate
+        // corruption documented at the top of `intern_synced`.
+        let ps_guard = match state.persistent.as_ref() {
+            Some(lock) => Some(
+                lock.write()
+                    .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?,
+            ),
+            None => None,
+        };
+        let ps_opt = ps_guard.as_deref();
+        let p = intern_synced(&mut dict, ps_opt, &req.predicate)?;
+        let o = intern_synced(&mut dict, ps_opt, &literal)?;
         let (s, inner) = if let Some((is, ip, io)) = &quoted_inner {
-            let is_id = dict.intern(is);
-            let ip_id = dict.intern(ip);
-            let io_id = intern_object(&mut dict, io);
+            let is_id = intern_synced(&mut dict, ps_opt, is)?;
+            let ip_id = intern_synced(&mut dict, ps_opt, ip)?;
+            let io_id = intern_object_synced(&mut dict, ps_opt, io)?;
             // register_quoted returns the same id quoted_triple_id would,
             // and records the reverse map for faithful `<< s p o >>` render.
             let qid = dict.register_quoted(is_id, ip_id, io_id);
+            if let Some(ps) = ps_opt {
+                let _ = ps.register_quoted(is_id, ip_id, io_id);
+            }
             (
                 qid,
                 Some((
@@ -1415,7 +1513,7 @@ async fn insert_vector(
                 )),
             )
         } else {
-            (dict.intern(&req.subject), None)
+            (intern_synced(&mut dict, ps_opt, &req.subject)?, None)
         };
         (p, s, o, inner)
     };
@@ -1448,33 +1546,19 @@ async fn insert_vector(
         // the HNSW insert may error — that's fine, the vector is already indexed.
         let _ = vectors.insert(predicate_id, req.vector, object_id);
 
-        // Write through to persistent store and flush for durability
+        // Write through to persistent store and flush for durability.
+        // All terms are already interned in ps via intern_synced above;
+        // re-interning would be a no-op so we skip it here.
         if let Some(ref ps_lock) = state.persistent {
             let ps = ps_lock
                 .write()
                 .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?;
-            ps.intern(&req.predicate)
-                .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
-            ps.intern(&literal)
-                .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
-            if let (Some((it, is_id, ip_id, io_id)), Some((is, ip, io))) = (inner, &quoted_inner) {
-                ps.intern(is)
-                    .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
-                ps.intern(ip)
-                    .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
-                ps.intern(io)
-                    .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
-                let _ = ps.register_quoted(is_id, ip_id, io_id);
+            if let Some((it, ..)) = inner {
                 // The inner/base fact is very often already persisted
                 // (e.g. ingested via /triples before its triple-vector).
                 // A duplicate here is benign — tolerate it, exactly as the
-                // in-memory `let _ = store.insert(it)` above does. Failing
-                // hard returned a spurious 400 even though the vector was
-                // indexed in memory.
+                // in-memory `let _ = store.insert(it)` above does.
                 let _ = ps.insert(it);
-            } else {
-                ps.intern(&req.subject)
-                    .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
             }
             ps.insert(triple)
                 .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
@@ -2191,5 +2275,122 @@ mod tests {
             .unwrap();
         let json: serde_json::Value = serde_json::from_slice(&resp_body).unwrap();
         assert_eq!(json["status"], "ok");
+    }
+
+    fn test_state_persistent() -> Arc<AppState> {
+        // Identical to test_state() but backed by a temporary PersistentStore
+        // so handlers exercise the persistent-store write path.
+        let ps = loka_core::PersistentStore::temporary().unwrap();
+        let mut dict = TermDictionary::new();
+        let mut store = TripleStore::new();
+
+        // Pre-seed both dicts in sync. This mirrors the post-startup state
+        // after load_terms_into has hydrated the in-memory dict from ps.
+        for term in [
+            "http://example.org/Alice",
+            "http://example.org/Bob",
+            "http://example.org/knows",
+        ] {
+            let id = ps.intern(term).unwrap();
+            dict.insert_with_id(term, id);
+        }
+        let alice = dict.lookup("http://example.org/Alice").unwrap();
+        let knows = dict.lookup("http://example.org/knows").unwrap();
+        let bob = dict.lookup("http://example.org/Bob").unwrap();
+        let triple = Triple::new(alice, knows, bob);
+        store.insert(triple).unwrap();
+        ps.insert(triple).unwrap();
+
+        Arc::new(AppState {
+            store: RwLock::new(store),
+            dict: RwLock::new(dict),
+            vectors: RwLock::new(VectorRegistry::new()),
+            persistent: Some(RwLock::new(ps)),
+            passcode: None,
+            rate_limit_per_min: 0,
+            rate_counter: std::sync::atomic::AtomicU64::new(0),
+        })
+    }
+
+    #[tokio::test]
+    async fn declare_and_insert_keeps_dict_and_ps_in_sync() {
+        // Regression for the 2026-05-20 sled-rehydrate corruption: pre-fix,
+        // `/vectors/declare` interned the predicate IRI in the in-memory
+        // dict only, drifting its counter past the persistent store's
+        // counter. The subsequent `/vectors` POST then built a triple with
+        // dict's id and wrote it to ps's SPO index — but ps's terms_rev
+        // resolved that same id to whatever else had been interned at the
+        // slot (typically the next vector literal). After reopen,
+        // /vectors/health rendered the predicate as an f32vec literal.
+        //
+        // The fix routes every intern through ps.intern + dict.insert_with_id
+        // so both dicts share a single counter trajectory. This test
+        // exercises both handlers against a persistent store and confirms
+        // their term IDs agree.
+        let state = test_state_persistent();
+
+        let app = router(state.clone());
+        let declare_body = serde_json::json!({
+            "predicate": "http://loka.dev/retrieval/nodeEmb",
+            "dimensions": 3,
+            "m": 4,
+            "ef_construction": 20,
+            "metric": "cosine"
+        });
+        let req = Request::builder()
+            .method("POST")
+            .uri("/vectors/declare")
+            .header("content-type", "application/json")
+            .body(Body::from(declare_body.to_string()))
+            .unwrap();
+        assert_eq!(app.oneshot(req).await.unwrap().status(), StatusCode::OK);
+
+        let app = router(state.clone());
+        let insert_body = serde_json::json!({
+            "predicate": "http://loka.dev/retrieval/nodeEmb",
+            "subject": "http://wd/Q42",
+            "vector": [0.1, 0.2, 0.3]
+        });
+        let req = Request::builder()
+            .method("POST")
+            .uri("/vectors")
+            .header("content-type", "application/json")
+            .body(Body::from(insert_body.to_string()))
+            .unwrap();
+        assert_eq!(app.oneshot(req).await.unwrap().status(), StatusCode::OK);
+
+        let dict = state.dict.read().unwrap();
+        let ps = state.persistent.as_ref().unwrap().read().unwrap();
+        let literal = "\"0.100000 0.200000 0.300000\"^^<http://loka.dev/f32vec>";
+
+        for term in [
+            "http://loka.dev/retrieval/nodeEmb",
+            "http://wd/Q42",
+            literal,
+        ] {
+            let dict_id = dict
+                .lookup(term)
+                .unwrap_or_else(|| panic!("term {} missing from in-memory dict", term));
+            let ps_id = ps
+                .lookup(term)
+                .unwrap()
+                .unwrap_or_else(|| panic!("term {} missing from ps", term));
+            assert_eq!(
+                dict_id, ps_id,
+                "term {} drifted: dict assigned {} but ps assigned {}",
+                term, dict_id, ps_id
+            );
+
+            // And the round-trip: ps's terms_rev must resolve the id
+            // back to the same string. This is the bit that was
+            // observably broken pre-fix.
+            let resolved = ps.resolve(ps_id).unwrap().unwrap();
+            assert_eq!(
+                resolved, term,
+                "ps.resolve({}) returned {} instead of {} — terms_rev got \
+                 rewritten by a drifted intern (the corruption mode)",
+                ps_id, resolved, term
+            );
+        }
     }
 }
