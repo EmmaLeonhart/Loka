@@ -1472,6 +1472,19 @@ fn evaluate_triple_pattern(
                 let p_id = resolve_term(predicate, row, ctx.dict, ctx.prefixes)?;
                 let o_id = resolve_term(object, row, ctx.dict, ctx.prefixes)?;
 
+                // Engine-bug-#2 follow-up (pivot 2026-05-19): if the outer
+                // predicate or object is a constant IRI/literal that's not
+                // in the dictionary (was never ingested), there can be no
+                // matches — short-circuit. Falling through to
+                // find_by_subject(qt_id) returns EVERY annotation on the
+                // matched quoted triple regardless of predicate, which is
+                // the observed bug.
+                if is_unresolved_constant(predicate, p_id)
+                    || is_unresolved_constant(object, o_id)
+                {
+                    continue;
+                }
+
                 for inner_triple in &inner_candidates {
                     if let Some(s) = is_id {
                         if inner_triple.subject != s {
@@ -1594,6 +1607,16 @@ fn evaluate_triple_pattern(
             } else {
                 let s_id = resolve_term(subject, row, ctx.dict, ctx.prefixes)?;
                 let p_id = resolve_term(predicate, row, ctx.dict, ctx.prefixes)?;
+
+                // Same engine-bug-#2 follow-up as the subject-position branch
+                // above: if the outer subject or predicate is a constant
+                // IRI/literal not in the dictionary, no matches can exist —
+                // do NOT scan-everything via find_by_object(qt_id).
+                if is_unresolved_constant(subject, s_id)
+                    || is_unresolved_constant(predicate, p_id)
+                {
+                    continue;
+                }
 
                 // Scan for matching inner triples
                 let inner_candidates: Vec<Triple> = match (is_id, ip_id, io_id) {
@@ -2448,6 +2471,19 @@ fn resolve_term(
             }
         }
     }
+}
+
+/// A constant term (IRI, prefixed name, `a`, or literal) that failed to
+/// resolve to a `TermId` — i.e., the value referenced was never ingested.
+///
+/// Variables that resolve to `None` are NOT unresolved constants: an
+/// unbound variable is *meant* to scan freely. This distinction matters
+/// in the RDF-star wildcard-expansion paths, where falling back to a
+/// scan-all on `None` is correct for variables but wrong for constants
+/// (it silently widens the predicate/object filter to match every
+/// annotation on the quoted triple — engine-bug-#2 follow-up).
+fn is_unresolved_constant(term: &Term, id: Option<TermId>) -> bool {
+    id.is_none() && !matches!(term, Term::Variable(_))
 }
 
 /// Try to evaluate a triple pattern as a virtual HNSW edge query.
@@ -3551,6 +3587,49 @@ mod tests {
             *row.get("m").unwrap(),
             qwen,
             "?m must bind the propositionBaseModel value, not the tripleEmb vector"
+        );
+    }
+
+    #[test]
+    fn sparql_star_outer_predicate_unknown_iri_returns_zero() {
+        // Engine-bug-#2 follow-up (pivot 2026-05-19): observed in the live
+        // retrieval engine that `<< ?s ?p ?o >> <unknownIri> ?m` returns rows
+        // (the tripleEmb annotation) instead of zero. The previous regression
+        // test (sparql_star_wildcard_subject_filters_by_outer_predicate)
+        // guarded the case where the outer predicate IRI was already interned
+        // — so resolve_term returned Some(id), find_by_subject_predicate ran,
+        // the filter worked. That's the wrong angle.
+        //
+        // The actual failure path: the outer predicate is a constant IRI that
+        // is NOT in the dictionary (was never ingested). resolve_term returns
+        // None, the wildcard-expansion branch falls through to
+        // find_by_subject(qt_id), and EVERY annotation on the quoted triple
+        // comes back regardless of predicate.
+        let mut dict = TermDictionary::new();
+        let mut store = TripleStore::new();
+        let q42 = dict.intern("http://wd/Q42");
+        let p20 = dict.intern("http://wd/P20");
+        let q31 = dict.intern("http://wd/Q31");
+        let triple_emb = dict.intern("http://loka.dev/retrieval/tripleEmb");
+        let emb_lit = dict.intern("\"0.1 0.2 0.3\"^^loka:f32vec");
+
+        store.insert(Triple::new(q42, p20, q31)).unwrap();
+        let qid = dict.register_quoted(q42, p20, q31);
+        store.insert(Triple::new(qid, triple_emb, emb_lit)).unwrap();
+
+        // propositionBaseModel is never interned into the dict.
+        let q = parser::parse(
+            "SELECT ?s ?p ?o ?m WHERE { << ?s ?p ?o >> \
+             <http://loka.dev/provenance/propositionBaseModel> ?m }",
+        )
+        .unwrap();
+        let result = execute(&q, &store, &dict).unwrap();
+        assert_eq!(
+            result.rows.len(),
+            0,
+            "constant outer predicate IRI unknown to the dictionary must \
+             produce zero rows (the IRI was never ingested), not the \
+             tripleEmb annotation"
         );
     }
 
