@@ -1,109 +1,110 @@
-"""Build web-studio/testdata.nt from the cleaned retrieval graph.
+"""Build web-studio/testdata.nt from a slice of the actual training corpus.
 
-The Studio "Load test data" button needs a small slice of the *normalized*
-corpus — the same plain-English, all-literal form the world model is trained
-on and the sidecar emits (see tools/retrieval_generate.py): triples are
+The Studio "Load test data" button needs a small, clean, multi-entity graph to
+populate the demo. Earlier versions of this script BFS-sliced the Q42 retrieval
+graph and capped at one entity's edges, so the result was a single Douglas Adams
+star — boring, no traversal, not representative of the data the model trains on.
 
-    "Douglas Adams" "instance of" "human" .
+Instead, slice straight from the *actual* normalized training corpus
+(``training/finetune/data/_corpus_v14/triples_normalized.txt``): the same clean,
+plain-English, tab-separated ``subject<TAB>predicate<TAB>object`` lines the world
+model is trained on. We take a balanced slice — many entities, a per-subject
+out-degree cap so no single hub (Belgium, Portugal, …) turns the graph view into
+a hairball — and emit it as angle-bracket-IRI N-Triples.
 
-No Wikidata Q/P identifiers, no rdfs:label rows. This script takes a BFS
-slice of training/finetune/data/retrieval/graph.nt (which is still in raw
-Q-ID form), resolves every term through the project's own label maps
-(labels.json for entities + property_label_cache.json for predicates), and
-emits the normalized all-literal triples. Re-run after the graph changes:
+Why IRIs and not literals: Loka's N-Triples parser (loka-core/src/ntriples.rs)
+requires the subject to be an IRI/blank/quoted-triple and the predicate to be an
+IRI — a literal in either position makes the whole line parse to None and get
+silently skipped (that bug shipped an empty demo once). We encode the cleaned
+English text AS the IRI (``<Douglas Adams> <occupation> <novelist> .``); the
+parser reads up to '>', so spaces are fine. Keeping objects as IRIs too means
+every object is a traversable node — the whole point of a graph demo.
+
+Re-run after the corpus changes:
 
     python tools/build_testdata.py
+
+The corpus file is git-ignored (training/finetune/data/), so on a fresh checkout
+pull it first: dataset ``EmmaLeonhart/normalized-wikidata`` tag ``v14-1M``.
 """
 from __future__ import annotations
-import json
-import re
-from collections import deque
+
+import sys
+from collections import defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-RET = ROOT / "training" / "finetune" / "data" / "retrieval"
+CORPUS = ROOT / "training" / "finetune" / "data" / "_corpus_v14" / "triples_normalized.txt"
 OUT = ROOT / "web-studio" / "testdata.nt"
 
-SEED = "http://www.wikidata.org/entity/Q42"  # Douglas Adams — validated seed
-MAX_TRIPLES = 55
-
-TRIPLE_RE = re.compile(r"^<([^>]+)>\s+<([^>]+)>\s+<([^>]+)>\s*\.\s*$")
-RDFS_LABEL = "http://www.w3.org/2000/01/rdf-schema#label"
-
-
-def load_labels() -> dict[str, str]:
-    labels: dict[str, str] = {}
-    for name in ("property_label_cache.json",):  # predicates first
-        p = ROOT / "training" / name
-        if p.exists():
-            labels.update(json.loads(p.read_text(encoding="utf-8")))
-    # entity labels (and any predicate labels) override / extend
-    lj = RET / "labels.json"
-    if lj.exists():
-        labels.update(json.loads(lj.read_text(encoding="utf-8")))
-    return labels
+# Slice shape. Tunable — these defaults give a varied, connected, instantly
+# loadable graph that renders cleanly in the Studio graph view.
+MAX_TRIPLES = 400        # total triples in the demo graph
+MAX_PER_SUBJECT = 12     # cap any one hub's out-degree so the view stays legible
 
 
 def iri(v: str) -> str:
-    """Plain-English identifier inside angle brackets.
+    """Encode cleaned English text as the body of an angle-bracket IRI.
 
-    Loka's N-Triples parser requires the subject to be an IRI/blank/quoted and
-    the predicate to be an IRI (see loka-core/src/ntriples.rs) — a literal in
-    those positions makes the whole line parse to None and get silently
-    skipped. So we encode the cleaned English text AS the IRI: the parser reads
-    everything up to '>', so spaces are fine; we only strip stray angle
-    brackets that would terminate it early.
+    The parser reads everything up to '>', so spaces are fine; we only neutralise
+    characters that would terminate the IRI early or break the N-Triples line.
     """
-    return v.replace("<", "(").replace(">", ")").replace("\n", " ").strip()
+    return (
+        v.replace("<", "(")
+        .replace(">", ")")
+        .replace("\t", " ")
+        .replace("\r", " ")
+        .replace("\n", " ")
+        .strip()
+    )
 
 
 def main() -> None:
-    labels = load_labels()
+    if not CORPUS.exists():
+        sys.exit(
+            f"corpus not found: {CORPUS}\n"
+            "Pull it from Hugging Face first: dataset "
+            "EmmaLeonhart/normalized-wikidata, tag v14-1M."
+        )
 
-    # Parse the raw graph into an adjacency list (skip label rows).
-    adj: dict[str, list[tuple[str, str]]] = {}
-    for line in (RET / "graph.nt").read_text(encoding="utf-8").splitlines():
-        m = TRIPLE_RE.match(line)
-        if not m:
-            continue
-        s, p, o = m.groups()
-        if p == RDFS_LABEL:
-            continue
-        adj.setdefault(s, []).append((p, o))
-
-    # BFS from the seed so the slice is one connected component.
+    per_subject: dict[str, int] = defaultdict(int)
     out: list[str] = []
-    seen_triples: set[tuple[str, str, str]] = set()
-    visited: set[str] = set()
-    q: deque[str] = deque([SEED])
-    while q and len(out) < MAX_TRIPLES:
-        s = q.popleft()
-        if s in visited:
-            continue
-        visited.add(s)
-        for p, o in adj.get(s, []):
+    seen: set[tuple[str, str, str]] = set()
+
+    with CORPUS.open(encoding="utf-8") as fh:
+        for line in fh:
             if len(out) >= MAX_TRIPLES:
                 break
-            sl, pl, ol = labels.get(s), labels.get(p), labels.get(o)
-            if not (sl and pl and ol):
-                continue  # only emit fully-resolved (truly cleaned) triples
-            key = (sl, pl, ol)
-            if key in seen_triples:
+            parts = line.rstrip("\r\n").split("\t")
+            if len(parts) != 3:
                 continue
-            seen_triples.add(key)
-            out.append(f"<{iri(sl)}> <{iri(pl)}> <{iri(ol)}> .")
-            if o not in visited:
-                q.append(o)
+            s, p, o = (x.strip() for x in parts)
+            if not (s and p and o):
+                continue
+            if per_subject[s] >= MAX_PER_SUBJECT:
+                continue
+            key = (s, p, o)
+            if key in seen:
+                continue
+            seen.add(key)
+            per_subject[s] += 1
+            out.append(f"<{iri(s)}> <{iri(p)}> <{iri(o)}> .")
 
+    n_subjects = len(per_subject)
     header = (
-        "# Loka Studio demo graph — a slice of the NORMALIZED corpus.\n"
-        "# Plain-English identifiers (<Douglas Adams> <instance of> <human>) —\n"
-        "# the cleaned form, no Wikidata Q/P IDs and no rdfs:label rows. The\n"
-        "# English text IS the identifier. Built by tools/build_testdata.py from\n"
-        "# the cleaned retrieval graph (re-run it to regenerate).\n"
+        "# Loka Studio demo graph — a slice of the actual v14 training corpus.\n"
+        "# Clean, plain-English, multi-entity: the same normalized data the world\n"
+        f"# model trains on ({n_subjects} entities, no Wikidata Q/P IDs, no label\n"
+        "# rows). The English text IS the identifier. Objects are IRIs too, so\n"
+        "# every node is traversable. Built by tools/build_testdata.py from\n"
+        "# training/finetune/data/_corpus_v14/triples_normalized.txt — re-run to\n"
+        "# regenerate.\n"
     )
     OUT.write_text(header + "\n".join(out) + "\n", encoding="utf-8")
-    print(f"wrote {len(out)} normalized triples to {OUT.relative_to(ROOT)}")
+    print(
+        f"wrote {len(out)} triples across {n_subjects} entities "
+        f"to {OUT.relative_to(ROOT)}"
+    )
 
 
 if __name__ == "__main__":

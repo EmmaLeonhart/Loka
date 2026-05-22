@@ -124,9 +124,10 @@ async function pingConn() {
 }
 
 /* ── Load test data ──
-   Inserts the bundled demo graph (testdata.nt — a small Douglas Adams /
-   Q42 slice) into the connected endpoint via POST /triples, then jumps to
-   the Knowledge Graph tab so you can immediately explore + double-click. */
+   Inserts the bundled demo graph (testdata.nt — a small multi-entity slice of
+   the actual v14 training corpus) into the connected endpoint via POST /triples,
+   then jumps to the Knowledge Graph tab so you can immediately explore +
+   double-click. */
 const loadBtn = document.getElementById('load-testdata');
 const toastEl = document.getElementById('toast');
 function toast(msg, kind = 'info') {

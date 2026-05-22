@@ -1,60 +1,407 @@
-# Loka Studio demo graph — a slice of the NORMALIZED corpus.
-# Plain-English identifiers (<Douglas Adams> <instance of> <human>) —
-# the cleaned form, no Wikidata Q/P IDs and no rdfs:label rows. The
-# English text IS the identifier. Built by tools/build_testdata.py from
-# the cleaned retrieval graph (re-run it to regenerate).
-<Douglas Adams> <instance of> <human> .
+# Loka Studio demo graph — a slice of the actual v14 training corpus.
+# Clean, plain-English, multi-entity: the same normalized data the world
+# model trains on (43 entities, no Wikidata Q/P IDs, no label
+# rows). The English text IS the identifier. Objects are IRIs too, so
+# every node is traversable. Built by tools/build_testdata.py from
+# training/finetune/data/_corpus_v14/triples_normalized.txt — re-run to
+# regenerate.
+<Jack Bauer> <employer> <Los Angeles Police Department> .
+<Jack Bauer> <date of birth> <1966-02-18> .
+<Jack Bauer> <occupation> <field agent> .
+<Jack Bauer> <sex or gender> <male> .
+<Jack Bauer> <official name> <Jack Bauer> .
+<Jack Bauer> <languages spoken, written or signed> <English> .
+<happiness> <Commons category> <Happiness> .
+<happiness> <topic's main category> <Category:Happiness> .
+<happiness> <hashtag> <happy> .
+<happiness> <different from> <Felicitas> .
+<happiness> <different from> <Felicidad> .
+<happiness> <different from> <Bonheur> .
+<happiness> <Unicode character> <😃> .
+<Paul Otlet> <occupation> <lawyer> .
+<Paul Otlet> <father> <Edouard Otlet> .
+<Paul Otlet> <country of citizenship> <Belgium> .
+<Paul Otlet> <Commons category> <Paul Otlet> .
+<Paul Otlet> <date of birth> <1868-08-23> .
+<Paul Otlet> <date of death> <1944-12-10> .
+<Paul Otlet> <Commons Creator page> <Paul Otlet> .
+<Paul Otlet> <sex or gender> <male> .
+<Paul Otlet> <influenced by> <Melvil Dewey> .
+<Paul Otlet> <birth name> <Paul Marie Ghislain Otlet> .
+<Paul Otlet> <short name> <Paul Otlet> .
+<Paul Otlet> <name in native language> <Paul Otlet> .
 <Douglas Adams> <sex or gender> <male> .
-<Douglas Adams> <occupation> <playwright> .
-<Douglas Adams> <occupation> <screenwriter> .
-<Douglas Adams> <occupation> <novelist> .
-<Douglas Adams> <occupation> <children's writer> .
-<Douglas Adams> <occupation> <science fiction writer> .
 <Douglas Adams> <occupation> <comedian> .
-<Douglas Adams> <occupation> <writer> .
-<Douglas Adams> <occupation> <musician> .
-<Douglas Adams> <notable work> <The Hitchhiker's Guide to the Galaxy> .
-<Douglas Adams> <notable work> <Dirk Gently series> .
 <Douglas Adams> <notable work> <The Private Life of Genghis Khan> .
-<Douglas Adams> <place of birth> <Cambridge> .
-<Douglas Adams> <manner of death> <natural causes> .
-<Douglas Adams> <cause of death> <myocardial infarction> .
+<Douglas Adams> <date of birth> <1952-03-11> .
+<Douglas Adams> <date of death> <2001-05-11> .
 <Douglas Adams> <place of death> <Santa Barbara> .
-<Douglas Adams> <place of burial> <Highgate Cemetery> .
-<Douglas Adams> <given name> <Douglas> .
-<Douglas Adams> <given name> <Noël> .
-<Douglas Adams> <family name> <Adams> .
-<Douglas Adams> <country of citizenship> <United Kingdom> .
+<Douglas Adams> <residence> <Santa Barbara> .
 <Douglas Adams> <native language> <English> .
-<Douglas Adams> <mother> <Janet Adams> .
-<Douglas Adams> <child> <Polly Adams> .
-<Douglas Adams> <employer> <British Broadcasting Corporation> .
-<Douglas Adams> <employer> <The Digital Village> .
+<Douglas Adams> <Commons category> <Douglas Adams> .
 <Douglas Adams> <nominated for> <Hugo Award for Best Dramatic Presentation> .
-<Douglas Adams> <nominated for> <Locus Award for Best Science Fiction Novel> .
-<Douglas Adams> <topic's main category> <Category:Douglas Adams> .
-<Douglas Adams> <instrument> <guitar> .
-<Douglas Adams> <sibling> <Susan Adams> .
-<Douglas Adams> <genre> <science fiction> .
-<Douglas Adams> <genre> <comedy> .
+<Douglas Adams> <height> <1.96> .
 <Douglas Adams> <genre> <satire> .
-<Douglas Adams> <spouse> <Jane Belson> .
-<Douglas Adams> <member of> <Footlights> .
-<Douglas Adams> <member of> <Groucho Club> .
-<Douglas Adams> <languages spoken, written or signed> <English> .
-<Douglas Adams> <archives at> <St John's College Library> .
-<Douglas Adams> <writing language> <English> .
-<Douglas Adams> <topic has template> <Template:Douglas Adams> .
-<Douglas Adams> <copyright status as a creator> <works protected by copyrights> .
-<Douglas Adams> <different from> <Douglas Adams> .
-<Douglas Adams> <ethnic group> <White British> .
-<Douglas Adams> <work location> <London> .
-<Douglas Adams> <eye color> <brown> .
-<Douglas Adams> <field of work> <science fiction literature> .
-<Douglas Adams> <award received> <Inkpot Award> .
-<Douglas Adams> <award received> <Ditmar Award for Best International Fiction> .
-<Douglas Adams> <related category> <Category:Films with screenplays by Douglas Adams> .
-<Douglas Adams> <on focus list of Wikimedia project> <Wikipedia:Vital articles/Level/4> .
-<Douglas Adams> <religion or worldview> <atheism> .
-<Douglas Adams> <educated at> <Brentwood School> .
-<Douglas Adams> <educated at> <St John's College> .
+<Antarctica> <population> <1100> .
+<Antarctica> <population> <4400> .
+<Antarctica> <category for films shot at this location> <Category:Films shot in Antarctica> .
+<Antarctica> <discoverer or inventor> <Mikhail Lazarev> .
+<Antarctica> <Commons category> <Antarctica> .
+<Antarctica> <Commons gallery> <Antarctica> .
+<Antarctica> <located in time zone> <UTC+06:00> .
+<Antarctica> <telephone country code> <+672> .
+<Antarctica> <demonym> <Antarcticain> .
+<Antarctica> <demonym> <Antarcticaine> .
+<Antarctica> <demonym> <Antartidanhën> .
+<Antarctica> <demonym> <Antartidanhon> .
+<George Washington> <Commons category> <George Washington> .
+<George Washington> <date of birth> <1732-02-22> .
+<George Washington> <date of birth> <1732-00-00> .
+<George Washington> <date of death> <1799-12-14> .
+<George Washington> <date of death> <1799-00-00> .
+<George Washington> <award received> <Thanks of Congress> .
+<George Washington> <position held> <chairperson> .
+<George Washington> <military, police or special rank> <General of the Armies of the United States> .
+<George Washington> <member of> <freemasonry> .
+<George Washington> <participated in conflict> <Battle of Jumonville Glen> .
+<George Washington> <name in native language> <George Washington> .
+<George Washington> <native language> <English> .
+<Wikidata> <OpenStreetMap tag> <Key:wikidata> .
+<Wikidata> <inception> <2012-10-29> .
+<Wikidata> <Commons category> <Wikidata> .
+<Wikidata> <Commons gallery> <Commons:Wikidata> .
+<Wikidata> <developer> <Wikimedia Deutschland> .
+<Wikidata> <number of registered users/contributors> <2565510> .
+<Wikidata> <number of registered users/contributors> <4498339> .
+<Wikidata> <number of registered users/contributors> <5343137> .
+<Wikidata> <number of registered users/contributors> <6179033> .
+<Wikidata> <hashtag> <Wikidata> .
+<Wikidata> <Alexa rank> <12325> .
+<Wikidata> <Alexa rank> <12382> .
+<penis> <Commons category> <Penis> .
+<penis> <topic's main category> <Category:Penis> .
+<penis> <Commons gallery> <Penis> .
+<penis> <Unicode character> <𓂸> .
+<penis> <NCI Thesaurus ID> <C12409> .
+<computer> <topic's main category> <Category:Computers> .
+<computer> <Commons category> <Computers> .
+<computer> <Commons gallery> <Computer> .
+<computer> <has part(s)> <central processing unit> .
+<computer> <different from> <central processing unit> .
+<computer> <name> <ꠇꠝ꠆ꠙꠥꠐꠣꠞ> .
+<computer> <social media followers> <175367> .
+<computer> <time of discovery or invention> <1945-00-00> .
+<computer> <hashtag> <computer> .
+<pneumonoultramicroscopicsilicovolcanoconiosis> <Commons category> <Pneumonoultramicroscopicsilicovolcanoconiosis> .
+<kitten> <Commons category> <Kittens> .
+<kitten> <Commons gallery> <Kitten> .
+<kitten> <mass> <100> .
+<kitten> <hashtag> <kittens> .
+<Internet> <Commons category> <Internet> .
+<Internet> <history of topic> <history of the Internet> .
+<Internet> <Wikimedia outline> <outline of the Internet> .
+<Internet> <described by source> <Kazakhstan. National encyclopedia> .
+<Internet> <inception> <1969-10-29> .
+<Internet> <named after> <internetworking> .
+<Supercalifragilisticexpialidocious> <language of work or name> <English> .
+<Supercalifragilisticexpialidocious> <publication date> <1964-00-00> .
+<dog> <Unicode character> <🐕> .
+<dog> <Unicode character> <🐶> .
+<dog> <Commons category> <Dogs> .
+<dog> <Commons gallery> <Dog> .
+<dog> <described by source> <New International Encyclopedia> .
+<dog> <heart rate> <95> .
+<dog> <heart rate> <115> .
+<dog> <heart rate> <80> .
+<dog> <bite force quotient> <117> .
+<dog> <minimum frequency of audible sound> <67> .
+<dog> <maximum frequency of audible sound> <45000> .
+<dog> <OpenStreetMap tag> <Key:dog> .
+<Belgium> <population> <9153489> .
+<Belgium> <population> <9183948> .
+<Belgium> <population> <9220578> .
+<Belgium> <population> <9289770> .
+<Belgium> <population> <9378113> .
+<Belgium> <population> <9463667> .
+<Belgium> <population> <9527807> .
+<Belgium> <population> <9580991> .
+<Belgium> <population> <9618756> .
+<Belgium> <population> <9646032> .
+<Belgium> <population> <9655549> .
+<Belgium> <population> <9673162> .
+<lion> <taxon name> <Panthera leo> .
+<lion> <IUCN conservation status> <Vulnerable> .
+<lion> <Commons category> <Panthera leo> .
+<lion> <Unicode character> <🦁> .
+<lion> <Commons gallery> <Panthera leo> .
+<lion> <taxon common name> <Lion> .
+<lion> <taxon common name> <Leeu> .
+<lion> <taxon common name> <Gyata> .
+<lion> <taxon common name> <Leyón> .
+<lion> <taxon common name> <Lión> .
+<lion> <taxon common name> <أَسَدٌ> .
+<lion> <taxon common name> <Léwe> .
+<Yorkshire> <Commons category> <Yorkshire> .
+<Yorkshire> <instance of> <historic county of England> .
+<Yorkshire> <topic's main category> <Category:Yorkshire> .
+<Yorkshire> <population> <5234700> .
+<Yorkshire> <area> <11903> .
+<Yorkshire> <demonym> <Yorkshireman> .
+<Yorkshire> <native label> <Yorkshire> .
+<Yorkshire> <official name> <Yorkshire> .
+<Yorkshire> <has part(s)> <East Riding of Yorkshire> .
+<Yorkshire> <catalog code> <YRK> .
+<Yorkshire> <social media followers> <272490> .
+<Yorkshire> <social media followers> <270659> .
+<pizza> <Commons category> <Pizzas> .
+<pizza> <Unicode character> <🍕> .
+<pizza> <topic's main category> <Category:Pizza> .
+<pizza> <Commons gallery> <Pizza> .
+<pizza> <native label> <Pizza> .
+<pizza> <cuisine> <Italian cuisine> .
+<pizza> <history of topic> <history of pizza> .
+<pizza> <part of> <Italian cuisine> .
+<pizza> <hashtag> <pizza> .
+<November> <named after> <Ahmad Sanjar> .
+<November> <Commons category> <November> .
+<November> <has part(s)> <November 1> .
+<November> <has part(s)> <November 13> .
+<November> <has part(s)> <November 16> .
+<November> <has part(s)> <November 20> .
+<November> <has part(s)> <November 22> .
+<November> <has part(s)> <November 29> .
+<November> <Commons gallery> <November> .
+<November> <name> <ноября> .
+<November> <name> <listopada> .
+<November> <name> <Aya marq'ay killa> .
+<dictatorship> <Commons category> <Dictatorship> .
+<dictatorship> <topic's main category> <Category:Dictatorship> .
+<dictatorship> <different from> <dictator> .
+<dictatorship> <different from> <despotism> .
+<Portugal> <capital> <Lisbon> .
+<Portugal> <official language> <Portuguese> .
+<Portugal> <Commons category> <Portugal> .
+<Portugal> <telephone country code> <+351> .
+<Portugal> <contains the administrative territorial entity> <Leiria> .
+<Portugal> <contains the administrative territorial entity> <Aveiro> .
+<Portugal> <basic form of government> <republic> .
+<Portugal> <member of> <Council of Europe> .
+<Portugal> <member of> <International Centre for Settlement of Investment Disputes> .
+<Portugal> <member of> <Nuclear Suppliers Group> .
+<Portugal> <member of> <International Telecommunication Union> .
+<Portugal> <public holiday> <Republic Day> .
+<pasta> <Commons category> <Pasta> .
+<pasta> <Commons gallery> <Pasta> .
+<pasta> <country of origin> <People's Republic of China> .
+<pasta> <native label> <Pasta> .
+<pasta> <partially coincident with> <noodle> .
+<pasta> <water footprint> <1849> .
+<pasta> <social media followers> <142326> .
+<Gabriel Gonzáles Videla> <Commons category> <Gabriel Gonzalez Videla> .
+<Gabriel Gonzáles Videla> <country of citizenship> <Chile> .
+<Gabriel Gonzáles Videla> <date of birth> <1898-11-22> .
+<Gabriel Gonzáles Videla> <date of death> <1980-08-22> .
+<Gabriel Gonzáles Videla> <occupation> <lawyer> .
+<Gabriel Gonzáles Videla> <Commons gallery> <Gabriel González Videla> .
+<Gabriel Gonzáles Videla> <sex or gender> <male> .
+<English Wikipedia> <copyright license> <GNU Free Documentation License> .
+<English Wikipedia> <Commons category> <English Wikipedia> .
+<English Wikipedia> <language of work or name> <English> .
+<English Wikipedia> <inception> <2001-01-15> .
+<English Wikipedia> <number of registered users/contributors> <115603> .
+<English Wikipedia> <Wikimedia language code> <en> .
+<English Wikipedia> <official name> <English Wikipedia> .
+<English Wikipedia> <title> <Wikipedia> .
+<English Wikipedia> <number of records> <6343474> .
+<English Wikipedia> <number of records> <5005658> .
+<English Wikipedia> <number of records> <4017334> .
+<English Wikipedia> <number of records> <3005288> .
+<George W. Bush> <religion or worldview> <Methodism> .
+<George W. Bush> <Commons category> <George W. Bush> .
+<George W. Bush> <date of birth> <1946-07-06> .
+<George W. Bush> <Commons gallery> <George W. Bush> .
+<George W. Bush> <languages spoken, written or signed> <English> .
+<George W. Bush> <work location> <Austin> .
+<George W. Bush> <name in native language> <George W. Bush> .
+<George W. Bush> <number of children> <2> .
+<George W. Bush> <birth name> <George Walker Bush> .
+<George W. Bush> <award received> <Order pro Merito Melitensi> .
+<George W. Bush> <sibling> <Marvin P. Bush> .
+<George W. Bush> <height> <183> .
+<Brazil> <ethnic group> <African Brazilians> .
+<Brazil> <Unicode character> <🇧🇷> .
+<Brazil> <licence plate code> <BR> .
+<Brazil> <patron saint> <Our Lady of Aparecida> .
+<Brazil> <country> <Brazil> .
+<Brazil> <public holiday> <Independence Day> .
+<Brazil> <number of out-of-school children> <2263423> .
+<Brazil> <number of out-of-school children> <2529220> .
+<Brazil> <number of out-of-school children> <2598407> .
+<Brazil> <number of out-of-school children> <2817364> .
+<Brazil> <number of out-of-school children> <3181989> .
+<Brazil> <number of out-of-school children> <3732292> .
+<Laos> <shares border with> <People's Republic of China> .
+<Laos> <shares border with> <Thailand> .
+<Laos> <currency> <Lao kip> .
+<Laos> <Commons category> <Laos> .
+<Laos> <contains the administrative territorial entity> <Bolikhamsai Province> .
+<Laos> <contains the administrative territorial entity> <Champasak Province> .
+<Laos> <contains the administrative territorial entity> <Sekong Province> .
+<Laos> <telephone country code> <+856> .
+<Laos> <population> <2119731> .
+<Laos> <population> <2169035> .
+<Laos> <population> <2219669> .
+<Laos> <population> <2271735> .
+<right angle> <Commons category> <Right angles> .
+<right angle> <numeric value> <90> .
+<right angle> <numeric value> <1.57> .
+<right angle> <facet of> <perpendicularity> .
+<Talisker distillery> <Commons category> <Talisker distillery> .
+<Talisker distillery> <inception> <1830-00-00> .
+<World War II> <Commons category> <World War II> .
+<World War II> <start time> <1939-09-01> .
+<World War II> <end time> <1945-09-02> .
+<World War II> <has cause> <causes of World War II> .
+<World War II> <has cause> <Molotov–Ribbentrop Pact> .
+<World War II> <Commons gallery> <World War II> .
+<World War II> <participant> <Nazi Germany> .
+<World War II> <location> <Pacific War> .
+<World War II> <location> <People's Republic of China> .
+<World War II> <location> <Southern Africa> .
+<World War II> <location> <Central Africa> .
+<World War II> <category of associated people> <Category:People of World War II> .
+<Augusto Pinochet> <Commons category> <Augusto Pinochet> .
+<Augusto Pinochet> <country of citizenship> <Chile> .
+<Augusto Pinochet> <date of birth> <1915-11-25> .
+<Augusto Pinochet> <date of death> <2006-12-10> .
+<Augusto Pinochet> <Commons gallery> <Augusto Pinochet> .
+<Augusto Pinochet> <name in native language> <Augusto Pinochet> .
+<Augusto Pinochet> <birth name> <Augusto José Ramón Pinochet Ugarte> .
+<Augusto Pinochet> <award received> <Order of May> .
+<Augusto Pinochet> <sex or gender> <male> .
+<Augusto Pinochet> <start of work period> <1931-00-00> .
+<Tours> <twinned administrative body> <Parma> .
+<Tours> <twinned administrative body> <Luoyang> .
+<Tours> <twinned administrative body> <Springfield> .
+<Tours> <twinned administrative body> <Trois-Rivières> .
+<Tours> <located in the administrative territorial entity> <canton of Tours-Centre> .
+<Tours> <located in the administrative territorial entity> <arrondissement of Tours> .
+<Tours> <Commons category> <Tours (France)> .
+<Tours> <postal code> <37000> .
+<Tours> <postal code> <37100> .
+<Tours> <postal code> <37200> .
+<Tours> <category of associated people> <Category:People from Tours, France> .
+<Tours> <capital of> <arrondissement of Tours> .
+<People's Republic of China> <demonym> <چيني> .
+<People's Republic of China> <demonym> <Кинези> .
+<People's Republic of China> <demonym> <Кинез> .
+<People's Republic of China> <demonym> <Кинескиња> .
+<People's Republic of China> <demonym> <Κινέζος> .
+<People's Republic of China> <demonym> <Κινέζα> .
+<People's Republic of China> <demonym> <Sjinees> .
+<People's Republic of China> <demonym> <Chinois> .
+<People's Republic of China> <demonym> <kínai> .
+<People's Republic of China> <demonym> <xinès> .
+<People's Republic of China> <demonym> <chino> .
+<People's Republic of China> <demonym> <中国人> .
+<platinum> <atomic number> <78> .
+<platinum> <element symbol> <Pt> .
+<platinum> <subclass of> <precious metal> .
+<platinum> <Commons category> <Platinum> .
+<platinum> <Commons gallery> <Platinum> .
+<platinum> <mass> <195.084> .
+<platinum> <described by source> <Armenian Soviet Encyclopedia> .
+<platinum> <time of discovery or invention> <1557-00-00> .
+<platinum> <Unicode character> <鉑> .
+<platinum> <electronegativity> <2.28> .
+<platinum> <ionic radius> <0.60> .
+<platinum> <ionic radius> <0.80> .
+<Thailand> <participant in> <Pacific War> .
+<Thailand> <population> <9207355> .
+<Thailand> <Unicode character> <🇹🇭> .
+<Thailand> <country> <Thailand> .
+<Thailand> <number of out-of-school children> <950349> .
+<Thailand> <number of out-of-school children> <1025331> .
+<Thailand> <number of out-of-school children> <1489264> .
+<Thailand> <number of out-of-school children> <1832502> .
+<Thailand> <number of out-of-school children> <1919687> .
+<Thailand> <number of out-of-school children> <2253985> .
+<Thailand> <diplomatic relation> <Germany> .
+<Thailand> <diplomatic relation> <Laos> .
+<Diego Velázquez> <Commons category> <Diego Velázquez> .
+<Diego Velázquez> <date of death> <1660-08-06> .
+<Diego Velázquez> <date of death> <1660-00-00> .
+<Diego Velázquez> <date of death> <1660-08-07> .
+<Diego Velázquez> <given name> <Diego> .
+<Diego Velázquez> <Commons Creator page> <Diego Velázquez> .
+<Diego Velázquez> <notable work> <Christ in the House of Martha and Mary> .
+<Diego Velázquez> <notable work> <The Waterseller of Seville> .
+<Diego Velázquez> <student of> <Francisco Pacheco> .
+<Diego Velázquez> <Commons gallery> <Diego Velázquez> .
+<Diego Velázquez> <birth name> <Diego Rodríguez de Silva y Velázquez> .
+<Diego Velázquez> <genre> <religious painting> .
+<Bahrain> <Commons category> <Bahrain> .
+<Bahrain> <telephone country code> <+973> .
+<Bahrain> <member of> <International Centre for Settlement of Investment Disputes> .
+<Bahrain> <member of> <Arab Monetary Fund> .
+<Bahrain> <member of> <Cooperation Council for the Arab States of the Gulf> .
+<Bahrain> <member of> <International Telecommunication Union> .
+<Bahrain> <highest point> <Mountain of Smoke> .
+<Bahrain> <population> <160691> .
+<Bahrain> <population> <166970> .
+<Bahrain> <population> <173359> .
+<Bahrain> <population> <179891> .
+<Bahrain> <population> <186587> .
+<Malta> <head of state> <George William Vella> .
+<Malta> <official language> <English> .
+<Malta> <capital> <Valletta> .
+<Malta> <Commons category> <Malta> .
+<Malta> <head of government> <Lawrence Gonzi> .
+<Malta> <member of> <Council of Europe> .
+<Malta> <member of> <International Centre for Settlement of Investment Disputes> .
+<Malta> <member of> <Nuclear Suppliers Group> .
+<Malta> <member of> <International Telecommunication Union> .
+<Malta> <telephone country code> <+356> .
+<Malta> <located in time zone> <Europe/Malta> .
+<Malta> <Commons gallery> <Malta> .
+<astrobiology> <Commons category> <Astrobiology> .
+<astrobiology> <topic's main category> <Category:Astrobiology> .
+<Novosibirsk> <twinned administrative body> <Omsk> .
+<Novosibirsk> <Commons category> <Novosibirsk> .
+<Novosibirsk> <postal code> <630000> .
+<Novosibirsk> <postal code> <630992> .
+<Novosibirsk> <located in time zone> <Omsk Time> .
+<Novosibirsk> <located in time zone> <Krasnoyarsk Time> .
+<Novosibirsk> <local dialing code> <383> .
+<Novosibirsk> <located in the administrative territorial entity> <West Siberian Krai> .
+<Novosibirsk> <inception> <1893-01-01> .
+<Novosibirsk> <capital of> <West Siberian Krai> .
+<Novosibirsk> <area> <505.6> .
+<Novosibirsk> <elevation above sea level> <150> .
+<All Saints' Day> <Commons category> <All Saints Day> .
+<All Saints' Day> <day in year for periodic occurrence> <November 1> .
+<All Saints' Day> <official name> <Sollemnitas Omnium Sanctorum> .
+<Pioneer plaque> <Commons category> <Pioneer plaque> .
+<Pioneer plaque> <Commons gallery> <Pioneer plaque> .
+<Pioneer plaque> <depicts> <Solar System> .
+<Pioneer plaque> <depicts> <pulsar> .
+<Pioneer plaque> <depicts> <hydrogen> .
+<Pioneer plaque> <depicts> <binary numeral system> .
+<Pioneer plaque> <illustrator> <Linda Salzman Sagan> .
+<Pioneer plaque> <designed by> <Frank Drake> .
+<Pioneer plaque> <quantity> <2> .
+<Pioneer plaque> <width> <229> .
+<Pioneer plaque> <height> <152> .
+<Pioneer plaque> <thickness> <1.27> .
+<Oslo> <twinned administrative body> <Antwerp> .
+<Oslo> <twinned administrative body> <Helsinki> .
+<Oslo> <twinned administrative body> <Rotterdam> .
+<Oslo> <Commons category> <Oslo> .
+<Oslo> <topic's main category> <Category:Oslo> .
+<Oslo> <population> <717710> .
+<Oslo> <population> <623966> .
+<Oslo> <population> <681071> .
+<Oslo> <population> <693494> .
+<Oslo> <population> <673469> .
+<Oslo> <population> <709037> .
+<Oslo> <population> <711300> .
