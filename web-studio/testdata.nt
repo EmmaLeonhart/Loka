@@ -1,60 +1,60 @@
 # Loka Studio demo graph — a slice of the NORMALIZED corpus.
-# Plain-English, all-literal triples ("subject" "predicate" "object"),
-# the same form the world model trains on and the sidecar emits — no
-# Wikidata Q/P identifiers, no rdfs:label rows. Built by
-# tools/build_testdata.py from the cleaned retrieval graph.
-"Douglas Adams" "instance of" "human" .
-"Douglas Adams" "sex or gender" "male" .
-"Douglas Adams" "occupation" "playwright" .
-"Douglas Adams" "occupation" "screenwriter" .
-"Douglas Adams" "occupation" "novelist" .
-"Douglas Adams" "occupation" "children's writer" .
-"Douglas Adams" "occupation" "science fiction writer" .
-"Douglas Adams" "occupation" "comedian" .
-"Douglas Adams" "occupation" "writer" .
-"Douglas Adams" "occupation" "musician" .
-"Douglas Adams" "notable work" "The Hitchhiker's Guide to the Galaxy" .
-"Douglas Adams" "notable work" "Dirk Gently series" .
-"Douglas Adams" "notable work" "The Private Life of Genghis Khan" .
-"Douglas Adams" "place of birth" "Cambridge" .
-"Douglas Adams" "manner of death" "natural causes" .
-"Douglas Adams" "cause of death" "myocardial infarction" .
-"Douglas Adams" "place of death" "Santa Barbara" .
-"Douglas Adams" "place of burial" "Highgate Cemetery" .
-"Douglas Adams" "given name" "Douglas" .
-"Douglas Adams" "given name" "Noël" .
-"Douglas Adams" "family name" "Adams" .
-"Douglas Adams" "country of citizenship" "United Kingdom" .
-"Douglas Adams" "native language" "English" .
-"Douglas Adams" "mother" "Janet Adams" .
-"Douglas Adams" "child" "Polly Adams" .
-"Douglas Adams" "employer" "British Broadcasting Corporation" .
-"Douglas Adams" "employer" "The Digital Village" .
-"Douglas Adams" "nominated for" "Hugo Award for Best Dramatic Presentation" .
-"Douglas Adams" "nominated for" "Locus Award for Best Science Fiction Novel" .
-"Douglas Adams" "topic's main category" "Category:Douglas Adams" .
-"Douglas Adams" "instrument" "guitar" .
-"Douglas Adams" "sibling" "Susan Adams" .
-"Douglas Adams" "genre" "science fiction" .
-"Douglas Adams" "genre" "comedy" .
-"Douglas Adams" "genre" "satire" .
-"Douglas Adams" "spouse" "Jane Belson" .
-"Douglas Adams" "member of" "Footlights" .
-"Douglas Adams" "member of" "Groucho Club" .
-"Douglas Adams" "languages spoken, written or signed" "English" .
-"Douglas Adams" "archives at" "St John's College Library" .
-"Douglas Adams" "writing language" "English" .
-"Douglas Adams" "topic has template" "Template:Douglas Adams" .
-"Douglas Adams" "copyright status as a creator" "works protected by copyrights" .
-"Douglas Adams" "different from" "Douglas Adams" .
-"Douglas Adams" "ethnic group" "White British" .
-"Douglas Adams" "work location" "London" .
-"Douglas Adams" "eye color" "brown" .
-"Douglas Adams" "field of work" "science fiction literature" .
-"Douglas Adams" "award received" "Inkpot Award" .
-"Douglas Adams" "award received" "Ditmar Award for Best International Fiction" .
-"Douglas Adams" "related category" "Category:Films with screenplays by Douglas Adams" .
-"Douglas Adams" "on focus list of Wikimedia project" "Wikipedia:Vital articles/Level/4" .
-"Douglas Adams" "religion or worldview" "atheism" .
-"Douglas Adams" "educated at" "Brentwood School" .
-"Douglas Adams" "educated at" "St John's College" .
+# Plain-English identifiers (<Douglas Adams> <instance of> <human>) —
+# the cleaned form, no Wikidata Q/P IDs and no rdfs:label rows. The
+# English text IS the identifier. Built by tools/build_testdata.py from
+# the cleaned retrieval graph (re-run it to regenerate).
+<Douglas Adams> <instance of> <human> .
+<Douglas Adams> <sex or gender> <male> .
+<Douglas Adams> <occupation> <playwright> .
+<Douglas Adams> <occupation> <screenwriter> .
+<Douglas Adams> <occupation> <novelist> .
+<Douglas Adams> <occupation> <children's writer> .
+<Douglas Adams> <occupation> <science fiction writer> .
+<Douglas Adams> <occupation> <comedian> .
+<Douglas Adams> <occupation> <writer> .
+<Douglas Adams> <occupation> <musician> .
+<Douglas Adams> <notable work> <The Hitchhiker's Guide to the Galaxy> .
+<Douglas Adams> <notable work> <Dirk Gently series> .
+<Douglas Adams> <notable work> <The Private Life of Genghis Khan> .
+<Douglas Adams> <place of birth> <Cambridge> .
+<Douglas Adams> <manner of death> <natural causes> .
+<Douglas Adams> <cause of death> <myocardial infarction> .
+<Douglas Adams> <place of death> <Santa Barbara> .
+<Douglas Adams> <place of burial> <Highgate Cemetery> .
+<Douglas Adams> <given name> <Douglas> .
+<Douglas Adams> <given name> <Noël> .
+<Douglas Adams> <family name> <Adams> .
+<Douglas Adams> <country of citizenship> <United Kingdom> .
+<Douglas Adams> <native language> <English> .
+<Douglas Adams> <mother> <Janet Adams> .
+<Douglas Adams> <child> <Polly Adams> .
+<Douglas Adams> <employer> <British Broadcasting Corporation> .
+<Douglas Adams> <employer> <The Digital Village> .
+<Douglas Adams> <nominated for> <Hugo Award for Best Dramatic Presentation> .
+<Douglas Adams> <nominated for> <Locus Award for Best Science Fiction Novel> .
+<Douglas Adams> <topic's main category> <Category:Douglas Adams> .
+<Douglas Adams> <instrument> <guitar> .
+<Douglas Adams> <sibling> <Susan Adams> .
+<Douglas Adams> <genre> <science fiction> .
+<Douglas Adams> <genre> <comedy> .
+<Douglas Adams> <genre> <satire> .
+<Douglas Adams> <spouse> <Jane Belson> .
+<Douglas Adams> <member of> <Footlights> .
+<Douglas Adams> <member of> <Groucho Club> .
+<Douglas Adams> <languages spoken, written or signed> <English> .
+<Douglas Adams> <archives at> <St John's College Library> .
+<Douglas Adams> <writing language> <English> .
+<Douglas Adams> <topic has template> <Template:Douglas Adams> .
+<Douglas Adams> <copyright status as a creator> <works protected by copyrights> .
+<Douglas Adams> <different from> <Douglas Adams> .
+<Douglas Adams> <ethnic group> <White British> .
+<Douglas Adams> <work location> <London> .
+<Douglas Adams> <eye color> <brown> .
+<Douglas Adams> <field of work> <science fiction literature> .
+<Douglas Adams> <award received> <Inkpot Award> .
+<Douglas Adams> <award received> <Ditmar Award for Best International Fiction> .
+<Douglas Adams> <related category> <Category:Films with screenplays by Douglas Adams> .
+<Douglas Adams> <on focus list of Wikimedia project> <Wikipedia:Vital articles/Level/4> .
+<Douglas Adams> <religion or worldview> <atheism> .
+<Douglas Adams> <educated at> <Brentwood School> .
+<Douglas Adams> <educated at> <St John's College> .
