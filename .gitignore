@@ -67,3 +67,5 @@ chats/*-raw.md
 training/finetune/data/
 training/finetune/adapters/
 training/finetune/logs/
+loka-retrieval-data-stale-20260520/snap.000000002968C9AF
+loka-retrieval-data-stale-20260520/db
