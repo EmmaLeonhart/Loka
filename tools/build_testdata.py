@@ -44,8 +44,17 @@ def load_labels() -> dict[str, str]:
     return labels
 
 
-def escape(v: str) -> str:
-    return v.replace("\\", "\\\\").replace('"', '\\"')
+def iri(v: str) -> str:
+    """Plain-English identifier inside angle brackets.
+
+    Loka's N-Triples parser requires the subject to be an IRI/blank/quoted and
+    the predicate to be an IRI (see loka-core/src/ntriples.rs) — a literal in
+    those positions makes the whole line parse to None and get silently
+    skipped. So we encode the cleaned English text AS the IRI: the parser reads
+    everything up to '>', so spaces are fine; we only strip stray angle
+    brackets that would terminate it early.
+    """
+    return v.replace("<", "(").replace(">", ")").replace("\n", " ").strip()
 
 
 def main() -> None:
@@ -82,16 +91,16 @@ def main() -> None:
             if key in seen_triples:
                 continue
             seen_triples.add(key)
-            out.append(f'"{escape(sl)}" "{escape(pl)}" "{escape(ol)}" .')
+            out.append(f"<{iri(sl)}> <{iri(pl)}> <{iri(ol)}> .")
             if o not in visited:
                 q.append(o)
 
     header = (
         "# Loka Studio demo graph — a slice of the NORMALIZED corpus.\n"
-        "# Plain-English, all-literal triples (\"subject\" \"predicate\" \"object\"),\n"
-        "# the same form the world model trains on and the sidecar emits — no\n"
-        "# Wikidata Q/P identifiers, no rdfs:label rows. Built by\n"
-        "# tools/build_testdata.py from the cleaned retrieval graph.\n"
+        "# Plain-English identifiers (<Douglas Adams> <instance of> <human>) —\n"
+        "# the cleaned form, no Wikidata Q/P IDs and no rdfs:label rows. The\n"
+        "# English text IS the identifier. Built by tools/build_testdata.py from\n"
+        "# the cleaned retrieval graph (re-run it to regenerate).\n"
     )
     OUT.write_text(header + "\n".join(out) + "\n", encoding="utf-8")
     print(f"wrote {len(out)} normalized triples to {OUT.relative_to(ROOT)}")
