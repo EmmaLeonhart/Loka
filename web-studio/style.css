@@ -57,6 +57,26 @@ a:hover{color:var(--accent-bright)}
   color:var(--text-mute);font-size:14px;line-height:1;
 }
 #theme-toggle:hover{color:var(--accent-bright);border-color:var(--accent)}
+.loadbtn{
+  background:var(--accent);color:var(--bg);border:0;border-radius:8px;
+  font-family:var(--sans);font-weight:600;font-size:.78rem;
+  padding:7px 14px;cursor:pointer;white-space:nowrap;transition:.15s;
+}
+.loadbtn:hover{background:var(--accent-bright)}
+.loadbtn:disabled{opacity:.5;cursor:wait}
+
+/* ── Toast (load-test-data feedback) ── */
+.toast{
+  position:fixed;top:54px;right:16px;z-index:50;max-width:420px;
+  background:var(--bg-elevated);border:1px solid var(--border-strong);
+  border-left:3px solid var(--accent);border-radius:9px;
+  padding:11px 15px;font-size:.82rem;color:var(--text);
+  box-shadow:0 8px 28px rgba(0,0,0,.45);
+  opacity:0;transform:translateY(-8px);pointer-events:none;transition:opacity .2s,transform .2s;
+}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast[data-kind="ok"]{border-left-color:var(--green)}
+.toast[data-kind="err"]{border-left-color:var(--red)}
 
 /* ── Side rail + content ── */
 .appbody{flex:1;min-height:0;display:flex;flex-direction:row}

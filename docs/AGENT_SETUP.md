@@ -58,7 +58,7 @@ cargo build --release -p loka-cli
 # Linux/macOS
 ./install.sh
 # Windows
-install.bat
+tools\install.bat
 ```
 Installs to `~/.loka/bin/loka`. Add to PATH.
 
