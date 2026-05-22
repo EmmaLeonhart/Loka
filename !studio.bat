@@ -5,12 +5,14 @@ REM
 REM  This is the single launcher for the desktop app. It is self-sufficient:
 REM    1. builds the Loka engine if it isn't built yet,
 REM    2. starts the engine on http://localhost:3030 if nothing answers there,
-REM    3. opens the Electron Studio window (Knowledge Graph + SPARQL + more).
+REM    3. starts the world-model inference sidecar on :8092 (powers the
+REM       generative double-click), and
+REM    4. opens the Electron Studio window (Knowledge Graph + SPARQL + more).
 REM
 REM  Once it's open, click "Load test data" in the top bar to drop a small
-REM  demo graph in so you have something to explore. No other .bat needed.
-REM  (The advanced generative double-click stack lives in tools\: tools\infer.bat
-REM   + tools\retrieval.bat.)
+REM  slice of the normalized corpus in, then double-click a node to see the
+REM  world model expand it. No other .bat needed. (The sidecar's first run
+REM  downloads the base model from Hugging Face; that can take a few minutes.)
 REM ==========================================================================
 title Loka Studio
 cd /d "%~dp0"
@@ -40,7 +42,18 @@ if errorlevel 1 (
     echo   Loka engine already running on :3030 - reusing it.
 )
 
-REM 3. Launch the Electron Studio UI (it talks to :3030 by default).
+REM 3. Start the world-model inference sidecar on :8092 unless it's already up.
+REM    Runs in its own window (cmd /k keeps it open so you can see logs / errors);
+REM    first run downloads the base model from Hugging Face, a few minutes.
+powershell -NoProfile -Command "try{(New-Object Net.Sockets.TcpClient).Connect('localhost',8092);exit 0}catch{exit 1}" >nul 2>&1
+if errorlevel 1 (
+    echo   Starting the world-model inference sidecar on http://localhost:8092 ...
+    start "Loka inference sidecar :8092" cmd /k python tools\infer_server.py --port 8092
+) else (
+    echo   Inference sidecar already running on :8092 - reusing it.
+)
+
+REM 4. Launch the Electron Studio UI (it talks to :3030 by default).
 cd /d "%~dp0loka-studio\electron"
 if not exist "node_modules" (
     echo   Installing Studio dependencies ^(first run only^)...

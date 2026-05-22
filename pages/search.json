@@ -1,6 +1,6 @@
 {
  "generated_by": "scripts/build_search_index.py",
- "count": 303,
+ "count": 293,
  "records": [
   {
    "url": "/benchmarks/",
@@ -64,76 +64,6 @@
    "heading": "2. The Way",
    "anchor": "",
    "text": "Honor all persons. Do not do to another what you would not have done to yourself. Do not steal. Do not bear false witness. Utter only truth from heart and mouth. Do not give way to anger. Do not nurse a grudge. Do not entertain deceit in yo"
-  },
-  {
-   "url": "/contribute/",
-   "page": "Contribute GPU time — Loka v14",
-   "heading": "Contribute GPU time — Loka v14",
-   "anchor": "",
-   "text": "v11–v14 are all shipped. v14 floored at its epoch-4 checkpoint (ppl 202.01, the series best) because a full clean 10-epoch run on the 4 M-triple top tier doesn't fit a laptop GPU. If you have a GPU with ≥8 GB VRAM and roughly two days of wa"
-  },
-  {
-   "url": "/contribute/",
-   "page": "Contribute GPU time — Loka v14",
-   "heading": "Why this page exists",
-   "anchor": "",
-   "text": "The maintainer of this project is Emma Leonhart. The development hardware is a laptop with an NVIDIA RTX 4070 Laptop GPU (8 GB VRAM, 35–115 W TGP). The four rungs of the normalized-wikidata model series — v11 (350 k triples, ppl 279.12), v1"
-  },
-  {
-   "url": "/contribute/",
-   "page": "Contribute GPU time — Loka v14",
-   "heading": "What you'd be doing, in one command",
-   "anchor": "",
-   "text": "git clone https://github.com/EmmaLeonhart/Loka cd Loka # Authenticate with YOUR Hugging Face account huggingface-cli login # Run the contributor script python tools/contribute_v14_training.py --hf-user YOUR_HF_USERNAME The script handles ev"
-  },
-  {
-   "url": "/contribute/",
-   "page": "Contribute GPU time — Loka v14",
-   "heading": "Estimated wall-time, by hardware",
-   "anchor": "",
-   "text": "GPUPer epoch10 epochs total RTX 4090 (24 GB)~4 h~40 h RTX 4080 (16 GB)~5 h~50 h RTX 3090 (24 GB)~6 h~60 h RTX 4070 Laptop (8 GB) — the project's box~8 h~80 h A100 / H100 (cloud)~1–2 h~10–20 h If you have less than 8 GB VRAM, the script will"
-  },
-  {
-   "url": "/contribute/",
-   "page": "Contribute GPU time — Loka v14",
-   "heading": "Before you start — please raise a GitHub issue",
-   "anchor": "",
-   "text": "Please raise an issue at github.com/EmmaLeonhart/Loka/issues before kicking off training. Otherwise the maintainer has no idea anyone is running this, and two contributors might duplicate the work. Issue template (copy-paste, fill in the pl"
-  },
-  {
-   "url": "/contribute/",
-   "page": "Contribute GPU time — Loka v14",
-   "heading": "What gets pushed to your HF account, and who owns it",
-   "anchor": "",
-   "text": "Each epoch's checkpoint is pushed to your Hugging Face account as <your-user>/loka-v14-contribution, tagged v14.N. You own that repo and the upload uses your token, not Emma's. The training script never has access to EmmaLeonhart/loka's wri"
-  },
-  {
-   "url": "/contribute/",
-   "page": "Contribute GPU time — Loka v14",
-   "heading": "Observed hardware constraints — and why your hardware might converge differently",
-   "anchor": "",
-   "text": "The numbers reported in the project's DEVLOG and paper are laptop numbers. The 4070 Laptop's sustained TGP cap is ~80 W, hit consistently during training (verified via nvidia-smi while v13 was running — 74 W actual / 80 W cap, 74 °C, 83 % G"
-  },
-  {
-   "url": "/contribute/",
-   "page": "Contribute GPU time — Loka v14",
-   "heading": "Cost (if you don't have hardware locally)",
-   "anchor": "",
-   "text": "If you're considering a cloud GPU, the rough budget: ProviderGPU classApprox hourlyApprox total (10 epochs) RunPodRTX 4090~$0.40~$16 RunPod / Vast.aiRTX 3090~$0.30~$18 Lambda LabsA100 (40 GB)~$1.10~$15 Emma is not paying for cloud GPU on th"
-  },
-  {
-   "url": "/contribute/",
-   "page": "Contribute GPU time — Loka v14",
-   "heading": "What you get out of it",
-   "anchor": "",
-   "text": "The training run is your repo on Hugging Face — <your-user>/loka-v14-contribution. Your name on the artifact. Acknowledgement in the paper draft (paper/paper.md) when v14 is folded into the model series. A reproducible reference run on the "
-  },
-  {
-   "url": "/contribute/",
-   "page": "Contribute GPU time — Loka v14",
-   "heading": "Anything else?",
-   "anchor": "",
-   "text": "If something fails or you want to do something different from the default recipe (more epochs, different architecture, a different corpus tier), open an issue and we'll figure it out. The contributor script is intentionally simple — one cor"
   },
   {
    "url": "/creation/",
