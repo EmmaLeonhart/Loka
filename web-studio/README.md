@@ -45,7 +45,7 @@ The new triples appear in the graph as **amber dashed edges** (a
 they're queryable and retractable via cascade-retraction.
 
 The engine deliberately exposes **no** model inference itself (it
-stays lean); the sidecar is the bridge. Start it with `!infer.bat`:
+stays lean); the sidecar is the bridge. Start it with `tools\infer.bat`:
 
 ```
 python tools/infer_server.py --port 8092
@@ -64,11 +64,13 @@ filterable. That's expected (see `planning/world-model-doubleclick.md`).
 
 ## Run
 
-Needs a Loka endpoint (default `http://localhost:3030` — e.g.
-`!playground.bat` for the Shinto demo, or `!serve.bat`). The
-endpoint is editable in the top bar and persisted. For the
-double-click→generate feature, also run `!infer.bat` (the world-model
-sidecar, `:8092`) — see "Double-click → world model" below.
+The easiest path is `!studio.bat` (repo root): it builds the engine if
+needed, starts it on `http://localhost:3030`, opens this Studio, and
+then you click **Load test data** in the top bar to populate the graph.
+The endpoint is editable in the top bar and persisted. For the
+double-click→generate feature, also run `tools\infer.bat` (the
+world-model sidecar, `:8092`) pointed at a data endpoint such as
+`tools\retrieval.bat` — see "Double-click → world model" below.
 
 **Browser:**
 ```

@@ -123,6 +123,48 @@ async function pingConn() {
   connDot.dataset.state = (await client.health()) ? 'ok' : 'down';
 }
 
+/* ── Load test data ──
+   Inserts the bundled demo graph (testdata.nt — a small Douglas Adams /
+   Q42 slice) into the connected endpoint via POST /triples, then jumps to
+   the Knowledge Graph tab so you can immediately explore + double-click. */
+const loadBtn = document.getElementById('load-testdata');
+const toastEl = document.getElementById('toast');
+function toast(msg, kind = 'info') {
+  if (!toastEl) return;
+  toastEl.textContent = msg;
+  toastEl.dataset.kind = kind;
+  toastEl.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => toastEl.classList.remove('show'), 4000);
+}
+loadBtn.onclick = async () => {
+  if (!(await client.health())) {
+    toast(`No Loka endpoint at ${client._base}. Start it with !studio.bat.`, 'err');
+    return;
+  }
+  loadBtn.disabled = true;
+  const original = loadBtn.textContent;
+  loadBtn.textContent = 'Loading…';
+  try {
+    const nt = await (await fetch('./testdata.nt')).text();
+    const r = await fetch(client._base + '/triples', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/n-triples' },
+      body: nt,
+    });
+    if (!r.ok) throw new Error(`${r.status} ${await r.text()}`);
+    const j = await r.json();
+    const errs = (j.errors && j.errors.length) ? ` (${j.errors.length} skipped)` : '';
+    toast(`Loaded ${j.inserted} triples${errs}. Opening the Knowledge Graph…`, 'ok');
+    if (location.hash === '#graph') render(); else location.hash = 'graph';
+  } catch (e) {
+    toast(`Load failed: ${e.message}`, 'err');
+  } finally {
+    loadBtn.disabled = false;
+    loadBtn.textContent = original;
+  }
+};
+
 document.getElementById('theme-toggle').onclick = () => {
   const cur = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
   const next = cur === 'light' ? 'dark' : 'light';

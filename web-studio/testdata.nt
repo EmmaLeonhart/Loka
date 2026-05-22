@@ -1,0 +1,34 @@
+# Loka Studio — bundled demo graph (loaded by the "Load test data" button).
+# A small, connected Wikidata-style slice around Douglas Adams (Q42), the
+# project's validated demo seed. Every entity carries an rdfs:label so the
+# Knowledge Graph tab renders readable node names, and the edges form one
+# connected component you can pan around and double-click.
+<http://www.wikidata.org/entity/Q42> <http://www.w3.org/2000/01/rdf-schema#label> "Douglas Adams"@en .
+<http://www.wikidata.org/entity/Q42> <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q5> .
+<http://www.wikidata.org/entity/Q42> <http://www.wikidata.org/prop/direct/P21> <http://www.wikidata.org/entity/Q6581097> .
+<http://www.wikidata.org/entity/Q42> <http://www.wikidata.org/prop/direct/P106> <http://www.wikidata.org/entity/Q36180> .
+<http://www.wikidata.org/entity/Q42> <http://www.wikidata.org/prop/direct/P106> <http://www.wikidata.org/entity/Q28389> .
+<http://www.wikidata.org/entity/Q42> <http://www.wikidata.org/prop/direct/P106> <http://www.wikidata.org/entity/Q214917> .
+<http://www.wikidata.org/entity/Q42> <http://www.wikidata.org/prop/direct/P19> <http://www.wikidata.org/entity/Q350> .
+<http://www.wikidata.org/entity/Q42> <http://www.wikidata.org/prop/direct/P27> <http://www.wikidata.org/entity/Q145> .
+<http://www.wikidata.org/entity/Q42> <http://www.wikidata.org/prop/direct/P1412> <http://www.wikidata.org/entity/Q1860> .
+<http://www.wikidata.org/entity/Q42> <http://www.wikidata.org/prop/direct/P800> <http://www.wikidata.org/entity/Q25169> .
+<http://www.wikidata.org/entity/Q42> <http://www.wikidata.org/prop/direct/P800> <http://www.wikidata.org/entity/Q1098247> .
+<http://www.wikidata.org/entity/Q5> <http://www.w3.org/2000/01/rdf-schema#label> "human"@en .
+<http://www.wikidata.org/entity/Q6581097> <http://www.w3.org/2000/01/rdf-schema#label> "male"@en .
+<http://www.wikidata.org/entity/Q36180> <http://www.w3.org/2000/01/rdf-schema#label> "writer"@en .
+<http://www.wikidata.org/entity/Q28389> <http://www.w3.org/2000/01/rdf-schema#label> "screenwriter"@en .
+<http://www.wikidata.org/entity/Q214917> <http://www.w3.org/2000/01/rdf-schema#label> "playwright"@en .
+<http://www.wikidata.org/entity/Q350> <http://www.w3.org/2000/01/rdf-schema#label> "Cambridge"@en .
+<http://www.wikidata.org/entity/Q350> <http://www.wikidata.org/prop/direct/P17> <http://www.wikidata.org/entity/Q145> .
+<http://www.wikidata.org/entity/Q145> <http://www.w3.org/2000/01/rdf-schema#label> "United Kingdom"@en .
+<http://www.wikidata.org/entity/Q1860> <http://www.w3.org/2000/01/rdf-schema#label> "English"@en .
+<http://www.wikidata.org/entity/Q25169> <http://www.w3.org/2000/01/rdf-schema#label> "The Hitchhiker's Guide to the Galaxy"@en .
+<http://www.wikidata.org/entity/Q25169> <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q7725634> .
+<http://www.wikidata.org/entity/Q25169> <http://www.wikidata.org/prop/direct/P50> <http://www.wikidata.org/entity/Q42> .
+<http://www.wikidata.org/entity/Q25169> <http://www.wikidata.org/prop/direct/P136> <http://www.wikidata.org/entity/Q24925> .
+<http://www.wikidata.org/entity/Q1098247> <http://www.w3.org/2000/01/rdf-schema#label> "Dirk Gently's Holistic Detective Agency"@en .
+<http://www.wikidata.org/entity/Q1098247> <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q7725634> .
+<http://www.wikidata.org/entity/Q1098247> <http://www.wikidata.org/prop/direct/P50> <http://www.wikidata.org/entity/Q42> .
+<http://www.wikidata.org/entity/Q7725634> <http://www.w3.org/2000/01/rdf-schema#label> "literary work"@en .
+<http://www.wikidata.org/entity/Q24925> <http://www.w3.org/2000/01/rdf-schema#label> "science fiction"@en .

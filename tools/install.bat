@@ -1,8 +1,9 @@
 @echo off
-REM Install Loka CLI to user's local bin directory.
-REM Requires Rust toolchain (cargo) to be installed.
-
+REM Install the Loka CLI to %USERPROFILE%\.loka\bin so `loka` is on your PATH.
+REM Requires the Rust toolchain (cargo). Run once for a system-wide install;
+REM day-to-day you can just use !studio.bat from the repo root.
 setlocal
+cd /d "%~dp0.."
 
 echo Building Loka (release)...
 cargo build --release -p loka-cli
@@ -11,7 +12,6 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM Create install directory if needed
 set INSTALL_DIR=%USERPROFILE%\.loka\bin
 if not exist "%INSTALL_DIR%" mkdir "%INSTALL_DIR%"
 
@@ -23,7 +23,7 @@ if errorlevel 1 (
 )
 
 echo.
-echo Done! Add %INSTALL_DIR% to your PATH if not already there:
+echo Done! Add %INSTALL_DIR% to your PATH if it isn't already:
 echo   set PATH=%INSTALL_DIR%;%%PATH%%
 echo.
 echo Usage:
