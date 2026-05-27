@@ -328,26 +328,12 @@
         <span class="badge badge-preview" id="version-badge">v0.4.0 — World-model release</span>
     </div>
     <div class="cta">
-        <a href="./loka/" class="btn btn-primary">Read the world-model deep dive</a>
+        <a href="#download" class="btn btn-primary">Install Loka</a>
+        <a href="./loka/" class="btn btn-secondary">World-model deep dive</a>
         <a href="https://github.com/EmmaLeonhart/Loka" class="btn btn-secondary">GitHub repo</a>
-        <a href="https://github.com/EmmaLeonhart/Loka/releases/latest" class="btn btn-secondary" id="download-btn">Engine release</a>
     </div>
 
     <div class="callout first">
-        <h4>Two Hugging Face datasets</h4>
-        <div class="grid2">
-            <div>
-                <a href="https://huggingface.co/datasets/EmmaLeonhart/loka" style="font-weight: 600;">EmmaLeonhart/loka</a>
-                <p>Trained model checkpoints (v3 → v14, current best <strong>v14</strong> ppl 202.01). 44.5 M-param BPE transformer. Pull via <code>MODEL.json</code>.</p>
-            </div>
-            <div>
-                <a href="https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata" style="font-weight: 600;">EmmaLeonhart/normalized-wikidata</a>
-                <p>Clean text-form Wikidata triples for world-model training, four scale tiers (<code>v11-50k</code> through <code>v14-1M</code>). CC-BY-SA 4.0.</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="callout">
         <h4>AI Agent?</h4>
         <p>Loka is serverless by default &mdash; open a <code>.sdb</code> file, no daemon, no config. Install, configure, and query entirely from the command line. The agent installer (<code>loka install-agent</code>) walks an LLM through configuration via structured Markdown prompts. <strong>Start here:</strong> the GitHub repo's <a href="https://github.com/EmmaLeonhart/Loka/blob/main/README.md">README</a> documents the engine and the model series; <a href="https://github.com/EmmaLeonhart/Loka/blob/main/CLAUDE.md">CLAUDE.md</a> is the canonical context file for agent assistants.</p>
         <a href="https://github.com/EmmaLeonhart/Loka/blob/main/docs/AGENT_SETUP.md" class="btn btn-primary" style="padding: 8px 20px; font-size: 0.9em;">Agent Setup Guide</a>
@@ -436,13 +422,13 @@
 
 <div class="download" id="download">
     <div class="container">
-        <h2>Get Loka</h2>
-        <p>Loka is in <strong>Developer Preview</strong>. Download the engine, or pull the corpus + model from Hugging Face.</p>
+        <h2>Install Loka</h2>
+        <p>The Windows installer asks whether you want the database alone, or the database <em>plus</em> the inference model it ships with. Pick the model and Loka is wired for generative queries on first run; skip it and you have a pure triplestore.</p>
         <div class="download-options">
-            <div class="download-card">
-                <h3>Windows</h3>
-                <p class="os">x86_64</p>
-                <a href="https://github.com/EmmaLeonhart/Loka/releases/latest/download/loka-windows-x64.zip" class="btn btn-primary">Download .zip</a>
+            <div class="download-card" style="border-color: var(--accent);">
+                <h3>Windows installer</h3>
+                <p class="os">x86_64 &middot; signed .exe</p>
+                <a href="https://github.com/EmmaLeonhart/Loka/releases/latest/download/loka-setup-x64.exe" class="btn btn-primary">Download installer</a>
             </div>
             <div class="download-card">
                 <h3>macOS</h3>
@@ -479,8 +465,6 @@
     <p>Loka is open source under the Apache 2.0 license. Engine + corpus + trained transformer + inference layer, all in one project.</p>
     <p style="margin-top: 8px;">
         <a href="https://github.com/EmmaLeonhart/Loka">GitHub</a> &middot;
-        <a href="https://huggingface.co/datasets/EmmaLeonhart/loka">HF: Models</a> &middot;
-        <a href="https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata">HF: Corpus</a> &middot;
         <a href="https://github.com/EmmaLeonhart/Loka/blob/main/docs/architecture.md">Architecture</a> &middot;
         <a href="https://github.com/EmmaLeonhart/Loka/blob/main/DEVLOG.md">DEVLOG</a>
     </p>
@@ -495,8 +479,6 @@
             if (!tag) return;
             var badge = document.getElementById('version-badge');
             if (badge) badge.textContent = tag;
-            var btn = document.getElementById('download-btn');
-            if (btn) btn.textContent = 'Download ' + tag;
         })
         .catch(function() {});
 })();

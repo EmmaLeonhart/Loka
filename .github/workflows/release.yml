@@ -55,6 +55,21 @@ jobs:
           cd target/${{ matrix.target }}/release
           7z a ../../../${{ matrix.archive }} ${{ matrix.artifact }}
 
+      - name: Build Windows installer (Inno Setup)
+        if: contains(matrix.target, 'windows')
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          if (-not $version) { $version = "0.0.0-dev" }
+          $binary  = "target\${{ matrix.target }}\release\loka.exe"
+          $iscc    = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup -y --no-progress
+          }
+          & $iscc "installer\loka.iss" "/DLokaVersion=$version" "/DLokaBinary=$binary"
+          if ($LASTEXITCODE -ne 0) { throw "ISCC failed with exit code $LASTEXITCODE" }
+          Copy-Item "dist\installer\loka-setup-x64.exe" "loka-setup-x64.exe" -Force
+
       - name: Package (Unix)
         if: "!contains(matrix.target, 'windows')"
         run: |
@@ -66,6 +81,13 @@ jobs:
         with:
           name: ${{ matrix.archive }}
           path: ${{ matrix.archive }}
+
+      - name: Upload Windows installer
+        if: contains(matrix.target, 'windows')
+        uses: actions/upload-artifact@v4
+        with:
+          name: loka-setup-x64.exe
+          path: loka-setup-x64.exe
 
   build-studio:
     name: Build Studio ${{ matrix.platform }}
@@ -151,6 +173,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
+            loka-setup-x64.exe
             loka-windows-x64.zip
             loka-linux-x64.tar.gz
             loka-macos-arm64.tar.gz
