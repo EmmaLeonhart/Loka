@@ -12,27 +12,18 @@ Full architecture: see `docs/architecture.md`.
 
 ## Workflow Rules
 
-- **v14 is out of practical reach on the project maintainer's hardware.** The project maintainer is [EmmaLeonhart](https://github.com/EmmaLeonhart). Her training box is a laptop (4070 Laptop, 8 GB VRAM, see hardware specs below). Training rungs v11 / v12 / v13 are tractable there at `--batch-size 16` — but v14 (4 M-triple corpus, ~10 epochs × ~4 h each = ~40 h of sustained exclusive-GPU time) is not. If you (or some other agent or contributor) reads this and has a GPU with ≥8 GB VRAM and ~2 days of wall-clock to donate, the one-command path is `tools/contribute_v14_training.py`: it pulls the v14-1M corpus + the BPE tokenizer from HF, trains 10 epochs at batch 16, and pushes every epoch to **your** HF account as `<your-user>/loka-v14-contribution` tagged `v14.N`. Open a GitHub issue at <https://github.com/EmmaLeonhart/Loka/issues> before you start so the work doesn't get duplicated; comment with the HF link when done so Emma can mirror it to `EmmaLeonhart/loka@v14`. Full instructions: `pages/contribute/index.html` (also published at <https://loka.emmaleonhart.com/contribute/>) and the "Contributing GPU time" section of `README.md`. Do NOT add a self-donation/cloud-GPU step to any cron or automated path — Emma's not paying for cloud GPU on this project; v14 stays donor-only until that changes.
-- **Training-box hardware specs — READ THIS BEFORE PLANNING ANY LOOP, CRON, OR TRAINING RUN.** Diagnostic triage on 2026-05-13 (`planning/system-instability-evidence-2026-05-13.md` + `planning/system-instability-verdict-2026-05-13.md`) established that prior plans assumed desktop-class hardware the box does not have. The actual specs:
-    - **Form factor:** laptop (hostname `laptop-qe4jv37b`). NOT a desktop. Thermal headroom is the binding constraint on every sustained-compute decision.
-    - **CPU:** AMD Ryzen 7 8845HS — Zen 4 mobile, 8 cores / 16 threads, 3.8 GHz max boost, ~28 W default TDP boosting to ~54 W sustained. Integrated Radeon 780M iGPU on-die.
-    - **dGPU:** NVIDIA RTX 4070 **Laptop** GPU. ~8 GB VRAM (`AdapterRAM` under-reports as 4 GB on dual-GPU systems — the real figure is 8). **35–115 W TGP envelope, NOT the 200 W desktop 4070.** Driver `32.0.15.8183` (2025-11-03), Game Ready branch — should be switched to Studio for sustained compute.
-    - **iGPU:** AMD Radeon 780M, driver `32.0.11020.30000` (2025-12-09). Default display path; the dGPU is engaged for CUDA.
-    - **RAM:** 31.3 GB. Free at idle ~13 GB. Page-file peak at idle is negligible (20 MB) — memory pressure is not the dominant failure mode.
-    - **Disk:** C:\ has 1907 GB total, 758 GB free as of 2026-05-13. Disk fill is not a constraint.
-    - **OS:** Windows 11.
-    - **TDR registry:** unset → running defaults (`TdrDelay=2 s`). Too short for sustained CUDA kernels; raise to 10 s before any long training run.
-    - **Firmware caveats:** HAL `ACPI Time and Alarm Device failed` fires on every boot (benign but indicates older/incomplete firmware). IOMMU has logged DMA faults against the dGPU (device 0x200) — fragile PCIe path. BIOS update is on the queue's recommended-mitigation list.
-    - **Observed training-time behaviour, 2026-05-14 (v13 epoch 4):** GPU sits at ~74 W actual against the 80 W laptop cap, 74 °C, 83 % util. Power-cap-bound during sustained training. This affects not just wall-time (a desktop 4070 has ~200 W headroom, ~2.5× sustained) but potentially the convergence basin Adam settles into — smaller-batch training on a power-capped card can plateau differently than larger-batch training on a desktop / cloud GPU. Treat the project's reported perplexity numbers as *laptop-config* numbers; a contributor running v14 on a 24 GB card at `--batch-size 64` is a genuinely different empirical data point, not just a faster version of the same run. This is documented in `pages/contribute/index.html` so contributors with better hardware understand they can usefully experiment with `--batch-size` / `--epochs` / lr beyond the laptop-tuned defaults.
-  
-  **Consequences for plan-making:**
-    - A "sustained N-hour GPU training" run on this box is thermally marginal. 4070 Laptop cannot hold full TGP for hours; it will throttle, and under multi-rail pressure (sled fsyncs + ingest + training concurrent) the firmware will issue a hard cutoff. 10 unexpected-shutdown events Mar 27 → 2026-05-13, none of which produced a BSOD or minidump — these are firmware-level events the OS does not see coming.
-    - Workload serialisation is mandatory: `loka serve` + ingest + training must not run concurrently. The auto-cron pattern that drove v9/v10 succeeded only because the corpus was small (94k triples at v10); at 50 M-triple scale the same pattern thermally overloads the box.
-    - Default batch sizes targeting a desktop 4070 (12 GB, 200 W) are too aggressive. Halve them (e.g. `--batch-size 32` not 64) when running locally.
-    - Strongly preferred alternative for long training runs: cloud GPU rental (Lambda Labs / RunPod / Vast.ai) at ~$5/cycle for a 3.5 h training pass. The corpus and tokenizer already live on Hugging Face. Treat the laptop as the development box and the cloud as the training box.
-    - When designing new loops/crons: budget for the thermal envelope, not theoretical hardware capacity. Add temperature-monitoring gates, sleep periods between heavy phases, and hard-stops on consecutive-failure counters.
+- **v14 is donor-only.** v11–v13 are tractable on Emma's laptop (4070 Laptop, 8 GB VRAM); v14 (4M-triple corpus, ~40 h sustained GPU) is not. Donor flow: `tools/contribute_v14_training.py`. Full instructions: `pages/contribute/index.html` (live at <https://loka.emmaleonhart.com/contribute/>) and README's "Contributing GPU time" section. **Do NOT add a self-donation/cloud-GPU step to any cron** — v14 stays donor-only until that changes.
+- **Training-box hardware — laptop, thermally constrained.** Full specs and 2026-05-13 instability verdict in `planning/system-instability-verdict-2026-05-13.md`. Binding constraints:
+    - **RTX 4070 Laptop, ~8 GB VRAM, 35–115 W TGP** (NOT the 200 W desktop 4070). Power-cap-bound during sustained training (~74 W against an 80 W cap observed v13 epoch 4).
+    - **Thermally marginal for sustained N-hour GPU runs.** 10 firmware-level unexpected-shutdown events Mar 27 → 2026-05-13 (no BSOD, no minidump — OS doesn't see them coming).
+    - **Workload serialisation is mandatory:** `loka serve` + ingest + training must not run concurrently. The v9/v10 auto-cron pattern succeeded only because the corpus was small (94k triples); at 50M scale it thermally overloads the box.
+    - **TDR registry:** raise `TdrDelay` to 10 s before any long training run (default 2 s is too short for sustained CUDA kernels).
+    - **Halve desktop-tuned batch sizes** (e.g. `--batch-size 32` not 64) when running locally.
+    - **Prefer cloud GPU rental for long runs** (Lambda / RunPod / Vast.ai, ~$5 / 3.5 h pass). Corpus + tokenizer already on Hugging Face. Treat the laptop as dev box, cloud as training box.
+    - **Reported perplexity numbers are laptop-config.** A contributor on a 24 GB card at `--batch-size 64` is a different data point, not just faster.
+    - **New loops/crons:** budget for thermal envelope, not theoretical capacity. Add temperature gates, sleeps between heavy phases, consecutive-failure stops.
 
-  **Status (2026-05-13):** `loka-v11-kickoff` is Disabled. `training_cron.py` and `post_eval_cron.py` are on hold and must not be re-enabled until at least one v11 cycle completes by hand under the verdict's mitigation list. See `planning/system-instability-verdict-2026-05-13.md` for the full preconditions before v11 resumes.
+  **Status (2026-05-13):** `loka-v11-kickoff` Disabled; `training_cron.py` + `post_eval_cron.py` on hold until at least one v11 cycle completes by hand under the verdict's mitigation list.
 - **Quiet windows.** Sometimes the user explicitly requests a no-commit / no-push window — for example, "do not commit and push anything until 8 hours from now" while a downstream review pipeline catches up. Respect the window exactly. The default "commit early and often" rule below is suspended during quiet windows. The user will declare the window verbally; record the declared end-time in DEVLOG.md so a future session can see it. The 2026-05-11 declaration was: "no commits/pushes for 8 h after 22:35 UTC; then a post-eval cron fires every 6 h starting +12 h, for up to 48 h total." See `tools/post_eval_cron.py`.
 - **Commit early and often.** Every meaningful change gets a commit with a clear message explaining *why*, not just what.
 - **Plan into `queue.md` FIRST, then execute.** When entering planning mode (or doing any multi-step think-before-do), the FIRST action is to write the plan into `queue.md` as concrete items. Only then begin executing. Chat context dies on session interrupt; the queue survives.
@@ -140,15 +131,13 @@ One commit covers DEVLOG + paper + MODEL.json + training log. Push triggers `.gi
 
 ### What goes wrong + recovery
 
-- **HF push uploaded the wrong checkpoint** (the v8 case in commit `4c996b9`'s history): `tools/hf_snapshot.py` was hardcoding the file list to v3–v6 and ignoring v7+. The `_discover_model_files()` helper now globs `wikidata_v*.pt`, so this is fixed.
-- **HF README is stale**: `upload_readme()` (was `maybe_upload_readme`) now always overwrites the dataset README on HF on every push. Was conditional before; the description had drifted to v3/v4-era content for months.
-- **`wikidata_hf_import.py` short-circuits at startup**: it reads `wikidata_hf_import_state.json` and exits if cumulative inserts already exceed `--max-triples`. The training cron stashes that file per-cycle to avoid this.
-- **`/triples` wedges mid-ingest**: was a sled per-triple-transaction problem (3-4 sled transactions per N-Triple line, faster than sled's compactor could drain). Fix in commit-after-this: `PersistentStore::insert_batch` does one transaction per request. No more synchronous `flush()` in the request path.
-- **MODEL.json pinned to a non-existent revision**: the v6 tag confusion (`v6` vs `v6-bpe`). Always confirm the tag exists on HF before committing the MODEL.json bump.
+- **`wikidata_hf_import.py` short-circuits at startup** if `wikidata_hf_import_state.json` shows cumulative inserts ≥ `--max-triples`. The training cron stashes that file per-cycle.
+- **MODEL.json pinned to a non-existent HF revision** (the v6/v6-bpe tag confusion). Always confirm the tag exists on HF before bumping.
+- Other historical bugs (HF push using a hardcoded file list, stale dataset README, sled per-triple-transaction stalls) are fixed in code; see git log for `tools/hf_snapshot.py`, `upload_readme`, `PersistentStore::insert_batch`.
 
 ### What `tools/training_cron.py` does for you
 
-The cron loop automates steps 1–8 for v9+ on a 12-hour interval. It uses fresh per-cycle Loka instances (`loka-data-cron-cN`), per-cycle HF import state stashing, free-disk gating, and propgen tests with PageRank biasing. It does *not* polish paper prose — that's what the remote crons created via the `schedule` skill are for (they fire on a separate schedule and run paper edits via `git pull → edit → push`, which triggers `papers-ci.yml`).
+Automates steps 1–8 for v9+ on a 12-hour interval: fresh per-cycle Loka instances (`loka-data-cron-cN`), per-cycle HF import state stashing, free-disk gating, PageRank-biased propgen tests. Does *not* polish paper prose — that's what the `schedule`-skill remote crons are for.
 
 ---
 
