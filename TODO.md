@@ -10,6 +10,28 @@ Also, please, I don't know why it is that this TODO.md is so cluttered, and you 
 
 ---
 
+## Windows installer — multi-model support
+
+The Inno Setup installer (`installer/loka.iss`) currently offers a single
+optional inference model (Qwen 2.5 1.5B Instruct, declared in
+`installer/models.toml`). Extend so the user can choose between several
+models at install time. Loose plan:
+
+- [ ] Generalise `installer/models.toml` to a list (schema already shaped for it).
+- [ ] Pre-process `models.toml` in CI into one `[Components]` entry per model
+      (Inno Setup can't read TOML at runtime; CI emits a generated `.iss`
+      include from a Python or PowerShell pre-step).
+- [ ] Make the components mutually exclusive (`Flags: exclusive`) so the user
+      picks at most one model, or "no model" via component deselect.
+- [ ] Update `install-selection.toml` to record the chosen model id so
+      `loka.exe` knows what to fetch on first run.
+- [ ] Document the model schema in `installer/README.md`.
+
+Future candidates: a smaller-footprint Qwen / Phi / Llama option for users
+without 3 GB to spare, and a "bring your own GGUF" file picker.
+
+---
+
 ## Next Release (v0.3.1) — Gradle Migration, MCP Agentic UX, Maven Central
 
 Merge the Gradle migration (local) and MCP agentic UX work (claude.ai remote session) then cut v0.3.1.

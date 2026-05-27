@@ -1,0 +1,24 @@
+# Models offered by the Windows installer.
+#
+# The installer reads this file at build time to populate its optional
+# "Inference model" component. Only one entry is supported today — the
+# installer hardcodes the first table under `[[model]]`. Adding a second
+# entry now will be ignored until multi-model support lands (see TODO.md
+# "Multi-model installer support").
+
+[[model]]
+id            = "qwen-2.5-1.5b-instruct"
+display_name  = "Qwen 2.5 1.5B Instruct"
+hf_repo       = "Qwen/Qwen2.5-1.5B-Instruct"
+approx_size   = "3.0 GB"
+# How the installer fetches it. "first-run" defers the download to the
+# first time `loka chat` / the inference sidecar is invoked, so the
+# installer itself stays small. "bundle" would inline the weights into
+# the installer (not implemented).
+fetch_mode    = "first-run"
+description   = """
+Base Qwen 2.5 1.5B Instruct. Combined with Loka's BFS+embedding
+retrieval over the local triplestore, this is the inference path the
+project actually ships (no fine-tune). ~3 GB on disk, downloaded from
+Hugging Face on first invocation.
+"""

@@ -3,6 +3,9 @@
 **/*.rs.bk
 Cargo.lock
 
+# Installer build output
+/dist/
+
 # Java / Maven / Gradle
 **/target/
 **/build/
