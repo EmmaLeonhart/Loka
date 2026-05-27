@@ -13,7 +13,7 @@ resolver = "2"
 [workspace.package]
 version = "0.4.1"
 edition = "2021"
-license = "Apache-2.0"
+license = "AGPL-3.0-or-later"
 authors = []
 repository = "https://github.com/EmmaLeonhart/Loka"
 description = "Loka — a lean RDF-star triplestore with native HNSW vector indexing and hybrid SPARQL+ (engine for the Loka neuro-symbolic world model)"
