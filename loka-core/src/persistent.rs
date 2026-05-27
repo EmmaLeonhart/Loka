@@ -494,7 +494,7 @@ impl PersistentStore {
         let id = quoted_triple_id(s, p, o);
         if self.quoted.get(id.to_le_bytes())?.is_none() {
             self.quoted
-                .insert(&id.to_le_bytes(), &encode_spo(s, p, o))?;
+                .insert(id.to_le_bytes(), &encode_spo(s, p, o))?;
         }
         Ok(id)
     }
