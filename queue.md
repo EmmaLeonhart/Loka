@@ -249,6 +249,7 @@ I am going to say no to doing much to build our importers into the Knowledge Gra
 
 I am going to say that I think that Loka Studio, as it is right now, is relatively bloated in structure. The main thing is it is way, way too easy to see the embedding HNSW stuff, which isn't what I want. Because I think it almost implies it's the default instead of a weird debug mode 
 
+I'm also gonna say that I think that we have a lot of bloated content that doesn't really belong in the repository, and I'm not sure why it is still there. For example, I believe our GitHub repos. There's a lot of Flutter code, but there shouldn't be Flutter code, since I'm pretty sure we just skipped it there. We should be doing an audit of all the stuff in the repository that we might be able to potentially remove and not cause issues. 
 
 ---
 
