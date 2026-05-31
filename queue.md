@@ -64,6 +64,8 @@ Emma's stated remaining interest: *"The NPM Package and the Python Package are b
 4. **Write findings** to `planning/sdk-publish-readiness.md`; reduce the gap list to per-SDK queue items.
 5. **STOP before publishing.** Surface the readiness verdict + the accounts/secrets Emma must set up; do not tag or upload without her explicit go-ahead.
 
+**Finding (2026-05-30, needs confirm + Emma's OK before fixing): SDK manifests may still declare the OLD license.** `sdks/python/pyproject.toml` at HEAD reads `license = "Apache-2.0"` (verified this tick by three identical sha256 reads — `b987bd4c…`), but the project relicensed to **AGPL-3.0-or-later** on 2026-05-27 (PR #10). So the AGPL relicense likely missed the SDK package manifests — a correctness issue AND a publish-blocker (publishing an SDK that misdeclares its license is wrong). **Do NOT auto-edit license fields yet:** (a) license changes are legally significant — get Emma's explicit OK, and (b) the tool channel corrupted these exact reads ~1h earlier this session, so re-verify EVERY SDK manifest (`python`, `typescript`, `rust`, `java`, `dotnet`, `go` + any `sdks/**/LICENSE`) on a confirmed-stable channel first. Fix = align all SDK license declarations to `AGPL-3.0-or-later` to match the project.
+
 ---
 
 ## Passive follow-ups
