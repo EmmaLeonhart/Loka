@@ -136,3 +136,20 @@ pre.turtle{background:var(--bg-card);border:1px solid var(--border);border-radiu
   overflow:auto;white-space:pre}
 .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
 .count{color:var(--accent);font-family:var(--mono);font-size:12px}
+
+.muted-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-mute);
+  padding: 6px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 0.76rem;
+  font-family: var(--sans);
+  transition: .15s;
+}
+.muted-btn:hover {
+  border-color: var(--text-mute);
+  color: var(--text-strong);
+  background: var(--bg-card);
+}

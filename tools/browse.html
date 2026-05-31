@@ -382,8 +382,79 @@ async function showDetail(iri) {
             html += '</table></div>';
         }
 
+        // Retract section
+        html += `<div class="section" style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px">
+            <h4 style="color:var(--red)">Destructive</h4>
+            <div id="retract-panel">
+                <button class="qb" style="border-color:var(--red);color:var(--red);font-size:0.8em;padding:4px 10px" onclick="retractPreview('${iri}')">Retract (cascade)...</button>
+                <p style="font-size:0.8em;color:var(--muted);margin-top:4px">Removes node + every generated inference that transitively cited it.</p>
+            </div>
+        </div>`;
+
         d.innerHTML = html;
     } catch(e) { d.innerHTML += `<p style="color:var(--red)">${e.message}</p>`; }
+}
+
+// ── Retraction ──
+async function retractPreview(iri) {
+    const panel = document.getElementById('retract-panel');
+    panel.innerHTML = '<span style="color:var(--muted)">Computing cascade...</span>';
+    try {
+        const r = await fetch(EP() + '/retract/preview', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ iri })
+        });
+        if (!r.ok) throw new Error(await r.text());
+        const j = await r.json();
+        
+        let msg = `<p style="color:var(--orange);font-weight:600;margin-bottom:6px">⚠️ Would retract ${j.total_triples} triples</p>`;
+        msg += `<ul style="list-style:none;padding:0;margin-bottom:10px">`;
+        for (const d of j.triples_by_depth) {
+            msg += `<li style="font-size:0.85em;color:var(--text)">Depth ${d.depth}: ${d.count} triple(s)</li>`;
+        }
+        msg += `</ul>`;
+        if (j.hnsw_tombstones > 0) msg += `<p style="font-size:0.85em;color:var(--muted);margin-bottom:10px">+ ${j.hnsw_tombstones} HNSW tombstones</p>`;
+        
+        msg += `<div style="display:flex;gap:8px">
+            <button class="run" style="background:var(--red)" onclick="retractCommit('${iri}')">Confirm Delete</button>
+            <button class="qb" onclick="showDetail('${iri}')">Cancel</button>
+        </div>`;
+        panel.innerHTML = msg;
+    } catch (e) {
+        panel.innerHTML = `<p style="color:var(--red)">Preview failed: ${e.message}</p><button class="qb" onclick="showDetail('${iri}')">Back</button>`;
+    }
+}
+
+async function retractCommit(iri) {
+    const panel = document.getElementById('retract-panel');
+    panel.innerHTML = '<span style="color:var(--red)">Deleting...</span>';
+    try {
+        const r = await fetch(EP() + '/retract', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ iri, commit: true })
+        });
+        if (!r.ok) throw new Error(await r.text());
+        const j = await r.json();
+        
+        // Success: remove from graph
+        // Note: we don't know exactly which nodes/edges were removed from the JSON response
+        // but we can remove the root and any generated nodes that might have been part of it.
+        // For simplicity, we'll just clear the graph or suggest a refresh.
+        panel.innerHTML = `<p style="color:var(--green)">Success: ${j.total_triples} triples removed.</p>
+            <button class="run" onclick="location.reload()">Refresh Page</button>`;
+        
+        // Attempt surgical remove from vis
+        if (visNodes.get(iri)) visNodes.remove(iri);
+        // Generated nodes are often keyed by 'gen::'
+        const genNodes = visNodes.get({ filter: n => n._type === 'gen' });
+        visNodes.remove(genNodes);
+        
+        setG(`Retracted ${j.total_triples} triples rooted at ${sh(iri)}.`);
+    } catch (e) {
+        panel.innerHTML = `<p style="color:var(--red)">Delete failed: ${e.message}</p><button class="qb" onclick="showDetail('${iri}')">Back</button>`;
+    }
 }
 
 // ── Query execution ──

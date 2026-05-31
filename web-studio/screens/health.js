@@ -49,17 +49,31 @@ export default async function mount(host, ctx) {
       typesEl.innerHTML =
         '<h2 class="s-title">Type distribution</h2><table class="grid"><thead><tr>' +
         '<th>type</th><th>count</th></tr></thead><tbody>' +
-        types.map(([t, n]) =>
+        'types.map(([t, n]) =>
           `<tr><td class="v-uri" title="${esc(t)}">${esc(short(t))}</td>` +
           `<td class="v-num">${n}</td></tr>`).join('') +
         '</tbody></table>';
     }
-    vecEl.innerHTML =
-      '<h2 class="s-title">HNSW vector index</h2>' +
-      (vh && Object.keys(vh).length
-        ? `<pre class="turtle">${esc(JSON.stringify(vh, null, 2))}</pre>`
-        : '<p class="muted">No vector predicates declared (or /vectors/health unavailable).</p>');
+
+    const showDebug = localStorage.getItem('loka-studio-debug') === 'true';
+    if (showDebug) {
+      vecEl.innerHTML =
+        '<h2 class="s-title">HNSW vector index (Debug)</h2>' +
+        (vh && Object.keys(vh).length
+          ? `<pre class="turtle">${esc(JSON.stringify(vh, null, 2))}</pre>`
+          : '<p class="muted">No vector predicates declared (or /vectors/health unavailable).</p>');
+    } else {
+      vecEl.innerHTML = '<div style="margin-top:24px"><button id="hx-show-debug" class="muted-btn">Show engine internals (HNSW debug)</button></div>';
+      const debugBtn = vecEl.querySelector('#hx-show-debug');
+      if (debugBtn) {
+        debugBtn.onclick = () => {
+          localStorage.setItem('loka-studio-debug', 'true');
+          load();
+        };
+      }
+    }
     refresh.disabled = false;
+
   }
   refresh.onclick = load;
   load();
