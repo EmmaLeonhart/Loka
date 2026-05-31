@@ -859,23 +859,22 @@ I'm also gonna say that I think that we have a lot of bloated content that doesn
 
 Audit in `planning/repo-audit.md`. Flutter Studio **deleted 2026-05-30** (Emma: "everything is an electron") — `loka-studio/` now holds only `electron/` (the shell for `web-studio/`); `release.yml`'s Flutter `build-studio` job removed. Remaining, each its own CI-verified follow-up tick:
 
-- **Electron Studio release packaging** — `release.yml` no longer ships a desktop Studio. Add a job that packages `loka-studio/electron/` + `web-studio/` into per-platform installers (electron-builder), verified on a test tag. Tracked in `TODO.md`.
-- **`.git` 138 MiB pack** — history rewrite to drop large historical blobs → TODO.md only (higher-risk, out of work-loop scope).
-- (`loka-ffi` orphan check done 2026-05-30 → keep it: documented/planned FFI scaffolding, so removal would be Emma's product call. Stale root-level benchmark JSONs removed + gitignored 2026-05-30.)
+- [ ] **Electron Studio release packaging** — `release.yml` no longer ships a desktop Studio. Add a job that packages `loka-studio/electron/` + `web-studio/` into per-platform installers (electron-builder), verified on a test tag. Tracked in `TODO.md`.
+- [ ] **`.git` 138 MiB pack** — history rewrite to drop large historical blobs → TODO.md only (higher-risk, out of work-loop scope).
 
 ---
 
 ## SDK publish-readiness audit — Python (PyPI) + TypeScript (npm)
 
-Emma's stated remaining interest: *"The NPM Package and the Python Package are basically the last things I actually am interested in."* These are the two packages to get publish-ready. **Audit only — no actual publish.** Publishing to PyPI/npm is outward-facing and irreversible (a version number can never be reused) and needs Emma's sign-off + registry accounts/secrets. Steps (each verifiable, each its own commit):
+Emma's stated remaining interest: *"The NPM Package and the Python Package are basically the last things I actually am interested in."* These are the two packages to get publish-ready. **Audit only — no actual publish.** Steps:
 
-1. **Current-state read — DONE 2026-05-30.** Full findings in `planning/sdk-publish-readiness.md` (per-SDK metadata, the tag-driven publish pipeline, and the blockers below).
-2. **Gap list:** for each SDK, the concrete blockers to a clean first publish — metadata completeness (name availability on the registry, classifiers/keywords, repo+homepage URLs, license field), README that renders on the registry, version policy, build reproducibility (`python -m build` / `npm pack` produces a sane artifact locally), and the publish workflow's secrets (`PYPI_API_TOKEN`, `NPM_TOKEN`) + trigger.
-3. **Local dry-run (no upload):** `python -m build` in `sdks/python` and `npm pack` in `sdks/typescript` to confirm a buildable artifact; `twine check dist/*` for the wheel/sdist. Record results. (Respect the thermal envelope — these are light.)
-4. **Write findings** to `planning/sdk-publish-readiness.md`; reduce the gap list to per-SDK queue items.
-5. **STOP before publishing.** Surface the readiness verdict + the accounts/secrets Emma must set up; do not tag or upload without her explicit go-ahead.
+1. [x] **Current-state read.** Full findings in `planning/sdk-publish-readiness.md`.
+2. [ ] **Gap list:** for each SDK, the concrete blockers to a clean first publish.
+3. [ ] **Local dry-run (no upload):** `python -m build` in `sdks/python` and `npm pack` in `sdks/typescript`.
+4. [ ] **Write findings** to `planning/sdk-publish-readiness.md`.
+5. [ ] **STOP before publishing.**
 
-**Finding (2026-05-30, needs confirm + Emma's OK before fixing): SDK manifests may still declare the OLD license.** `sdks/python/pyproject.toml` at HEAD reads `license = "Apache-2.0"` (verified this tick by three identical sha256 reads — `b987bd4c…`), but the project relicensed to **AGPL-3.0-or-later** on 2026-05-27 (PR #10). So the AGPL relicense likely missed the SDK package manifests — a correctness issue AND a publish-blocker (publishing an SDK that misdeclares its license is wrong). **CONFIRMED 2026-05-30 across all 5 SDK manifests** — python/typescript/rust/java/dotnet all declare `Apache-2.0`; corroborated by the relicense commit message, which scoped only `LICENSE` + workspace `Cargo.toml` + README. **Do NOT auto-edit license fields — Emma's call** (legally significant). Fix once approved = align all 5 SDK manifests to `AGPL-3.0-or-later`. Second finding (FIXED 2026-05-31): the PyPI job uses OIDC **trusted publishing**, but the setup docs told you to create a `PYPI_TOKEN` secret — both `docs/SDK_PUBLISHING.md` and `docs/SDK_ACCOUNTS_SETUP.md` now corrected to trusted-publishing instructions (register a pending publisher on PyPI; no secret). All findings detailed in `planning/sdk-publish-readiness.md`.
+**Action Item: Align all 5 SDK manifests to AGPL-3.0-or-later.** All 5 SDK manifests still declare `Apache-2.0` despite the project relicense to `AGPL-3.0-or-later`.
 
 ---
 

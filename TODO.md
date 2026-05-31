@@ -32,20 +32,17 @@ without 3 GB to spare, and a "bring your own GGUF" file picker.
 
 ---
 
-## Next Release (v0.3.1) — Gradle Migration, MCP Agentic UX, Maven Central
+## Next Release (v0.3.1) — Gradle Migration, MCP Agentic UX
 
 Merge the Gradle migration (local) and MCP agentic UX work (claude.ai remote session) then cut v0.3.1.
 
 ### Release Checklist
 - [x] Merge claude.ai remote branch (MCP agentic UX work) into main
-- [ ] Merge Gradle migration + Maven Central publishing setup (local commits)
+- [ ] Merge Gradle migration setup (local commits)
 - [ ] Bump version to 0.3.1 in `sdks/java/build.gradle.kts` and all other SDK configs
-- [ ] Set up Maven Central secrets: `MAVEN_USERNAME`, `MAVEN_TOKEN`, `GPG_PRIVATE_KEY`, `GPG_PASSPHRASE`
-- [ ] Generate GPG key and upload public key to keyserver
 - [ ] Tag `v0.3.1` and push to trigger publish workflow
-- [ ] Verify `io.github.emmaleonhart:loka:0.3.1` appears on Maven Central
 
-### Java/Kotlin SDK — Maven Central Ready
+### Java/Kotlin SDK — Locally Complete
 The SDK is functionally complete (3 classes, ~400 LOC). Build migrated from Maven to Gradle (Kotlin DSL).
 
 - [x] JUnit 5 test suite: 24 unit tests with HTTP mocking for all LokaClient methods
@@ -53,13 +50,12 @@ The SDK is functionally complete (3 classes, ~400 LOC). Build migrated from Mave
 - [x] Add `healthReport()` method (calls `GET /health` + `GET /vectors/health`)
 - [x] Bump version to 0.3.0 (match main project)
 - [x] Migrate from Maven (pom.xml) to Gradle (Kotlin DSL)
-- [x] Switch to Sonatype Central Portal (`central-publishing-maven-plugin` → Gradle `maven-publish`)
+- [x] Switch to Gradle `maven-publish`
 - [x] In-memory GPG signing (no GPG binary needed in CI)
 - [x] GroupId: `io.github.emmaleonhart`, artifact: `loka`
 - [ ] Integration test: start Loka, insert triples, query, verify round-trip
 - [ ] OWL validation (match Python SDK: domain/range/subclass/disjoint/equivalent)
 - [ ] Connection retry logic with configurable timeouts
-- [ ] First publish to Maven Central
 
 ---
 
@@ -123,21 +119,10 @@ The SDK is functionally complete (3 classes, ~400 LOC). Build migrated from Mave
 ### Query Language Wrappers
 - [ ] Cypher → SPARQL transpiler: MATCH/WHERE/RETURN mapped to SPARQL patterns
 - [ ] GQL (ISO 39075) → SPARQL transpiler: ISO standard graph query language mapped to SPARQL
-- [ ] Query validation: reject constructs that can't map to the RDF data model
-
-### Premium Tier
-Deferred until paying customers.
-
-- [ ] RBAC
-- [ ] Encryption at rest
-- [ ] TLS
-- [ ] Audit logging
-- [ ] Replication
-- [ ] Clustering / sharding
-- [ ] Multi-tenancy
-- [ ] Connection pooling
+### Query validation: reject constructs that can't map to the RDF data model
 
 ---
+
 
 ## Reference Architectures
 

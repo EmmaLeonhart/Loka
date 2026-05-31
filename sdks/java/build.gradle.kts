@@ -44,8 +44,8 @@ publishing {
 
                 licenses {
                     license {
-                        name.set("Apache License, Version 2.0")
-                        url.set("https://www.apache.org/licenses/LICENSE-2.0")
+                        name.set("GNU Affero General Public License v3.0")
+                        url.set("https://www.gnu.org/licenses/agpl-3.0.txt")
                     }
                 }
 

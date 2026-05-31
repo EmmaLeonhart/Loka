@@ -7,14 +7,14 @@ name = "loka"
 dynamic = ["version"]
 description = "Python client for Loka — RDF-star triplestore with native vector indexing"
 readme = "README.md"
-license = "Apache-2.0"
+license = "AGPL-3.0-or-later"
 requires-python = ">=3.9"
 dependencies = ["requests>=2.28"]
 authors = [{ name = "EmmaLeonhart" }]
 keywords = ["loka", "rdf", "sparql", "vector", "graph-database", "triplestore"]
 classifiers = [
     "Development Status :: 3 - Alpha",
-    "License :: OSI Approved :: Apache Software License",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
     "Programming Language :: Python :: 3",
 ]
 

@@ -7,7 +7,7 @@
     <Version>0.1.0</Version>
     <Description>C# client for Loka — RDF-star triplestore with native vector indexing</Description>
     <Authors>EmmaLeonhart</Authors>
-    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/EmmaLeonhart/Loka</RepositoryUrl>
     <PackageTags>loka;rdf;sparql;vector;graph-database;triplestore</PackageTags>
   </PropertyGroup>
