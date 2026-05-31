@@ -859,6 +859,10 @@ I'm also gonna say that I think that we have a lot of bloated content that doesn
 
 Audit in `planning/repo-audit.md`. Flutter Studio **deleted 2026-05-30** (Emma: "everything is an electron") — `loka-studio/` now holds only `electron/` (the shell for `web-studio/`); `release.yml`'s Flutter `build-studio` job removed. Remaining, each its own CI-verified follow-up tick:
 
+- [x] **SDK license alignment** — All 5 SDK manifests aligned to `AGPL-3.0-or-later` (2026-05-31).
+- [x] **SDK local dry-runs** — `python -m build` and `npm pack` success (2026-05-31).
+- [x] **Loka Studio de-bloat** — HNSW/embedding debug surface hidden behind a toggle in the Health screen (2026-05-31).
+- [ ] **Recursive deletion (Retract)** — Port the "Retract (cascade)" action from the frozen Flutter Studio to the live JS Studio (`tools/browse.html`). Emma: "We need that recursive deletion to be something that is working."
 - [ ] **Electron Studio release packaging** — `release.yml` no longer ships a desktop Studio. Add a job that packages `loka-studio/electron/` + `web-studio/` into per-platform installers (electron-builder), verified on a test tag. Tracked in `TODO.md`.
 - [ ] **`.git` 138 MiB pack** — history rewrite to drop large historical blobs → TODO.md only (higher-risk, out of work-loop scope).
 
@@ -869,9 +873,9 @@ Audit in `planning/repo-audit.md`. Flutter Studio **deleted 2026-05-30** (Emma: 
 Emma's stated remaining interest: *"The NPM Package and the Python Package are basically the last things I actually am interested in."* These are the two packages to get publish-ready. **Audit only — no actual publish.** Steps:
 
 1. [x] **Current-state read.** Full findings in `planning/sdk-publish-readiness.md`.
-2. [ ] **Gap list:** for each SDK, the concrete blockers to a clean first publish.
-3. [ ] **Local dry-run (no upload):** `python -m build` in `sdks/python` and `npm pack` in `sdks/typescript`.
-4. [ ] **Write findings** to `planning/sdk-publish-readiness.md`.
+2. [x] **Gap list:** for each SDK, the concrete blockers to a clean first publish. (2026-05-31: License mismatch fixed, PyPI docs fixed).
+3. [x] **Local dry-run (no upload):** `python -m build` success; `npm pack` success (2026-05-31).
+4. [x] **Write findings** to `planning/sdk-publish-readiness.md`.
 5. [ ] **STOP before publishing.**
 
 **Action Item: Align all 5 SDK manifests to AGPL-3.0-or-later.** All 5 SDK manifests still declare `Apache-2.0` despite the project relicense to `AGPL-3.0-or-later`.
