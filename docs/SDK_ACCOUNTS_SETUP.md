@@ -1,14 +1,12 @@
 # SDK Registry Account Setup — Step by Step
 
-## PyPI (Python)
+## PyPI (Python) — trusted publishing, no GitHub secret
 
 1. Go to https://pypi.org/account/register/
-2. Create account with your email
-3. Verify email
-4. Go to https://pypi.org/manage/account/token/
-5. Click "Add API token" → scope "Entire account" → copy token (starts with `pypi-`)
-6. In GitHub repo: Settings → Secrets → New → name: `PYPI_TOKEN`, value: the token
-7. Test: `cd sdks/python && pip install build twine && python -m build && twine upload --repository testpypi dist/*`
+2. Create account with your email; verify it
+3. Add a **pending trusted publisher** at https://pypi.org/manage/account/publishing/ — PyPI Project Name `loka`, Owner `EmmaLeonhart`, Repository `Loka`, Workflow `publish-sdks.yml`, Environment blank
+4. That's it — **no `PYPI_TOKEN` secret.** `publish-sdks.yml` authenticates via OIDC on a `v*` tag (`permissions: id-token: write` + `pypa/gh-action-pypi-publish`)
+5. Optional local smoke test (separate TestPyPI token, not the CI path): `cd sdks/python && pip install build twine && python -m build && twine check dist/* && twine upload --repository testpypi dist/*`
 
 ## npm (TypeScript / JavaScript)
 

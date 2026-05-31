@@ -6,7 +6,7 @@ Instructions for configuring each SDK's package registry secrets so the `publish
 
 1. Push a version tag: `git tag v0.1.0 && git push --tags`
 2. CI runs `publish-sdks.yml` which publishes all SDKs
-3. Each registry needs a token stored as a GitHub secret
+3. Most registries need a token stored as a GitHub secret; **PyPI is the exception** — it uses OIDC *trusted publishing* (no secret), configured on PyPI's side (see below)
 
 ## Setting GitHub Secrets
 
@@ -14,23 +14,28 @@ Go to: **GitHub repo → Settings → Secrets and variables → Actions → New 
 
 ---
 
-## PyPI (Python)
+## PyPI (Python) — OIDC trusted publishing (no secret)
 
-**Secret name:** `PYPI_TOKEN`
+The `publish-python` job uses **PyPI trusted publishing** (`permissions: id-token: write` + `pypa/gh-action-pypi-publish`). There is **no `PYPI_TOKEN` GitHub secret** — do not create one (it would sit unused). Configure a trusted publisher on PyPI instead:
 
-1. Go to https://pypi.org/manage/account/token/
-2. Create a new API token (scope: entire account, or project-scoped after first publish)
-3. Copy the token (starts with `pypi-`)
-4. Add as GitHub secret `PYPI_TOKEN`
+1. Log in at https://pypi.org/.
+2. Before the first release, add a **pending publisher** at https://pypi.org/manage/account/publishing/ → "Add a new pending publisher":
+   - **PyPI Project Name:** `loka`
+   - **Owner:** `EmmaLeonhart`
+   - **Repository name:** `Loka`
+   - **Workflow name:** `publish-sdks.yml`
+   - **Environment name:** *(leave blank — the workflow defines none)*
+3. After the project exists, the same publisher is managed under the project's **Settings → Publishing**.
 
-**First publish (manual):**
+A `v*` tag push then runs `publish-sdks.yml`, which builds (`python -m build`) and uploads via the OIDC exchange — no token anywhere.
+
+**Optional local smoke test** (manual, uses a separate TestPyPI token — *not* the CI path):
 ```bash
 cd sdks/python
 pip install build twine
 python -m build
-twine upload dist/*
-# Enter username: __token__
-# Enter password: pypi-YOUR-TOKEN
+twine check dist/*
+twine upload --repository testpypi dist/*   # needs a TestPyPI token, local only
 ```
 
 ---
@@ -214,7 +219,7 @@ git push --tags
 
 ## Checklist Before First Publish
 
-- [ ] Create PyPI account and token → `PYPI_TOKEN`
+- [ ] Create PyPI account + register a trusted publisher (project `loka`, repo `Loka`, workflow `publish-sdks.yml`) — **no secret**
 - [ ] Create npm account and token → `NPM_TOKEN`
 - [ ] Create crates.io account and token → `CRATES_IO_TOKEN`
 - [ ] Create Sonatype account, claim group → `MAVEN_USERNAME`, `MAVEN_TOKEN`

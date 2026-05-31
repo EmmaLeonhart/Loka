@@ -7,6 +7,16 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-05-31 — (correction) PyPI doc fix actually applied
+
+The entry below + commit `2c99231` claimed the PyPI docs were rewritten, but the two doc
+Edit calls had errored (wrong anchor on `SDK_PUBLISHING.md`; `SDK_ACCOUNTS_SETUP.md` not
+read first) — so `2c99231` shipped only the queue+DEVLOG *claim* with the docs still
+unchanged. This commit actually applies the rewrite to `docs/SDK_PUBLISHING.md` +
+`docs/SDK_ACCOUNTS_SETUP.md`, verified via `git --stat` before pushing. Process lesson:
+don't chain commit+push — confirm the stat lists the expected files between them.
+
+---
 ## 2026-05-31 — PyPI publishing docs corrected to trusted-publishing
 
 `docs/SDK_PUBLISHING.md` and `docs/SDK_ACCOUNTS_SETUP.md` told contributors to create a
