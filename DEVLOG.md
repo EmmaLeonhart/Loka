@@ -7,6 +7,19 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-05-30 — Repo-audit C-6: removed stale root-level benchmark JSON artifacts
+
+Last mechanical item of the repo-bloat audit. Removed three stale root-level JSONs
+(`benchmark_results.json`, `storage_benchmark_results.json`, `stress_test_report.json`,
+all last touched 2026-03-15) and gitignored them. They were committed *output* artifacts:
+only ever written by `stress_test.py` / `tools/benchmark.py` / `tools/storage_benchmark.py`
+and read by nothing; the live benchmark pipeline (`benchmarks.yml`) writes to
+`benchmarks/HISTORY.md` + `LATEST.md`, never these. The generator scripts were kept (tools,
+not artifacts). With this, the audit's actionable cleanups are complete; what remains is
+the Electron Studio installer (needs a release tag — Emma's call) and a `.git` history
+rewrite (TODO-only, higher risk). `loka-ffi` stays (planned FFI scaffolding).
+
+---
 ## 2026-05-30 — `loka-ffi` orphan check: keep it (planned FFI scaffolding)
 
 Repo-audit Category-C item resolved without a removal. `loka-ffi` is a leaf `cdylib`

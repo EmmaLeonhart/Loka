@@ -88,10 +88,14 @@ entry, then confirm CI green.
    *Caveat: the exhaustive whole-tree consumer grep was attempted but couldn't be read
    under the session's tool-output brownout; the conclusion rests on the crate shape +
    the documented architecture, which don't depend on that grep.*
-6. **Root-level loose artifacts** — `stress_test.py`, `stress_test_report.json`,
-   `storage_benchmark_results.json`, `benchmark_results.json`. Check whether the
-   benchmarks CI (`.github/workflows/benchmarks.yml`) regenerates/consumes these or
-   whether they're stale one-offs. Move live ones under `benchmarks/`, remove dead ones.
+6. **Root-level loose artifacts — DONE 2026-05-30.** The three JSONs
+   (`benchmark_results.json`, `storage_benchmark_results.json`, `stress_test_report.json`,
+   all last touched 2026-03-15) were stale *output* artifacts: only ever *written* by
+   `stress_test.py` / `tools/benchmark.py` / `tools/storage_benchmark.py`, and nothing
+   reads them. The live benchmark pipeline (`benchmarks.yml`) writes to
+   `benchmarks/HISTORY.md` + `LATEST.md`, never these. Removed all three and gitignored
+   them so future local runs don't re-commit them. **Kept** the generator scripts
+   (`stress_test.py` + the two under `tools/`) — those are tools, not artifacts.
 7. **`.git` pack size (138 MiB).** If a slimmer clone matters for the "easy to download
    and run" goal, a history rewrite to drop large historical blobs is a separate,
    higher-risk task — list it in TODO.md, do not attempt inside a work-loop tick.
@@ -103,6 +107,6 @@ entry, then confirm CI green.
    removed; A-3 (mojibake `\357\200\277qp` file) removed after confirming it was a 0-byte
    empty file (git empty-blob `e69de29`). A-1 was a mis-read (struck).
 3. C-5 (`loka-ffi` orphan check) ✅ done — conclusion: keep (planned FFI scaffolding).
-   C-6 (stale root-level benchmark JSONs) still pending → fold results back here.
+   C-6 (stale root-level benchmark JSONs) ✅ done — removed + gitignored 2026-05-30.
 4. Electron Studio installer release job (see TODO.md) — needs a verified test tag.
 5. C-7 (`.git` history rewrite) → TODO.md only.
