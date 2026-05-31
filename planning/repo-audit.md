@@ -71,11 +71,23 @@ entry, then confirm CI green.
 
 ## Category C — investigate before touching
 
-5. **`loka-ffi/` orphan check.** CLAUDE.md still documents `loka-ffi` as the single-process
-   engine that Flutter loads via `dart:ffi`. If the Studio is now `web-studio/` over HTTP,
-   `loka-ffi` may have no consumer. But the MCP-in-process story and `loka mcp` may still
-   want it. Do not remove without tracing consumers (`Cargo.toml` workspace members, any
-   `.dll`/`.so` load in `web-studio/electron/`). Tie this to the B decision.
+5. **`loka-ffi/` orphan check — DONE 2026-05-30: keep (it's planned scaffolding, not
+   dead code).** Findings: `loka-ffi` is a leaf `cdylib` crate (2 files: `Cargo.toml` +
+   `src/lib.rs`) with no Rust workspace dependents — nothing `cargo`-depends on it; it's
+   built to emit a `.dll`/`.so`/`.dylib`. Its one documented consumer was the **Flutter
+   Studio via `dart:ffi`, which was deleted 2026-05-30**; the live `web-studio/` Studio
+   talks to the engine over **HTTP**, and the language SDKs are HTTP clients too — so it
+   has **no active runtime consumer today.** BUT CLAUDE.md documents it extensively (the
+   single-process Studio/MCP architecture, the full `loka_db_open`/`loka_query`/… FFI
+   function list) and README states *"Studio … will connect directly via FFI (serverless
+   mode, planned)"*. So it is **intentional, planned scaffolding**, not accidental bloat.
+   **Conclusion: keep it.** Removing it would reverse a documented architectural intent →
+   that's Emma's product call, not an autonomous cleanup. (One small follow-up: README
+   line ~281 still implies FFI ties to the *Flutter* Studio; reword to the JS-Studio
+   future when convenient — cosmetic, not blocking.)
+   *Caveat: the exhaustive whole-tree consumer grep was attempted but couldn't be read
+   under the session's tool-output brownout; the conclusion rests on the crate shape +
+   the documented architecture, which don't depend on that grep.*
 6. **Root-level loose artifacts** — `stress_test.py`, `stress_test_report.json`,
    `storage_benchmark_results.json`, `benchmark_results.json`. Check whether the
    benchmarks CI (`.github/workflows/benchmarks.yml`) regenerates/consumes these or
@@ -90,8 +102,7 @@ entry, then confirm CI green.
 2. Category A ✅ complete 2026-05-30: A-2 (`loka-retrieval-data-stale-20260520/` husk)
    removed; A-3 (mojibake `\357\200\277qp` file) removed after confirming it was a 0-byte
    empty file (git empty-blob `e69de29`). A-1 was a mis-read (struck).
-3. C-5 (`loka-ffi` orphan check — now more likely orphaned since the Flutter FFI
-   consumer is gone; trace remaining consumers before removing), C-6 (stale root-level
-   benchmark JSONs) → fold results back here.
+3. C-5 (`loka-ffi` orphan check) ✅ done — conclusion: keep (planned FFI scaffolding).
+   C-6 (stale root-level benchmark JSONs) still pending → fold results back here.
 4. Electron Studio installer release job (see TODO.md) — needs a verified test tag.
 5. C-7 (`.git` history rewrite) → TODO.md only.

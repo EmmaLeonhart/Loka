@@ -7,6 +7,21 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-05-30 — `loka-ffi` orphan check: keep it (planned FFI scaffolding)
+
+Repo-audit Category-C item resolved without a removal. `loka-ffi` is a leaf `cdylib`
+crate (just `Cargo.toml` + `src/lib.rs`) with no Rust workspace dependents; its only
+documented consumer — the Flutter Studio via `dart:ffi` — was deleted earlier today, and
+the live `web-studio/` Studio plus the language SDKs all talk to the engine over HTTP. So
+it has no active runtime consumer right now. But CLAUDE.md documents it as the
+single-process Studio/MCP engine (full `loka_db_open`/`loka_query`/… FFI surface) and
+README lists serverless-mode FFI as planned — i.e. it's intentional scaffolding, not
+accidental bloat. **Conclusion: keep.** Removing it would reverse documented architecture,
+so that's a product call for Emma, not an autonomous cleanup. (The exhaustive consumer
+grep was blocked by the session's tool-output brownout; the conclusion rests on the crate
+shape + documented intent, which don't depend on it.)
+
+---
 ## 2026-05-30 — Repo-audit Category-A cleanup complete
 
 Finished the mechanical removals from the repo-bloat audit. Removed the tracked
