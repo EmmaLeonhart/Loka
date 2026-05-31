@@ -7,6 +7,61 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-05-20 — Vector-registry corruption root-caused and fixed; crash + recovery metabolized
+
+A restart of the retrieval engine (`:3031`) exposed a real persistence bug, then the
+box crashed mid-recovery (computer restart ~16:00 local; four parallel agentic
+sessions and their in-memory crons died with it — nothing on disk lost). This entry
+folds that whole arc out of `queue.md` and into the canonical record.
+
+**The bug.** After `loka serve` reopened a sled data dir holding vector indexes,
+`/vectors/health` rendered the `nameEmb` predicate slot as an f32vec *literal* string
+and `tripleEmb` disappeared entirely; triple count dropped 22142 → 12700 across the
+restart. Diagnosis via `loka-cli/examples/inspect_vector_triples.rs` on the parked
+93.7 MB artifact: 2113 f32vec rows had predicate=10710 (well-formed → `nodeEmb`) and
+2113 had predicate=10711 (malformed — 10711 resolved to the first interned
+name-embedding literal). Exactly one bad predicate per legitimate `nameEmb` row.
+
+**Root cause.** In-memory `TermDictionary` and `PersistentStore` keep independent
+term-ID counters. They align at startup (`load_terms_into` seeds the dict from the
+store), but `/vectors/declare` interned the predicate IRI in the in-memory dict *only*,
+drifting its counter past the store's. The subsequent `/vectors` POST then called
+`dict.intern` and `ps.intern` independently and got **different** IDs for the same
+string; the triple was built from in-memory IDs but written to the store's SPO index,
+where `terms_rev` resolved those IDs to whatever else occupied those slots. The
+corruption only became visible on reopen. SPARQL `INSERT DATA` / `DELETE DATA` carried
+the identical bug (`resolve_term_to_id` called `dict.intern` only).
+
+**Fix (commits `37ef41e` + family).** (1) `loka_hnsw::rebuild_from_store` now skips
+triples whose predicate is a literal-id/inline value, so a poisoned on-disk registry
+can't propagate on rebuild. (2) New `intern_synced` / `intern_object_synced` helpers
+(`loka-proto/src/server.rs:1112`, `:1160`) route every intern through `ps.intern`
+first, then mirror into the in-memory dict via `insert_with_id` — the persistent store
+becomes the single source of truth for term IDs. (3) `declare_vector_predicate`,
+`insert_vector`, `execute_insert_data`, and `execute_delete_data` refactored to hold
+the dict + ps locks together and use the synced helpers. (4) Regression tests
+`declare_and_insert_keeps_dict_and_ps_in_sync` (`server.rs:2334`) and
+`sparql_insert_data_persists_term_strings` (`server.rs:2416`) guard the alignment
+end-to-end. Residual latent risk noted: `/triples` still interns in the dict then hands
+a batch to `ps.insert_batch`; it is currently safe because all known drift sources are
+fixed, but a future handler that interns without persisting could re-introduce drift —
+worth a debug-mode `dict.next_id == ps.next_id` assertion later.
+
+**Also shipped in this arc** (per the recovered session log, now retired from the
+queue): the clawRxiv paper trimmed to ≤5000 chars and posted as **post 2601 (v8)**; a
+SPARQL quoted-triple predicate-filter regression test; the double-click "grow the
+graph" demo wired end-to-end on Q42 against the base+retrieval sidecar; stale "live
+training" website banners removed and the sitemap un-orphaned after the SutraDB→Loka
+rebrand. The `:3031` demo itself is transient runtime state, not committed work — the
+resurrection recipe (serve `loka-retrieval-data`, `load_retrieval_loka.py`,
+`infer_server.py` on `:8092`) lives in `planning/base-retrieval.md` if it needs
+standing back up.
+
+**Still open after this:** engine bug #1 (does the `c36760b` sled tuning hold against
+*fresh* sustained ingest past 32.88 M triples?) — scale-gated, not blocking under the
+base+retrieval pivot.
+
+---
 ## 2026-05-17 — Studio leaves Flutter: site branding kit, /browse un-orphaned, JS Studio shipped
 
 A UI-day, three threads, one trajectory: **the graph viewer stops being a Flutter problem.**
