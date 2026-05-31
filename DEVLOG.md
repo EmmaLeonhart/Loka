@@ -7,6 +7,33 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-05-30 — SDK publish-readiness findings written (`planning/sdk-publish-readiness.md`)
+
+Decision-independent half of the SDK publish-readiness audit, for the two targets
+(Python→PyPI, TS→npm). Headline: (1) all 5 SDK manifests declare Apache-2.0 vs the
+project's AGPL (blocker, Emma's call); (2) the PyPI job uses OIDC trusted publishing but
+the setup docs say create a `PYPI_TOKEN` secret — a doc/workflow inconsistency (trusted
+publishing is configured PyPI-side, no secret); (3) NOT blockers, contrary to earlier
+worry — the publish version is tag-driven (manifest version skew is irrelevant) and TS
+uses `npm install` not `npm ci` (no lockfile needed); (4) open: `loka` name availability
+on PyPI/npm + the npm account + `NPM_TOKEN`. No publish, no license edit — remaining steps
+gated on Emma. *(Back-filled: this entry's original write in commit `1ec548a` was silently
+dropped by a tool-channel fault; recovered from that commit's message + the findings doc.)*
+
+---
+## 2026-05-30 — Likely SDK license-staleness finding (Apache-2.0 vs project AGPL)
+
+A channel-integrity test (3× identical sha256 of the same committed file) confirmed reads
+were trustworthy, and `sdks/python/pyproject.toml` at HEAD declares `license =
+"Apache-2.0"` while the project relicensed to AGPL-3.0-or-later on 2026-05-27 (PR #10) —
+later confirmed across all 5 SDK manifests (python/typescript/rust/java/dotnet),
+corroborated by the relicense commit message scoping only LICENSE + workspace Cargo.toml +
+README. Recorded as a flagged finding, not fixed: license edits are legally significant
+(want Emma's OK); fix once approved = align all 5 SDK manifests to AGPL-3.0-or-later.
+*(Back-filled from commit `8929fed`; the original DEVLOG write was silently dropped by a
+tool-channel fault.)*
+
+---
 ## 2026-05-30 — SDK publish-readiness audit scoped into the queue
 
 With the repo-bloat audit closed, the next priority thread is Emma's *"NPM Package and
