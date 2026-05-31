@@ -7,6 +7,20 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-05-30 — SDK publish-readiness audit scoped into the queue
+
+With the repo-bloat audit closed, the next priority thread is Emma's *"NPM Package and
+Python Package are basically the last things I'm interested in."* Scoped that into a
+concrete 5-step publish-readiness plan in `queue.md` (audit-only: capture each SDK's
+current packaging state, list the concrete blockers to a clean first publish, local
+dry-run via `python -m build` / `npm pack` + `twine check`, write findings to
+`planning/sdk-publish-readiness.md`, then STOP before any upload — publishing is
+outward-facing/irreversible and needs Emma's sign-off + registry secrets). The execution
+(reading the actual `sdks/python` + `sdks/typescript` packaging state) was started this
+tick but its reads were stuck in the session's tool-output brownout, so the current-state
+capture carries to the next tick rather than being written from unverified guesses.
+
+---
 ## 2026-05-30 — Repo-audit C-6: removed stale root-level benchmark JSON artifacts
 
 Last mechanical item of the repo-bloat audit. Removed three stale root-level JSONs

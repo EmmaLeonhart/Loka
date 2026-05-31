@@ -54,6 +54,18 @@ Audit in `planning/repo-audit.md`. Flutter Studio **deleted 2026-05-30** (Emma: 
 
 ---
 
+## SDK publish-readiness audit — Python (PyPI) + TypeScript (npm)
+
+Emma's stated remaining interest: *"The NPM Package and the Python Package are basically the last things I actually am interested in."* These are the two packages to get publish-ready. **Audit only — no actual publish.** Publishing to PyPI/npm is outward-facing and irreversible (a version number can never be reused) and needs Emma's sign-off + registry accounts/secrets. Steps (each verifiable, each its own commit):
+
+1. **Current-state read** (next tick — reads were issued but stuck in the tool brownout): for `sdks/python/` and `sdks/typescript/`, capture package name, version, description, license, author, README presence, build backend (`pyproject.toml` / `package.json`), and whether `.github/workflows/publish-sdks.yml` is wired for both and on what trigger. Cross-check against `docs/SDK_PUBLISHING.md` + `docs/SDK_ACCOUNTS_SETUP.md` (these already document the intended process).
+2. **Gap list:** for each SDK, the concrete blockers to a clean first publish — metadata completeness (name availability on the registry, classifiers/keywords, repo+homepage URLs, license field), README that renders on the registry, version policy, build reproducibility (`python -m build` / `npm pack` produces a sane artifact locally), and the publish workflow's secrets (`PYPI_API_TOKEN`, `NPM_TOKEN`) + trigger.
+3. **Local dry-run (no upload):** `python -m build` in `sdks/python` and `npm pack` in `sdks/typescript` to confirm a buildable artifact; `twine check dist/*` for the wheel/sdist. Record results. (Respect the thermal envelope — these are light.)
+4. **Write findings** to `planning/sdk-publish-readiness.md`; reduce the gap list to per-SDK queue items.
+5. **STOP before publishing.** Surface the readiness verdict + the accounts/secrets Emma must set up; do not tag or upload without her explicit go-ahead.
+
+---
+
 ## Passive follow-ups
 
 - **Donor clean-Adam 10-epoch v14** via `tools/contribute_v14_training.py` — explicit successor experiment per paper §5.12, published at <https://loka.emmaleonhart.com/contribute/>. Waits for a contributor with ≥8 GB VRAM + ~2 days. Do NOT self-launch on the laptop (thermal envelope + v11+ training freeze).
