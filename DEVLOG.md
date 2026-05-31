@@ -7,6 +7,43 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-05-30 — Flutter Studio deleted; Loka Studio is now Electron-over-`web-studio/`
+
+Emma's call, executed: *"delete the Flutter Studio tree. We don't need it because
+everything is an electron."* This retires the Flutter app the 2026-05-17 entry had
+frozen as a fallback — `web-studio/` (the real-DOM JS Studio) plus `loka-studio/electron/`
+(the desktop shell) are now the whole story.
+
+**Verified before deleting** (the deletion is destructive + touches the shipped product):
+the live Electron Studio does **not** depend on Flutter. `!studio.bat` runs
+`npm run studio:js` → `electron/run-js.js`, which sets `STUDIO_WEB_ROOT=../../web-studio`
+so `server.js` serves the JS app, not the Flutter `build/web`. Only `npm start` (the
+default path) had pointed at the Flutter build.
+
+**Removed:** `loka-studio/{lib,windows,macos,linux,web,test}`, `pubspec.{yaml,lock}`,
+`.metadata`, `analysis_options.yaml`, the Flutter `README.md` and `.gitignore` — the
+single largest directory in the tree. **Kept:** `loka-studio/electron/`.
+
+**Repointed so nothing dangles:** `electron/server.js` default root → `../../web-studio`
+(the Flutter `build/web` it used to default to is gone); `main.js` + `package.json`
+descriptions de-Fluttered; `README.md`'s "from source" line now
+`cd loka-studio/electron && npm install && npm run studio:js`.
+
+**Release pipeline:** `.github/workflows/release.yml` (tag-triggered only, so per-commit
+CI was never at risk) had a `build-studio` matrix job running `flutter build` for
+win/linux/macos and shipping `loka-studio-*` archives. Removed that job, dropped it from
+the `release` job's `needs`, and pulled the three studio archives from the release asset
+list — leaving a coherent, green engine-only release. **The release no longer ships a
+built desktop Studio.** Rather than commit an electron-builder pipeline I can't verify
+without cutting a tag, the replacement (package `electron/` + `web-studio/` into
+per-platform installers, verified on a test tag) is tracked in TODO.md as the explicit
+next step. Named plainly, not papered over.
+
+**Correction:** an earlier audit line called `loka-studio/electron/node_modules/` a
+committed-`node_modules` bloat item. Re-checked — it's gitignored, not tracked; the Glob
+that surfaced it was scanning the working tree. Struck in `planning/repo-audit.md`.
+
+---
 ## 2026-05-30 — Crash-recovery queue metabolized; repo-bloat audit
 
 Two housekeeping passes toward the "mature, portfolio-ready, downloadable" goal.

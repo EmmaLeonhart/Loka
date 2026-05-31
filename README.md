@@ -275,7 +275,7 @@ loka install-agent --launch-studio   # Download + launch during setup
 
 **From source:**
 ```bash
-cd loka-studio && flutter run -d chrome
+cd loka-studio/electron && npm install && npm run studio:js
 ```
 
 Studio connects to Loka via HTTP (server mode) or will connect directly via FFI (serverless mode, planned). The FFI layer (`loka-ffi`) will allow Studio to open `.sdb` files without any server process — like how SQLite browsers open database files directly.

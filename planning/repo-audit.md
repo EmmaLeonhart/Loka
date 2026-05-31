@@ -17,9 +17,15 @@ staged as a follow-up so each deletion can be verified against CI (not just loca
   the *working tree*, not history.
 - File counts per top-level dir (largest first):
 
+  > **Update 2026-05-30:** the Flutter Studio under `loka-studio/` was deleted per
+  > Emma's call (B-4 below); `loka-studio/` now holds only `electron/` (the desktop
+  > shell for `web-studio/`). Correction to the table below: `electron/node_modules/`
+  > was **never git-tracked** (it is gitignored — only present on disk), so the
+  > "committed node_modules" line in Category A was a mis-read and is struck.
+
   | dir | files | what it is |
   |---|---:|---|
-  | `loka-studio/` | 92 | **Flutter Studio** (frozen) + committed `electron/node_modules/` |
+  | `loka-studio/` | 92→7 | **Flutter Studio DELETED**; now just `electron/` (shell for `web-studio/`) |
   | `training/` | 60 | training pipeline (live) |
   | `pages/` | 53 | website source (live, deploys to loka.emmaleonhart.com) |
   | `sdks/` | 47 | language SDKs (NPM + Python are the ones Emma still wants) |
@@ -34,12 +40,10 @@ staged as a follow-up so each deletion can be verified against CI (not just loca
 Staged as follow-up queue items; each is a `git rm` + (where relevant) `.gitignore`
 entry, then confirm CI green.
 
-1. **`loka-studio/electron/node_modules/`** — committed `node_modules` (LICENSE/package
-   files for `responselike`, `roarr`, `semver-compare`, `serialize-error`, `type-fest`,
-   `undici-types`, `universalify`, `wrappy`, `yauzl`, …). Never belongs in git; fully
-   regenerable via `npm install` from `electron/package.json`. **Caveat:** confirm the
-   electron wrapper still wants those deps before stripping (it does `npm install` at
-   build time → safe). `git rm -r --cached loka-studio/electron/node_modules` + gitignore.
+1. ~~**`loka-studio/electron/node_modules/`** — committed `node_modules`.~~ **WRONG —
+   not git-tracked.** Re-checked: `git ls-files loka-studio/electron/node_modules/*`
+   returns 0; the dir is gitignored and only present on disk. The Glob that surfaced
+   LICENSE files was scanning the working tree, not the index. No action needed.
 2. **`loka-retrieval-data-stale-20260520/`** — the 2026-05-20 vector-registry forensic
    artifact is already reduced to a 1 KB `conf` husk (the 93.7 MB sled data is gone, and
    the diagnosis is preserved in the 2026-05-20 DEVLOG entry). `git rm -r` it; the
@@ -48,22 +52,22 @@ entry, then confirm CI green.
    U+F03F private-use + `qp`). Almost certainly an accidental commit. Read its bytes to
    confirm it carries nothing, then `git rm`.
 
-## Category B — needs Emma's decision (reverses a deliberate choice)
+## Category B — RESOLVED
 
-4. **The Flutter Studio (`loka-studio/`, ~92 files minus anything shared).** DEVLOG
-   2026-05-17: *"The Flutter Studio is frozen as spec + fallback, not deleted."* The JS
-   Studio (`web-studio/`) is the live path. So the Flutter tree is exactly the "Flutter
-   code that shouldn't be here" Emma flagged — **but it was kept on purpose.** Options:
-   - **(B-i) Delete the Flutter tree entirely** — accept that `web-studio/` is the only
-     Studio going forward; drop the fallback. Biggest single bloat win (~90 files).
-   - **(B-ii) Keep it frozen** — status quo; revisit once `web-studio/` reaches feature
-     parity (the six tabs) and is the documented default.
-   - **(B-iii) Archive it out of the main tree** — move to a `legacy/` dir or a separate
-     branch/tag so history is preserved without cluttering the working tree.
+4. **The Flutter Studio (`loka-studio/`).** ✅ **DONE 2026-05-30 — Emma chose B-i
+   (delete entirely):** *"delete the Flutter Studio tree. We don't need it because
+   everything is an electron."* Removed `loka-studio/{lib,windows,macos,linux,web,test}`,
+   `pubspec.{yaml,lock}`, `.metadata`, `analysis_options.yaml`, `README.md`,
+   `.gitignore`. Kept `loka-studio/electron/` (the desktop shell) — verified it serves
+   `web-studio/` via `run-js.js` (`STUDIO_WEB_ROOT=../../web-studio`), so the running
+   Studio is unaffected. Repointed `electron/server.js` default root to `web-studio/`,
+   updated `main.js`/`package.json`/`README.md`, and removed the Flutter `build-studio`
+   job from `.github/workflows/release.yml`.
 
-   *Recommendation:* B-i once `web-studio/` is confirmed to cover the tabs Emma cares
-   about (Knowledge Graph, SPARQL, Triples, Health, Ontology, Playground). Until then, do
-   nothing — the freeze was a considered call.
+   **Follow-up (TODO.md):** the release no longer ships a built desktop Studio. A new
+   release job must package the Electron Studio into per-platform installers
+   (electron-builder or equivalent), verified on a test tag, before being re-added to the
+   release assets.
 
 ## Category C — investigate before touching
 
@@ -80,9 +84,13 @@ entry, then confirm CI green.
    and run" goal, a history rewrite to drop large historical blobs is a separate,
    higher-risk task — list it in TODO.md, do not attempt inside a work-loop tick.
 
-## Execution order (when unblocked)
+## Execution order
 
-1. Category A items 1–3 (one commit each, CI-verified) — safe, immediate.
-2. Resolve B-4 with Emma → execute the chosen option.
-3. C-5/C-6 investigations → fold results back here.
-4. C-7 (history rewrite) → TODO.md only.
+1. ~~B-4 Flutter deletion~~ ✅ done 2026-05-30.
+2. Category A still pending: A-2 (`loka-retrieval-data-stale-20260520/` husk), A-3
+   (mojibake `\357\200\277qp` file). A-1 was a mis-read (struck). One commit each.
+3. C-5 (`loka-ffi` orphan check — now more likely orphaned since the Flutter FFI
+   consumer is gone; trace remaining consumers before removing), C-6 (stale root-level
+   benchmark JSONs) → fold results back here.
+4. Electron Studio installer release job (see TODO.md) — needs a verified test tag.
+5. C-7 (`.git` history rewrite) → TODO.md only.

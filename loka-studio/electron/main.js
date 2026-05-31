@@ -1,10 +1,9 @@
-// Electron shell for Loka Studio (web build).
+// Electron desktop shell for Loka Studio.
 //
-// Loads the Flutter-web app served by server.js on :8090. This is the
-// "Flutter -> web -> Electron" path: the entire Studio Dart UI,
-// unchanged, running in a desktop Electron window instead of the
-// Flutter desktop embedder. The app talks to the Loka endpoint
-// (default http://localhost:3030) over HTTP, same as the web tab.
+// Loads the JS Studio (web-studio/) served by server.js on :8090,
+// running in a desktop Electron window. The app talks to the Loka
+// endpoint (default http://localhost:3030) over HTTP, same as the
+// browser tab.
 const { app, BrowserWindow } = require('electron');
 const { spawn } = require('child_process');
 const path = require('path');

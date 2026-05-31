@@ -1,22 +1,20 @@
-// Minimal static server for the Flutter web build.
+// Minimal static server for the Loka Studio JS app (web-studio/).
 //
-// Flutter web (CanvasKit) needs `.wasm` served as application/wasm and
-// the SPA to fall back to index.html — python's http.server gets the
-// wasm mime wrong, so we use this ~30-line node server instead. Same
-// origin for the browser tab and the Electron window (both load
-// http://localhost:8090); the app itself talks cross-origin to the
+// Serves the SPA with correct MIME types (incl. `.wasm` as
+// application/wasm) and an index.html fallback so deep links / refresh
+// work. Same origin for the browser tab and the Electron window (both
+// load http://localhost:8090); the app itself talks cross-origin to the
 // Loka endpoint (default http://localhost:3030, CORS '*').
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-// STUDIO_WEB_ROOT lets this same server host the JS Studio
-// (../../web-studio) instead of the frozen Flutter web build
-// (../build/web) — set by the JS-Studio launcher; default keeps the
-// Flutter path working unchanged.
+// STUDIO_WEB_ROOT overrides the served directory; defaults to the
+// web-studio/ sibling (the JS Studio — the only Studio since the
+// Flutter build was removed 2026-05-30).
 const ROOT = process.env.STUDIO_WEB_ROOT
   ? path.resolve(process.env.STUDIO_WEB_ROOT)
-  : path.join(__dirname, '..', 'build', 'web');
+  : path.join(__dirname, '..', '..', 'web-studio');
 const PORT = process.env.STUDIO_WEB_PORT || 8090;
 const MIME = {
   '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript',

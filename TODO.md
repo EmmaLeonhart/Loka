@@ -306,3 +306,17 @@ Benchmark results are tracked automatically by CI. See:
   marker styling so it doesn't fight the series lines, and make sure
   it reads at mobile width. Keep the data correct — only the
   presentation is the problem.
+
+## Electron Loka Studio — desktop installers (added 2026-05-30)
+
+The Flutter Studio was deleted 2026-05-30; Loka Studio is now `web-studio/` (JS) shelled
+by `loka-studio/electron/`. The release pipeline (`.github/workflows/release.yml`) no
+longer ships a built desktop Studio — its Flutter `build-studio` job was removed.
+
+Replace it with a job that packages the Electron Studio into per-platform desktop
+installers (electron-builder or electron-forge): bundle `loka-studio/electron/` +
+`web-studio/`, produce Windows (NSIS `.exe`), Linux (AppImage/`.tar.gz`), macOS
+(`.dmg`/`.app`). Re-add the resulting assets to the `release` job's `files:` list.
+**Must be verified on a throwaway `v*-rc` tag before trusting it** — release.yml is
+tag-triggered, so it cannot be validated by a normal push. Until then releases are
+engine-only. Pairs with the website's "forthcoming .exe installer" line.
