@@ -87,8 +87,10 @@ entry, then confirm CI green.
 ## Execution order
 
 1. ~~B-4 Flutter deletion~~ ✅ done 2026-05-30.
-2. Category A still pending: A-2 (`loka-retrieval-data-stale-20260520/` husk), A-3
-   (mojibake `\357\200\277qp` file). A-1 was a mis-read (struck). One commit each.
+2. Category A: A-2 (`loka-retrieval-data-stale-20260520/` husk) ✅ removed 2026-05-30
+   (the tracked `conf` file; forensic data was already gone, diagnosis preserved in the
+   2026-05-20 DEVLOG entry). A-3 (mojibake `\357\200\277qp` file) still pending — inspect
+   bytes, then `git rm`. A-1 was a mis-read (struck).
 3. C-5 (`loka-ffi` orphan check — now more likely orphaned since the Flutter FFI
    consumer is gone; trace remaining consumers before removing), C-6 (stale root-level
    benchmark JSONs) → fold results back here.

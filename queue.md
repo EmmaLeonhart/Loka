@@ -49,7 +49,7 @@ I'm also gonna say that I think that we have a lot of bloated content that doesn
 Audit in `planning/repo-audit.md`. Flutter Studio **deleted 2026-05-30** (Emma: "everything is an electron") — `loka-studio/` now holds only `electron/` (the shell for `web-studio/`); `release.yml`'s Flutter `build-studio` job removed. Remaining, each its own CI-verified follow-up tick:
 
 - **Electron Studio release packaging** — `release.yml` no longer ships a desktop Studio. Add a job that packages `loka-studio/electron/` + `web-studio/` into per-platform installers (electron-builder), verified on a test tag. Tracked in `TODO.md`.
-- **Safe removals:** `loka-retrieval-data-stale-20260520/` husk; mojibake tracked file `\357\200\277qp`. (The earlier "committed electron/node_modules" item was a mis-read — it's gitignored, not tracked.)
+- **Safe removals:** mojibake tracked file `\357\200\277qp` — inspect its bytes, then `git rm` (deferred only because the byte-inspection needs a clean tool channel). (The `loka-retrieval-data-stale-20260520/` husk was removed 2026-05-30; the earlier "committed electron/node_modules" item was a mis-read — gitignored, not tracked.)
 - **Investigate:** `loka-ffi/` is now more likely orphaned (its Flutter FFI consumer is gone) — trace remaining consumers before removing; stale root-level benchmark/stress JSONs; `.git` 138 MiB pack (history rewrite → TODO.md only).
 
 ---

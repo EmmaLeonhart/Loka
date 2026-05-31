@@ -7,6 +7,16 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-05-30 — Repo-audit cleanup: forensic-artifact husk removed
+
+Small follow-up to the repo-bloat audit. Removed the tracked
+`loka-retrieval-data-stale-20260520/` (just a `conf` husk — the 93.7 MB sled data was
+already gone and the vector-registry diagnosis it once backed is preserved in the
+2026-05-20 entry). Remaining Category-A item (a mojibake-named tracked file) is deferred
+until the byte-inspection it needs can be run on a clean tool channel — not deleted
+blind.
+
+---
 ## 2026-05-30 — Flutter Studio deleted; Loka Studio is now Electron-over-`web-studio/`
 
 Emma's call, executed: *"delete the Flutter Studio tree. We don't need it because
