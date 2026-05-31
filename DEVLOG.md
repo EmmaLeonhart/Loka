@@ -7,6 +7,19 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-05-31 — PyPI publishing docs corrected to trusted-publishing
+
+`docs/SDK_PUBLISHING.md` and `docs/SDK_ACCOUNTS_SETUP.md` told contributors to create a
+`PYPI_TOKEN` GitHub secret and `twine upload` manually — but `publish-sdks.yml`'s
+`publish-python` job uses OIDC **trusted publishing** (`id-token: write` +
+`pypa/gh-action-pypi-publish`), so a token would sit unused. Rewrote both PyPI sections to
+the correct setup: register a *pending trusted publisher* on PyPI (project `loka`, owner
+`EmmaLeonhart`, repo `Loka`, workflow `publish-sdks.yml`, no environment) — no GitHub
+secret. The npm sections are unchanged (that path genuinely uses `NPM_TOKEN`). This is a
+decision-independent SDK-audit cleanup; the license-alignment question (all 5 SDK manifests
+Apache-2.0 vs project AGPL) remains Emma's call.
+
+---
 ## 2026-05-30 — SDK publish-readiness findings written (`planning/sdk-publish-readiness.md`)
 
 Decision-independent half of the SDK publish-readiness audit, for the two targets
