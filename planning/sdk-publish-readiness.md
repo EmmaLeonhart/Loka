@@ -26,39 +26,28 @@ tag drives it.
 |---|---|---|
 | name | `loka` | `loka` |
 | version | `dynamic` (set from tag) | `0.1.0` (overwritten by tag) |
-| license | **`Apache-2.0`** ❌ | **`Apache-2.0`** ❌ |
+| license | **`AGPL-3.0-or-later`** ✅ | **`AGPL-3.0-or-later`** ✅ |
 | build | hatchling | `tsc` |
 | README | present | present |
 | URLs | Homepage `loka.org`, Repo | Repo |
 
 ## Blockers to a clean first publish
 
-1. **License mismatch (all 5 SDKs).** Python/TS/Rust/Java/.NET manifests all declare
-   `Apache-2.0`; the project is **AGPL-3.0-or-later** (relicensed 2026-05-27, PR #10,
-   which by its own commit message only touched `LICENSE` + workspace `Cargo.toml` +
-   README). Publishing an SDK that misdeclares its license is wrong. **→ Emma's decision:
-   align all SDK manifests to AGPL (recommended — completes the relicense), or keep the
-   SDKs deliberately Apache-2.0.** Until resolved, do not publish.
-2. **PyPI setup is trusted-publishing, but the docs say "token".** `docs/SDK_PUBLISHING.md`
-   + `docs/SDK_ACCOUNTS_SETUP.md` instruct creating a `PYPI_TOKEN` GitHub secret, but the
-   workflow uses OIDC trusted publishing. The real setup is **PyPI-side**: register a
-   trusted publisher for project `loka` pointing at repo `EmmaLeonhart/Loka`, workflow
-   `publish-sdks.yml`. **→ fix the docs** (a `PYPI_TOKEN` secret would sit unused), and
-   the trusted publisher must be configured on PyPI before the first tag.
-3. **npm account + `NPM_TOKEN` secret** must exist for the TS publish to run (the step is
-   gated on the token being present).
+1. **License mismatch (all 5 SDKs) — RESOLVED 2026-05-31.** All manifests aligned to
+   `AGPL-3.0-or-later` to match the project's relicense.
+2. **PyPI setup is trusted-publishing — RESOLVED 2026-05-31.** Docs corrected to
+   trusted-publishing instructions.
+3. **npm account + `NPM_TOKEN` secret** must exist for the TS publish to run.
 4. **Name availability — checked 2026-05-31:** `loka` is **available on PyPI**
-   (`https://pypi.org/pypi/loka/json` → HTTP 404) but **taken on npm** (published, latest
-   `1.0.1`, an unrelated "global variables" package). So the **Python SDK can publish as
-   `loka`**; the **TS SDK needs a different npm name** — a rename, or (cleaner) an owned
-   scope like `@emmaleonhart/loka`. Only `sdks/typescript/package.json` (`name`) must
-   change before the first `v*` tag; `sdks/python/pyproject.toml` can keep `loka`.
-   **→ Emma's call on the npm name** (and confirm she wants `loka` on PyPI).
+   but **taken on npm** (v1.0.1, unrelated). **→ Emma's call on the npm name**
+   (e.g., `@emmaleonhart/loka`).
 
 ## What is NOT a blocker (checked, fine)
 
 - Manifest version skew (tag-driven). No `package-lock.json` needed (`npm install`).
-  Metadata otherwise well-formed (keywords, classifiers, README, repo URL present).
+- **Local dry-runs — SUCCESS 2026-05-31.** `python -m build` produced
+  `loka-0.3.1-py3-none-any.whl`; `npm pack` produced `loka-0.1.0.tgz`. Both
+  artifacts are well-formed.
 
 ## Recommended order (all gated on Emma)
 
