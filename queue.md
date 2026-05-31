@@ -44,6 +44,16 @@ I am going to say that I think that Loka Studio, as it is right now, is relative
 
 I'm also gonna say that I think that we have a lot of bloated content that doesn't really belong in the repository, and I'm not sure why it is still there. For example, I believe our GitHub repos. There's a lot of Flutter code, but there shouldn't be Flutter code, since I'm pretty sure we just skipped it there. We should be doing an audit of all the stuff in the repository that we might be able to potentially remove and not cause issues. 
 
+### Repo audit — findings recorded, awaiting one decision
+
+Audit done and written up: `planning/repo-audit.md` (measured 2026-05-30). Concrete plan:
+
+- **Safe to remove (mechanical, follow-up ticks, CI-verified each):** committed `loka-studio/electron/node_modules/`; the `loka-retrieval-data-stale-20260520/` husk; the mojibake tracked file `\357\200\277qp`.
+- **NEEDS EMMA'S DECISION:** the Flutter Studio tree (`loka-studio/`, ~92 files — the single largest dir). This *is* the "Flutter code that shouldn't be here", but DEVLOG 2026-05-17 shows it was deliberately frozen as a fallback after `web-studio/` (the live JS Studio) replaced it. Delete it entirely (B-i), keep it frozen (B-ii), or archive to `legacy/` (B-iii)? Recommend B-i once `web-studio/` is confirmed to cover the six Studio tabs.
+- **Investigate before touching:** is `loka-ffi/` now orphaned (no Flutter consumer)?; stale root-level benchmark/stress JSONs; `.git` 138 MiB pack (history rewrite → TODO.md only).
+
+Next autonomous step is blocked on the Flutter decision; the Category-A removals can proceed independently.
+
 ---
 
 ## Passive follow-ups

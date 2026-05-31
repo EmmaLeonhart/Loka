@@ -7,6 +7,30 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-05-30 — Crash-recovery queue metabolized; repo-bloat audit
+
+Two housekeeping passes toward the "mature, portfolio-ready, downloadable" goal.
+
+**Recovery metabolized.** The 2026-05-20 post-crash RESTART NOTICE + pasted chat
+archive (619-line `crashed_session_2026-05-20.md` + ~200 lines of `queue.md`) was
+verified resolved and retired: the sled-rehydrate vector-registry bug it tracked is
+root-caused, fixed (`37ef41e` + the `intern_synced` family), and regression-tested
+(`declare_and_insert_keeps_dict_and_ps_in_sync`, `sparql_insert_data_persists_term_strings`).
+The diagnosis moved into the 2026-05-20 entry below; the crash file and the demo-state
+narration were deleted. `queue.md` now reads as live work, not crash archaeology.
+
+**Repo-bloat audit** (`planning/repo-audit.md`). 458 tracked files; `.git` pack 138.7
+MiB. Largest working-tree offender is `loka-studio/` (92 files) — the **Flutter Studio**,
+which DEVLOG 2026-05-17 records as *deliberately frozen as a fallback* after the JS
+`web-studio/` (9 files) replaced it. So the "Flutter code that shouldn't be here" was a
+considered retention, not an accident → its removal is staged as Emma's decision (delete
+/ keep frozen / archive to `legacy/`), not an autonomous delete. Mechanically-safe
+removals are itemized separately: committed `loka-studio/electron/node_modules/`, the
+`loka-retrieval-data-stale-20260520/` husk, and a mojibake tracked file. `loka-ffi`
+orphan-status and stale root-level benchmark JSONs are flagged for investigation; a
+`.git` history rewrite is pushed to TODO.md as higher-risk and out of work-loop scope.
+
+---
 ## 2026-05-20 — Vector-registry corruption root-caused and fixed; crash + recovery metabolized
 
 A restart of the retrieval engine (`:3031`) exposed a real persistence bug, then the
