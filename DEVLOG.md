@@ -7,14 +7,16 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
-## 2026-05-30 — Repo-audit cleanup: forensic-artifact husk removed
+## 2026-05-30 — Repo-audit Category-A cleanup complete
 
-Small follow-up to the repo-bloat audit. Removed the tracked
+Finished the mechanical removals from the repo-bloat audit. Removed the tracked
 `loka-retrieval-data-stale-20260520/` (just a `conf` husk — the 93.7 MB sled data was
 already gone and the vector-registry diagnosis it once backed is preserved in the
-2026-05-20 entry). Remaining Category-A item (a mojibake-named tracked file) is deferred
-until the byte-inspection it needs can be run on a clean tool channel — not deleted
-blind.
+2026-05-20 entry), and a stray root-level file with a mojibake name (`U+F03F` + `qp`)
+after confirming it was a 0-byte empty file (git empty-blob `e69de29`). The earlier
+"committed electron/node_modules" audit line was a mis-read (gitignored, not tracked) and
+was struck. Category A is now clear; remaining audit work is the Electron Studio release
+packaging (needs a test tag) and the `loka-ffi` orphan check.
 
 ---
 ## 2026-05-30 — Flutter Studio deleted; Loka Studio is now Electron-over-`web-studio/`
