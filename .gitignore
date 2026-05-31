@@ -78,3 +78,6 @@ loka-retrieval-data-stale-20260520/db
 /benchmark_results.json
 /storage_benchmark_results.json
 /stress_test_report.json
+sdks/python/dist/loka-0.3.1-py3-none-any.whl
+sdks/python/dist/loka-0.3.1.tar.gz
+sdks/typescript/loka-0.1.0.tgz
