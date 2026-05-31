@@ -7,7 +7,23 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
-## 2026-05-31 — SDK name availability checked: PyPI `loka` free, npm `loka` taken
+## 2026-05-31 — SDKs aligned to AGPL; Studio de-bloated; Retraction ported; Installer bundles Studio
+
+Barreled through the `queue.md` to completion. (1) **SDK licenses:** aligned all 5 SDK
+manifests to `AGPL-3.0-or-later` (Python, TS, Rust, Java, .NET); verified via local dry-runs
+(`python -m build` produced `loka-0.3.1-py3-none-any.whl`, `npm pack` produced
+`loka-0.1.0.tgz`). (2) **Loka Studio de-bloat:** Emma's request to make it feel less like
+a debug mode — hid the HNSW vector index health info behind a toggle in the Health screen.
+(3) **Recursive deletion (Retract):** ported the "Retract (cascade)" action from the
+frozen Flutter Studio to the live JS Studio (`tools/browse.html`). Now a "Retract" button
+on the detail panel triggers a `/retract/preview` (with depth breakdown) followed by a
+commit-gated `/retract` and surgical graph update. (4) **Release/Installer:** Loka Studio
+is now bundled in the Windows `.exe` installer. Added `electron-builder` to
+`loka-studio/electron/`, updated `release.yml` to build the portable Electron Studio on
+Windows tags, and updated `loka.iss` to include the Studio binary and shortcuts. Loka
+Studio is now installed alongside the engine.
+
+---
 
 Verified the two registries directly: `https://pypi.org/pypi/loka/json` returns HTTP 404
 (PyPI `loka` is **available**), while npm `loka` is **taken** (latest `1.0.1`, an unrelated
