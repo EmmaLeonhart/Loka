@@ -48,12 +48,21 @@ jobs:
       - name: Build release binary
         run: cargo build --release --target ${{ matrix.target }} -p loka-cli
 
+      - name: Build Loka Studio (Windows)
+        if: contains(matrix.target, 'windows')
+        run: |
+          cd loka-studio/electron
+          npm install
+          npm run dist
+
       - name: Package (Windows)
         if: contains(matrix.target, 'windows')
         shell: bash
         run: |
           cd target/${{ matrix.target }}/release
           7z a ../../../${{ matrix.archive }} ${{ matrix.artifact }}
+          # Also package the Studio portable exe
+          cp ../../../loka-studio/electron/dist/*.exe ../../../loka-studio-windows-x64.exe
 
       - name: Build Windows installer (Inno Setup)
         if: contains(matrix.target, 'windows')
@@ -62,11 +71,12 @@ jobs:
           $version = "${{ github.ref_name }}".TrimStart('v')
           if (-not $version) { $version = "0.0.0-dev" }
           $binary  = "target\${{ matrix.target }}\release\loka.exe"
+          $studio  = Get-ChildItem "loka-studio\electron\dist\*.exe" | Select-Object -First 1 -ExpandProperty FullName
           $iscc    = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) {
             choco install innosetup -y --no-progress
           }
-          & $iscc "installer\loka.iss" "/DLokaVersion=$version" "/DLokaBinary=$binary"
+          & $iscc "installer\loka.iss" "/DLokaVersion=$version" "/DLokaBinary=$binary" "/DLokaStudio=$studio"
           if ($LASTEXITCODE -ne 0) { throw "ISCC failed with exit code $LASTEXITCODE" }
           Copy-Item "dist\installer\loka-setup-x64.exe" "loka-setup-x64.exe" -Force
 

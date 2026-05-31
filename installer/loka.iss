@@ -18,6 +18,10 @@
   #define LokaBinary "target\release\loka.exe"
 #endif
 
+#ifndef LokaStudio
+  #define LokaStudio "loka-studio\electron\dist\Loka Studio.exe"
+#endif
+
 #ifndef SourceRoot
   #define SourceRoot ".."
 #endif
@@ -79,14 +83,17 @@ Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription:
 
 [Files]
 Source: "{#LokaBinary}";        DestDir: "{app}"; DestName: "loka.exe"; Flags: ignoreversion; Components: engine
+Source: "{#LokaStudio}";        DestDir: "{app}"; DestName: "Loka Studio.exe"; Flags: ignoreversion; Components: engine
 Source: "installer\models.toml"; DestDir: "{app}"; Flags: ignoreversion; Components: engine
 Source: "LICENSE";              DestDir: "{app}"; Flags: ignoreversion; Components: engine
 Source: "README.md";            DestDir: "{app}"; Flags: ignoreversion; Components: engine
 
 [Icons]
+Name: "{group}\Loka Studio"; Filename: "{app}\Loka Studio.exe"; WorkingDir: "{app}"
 Name: "{group}\Loka shell";  Filename: "cmd.exe"; Parameters: "/k ""{app}\loka.exe"" --help"; WorkingDir: "{app}"
 Name: "{group}\Loka website"; Filename: "https://loka.emmaleonhart.com"
 Name: "{group}\Uninstall Loka"; Filename: "{uninstallexe}"
+Name: "{autodesktop}\Loka Studio"; Filename: "{app}\Loka Studio.exe"; WorkingDir: "{app}"; Tasks: desktopicon
 Name: "{autodesktop}\Loka shell"; Filename: "cmd.exe"; Parameters: "/k ""{app}\loka.exe"" --help"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Registry]

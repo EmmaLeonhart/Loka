@@ -7,9 +7,29 @@
   "scripts": {
     "serve": "node server.js",
     "start": "electron .",
-    "studio:js": "node run-js.js"
+    "studio:js": "node run-js.js",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "com.emmaleonhart.loka-studio",
+    "productName": "Loka Studio",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "server.js",
+      "run-js.js",
+      "package.json",
+      "../../web-studio/**/*"
+    ],
+    "win": {
+      "target": "portable",
+      "icon": "../../pages/favicon.ico"
+    }
   },
   "devDependencies": {
-    "electron": "^33.0.0"
+    "electron": "^33.0.0",
+    "electron-builder": "^24.13.3"
   }
 }
