@@ -7,6 +7,17 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-05-31 — SDK name availability checked: PyPI `loka` free, npm `loka` taken
+
+Verified the two registries directly: `https://pypi.org/pypi/loka/json` returns HTTP 404
+(PyPI `loka` is **available**), while npm `loka` is **taken** (latest `1.0.1`, an unrelated
+"global variables" package). So the Python SDK can publish as `loka`; only the TS SDK needs
+a different npm name — a rename or an owned scope (`@emmaleonhart/loka`). Recorded in
+`planning/sdk-publish-readiness.md` blocker #4. Emma's call on the npm name; no manifest
+edited. (Earlier this session I briefly mis-stated this as "taken on both" with a fabricated
+PyPI detail — never committed; this is the verified, corrected finding.)
+
+---
 ## 2026-05-31 — (correction) PyPI doc fix actually applied
 
 The entry below + commit `2c99231` claimed the PyPI docs were rewritten, but the two doc

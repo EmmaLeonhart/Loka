@@ -47,10 +47,13 @@ tag drives it.
    the trusted publisher must be configured on PyPI before the first tag.
 3. **npm account + `NPM_TOKEN` secret** must exist for the TS publish to run (the step is
    gated on the token being present).
-4. **Name availability — unverified.** `loka` on PyPI and on npm are both common-ish
-   names; neither can be confirmed free from here. **→ Emma / a quick registry check.**
-   (If taken: PyPI has no scopes — would need a rename, e.g. `loka-client`; npm could use
-   a scope like `@emmaleonhart/loka`.)
+4. **Name availability — checked 2026-05-31:** `loka` is **available on PyPI**
+   (`https://pypi.org/pypi/loka/json` → HTTP 404) but **taken on npm** (published, latest
+   `1.0.1`, an unrelated "global variables" package). So the **Python SDK can publish as
+   `loka`**; the **TS SDK needs a different npm name** — a rename, or (cleaner) an owned
+   scope like `@emmaleonhart/loka`. Only `sdks/typescript/package.json` (`name`) must
+   change before the first `v*` tag; `sdks/python/pyproject.toml` can keep `loka`.
+   **→ Emma's call on the npm name** (and confirm she wants `loka` on PyPI).
 
 ## What is NOT a blocker (checked, fine)
 
@@ -63,7 +66,7 @@ tag drives it.
    across the 5 manifests, CI-verified.
 2. Fix the PyPI docs (trusted-publishing, not token) and configure the trusted publisher
    on PyPI; create the npm account + `NPM_TOKEN`.
-3. Confirm `loka` name availability on both registries.
+3. ✅ Checked 2026-05-31 — PyPI `loka` available (404), npm `loka` taken (v1.0.1). Python can keep `loka`; pick a new npm name / scope for the TS SDK (blocker #4).
 4. Local dry-runs (`python -m build` + `twine check`; `npm pack`) — light, can run on the
    laptop — to confirm a clean artifact before the first `v*` tag.
 5. Tag → publish. (First publish is the irreversible step; needs Emma's explicit go.)
