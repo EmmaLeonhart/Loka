@@ -59,6 +59,27 @@ The SDK is functionally complete (3 classes, ~400 LOC). Build migrated from Mave
 
 ---
 
+## GPU-gated follow-ups & watched blockers (relocated from queue.md 2026-06-01)
+
+These are not actionable on the thermally-constrained training laptop without a
+sustained GPU run or a large risky ingest; they wait for cloud GPU or a donor.
+
+- **Donor clean-Adam 10-epoch v14** via `tools/contribute_v14_training.py` —
+  explicit successor experiment per paper §5.12. GPU-gated.
+- **Clean v12 retrain** — epoch-4 best 226.86 lost to shared-GPU contention.
+  GPU-gated.
+- **Propgen test (Q42 seed) on v11–v14** — deferred since v11 due to GPU
+  fragility during shared use. GPU-gated.
+- **Engine bug #1 — sustained-ingest verification (open, watched).** Probable
+  fix shipped in `c36760b` (explicit `sled::Config`: 256 MB cache, 2 s flush,
+  `Mode::HighThroughput`). Reopen-in-place verified 2026-05-13 (WAL replay
+  recovered 32,877,248 triples). Residual question: does the tuning hold against
+  *fresh* sustained ingest past 32.88 M triples? If a re-test ingest panics at
+  the next plateau, escalate to RocksDB migration (sled 0.34 unmaintained since
+  2021). Not blocking under the current base+retrieval pivot.
+
+---
+
 ## Future Versions
 
 ### AI Agent Installer (remaining)
@@ -98,9 +119,21 @@ The SDK is functionally complete (3 classes, ~400 LOC). Build migrated from Mave
 - [ ] Iterate CLI health output format based on real agent usage
 - [ ] Loka Studio health dashboard as Flutter landing page: overall status, per-index cards, action buttons
 
-### SDK Publishing
-- [ ] Python SDK → PyPI
-- [ ] TypeScript SDK → npm
+### SDK Publishing — EMMA-GATED (audit complete 2026-05-31, verdict in `planning/sdk-publish-readiness.md`)
+
+Audit done; licenses aligned to `AGPL-3.0-or-later`; local dry-runs clean. First
+publish is the irreversible step and needs Emma's explicit go + these setups:
+
+- **npm:** create the npm account + add `NPM_TOKEN` GitHub secret. The name `loka`
+  is **taken on npm** (unrelated v1.0.1) → Emma picks a new name/scope
+  (e.g. `@emmaleonhart/loka`) for the TS SDK.
+- **PyPI:** register the *pending trusted publisher* (project `loka`, owner
+  `EmmaLeonhart`, repo `Loka`, workflow `publish-sdks.yml`, no environment). No
+  token secret — it uses OIDC. `loka` is **available on PyPI**.
+- Publish fires on a `v*` git tag.
+
+- [ ] Python SDK → PyPI (name available; needs trusted-publisher registration)
+- [ ] TypeScript SDK → npm (needs account + `NPM_TOKEN` + a non-`loka` name)
 - [ ] Rust SDK → crates.io
 - [ ] C# SDK → NuGet
 - [ ] Go SDK → tag for Go modules

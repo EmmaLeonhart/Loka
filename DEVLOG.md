@@ -7,6 +7,25 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-06-01 — Queue drained to its pinned tail; autonomous loop restarted
+
+Barreled through the actionable `queue.md`. (1) **Stale-block cleanup:** deleted the
+"Completed in this session (2026-05-31)" block — those five items were already in the
+DEVLOG entry below, so leaving them checked in `queue.md` violated the delete-don't-check
+rule. (2) **SDK publish-readiness step 5 (surface verdict):** the audit (steps 1–4) was
+complete; surfaced the verdict — first publish is Emma-gated and needs: an npm account +
+`NPM_TOKEN` secret + a non-`loka` npm name (taken; PyPI `loka` is free), and a PyPI
+pending-trusted-publisher registration (OIDC, no token). Recorded in `TODO.md`'s SDK
+Publishing section; full verdict stays in `planning/sdk-publish-readiness.md`. (3)
+**Relocated blocked/horizon items:** engine-bug #1 ingest-verification watch and the
+GPU-gated training follow-ups (donor clean-Adam v14, clean v12 retrain, v11–v14 propgen)
+moved out of `queue.md` into `TODO.md` — `queue.md` is "right now," and these wait on
+cloud GPU / a donor, not on this thermally-constrained laptop. `queue.md` now holds only
+its pinned cron-management tail. (4) **Autonomous loop:** (re)started the three
+session-local crons — work-loop `3 * * * *`, auto-flush `15 * * * *`, status-report
+`42 * * * *` — to promote the next unblocked `TODO.md` items each tick.
+
+---
 ## 2026-05-31 — SDKs aligned to AGPL; Studio de-bloated; Retraction ported; Installer bundles Studio
 
 Barreled through the `queue.md` to completion. (1) **SDK licenses:** aligned all 5 SDK

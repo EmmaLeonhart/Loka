@@ -6,49 +6,34 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ---
 
-## Completed in this session (2026-05-31)
-
-- [x] **SDK license alignment** — All 5 SDK manifests aligned to `AGPL-3.0-or-later`.
-- [x] **SDK local dry-runs** — `python -m build` and `npm pack` successful.
-- [x] **Loka Studio de-bloat** — HNSW/embedding debug surface hidden behind a toggle in the Health screen.
-- [x] **Recursive deletion (Retract)** — Ported the "Retract (cascade)" action to the JS Studio (`tools/browse.html`).
-- [x] **Electron Studio release packaging** — Added `electron-builder` and updated `release.yml` + `loka.iss` to bundle the Studio in the Windows installer.
-
----
-
-## Open engine bugs
-
-### Engine bug #1 sustained-ingest verification (open)
-
-Probable fix shipped in `c36760b`: explicit `sled::Config` with 256 MB cache, 2 s flush, `Mode::HighThroughput`. Reopen-in-place verified 2026-05-13 (WAL replay recovered 32,877,248 triples). Residual question: does the tuning also hold against fresh sustained ingest past 32.88 M triples? If a re-test ingest panics at the next plateau, escalate to RocksDB migration (sled 0.34 unmaintained since 2021). Not blocking under the current base+retrieval pivot.
+The actionable queue is drained. Remaining work is either GPU-gated (v11–v14
+training, propgen tests, clean v12 retrain, donor clean-Adam v14) or Emma-gated
+(SDK first publish). The autonomous work-loop cron promotes the next
+genuinely-unblocked, bounded `TODO.md` item into this file each tick — see
+`TODO.md` for the horizon and `planning/sdk-publish-readiness.md` for the
+publish verdict.
 
 ---
 
-## SDK publish-readiness audit — Python (PyPI) + TypeScript (npm)
+## Pinned tail — autonomous-loop cron management
 
-Steps:
+These two items are always the last in the queue (autonomous-loop playbook §d):
 
-1. [x] **Current-state read.** Full findings in `planning/sdk-publish-readiness.md`.
-2. [x] **Gap list:** for each SDK, the concrete blockers to a clean first publish. (2026-05-31: License mismatch fixed, PyPI docs fixed).
-3. [x] **Local dry-run (no upload):** `python -m build` and `npm pack` success (2026-05-31).
-4. [x] **Write findings** to `planning/sdk-publish-readiness.md`.
-5. [ ] **STOP before publishing.** Surface the readiness verdict + the accounts/secrets Emma must set up.
-
----
-
-## Passive follow-ups
-
-- **Donor clean-Adam 10-epoch v14** via `tools/contribute_v14_training.py` — explicit successor experiment per paper §5.12. GPU-gated.
-- **Clean v12 retrain** — epoch-4 best 226.86 lost to shared-GPU contention. GPU-gated.
-- **Propgen test (Q42 seed) on v11–v14** — deferred since v11 due to GPU fragility during shared use. GPU-gated.
+1. **Ensure the three crons are running** — work-loop (`3 * * * *`), auto-flush
+   (`15 * * * *`), status-report (`42 * * * *`). Start them if this session
+   never did; restart them if a planning burst / queue re-fill killed them.
+2. **Run the status-report action once more, independently** — an end-of-session
+   summary of everything that happened this session.
 
 ---
 
 ## Reference
 
-- **`TODO.md`** — longer-horizon work.
+- **`TODO.md`** — longer-horizon work (includes the now-relocated engine-bug #1
+  ingest-verification watch and the GPU-gated training follow-ups).
 - **`DEVLOG.md`** — narrative history.
 - **`status.md`** — current operational state.
 - **`planning/world-model-thesis.md`** — canonical vision.
 - **`planning/cascade-retraction.md`** — spec for the shipped retraction system.
 - **`planning/base-retrieval.md`** — spec for the shipped base+retrieval pivot.
+- **`planning/sdk-publish-readiness.md`** — SDK publish verdict (Emma-gated).
