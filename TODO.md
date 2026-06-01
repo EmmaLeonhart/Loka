@@ -83,7 +83,6 @@ sustained GPU run or a large risky ingest; they wait for cloud GPU or a donor.
 ### AI Agent Installer (remaining)
 - [ ] End-to-end test: fresh install → insert → query → verify
 - [ ] Serverless mode testing (no `--serve`, just create the `.sdb`)
-- [ ] Agent-consumable structured output (JSON mode for programmatic setup)
 
 ### HNSW Traversal via SPARQL Property Paths
 - [ ] Greedy descent + beam search semantics from graph structure and property path evaluation

@@ -7,6 +7,23 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-06-01 — install-agent `--json`: agent-consumable structured setup output
+
+Work-loop tick. Promoted the AI Agent Installer "agent-consumable structured output (JSON
+mode for programmatic setup)" TODO. Added a `--json` flag to `loka install-agent`. It still
+performs the real setup side-effects (creates the `.sdb` data dir, writes the
+`<name>_loka_notes.md` file) but suppresses the human `println!`s and emits one JSON object
+— `{name, data_dir, notes_file, port, auth, dimensions, metric, served, studio_launched,
+serve_command}` — then returns. Design call grounded in the TODO wording "for programmatic
+setup": `--json` does NOT start the blocking server or launch Studio (the JSON includes the
+`serve_command` to run yourself); documented in the flag help. Verified: release build
+clean; ran `loka install-agent probe-db --port 4040 --dimensions 512 --passcode secret
+--json` → valid JSON with correct fields (auth=enabled, served=false, serve_command carries
+the passcode), and confirmed the data dir + notes file were created; text mode unregressed
+(`--no-serve` still prints the human report); `cargo test -p loka-cli` clean (binary crate,
+0 tests). Same serde_json pattern as the earlier `loka health --json`.
+
+---
 ## 2026-06-01 — Java SDK: connection retry logic with configurable timeouts
 
 Work-loop tick. Promoted the Java SDK "connection retry logic with configurable timeouts"

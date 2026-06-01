@@ -153,6 +153,13 @@ enum Commands {
         /// Launch Loka Studio after setup.
         #[arg(long)]
         launch_studio: bool,
+
+        /// Emit the setup result as JSON for programmatic agent consumption.
+        /// Still creates the database and writes the notes file, but prints a
+        /// single JSON object describing the setup and does NOT start the
+        /// blocking server or launch Studio (run `loka serve` yourself).
+        #[arg(long)]
+        json: bool,
     },
     /// Start the MCP (Model Context Protocol) server for AI agents.
     ///
@@ -691,31 +698,36 @@ async fn main() -> anyhow::Result<()> {
             metric,
             no_serve,
             launch_studio,
+            json,
         } => {
             let data_dir = format!("./{}", name);
             let notes_file = format!("{}_loka_notes.md", name);
 
-            println!("# Loka Agent Installer");
-            println!();
-            println!("Setting up database: {}", name);
-            println!("  Data directory: {}", data_dir);
-            println!("  Port: {}", port);
-            println!(
-                "  Authentication: {}",
-                if passcode.is_some() {
-                    "enabled"
-                } else {
-                    "none"
-                }
-            );
-            println!("  Default vector dimensions: {}", dimensions);
-            println!("  Distance metric: {}", metric);
-            println!();
+            if !json {
+                println!("# Loka Agent Installer");
+                println!();
+                println!("Setting up database: {}", name);
+                println!("  Data directory: {}", data_dir);
+                println!("  Port: {}", port);
+                println!(
+                    "  Authentication: {}",
+                    if passcode.is_some() {
+                        "enabled"
+                    } else {
+                        "none"
+                    }
+                );
+                println!("  Default vector dimensions: {}", dimensions);
+                println!("  Distance metric: {}", metric);
+                println!();
+            }
 
             // Create the persistent store
             let ps = loka_core::PersistentStore::open(&data_dir)?;
             ps.flush()?;
-            println!("[OK] Database created at {}", data_dir);
+            if !json {
+                println!("[OK] Database created at {}", data_dir);
+            }
 
             // Generate notes file
             let auth_note = match &passcode {
@@ -798,6 +810,28 @@ Loka Agent Installer v0.1.0
             );
 
             std::fs::write(&notes_file, &notes)?;
+
+            // Programmatic-setup mode: emit a single JSON object describing the
+            // setup and stop here (no blocking server, no Studio launch).
+            if json {
+                let serve_command =
+                    format!("loka serve --port {} --data-dir {}{}", port, data_dir, serve_flag);
+                let result = serde_json::json!({
+                    "name": name,
+                    "data_dir": data_dir,
+                    "notes_file": notes_file,
+                    "port": port,
+                    "auth": if passcode.is_some() { "enabled" } else { "none" },
+                    "dimensions": dimensions,
+                    "metric": metric,
+                    "served": false,
+                    "studio_launched": false,
+                    "serve_command": serve_command,
+                });
+                println!("{}", serde_json::to_string_pretty(&result)?);
+                return Ok(());
+            }
+
             println!("[OK] Notes written to {}", notes_file);
 
             if launch_studio {
