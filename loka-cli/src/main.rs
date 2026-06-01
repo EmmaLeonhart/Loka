@@ -814,8 +814,10 @@ Loka Agent Installer v0.1.0
             // Programmatic-setup mode: emit a single JSON object describing the
             // setup and stop here (no blocking server, no Studio launch).
             if json {
-                let serve_command =
-                    format!("loka serve --port {} --data-dir {}{}", port, data_dir, serve_flag);
+                let serve_command = format!(
+                    "loka serve --port {} --data-dir {}{}",
+                    port, data_dir, serve_flag
+                );
                 let result = serde_json::json!({
                     "name": name,
                     "data_dir": data_dir,
