@@ -7,6 +7,23 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-06-01 — Benchmarks page: de-crowded release-milestone markers
+
+Work-loop tick. Promoted the benchmarks-chart fix Emma flagged 2026-05-16 (it was the
+cleanest unblocked, bounded, verifiable `TODO.md` item). On `pages/benchmarks/index.html`
+the Chart.js release markers were full-saturation red dashed lines with all pills pinned to
+one edge, so during the early frequent-release period the pills piled on top of each other
+and on the bottom (purple) data series — `v0`/`v0.3.7` rendered as one unreadable blob.
+Rewrote `buildReleaseAnnotations` to (1) stagger clustered labels — alternate top/bottom
+and cascade a vertical offset by how deep a marker is into a cluster (cluster = markers
+within `~len/18` day-indices), and (2) lighten the styling (line opacity 1.0→0.30,
+borderWidth 2→1, pill font 10→9, smaller padding) so markers stop fighting the series.
+Data untouched — presentation only. Render-verified with a new Playwright harness
+(`tools/render_benchmarks.py`) at 1280px and 390px against live data: all five markers
+(v0.3.3, v0.3.4, v0.3.5, v0.3.6, v0.3.7, v0.4.0) are now legible and non-overlapping at
+both widths. CI green pre-existing; this is a static-page change with no test impact.
+
+---
 ## 2026-06-01 — Queue drained to its pinned tail; autonomous loop restarted
 
 Barreled through the actionable `queue.md`. (1) **Stale-block cleanup:** deleted the

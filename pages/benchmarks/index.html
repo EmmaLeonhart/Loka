@@ -298,33 +298,45 @@
         });
     }
 
-    // Build Chart.js annotation objects for release markers
+    // Build Chart.js annotation objects for release markers.
+    // Markers that fall close together (common in the early, frequent-release
+    // period) would otherwise pile their pills on top of each other and on the
+    // bottom data series. So we stagger clustered labels: alternate top/bottom
+    // and cascade a vertical offset by how deep we are into a cluster. The
+    // dashed lines are kept faint so they don't fight the series lines.
     function buildReleaseAnnotations(dailyEntries) {
         var annotations = {};
-        var releaseColors = ['#f85149', '#ff7b72', '#ffa198'];
-        var colorIdx = 0;
+        // Two markers closer than `gap` day-indices are treated as a cluster
+        // and stacked vertically rather than left side-by-side.
+        var gap = Math.max(2, Math.round(dailyEntries.length / 18));
+        var prevIdx = -9999;
+        var depth = 0; // position within the current cluster (0 = first marker)
         dailyEntries.forEach(function(day, i) {
             if (day.releases.length === 0) return;
-            var label = day.releases.join(', ');
+            depth = (i - prevIdx < gap) ? depth + 1 : 0;
+            prevIdx = i;
+            var top = (depth % 2 === 0);      // alternate top / bottom within a cluster
+            var tier = Math.floor(depth / 2); // push further from the edge as the cluster deepens
+            var yAdjust = (top ? 1 : -1) * (6 + tier * 18);
             annotations['release_' + i] = {
                 type: 'line',
                 xMin: i,
                 xMax: i,
-                borderColor: releaseColors[colorIdx % releaseColors.length],
-                borderWidth: 2,
-                borderDash: [6, 3],
+                borderColor: 'rgba(248, 81, 73, 0.30)', // faint: stops fighting the series lines
+                borderWidth: 1,
+                borderDash: [4, 4],
                 label: {
                     display: true,
-                    content: label,
-                    position: 'start',
-                    backgroundColor: 'rgba(248, 81, 73, 0.85)',
+                    content: day.releases.join(', '),
+                    position: top ? 'end' : 'start',
+                    yAdjust: yAdjust,
+                    backgroundColor: 'rgba(248, 81, 73, 0.78)',
                     color: '#fff',
-                    font: {size: 10, weight: 'bold'},
-                    padding: {top: 2, bottom: 2, left: 4, right: 4},
+                    font: {size: 9, weight: 'bold'},
+                    padding: {top: 1, bottom: 1, left: 3, right: 3},
                     borderRadius: 3
                 }
             };
-            colorIdx++;
         });
         return annotations;
     }

@@ -6,9 +6,9 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ---
 
-The actionable queue is drained. Remaining work is either GPU-gated (v11–v14
-training, propgen tests, clean v12 retrain, donor clean-Adam v14) or Emma-gated
-(SDK first publish). The autonomous work-loop cron promotes the next
+The actionable queue is drained. Remaining work is either GPU-gated
+(v11–v14 training, propgen tests, clean v12 retrain, donor clean-Adam v14) or
+Emma-gated (SDK first publish). The autonomous work-loop cron promotes the next
 genuinely-unblocked, bounded `TODO.md` item into this file each tick — see
 `TODO.md` for the horizon and `planning/sdk-publish-readiness.md` for the
 publish verdict.
