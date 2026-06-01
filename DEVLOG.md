@@ -7,6 +7,28 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-06-01 — Java SDK: connection retry logic with configurable timeouts
+
+Work-loop tick. Promoted the Java SDK "connection retry logic with configurable timeouts"
+TODO. `LokaClient.send()` previously threw on the first `IOException` with a hardcoded 10s
+connect timeout. Added three backward-compatible constructors (`LokaClient(String)`
+unchanged; `+(String, Duration connectTimeout, int maxRetries)`; full
+`+(String, Duration, int, Duration backoff)`) with defaults 10s / 2 retries / 250ms linear
+backoff, exposed as public constants. `send()` now retries on transient connection
+`IOException` and on transient HTTP 502/503/504 up to `maxRetries`, with linearly-growing
+backoff; it does NOT retry 4xx or 500 (not transient), and re-interrupts on
+`InterruptedException`. Added 6 JUnit tests via the existing embedded-`HttpServer` harness
+(503→200 succeeds with exactly one retry; persistent 503 exhausts to maxRetries+1 attempts
+and throws 503; 4xx and 500 are not retried; maxRetries=0 disables retry; `getMaxRetries`
+reflects config). Verified: `gradlew test` BUILD SUCCESSFUL, LokaClientTest 20/20 pass
+(0 failures/errors/skipped), all 6 new tests present in the report.
+
+Note (local env, not a code/CI issue): this box's default `JAVA_HOME` points at JDK 25.0.1,
+which Gradle 8.12's bundled Kotlin can't parse (`IllegalArgumentException: 25.0.1`). Ran
+the suite with `JAVA_HOME` pointed at the installed JDK 21. CI is unaffected — `ci.yml`
+pins JDK 17 via `actions/setup-java`, and the new code uses only Java 11+ APIs.
+
+---
 ## 2026-06-01 — `loka health --json` mode for programmatic agent consumption
 
 Work-loop tick. Promoted the "Database Health Dashboard → `loka health --json`" TODO.

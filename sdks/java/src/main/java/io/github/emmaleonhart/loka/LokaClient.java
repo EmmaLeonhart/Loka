@@ -25,18 +25,59 @@ import java.util.StringJoiner;
  */
 public class LokaClient {
 
+    /** Default connection timeout when not specified. */
+    public static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(10);
+    /** Default number of retries on transient failures when not specified. */
+    public static final int DEFAULT_MAX_RETRIES = 2;
+    /** Default base backoff between retry attempts when not specified. */
+    public static final Duration DEFAULT_RETRY_BACKOFF = Duration.ofMillis(250);
+
     private final String endpoint;
     private final HttpClient httpClient;
+    private final int maxRetries;
+    private final Duration retryBackoff;
 
     /**
-     * Create a new client pointing at the given Loka endpoint.
+     * Create a new client pointing at the given Loka endpoint, using the
+     * default connect timeout (10s), retry count (2), and backoff (250ms).
      *
      * @param endpoint base URL without trailing slash, e.g. {@code "http://localhost:7878"}
      */
     public LokaClient(String endpoint) {
+        this(endpoint, DEFAULT_CONNECT_TIMEOUT, DEFAULT_MAX_RETRIES, DEFAULT_RETRY_BACKOFF);
+    }
+
+    /**
+     * Create a client with a custom connect timeout and retry count, using the
+     * default retry backoff (250ms).
+     *
+     * @param endpoint       base URL without trailing slash
+     * @param connectTimeout how long to wait when establishing a connection
+     * @param maxRetries     how many times to retry a transient failure (0 disables retry)
+     */
+    public LokaClient(String endpoint, Duration connectTimeout, int maxRetries) {
+        this(endpoint, connectTimeout, maxRetries, DEFAULT_RETRY_BACKOFF);
+    }
+
+    /**
+     * Create a fully-configured client.
+     *
+     * <p>Retries apply to transient connection failures ({@link IOException})
+     * and to transient HTTP statuses (502, 503, 504). They do <em>not</em>
+     * apply to 4xx or 500 responses, which are not considered transient.
+     * Backoff grows linearly: {@code retryBackoff * attemptNumber}.</p>
+     *
+     * @param endpoint       base URL without trailing slash
+     * @param connectTimeout how long to wait when establishing a connection
+     * @param maxRetries     how many times to retry a transient failure (0 disables retry)
+     * @param retryBackoff   base delay between attempts (grows linearly per attempt)
+     */
+    public LokaClient(String endpoint, Duration connectTimeout, int maxRetries, Duration retryBackoff) {
         this.endpoint = endpoint.replaceAll("/+$", "");
+        this.maxRetries = Math.max(0, maxRetries);
+        this.retryBackoff = retryBackoff;
         this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(10))
+                .connectTimeout(connectTimeout)
                 .build();
     }
 
@@ -247,16 +288,72 @@ public class LokaClient {
         return endpoint;
     }
 
+    /**
+     * Return the configured maximum number of retries for transient failures.
+     *
+     * @return the max retry count
+     */
+    public int getMaxRetries() {
+        return maxRetries;
+    }
+
     // ---- internal helpers ----
 
+    /**
+     * Send a request, retrying on transient failures.
+     *
+     * <p>A transient failure is a connection-level {@link IOException} or an
+     * HTTP 502/503/504 response. Up to {@code maxRetries} additional attempts
+     * are made with linearly-growing backoff. Non-transient responses (2xx,
+     * 4xx, 500) are returned as-is on the first attempt. After the retries are
+     * exhausted, the last response is returned (so {@code requireSuccess} can
+     * surface the status) or, for a persistent IOException, a {@link LokaError}
+     * is thrown.</p>
+     */
     private HttpResponse<String> send(HttpRequest request) {
+        LokaError lastIoError = null;
+        for (int attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+                HttpResponse<String> response =
+                        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                if (isRetryableStatus(response.statusCode()) && attempt < maxRetries) {
+                    backoff(attempt);
+                    continue;
+                }
+                return response;
+            } catch (IOException e) {
+                lastIoError = new LokaError("HTTP request failed: " + e.getMessage(), e);
+                if (attempt < maxRetries) {
+                    backoff(attempt);
+                    continue;
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new LokaError("HTTP request interrupted", e);
+            }
+        }
+        // Only reached when every attempt threw an IOException.
+        throw lastIoError != null
+                ? lastIoError
+                : new LokaError("HTTP request failed after " + (maxRetries + 1) + " attempts", (Throwable) null);
+    }
+
+    /** 502/503/504 are treated as transient and safe to retry. */
+    private static boolean isRetryableStatus(int status) {
+        return status == 502 || status == 503 || status == 504;
+    }
+
+    /** Sleep for {@code retryBackoff * (attempt + 1)} before the next attempt. */
+    private void backoff(int attempt) {
+        long millis = retryBackoff.toMillis() * (attempt + 1L);
+        if (millis <= 0) {
+            return;
+        }
         try {
-            return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        } catch (IOException e) {
-            throw new LokaError("HTTP request failed: " + e.getMessage(), e);
+            Thread.sleep(millis);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new LokaError("HTTP request interrupted", e);
+            throw new LokaError("Retry backoff interrupted", e);
         }
     }
 

@@ -12,6 +12,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -237,6 +239,92 @@ class LokaClientTest {
     void endpointTrailingSlashIsStripped() {
         LokaClient c = new LokaClient("http://localhost:9999/");
         assertEquals("http://localhost:9999", c.getEndpoint());
+    }
+
+    // ---- retry logic tests ----
+
+    /** A client pointing at the test server with fast (5ms) backoff for retry tests. */
+    private LokaClient retryClient(int maxRetries) {
+        int port = server.getAddress().getPort();
+        return new LokaClient("http://localhost:" + port,
+                Duration.ofSeconds(5), maxRetries, Duration.ofMillis(5));
+    }
+
+    @Test
+    void retriesOnServiceUnavailableThenSucceeds() {
+        AtomicInteger calls = new AtomicInteger(0);
+        server.createContext("/sparql", exchange -> {
+            int n = calls.incrementAndGet();
+            if (n == 1) {
+                respond(exchange, 503, "{\"error\":\"unavailable\"}");
+            } else {
+                respond(exchange, 200,
+                        "{\"head\":{\"vars\":[]},\"results\":{\"bindings\":[]}}");
+            }
+        });
+
+        SparqlResults results = retryClient(2).sparql("SELECT ?s WHERE { ?s ?p ?o }");
+        assertEquals(0, results.size());
+        assertEquals(2, calls.get(), "should have retried exactly once after the 503");
+    }
+
+    @Test
+    void exhaustsRetriesOnPersistent503AndThrows() {
+        AtomicInteger calls = new AtomicInteger(0);
+        server.createContext("/sparql", exchange -> {
+            calls.incrementAndGet();
+            respond(exchange, 503, "{\"error\":\"unavailable\"}");
+        });
+
+        LokaError error = assertThrows(LokaError.class, () ->
+                retryClient(2).sparql("SELECT ?s WHERE { ?s ?p ?o }"));
+        assertEquals(503, error.getStatusCode());
+        assertEquals(3, calls.get(), "initial attempt + 2 retries");
+    }
+
+    @Test
+    void doesNotRetryOnClientError() {
+        AtomicInteger calls = new AtomicInteger(0);
+        server.createContext("/sparql", exchange -> {
+            calls.incrementAndGet();
+            respond(exchange, 400, "{\"error\":\"bad query\"}");
+        });
+
+        LokaError error = assertThrows(LokaError.class, () ->
+                retryClient(2).sparql("INVALID"));
+        assertEquals(400, error.getStatusCode());
+        assertEquals(1, calls.get(), "4xx is not transient and must not be retried");
+    }
+
+    @Test
+    void doesNotRetryOnInternalServerError() {
+        AtomicInteger calls = new AtomicInteger(0);
+        server.createContext("/triples", exchange -> {
+            calls.incrementAndGet();
+            respond(exchange, 500, "{\"error\":\"internal\"}");
+        });
+
+        assertThrows(LokaError.class, () -> retryClient(2).insertTriples("<s> <p> <o> ."));
+        assertEquals(1, calls.get(), "500 is not treated as transient");
+    }
+
+    @Test
+    void retryDisabledWhenMaxRetriesZero() {
+        AtomicInteger calls = new AtomicInteger(0);
+        server.createContext("/sparql", exchange -> {
+            calls.incrementAndGet();
+            respond(exchange, 503, "{\"error\":\"unavailable\"}");
+        });
+
+        assertThrows(LokaError.class, () -> retryClient(0).sparql("SELECT ?s WHERE {}"));
+        assertEquals(1, calls.get(), "maxRetries=0 disables retry");
+    }
+
+    @Test
+    void getMaxRetriesReturnsConfiguredValue() {
+        LokaClient c = new LokaClient("http://localhost:9999", Duration.ofSeconds(5), 4);
+        assertEquals(4, c.getMaxRetries());
+        assertEquals(LokaClient.DEFAULT_MAX_RETRIES, new LokaClient("http://localhost:9999").getMaxRetries());
     }
 
     // ---- helper ----
