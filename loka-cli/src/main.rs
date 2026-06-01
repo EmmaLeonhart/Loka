@@ -109,6 +109,12 @@ enum Commands {
         /// columnar indexes for groups that qualify.
         #[arg(long)]
         refresh: bool,
+
+        /// Emit the health report as JSON instead of AI-readable text.
+        /// Intended for programmatic agent consumption — the same metrics,
+        /// machine-parseable. Status fields are HEALTHY/WARNING/CRITICAL.
+        #[arg(long)]
+        json: bool,
     },
     /// Check for updates and self-update the binary from GitHub releases.
     Update {
@@ -602,6 +608,7 @@ async fn main() -> anyhow::Result<()> {
             data_dir,
             rebuild_hnsw,
             refresh,
+            json,
         } => {
             // Load the persistent store and hydrate in-memory structures.
             let ps = loka_core::PersistentStore::open(&data_dir)?;
@@ -626,32 +633,40 @@ async fn main() -> anyhow::Result<()> {
                         let before = index.len();
                         let removed = index.compact();
                         total_removed += removed;
-                        println!(
-                            "Rebuilt HNSW index '{}': removed {} tombstones ({} → {} nodes)",
-                            pred_name,
-                            removed,
-                            before,
-                            index.len()
-                        );
+                        if !json {
+                            println!(
+                                "Rebuilt HNSW index '{}': removed {} tombstones ({} → {} nodes)",
+                                pred_name,
+                                removed,
+                                before,
+                                index.len()
+                            );
+                        }
                     }
                 }
-                if total_removed == 0 {
-                    println!("No tombstones found — all HNSW indexes are clean.");
+                if !json {
+                    if total_removed == 0 {
+                        println!("No tombstones found — all HNSW indexes are clean.");
+                    }
+                    println!();
                 }
-                println!();
             }
 
             // Discover pseudo-tables if requested.
             let pseudo_tables = if refresh {
-                println!("Discovering pseudo-tables from graph structure...");
+                if !json {
+                    println!("Discovering pseudo-tables from graph structure...");
+                }
                 let node_props = loka_core::extract_node_properties(&store);
                 let registry = loka_core::discover_pseudo_tables(&node_props, &store);
-                println!(
-                    "Discovered {} pseudo-table(s) covering {} nodes.",
-                    registry.len(),
-                    registry.total_coverage()
-                );
-                println!();
+                if !json {
+                    println!(
+                        "Discovered {} pseudo-table(s) covering {} nodes.",
+                        registry.len(),
+                        registry.total_coverage()
+                    );
+                    println!();
+                }
                 Some(registry)
             } else {
                 None
@@ -661,7 +676,11 @@ async fn main() -> anyhow::Result<()> {
             let vecs = vectors.read().unwrap();
             let report =
                 loka_sparql::generate_health_report(&store, &dict, &vecs, pseudo_tables.as_ref());
-            println!("{}", report.to_ai_text());
+            if json {
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            } else {
+                println!("{}", report.to_ai_text());
+            }
         }
 
         Commands::InstallAgent {

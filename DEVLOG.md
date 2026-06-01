@@ -7,6 +7,22 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-06-01 — `loka health --json` mode for programmatic agent consumption
+
+Work-loop tick. Promoted the "Database Health Dashboard → `loka health --json`" TODO.
+Added `#[derive(Serialize)]` to the six health types in `loka-sparql/src/health.rs`
+(`HealthReport`, `HnswHealthMetrics`, `PseudoTableHealthMetrics`, `PseudoTableMetrics`,
+`StorageHealthMetrics`) and to the `HealthStatus` enum with `#[serde(rename_all =
+"UPPERCASE")]` so JSON status strings match the existing HEALTHY/WARNING/CRITICAL text.
+Added a `--json` flag to the `Health` command; when set it prints
+`serde_json::to_string_pretty(&report)` and the human-readable rebuild/refresh progress
+lines are suppressed so stdout is pure JSON. serde + serde_json were already deps —
+no new dependency. Verified: `cargo build --release -p loka-cli` clean; ran
+`loka health --json` (valid JSON, top-level `hnsw`/`pseudo_tables`/`storage`/
+`overall_status`, status fields UPPERCASE); confirmed text mode unregressed and
+`--json --refresh` stays pure JSON; `cargo test -p loka-sparql` 9/9 pass, 0 failed.
+
+---
 ## 2026-06-01 — Installer: documented the model schema (`installer/README.md`)
 
 Work-loop tick. Promoted the "document the model schema" item from the multi-model

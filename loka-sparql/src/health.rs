@@ -55,6 +55,7 @@ use std::fmt;
 use loka_core::pseudotable::PseudoTableRegistry;
 use loka_core::{TermDictionary, TripleStore};
 use loka_hnsw::VectorRegistry;
+use serde::Serialize;
 
 // ---------------------------------------------------------------------------
 // Health status levels
@@ -66,7 +67,8 @@ use loka_hnsw::VectorRegistry;
 /// - HEALTHY: no action needed
 /// - WARNING: degraded but functional, schedule maintenance
 /// - CRITICAL: performance significantly impacted, rebuild recommended
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "UPPERCASE")]
 pub enum HealthStatus {
     /// All metrics within ideal ranges. No action needed.
     Healthy,
@@ -95,7 +97,7 @@ impl fmt::Display for HealthStatus {
 ///
 /// Each metric includes the value and contextual guidance for what
 /// constitutes healthy vs unhealthy values.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct HnswHealthMetrics {
     /// Human-readable predicate name (e.g., ":hasEmbedding").
     pub predicate_name: String,
@@ -254,7 +256,7 @@ impl HnswHealthMetrics {
 // ---------------------------------------------------------------------------
 
 /// Health metrics for the pseudo-table subsystem.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct PseudoTableHealthMetrics {
     /// Number of discovered pseudo-tables.
     pub table_count: usize,
@@ -272,7 +274,7 @@ pub struct PseudoTableHealthMetrics {
 }
 
 /// Metrics for a single pseudo-table.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct PseudoTableMetrics {
     pub label: String,
     pub row_count: usize,
@@ -351,7 +353,7 @@ impl PseudoTableHealthMetrics {
 // ---------------------------------------------------------------------------
 
 /// Storage-level health metrics.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct StorageHealthMetrics {
     /// Total number of triples in the store.
     pub triple_count: usize,
@@ -387,7 +389,7 @@ impl StorageHealthMetrics {
 /// This is the top-level structure returned by `loka health`. It aggregates
 /// metrics from HNSW, pseudo-tables, and storage into a single report with
 /// an overall health status.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct HealthReport {
     /// HNSW vector index health (one entry per vector predicate).
     pub hnsw: Vec<HnswHealthMetrics>,
