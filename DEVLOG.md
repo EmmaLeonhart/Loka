@@ -7,6 +7,21 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-06-01 — Installer: documented the model schema (`installer/README.md`)
+
+Work-loop tick. Promoted the "document the model schema" item from the multi-model
+installer TODO. `installer/README.md` didn't exist; wrote it from the actual files (no
+invented fields): the `models.toml` schema (id / display_name / hf_repo / approx_size /
+fetch_mode / description), the two install types (engine_only vs engine_model) and their
+components, the `install-selection.toml` manifest `loka.iss` emits on `ssPostInstall` for
+`loka.exe` to read on first launch, and — the easily-missed bit — that Inno Setup can't
+parse TOML at runtime, so the model fields are mirrored into compile-time `#define`s that
+must be hand-kept in sync with the first `[[model]]` (CI passes only
+`/DLokaVersion`/`/DLokaBinary`/`/DLokaStudio`, so the `loka.iss` defaults are what ship).
+Every claim cross-checked against `installer/models.toml` + `installer/loka.iss` +
+`release.yml`. Documentation only — no test surface.
+
+---
 ## 2026-06-01 — Benchmarks page: de-crowded release-milestone markers
 
 Work-loop tick. Promoted the benchmarks-chart fix Emma flagged 2026-05-16 (it was the

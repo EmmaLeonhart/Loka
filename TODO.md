@@ -25,7 +25,6 @@ models at install time. Loose plan:
       picks at most one model, or "no model" via component deselect.
 - [ ] Update `install-selection.toml` to record the chosen model id so
       `loka.exe` knows what to fetch on first run.
-- [ ] Document the model schema in `installer/README.md`.
 
 Future candidates: a smaller-footprint Qwen / Phi / Llama option for users
 without 3 GB to spare, and a "bring your own GGUF" file picker.
