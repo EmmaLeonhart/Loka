@@ -30,8 +30,10 @@ fn serverless_sdb_roundtrip_survives_reopen() {
         let alice_name = ps.intern("\"Alice\"").unwrap();
 
         ps.insert(Triple::new(alice_id, knows_id, bob_id)).unwrap();
-        ps.insert(Triple::new(alice_id, knows_id, carol_id)).unwrap();
-        ps.insert(Triple::new(alice_id, name_id, alice_name)).unwrap();
+        ps.insert(Triple::new(alice_id, knows_id, carol_id))
+            .unwrap();
+        ps.insert(Triple::new(alice_id, name_id, alice_name))
+            .unwrap();
         ps.flush().unwrap();
 
         alice = alice_id;
@@ -48,15 +50,18 @@ fn serverless_sdb_roundtrip_survives_reopen() {
         store.insert(t).unwrap();
         count += 1;
     }
-    assert_eq!(count, 3, "all three triples survived the close/reopen cycle");
+    assert_eq!(
+        count, 3,
+        "all three triples survived the close/reopen cycle"
+    );
 
     // Interned ids round-trip through the rehydrated dictionary.
     assert_eq!(dict.lookup("http://ex.org/alice"), Some(alice));
     assert_eq!(dict.lookup("http://ex.org/knows"), Some(knows));
 
     // Phase 3 — run a SPARQL query against the reopened, hydrated store.
-    let q = parse("SELECT ?who WHERE { <http://ex.org/alice> <http://ex.org/knows> ?who }")
-        .unwrap();
+    let q =
+        parse("SELECT ?who WHERE { <http://ex.org/alice> <http://ex.org/knows> ?who }").unwrap();
     let result = execute(&q, &store, &dict).unwrap();
     assert_eq!(result.rows.len(), 2, "alice knows two people");
 
@@ -64,5 +69,8 @@ fn serverless_sdb_roundtrip_survives_reopen() {
     let carol = dict.lookup("http://ex.org/carol").unwrap();
     let found: Vec<_> = result.rows.iter().map(|r| *r.get("who").unwrap()).collect();
     assert!(found.contains(&bob), "bob is among alice's acquaintances");
-    assert!(found.contains(&carol), "carol is among alice's acquaintances");
+    assert!(
+        found.contains(&carol),
+        "carol is among alice's acquaintances"
+    );
 }
