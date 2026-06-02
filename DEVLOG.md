@@ -7,6 +7,24 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-06-01 — Go SDK: connection retry parity with the Java SDK
+
+Work-loop tick. With the bounded TODO.md items exhausted (the rest are large/need-decomposition
+or Emma/GPU-gated), closed a consistency gap this session itself opened: the Java SDK got
+configurable retry, the Go SDK had none. Added `maxRetries`/`retryBackoff` to the Go
+`LokaClient` with functional options (`WithMaxRetries`/`WithRetryBackoff`/`WithTimeout`;
+`NewClient` stays backward-compatible via variadic opts, defaults 2 / 250ms). Centralised the
+three `.Do()` data-operation sites (Sparql/InsertTriples/postJSON) through a new `doWithRetry`
+that rebuilds the request from the body bytes each attempt — so retrying a POST is correct, no
+body-rewind hazard — and retries transient connection errors + HTTP 502/503/504 with linear
+backoff. `Health` stays a single-shot liveness probe (not retried): `TestHealthUnhealthy`
+expects 503→false, and retrying a health probe is the wrong semantic anyway. Added 4 `httptest`
+tests (503→200 succeeds with one retry; persistent 503 exhausts to maxRetries+1 and errors 503;
+4xx not retried; maxRetries=0 disables). Verified: `go vet` clean, `go test ./...` green, the 4
+new tests confirmed running. .NET retry parity queued as the next follow-up; Python/TS/Rust
+parity intentionally NOT auto-queued to avoid an endless grind.
+
+---
 ## 2026-06-01 — Serverless-mode `.sdb` round-trip integration test
 
 Work-loop tick. Promoted the "serverless mode testing (no --serve, just create the .sdb)"

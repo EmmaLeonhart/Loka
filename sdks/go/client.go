@@ -15,20 +15,59 @@ type LokaClient struct {
 	// Endpoint is the base URL of the Loka instance (no trailing slash).
 	Endpoint string
 
-	client *http.Client
+	client       *http.Client
+	maxRetries   int
+	retryBackoff time.Duration
+}
+
+// ClientOption configures a LokaClient at construction time.
+type ClientOption func(*LokaClient)
+
+// WithMaxRetries sets how many times a transient failure is retried
+// (0 disables retry). Negative values are ignored.
+func WithMaxRetries(n int) ClientOption {
+	return func(c *LokaClient) {
+		if n >= 0 {
+			c.maxRetries = n
+		}
+	}
+}
+
+// WithRetryBackoff sets the base delay between retry attempts. The actual
+// delay grows linearly: backoff * attemptNumber.
+func WithRetryBackoff(d time.Duration) ClientOption {
+	return func(c *LokaClient) { c.retryBackoff = d }
+}
+
+// WithTimeout sets the per-request HTTP timeout.
+func WithTimeout(d time.Duration) ClientOption {
+	return func(c *LokaClient) { c.client.Timeout = d }
 }
 
 // NewClient creates a new LokaClient pointing at the given endpoint.
 //
 // The endpoint should be the base URL without a trailing slash,
-// e.g. "http://localhost:7878".
-func NewClient(endpoint string) *LokaClient {
-	return &LokaClient{
+// e.g. "http://localhost:7878". By default data operations retry transient
+// connection failures and HTTP 502/503/504 up to twice with 250ms linear
+// backoff; tune via WithMaxRetries / WithRetryBackoff.
+func NewClient(endpoint string, opts ...ClientOption) *LokaClient {
+	c := &LokaClient{
 		Endpoint: strings.TrimRight(endpoint, "/"),
 		client: &http.Client{
 			Timeout: 30 * time.Second,
 		},
+		maxRetries:   2,
+		retryBackoff: 250 * time.Millisecond,
 	}
+	for _, opt := range opts {
+		opt(c)
+	}
+	return c
+}
+
+// MaxRetries returns the configured number of retries for transient failures.
+func (c *LokaClient) MaxRetries() int {
+	return c.maxRetries
 }
 
 // Health checks whether the Loka instance is reachable and healthy.
@@ -45,18 +84,11 @@ func (c *LokaClient) Health() (bool, error) {
 
 // Sparql executes a SPARQL query and returns the parsed JSON result set.
 func (c *LokaClient) Sparql(query string) (*SparqlResults, error) {
-	req, err := http.NewRequest(
-		http.MethodPost,
-		c.Endpoint+"/sparql",
-		strings.NewReader(query),
+	resp, err := c.doWithRetry(
+		http.MethodPost, "/sparql",
+		"application/sparql-query", "application/sparql-results+json",
+		[]byte(query),
 	)
-	if err != nil {
-		return nil, fmt.Errorf("loka: failed to create request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/sparql-query")
-	req.Header.Set("Accept", "application/sparql-results+json")
-
-	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("loka: SPARQL request failed: %w", err)
 	}
@@ -75,17 +107,11 @@ func (c *LokaClient) Sparql(query string) (*SparqlResults, error) {
 
 // InsertTriples inserts triples in N-Triples format.
 func (c *LokaClient) InsertTriples(ntriples string) (*InsertResult, error) {
-	req, err := http.NewRequest(
-		http.MethodPost,
-		c.Endpoint+"/triples",
-		strings.NewReader(ntriples),
+	resp, err := c.doWithRetry(
+		http.MethodPost, "/triples",
+		"application/n-triples", "",
+		[]byte(ntriples),
 	)
-	if err != nil {
-		return nil, fmt.Errorf("loka: failed to create request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/n-triples")
-
-	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("loka: insert request failed: %w", err)
 	}
@@ -148,17 +174,7 @@ func (c *LokaClient) postJSON(path string, body interface{}, result interface{})
 		return fmt.Errorf("loka: failed to marshal request body: %w", err)
 	}
 
-	req, err := http.NewRequest(
-		http.MethodPost,
-		c.Endpoint+path,
-		bytes.NewReader(jsonBody),
-	)
-	if err != nil {
-		return fmt.Errorf("loka: failed to create request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := c.client.Do(req)
+	resp, err := c.doWithRetry(http.MethodPost, path, "application/json", "", jsonBody)
 	if err != nil {
 		return fmt.Errorf("loka: request failed: %w", err)
 	}
@@ -172,6 +188,64 @@ func (c *LokaClient) postJSON(path string, body interface{}, result interface{})
 		return fmt.Errorf("loka: failed to decode response: %w", err)
 	}
 	return nil
+}
+
+// doWithRetry sends a request, retrying transient failures. A transient
+// failure is a connection-level error or an HTTP 502/503/504 response. The
+// request is rebuilt from body on every attempt so retrying a POST is safe.
+// Backoff grows linearly (retryBackoff * attemptNumber). Non-transient
+// responses are returned as-is for the caller to inspect; after the retries
+// are exhausted on a connection error, that error is returned.
+func (c *LokaClient) doWithRetry(method, path, contentType, accept string, body []byte) (*http.Response, error) {
+	var lastErr error
+	for attempt := 0; attempt <= c.maxRetries; attempt++ {
+		req, err := http.NewRequest(method, c.Endpoint+path, bytes.NewReader(body))
+		if err != nil {
+			return nil, fmt.Errorf("loka: failed to create request: %w", err)
+		}
+		if contentType != "" {
+			req.Header.Set("Content-Type", contentType)
+		}
+		if accept != "" {
+			req.Header.Set("Accept", accept)
+		}
+
+		resp, err := c.client.Do(req)
+		if err != nil {
+			lastErr = err
+			if attempt < c.maxRetries {
+				c.backoff(attempt)
+				continue
+			}
+			return nil, err
+		}
+
+		if isRetryableStatus(resp.StatusCode) && attempt < c.maxRetries {
+			// Drain and close before retrying so the connection can be reused.
+			io.Copy(io.Discard, resp.Body)
+			resp.Body.Close()
+			c.backoff(attempt)
+			continue
+		}
+		return resp, nil
+	}
+	// Only reached when every attempt failed with a connection error.
+	return nil, lastErr
+}
+
+// isRetryableStatus reports whether an HTTP status is transient and safe to retry.
+func isRetryableStatus(status int) bool {
+	return status == http.StatusBadGateway ||
+		status == http.StatusServiceUnavailable ||
+		status == http.StatusGatewayTimeout
+}
+
+// backoff sleeps for retryBackoff * (attempt + 1) before the next attempt.
+func (c *LokaClient) backoff(attempt int) {
+	d := c.retryBackoff * time.Duration(attempt+1)
+	if d > 0 {
+		time.Sleep(d)
+	}
 }
 
 // checkStatus returns a LokaError if the response status is not 2xx.

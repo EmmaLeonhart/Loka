@@ -3,7 +3,9 @@ package loka
 import (
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func TestNewClient(t *testing.T) {
@@ -137,5 +139,95 @@ func TestServerError(t *testing.T) {
 	}
 	if lokaErr.StatusCode != 400 {
 		t.Errorf("expected status 400, got %d", lokaErr.StatusCode)
+	}
+}
+
+func TestRetriesOnServiceUnavailableThenSucceeds(t *testing.T) {
+	var calls int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if atomic.AddInt32(&calls, 1) == 1 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			w.Write([]byte(`{"error":"unavailable"}`))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"head":{"vars":[]},"results":{"bindings":[]}}`))
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, WithMaxRetries(2), WithRetryBackoff(5*time.Millisecond))
+	_, err := client.Sparql("SELECT ?s WHERE { ?s ?p ?o }")
+	if err != nil {
+		t.Fatalf("expected success after retry, got %v", err)
+	}
+	if got := atomic.LoadInt32(&calls); got != 2 {
+		t.Errorf("expected exactly one retry (2 calls), got %d", got)
+	}
+}
+
+func TestExhaustsRetriesOnPersistent503(t *testing.T) {
+	var calls int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&calls, 1)
+		w.WriteHeader(http.StatusServiceUnavailable)
+		w.Write([]byte(`{"error":"unavailable"}`))
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, WithMaxRetries(2), WithRetryBackoff(5*time.Millisecond))
+	_, err := client.Sparql("SELECT ?s WHERE { ?s ?p ?o }")
+	if err == nil {
+		t.Fatal("expected error after exhausting retries")
+	}
+	lokaErr, ok := err.(*LokaError)
+	if !ok {
+		t.Fatalf("expected *LokaError, got %T", err)
+	}
+	if lokaErr.StatusCode != 503 {
+		t.Errorf("expected status 503, got %d", lokaErr.StatusCode)
+	}
+	if got := atomic.LoadInt32(&calls); got != 3 {
+		t.Errorf("expected initial + 2 retries (3 calls), got %d", got)
+	}
+}
+
+func TestDoesNotRetryOnClientError(t *testing.T) {
+	var calls int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&calls, 1)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error":"bad"}`))
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, WithMaxRetries(2), WithRetryBackoff(5*time.Millisecond))
+	_, err := client.Sparql("INVALID")
+	if err == nil {
+		t.Fatal("expected error for 400")
+	}
+	if got := atomic.LoadInt32(&calls); got != 1 {
+		t.Errorf("4xx must not be retried, expected 1 call, got %d", got)
+	}
+}
+
+func TestRetryDisabledWhenMaxRetriesZero(t *testing.T) {
+	var calls int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&calls, 1)
+		w.WriteHeader(http.StatusServiceUnavailable)
+		w.Write([]byte(`{"error":"unavailable"}`))
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, WithMaxRetries(0))
+	if client.MaxRetries() != 0 {
+		t.Fatalf("expected MaxRetries 0, got %d", client.MaxRetries())
+	}
+	_, err := client.Sparql("SELECT ?s WHERE {}")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if got := atomic.LoadInt32(&calls); got != 1 {
+		t.Errorf("maxRetries=0 disables retry, expected 1 call, got %d", got)
 	}
 }

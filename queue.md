@@ -6,6 +6,17 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ---
 
+## .NET SDK — connection retry parity with Java/Go (cross-SDK consistency, follow-up)
+
+Java and Go now have configurable retry; the .NET `LokaClient` (sdks/dotnet)
+does not. Mirror it: read `sdks/dotnet/LokaClient.cs` first to find the request
+send path (HttpClient), add configurable max-retries + backoff, retry transient
+`HttpRequestException` + HTTP 502/503/504 on data operations (leave any health
+probe single-shot), add tests, run `dotnet test`. (Python/TS/Rust retry parity
+is a possible later follow-up but is not auto-queued — avoid an endless grind.)
+
+---
+
 The actionable queue is drained. Remaining work is either GPU-gated
 (v11–v14 training, propgen tests, clean v12 retrain, donor clean-Adam v14) or
 Emma-gated (SDK first publish). The autonomous work-loop cron promotes the next
