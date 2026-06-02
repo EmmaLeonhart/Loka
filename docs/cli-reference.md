@@ -20,7 +20,7 @@ loka query -d /data/mydb "SELECT ?name WHERE { ?s :name ?name }"
 | Argument/Flag | Default | Description |
 |---|---|---|
 | `query` (positional) | required | The SPARQL query string |
-| `-d, --data_dir` | `./loka-data` | Data directory |
+| `-d, --data-dir` | `./loka-data` | Data directory |
 
 ---
 
@@ -36,7 +36,7 @@ loka import -d ./my-database -            # import from stdin
 | Argument/Flag | Default | Description |
 |---|---|---|
 | `file` (positional) | required | Path to N-Triples file (use `-` for stdin) |
-| `-d, --data_dir` | `./loka-data` | Data directory |
+| `-d, --data-dir` | `./loka-data` | Data directory |
 
 ---
 
@@ -52,7 +52,7 @@ loka export -d ./my-database -f ttl       # export as Turtle
 
 | Flag | Default | Description |
 |---|---|---|
-| `-d, --data_dir` | `./loka-data` | Data directory |
+| `-d, --data-dir` | `./loka-data` | Data directory |
 | `-o, --output` | stdout | Output file path |
 | `-f, --format` | `nt` | Export format: `nt` (N-Triples) or `ttl` (Turtle) |
 
@@ -68,7 +68,7 @@ loka info -d ./my-database
 
 | Flag | Default | Description |
 |---|---|---|
-| `-d, --data_dir` | `./loka-data` | Data directory |
+| `-d, --data-dir` | `./loka-data` | Data directory |
 
 ---
 
@@ -78,15 +78,17 @@ Database health diagnostics. No server needed.
 
 ```bash
 loka health -d ./my-database              # full health report
-loka health -d ./my-database --rebuild_hnsw # rebuild HNSW indexes
+loka health -d ./my-database --rebuild-hnsw # rebuild HNSW indexes
 loka health -d ./my-database --refresh    # rediscover pseudo-tables
+loka health -d ./my-database --json       # machine-readable JSON report
 ```
 
 | Flag | Default | Description |
 |---|---|---|
-| `-d, --data_dir` | `./loka-data` | Data directory |
-| `--rebuild_hnsw` | off | Rebuild all HNSW indexes |
+| `-d, --data-dir` | `./loka-data` | Data directory |
+| `--rebuild-hnsw` | off | Rebuild all HNSW indexes |
 | `--refresh` | off | Rediscover pseudo-tables from current graph data |
+| `--json` | off | Emit the report as JSON for programmatic agents (status fields HEALTHY/WARNING/CRITICAL) instead of AI-readable text |
 
 ---
 
@@ -97,18 +99,18 @@ Start the SPARQL HTTP server. **Only needed for multi-client access, remote conn
 ```bash
 loka serve                                # defaults: port 3030, data in ./loka-data
 loka serve -p 8080 -d /data/mydb          # custom port and data directory
-loka serve --memory_only                   # in-memory only, no persistence
+loka serve --memory-only                   # in-memory only, no persistence
 loka serve --passcode mysecret             # require Bearer token on all requests
-loka serve --backup_interval 60            # auto-backup every 60 minutes
+loka serve --backup-interval 60            # auto-backup every 60 minutes
 ```
 
 | Flag | Default | Description |
 |---|---|---|
 | `-p, --port` | `3030` | Port to listen on |
-| `-d, --data_dir` | `./loka-data` | Data directory for persistent `.sdb` storage |
-| `--memory_only` | off | Run in-memory only (no persistence) |
+| `-d, --data-dir` | `./loka-data` | Data directory for persistent `.sdb` storage |
+| `--memory-only` | off | Run in-memory only (no persistence) |
 | `--passcode` | none | Simple passcode auth; all requests except `/health` require `Authorization: Bearer <passcode>` |
-| `--backup_interval` | `0` (disabled) | Periodic backup interval in minutes |
+| `--backup-interval` | `0` (disabled) | Periodic backup interval in minutes |
 
 ---
 
@@ -134,7 +136,8 @@ Agent-first installer: generates structured config and a markdown notes file doc
 ```bash
 loka install-agent mydb
 loka install-agent mydb --port 8080 --passcode secret --dimensions 768
-loka install-agent mydb --no_serve --launch_studio
+loka install-agent mydb --no-serve --launch-studio
+loka install-agent mydb --json            # emit setup result as JSON (no server start)
 ```
 
 | Argument/Flag | Default | Description |
@@ -144,8 +147,9 @@ loka install-agent mydb --no_serve --launch_studio
 | `--passcode` | none | Enable passcode authentication |
 | `--dimensions` | `1024` | Vector dimensions for default embedding predicate |
 | `--metric` | `cosine` | Distance metric: `cosine`, `euclidean`, `dot` |
-| `--no_serve` | off | Skip server startup |
-| `--launch_studio` | off | Launch Loka Studio after setup |
+| `--no-serve` | off | Skip server startup |
+| `--launch-studio` | off | Launch Loka Studio after setup |
+| `--json` | off | Emit the setup result as JSON for programmatic agents; still creates the DB + notes file but does NOT start the blocking server or launch Studio |
 
 ---
 
@@ -154,19 +158,19 @@ loka install-agent mydb --no_serve --launch_studio
 Start the MCP (Model Context Protocol) server for AI agents. Runs a JSON-RPC server over stdin/stdout.
 
 ```bash
-loka mcp --data_dir ./mydb.sdb             # serverless mode (recommended — direct .sdb access)
+loka mcp --data-dir ./mydb.sdb             # serverless mode (recommended — direct .sdb access)
 loka mcp                                   # server mode: connect to http://localhost:3030
 loka mcp --url http://remote:3030 --passcode secret
 loka mcp --studio                          # also launch Loka Studio GUI
-loka mcp --no_auto_update                  # disable auto-update check
+loka mcp --no-auto-update                  # disable auto-update check
 ```
 
 | Flag | Default | Description |
 |---|---|---|
 | `--url` | `http://localhost:3030` | Loka HTTP endpoint (server mode) |
-| `--data_dir` | none | Data directory for serverless mode; when set, ignores `--url` |
+| `--data-dir` | none | Data directory for serverless mode; when set, ignores `--url` |
 | `--passcode` | none | Passcode for authenticated server connections |
-| `--no_auto_update` | off | Disable auto-update on startup |
+| `--no-auto-update` | off | Disable auto-update on startup |
 | `--studio` | off | Also launch Loka Studio GUI alongside MCP |
 
 #### MCP Tools

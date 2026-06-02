@@ -7,6 +7,24 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-06-02 — Fix incorrect CLI flag docs (underscore→kebab) + document `--json`
+
+Work-loop tick. While checking for documentation drift from this session's features I found a
+real, copy-paste-breaking bug: README.md and docs/cli-reference.md documented CLI flags in
+underscore style (`--rebuild_hnsw`, `--data_dir`, `--no_serve`, `--memory_only`,
+`--backup_interval`, `--launch_studio`, `--no_auto_update`), but clap renders kebab-case.
+Measured it: `loka health --rebuild_hnsw` is rejected ("unexpected argument", tip:
+`--rebuild-hnsw`) while `--rebuild-hnsw` works. So every documented underscore flag would fail
+when a user/agent pasted it. Verified the actual flag names for every command via
+`loka <cmd> --help` and corrected all 23 occurrences across the two docs to kebab-case. Also
+documented the two agent-facing `--json` flags shipped earlier this session
+(`loka health --json`, `loka install-agent --json`) — added examples + flag-table rows in
+cli-reference.md and a `loka health --json` example in the README. Docs-only change; verified
+no underscore-style flags remain (`grep -E '\-\-[a-z]+_[a-z]'` → none). Note: this is the kind
+of drift the "keep README current" mandate exists to catch — the flags had been wrong in the
+docs for a while, not just this session.
+
+---
 ## 2026-06-01 — .NET SDK: connection retry parity + the SDK's first test project
 
 Work-loop tick. Completed the queued .NET retry parity and, in doing so, gave the .NET SDK

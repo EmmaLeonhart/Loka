@@ -47,7 +47,7 @@ loka query -d ./my-database "SELECT * WHERE { ?s ?p ?o } LIMIT 10"
 loka health -d ./my-database
 
 # Use with AI agents via MCP (serverless mode)
-loka mcp --data_dir ./my-database
+loka mcp --data-dir ./my-database
 ```
 
 ### Server mode (for multi-client or remote access)
@@ -229,7 +229,8 @@ loka import -d ./mydb data.nt     # Import N-Triples
 loka export -d ./mydb -o dump.nt  # Export all triples
 loka info -d ./mydb               # Show database stats
 loka health -d ./mydb             # Database health diagnostics
-loka mcp --data_dir ./mydb        # MCP server (serverless mode)
+loka health -d ./mydb --json      # Health report as machine-readable JSON
+loka mcp --data-dir ./mydb        # MCP server (serverless mode)
 
 # Server mode (when you need HTTP/multi-client access)
 loka serve                        # Start HTTP server (port 3030)
@@ -237,7 +238,7 @@ loka serve --memory-only          # In-memory only
 loka mcp --url http://host:3030   # MCP server (server mode)
 
 # Maintenance
-loka health --rebuild_hnsw        # Rebuild HNSW indexes
+loka health --rebuild-hnsw        # Rebuild HNSW indexes
 loka update                       # Check for updates and self-update
 loka install-agent mydb           # Agent-first database setup
 ```
