@@ -7,6 +7,17 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-06-02 — Finish the CLI flag-doc fix: docs/AGENT_SETUP.md
+
+Work-loop tick. A repo-wide sweep after the previous README + cli-reference flag fix found
+the same copy-paste-breaking bug lingered in `docs/AGENT_SETUP.md`: two `loka mcp --data_dir`
+occurrences (clap accepts only `--data-dir`). Fixed both. Re-swept every `.md`/`.html` for
+the underscore CLI-flag pattern — the only remaining hits are DEVLOG's descriptive mentions
+of the bug itself, not usage. So the kebab-flag correction is now repo-complete. Lesson
+logged: when fixing a class of defect, sweep the whole repo for siblings rather than only the
+first file it surfaces in.
+
+---
 ## 2026-06-02 — .NET SDK: patch System.Text.Json 8.0.0 (NU1903 high-severity advisory)
 
 Work-loop tick. Fixed the build-flagged security advisory I noted (out of scope) two ticks

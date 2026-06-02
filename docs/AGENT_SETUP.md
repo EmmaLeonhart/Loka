@@ -82,7 +82,7 @@ docker run -p 3030:3030 -v loka-data:/data loka
 | `loka export -d ./mydb -f ttl` | Export as Turtle |
 | `loka info -d ./mydb` | Show triple/term counts |
 | `loka health -d ./mydb` | Database health diagnostics |
-| `loka mcp --data_dir ./mydb` | MCP server in serverless mode |
+| `loka mcp --data-dir ./mydb` | MCP server in serverless mode |
 
 ### Server mode commands (only when you need HTTP/multi-client access)
 
@@ -234,7 +234,7 @@ AI agents can use the native MCP (Model Context Protocol) server for database op
 
 ```bash
 # Serverless mode (recommended — no server process needed)
-loka mcp --data_dir ./my-database
+loka mcp --data-dir ./my-database
 
 # Server mode (only if you have a running HTTP instance)
 loka mcp --url http://localhost:3030
