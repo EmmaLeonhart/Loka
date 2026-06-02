@@ -7,6 +7,21 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-06-01 — Serverless-mode `.sdb` round-trip integration test
+
+Work-loop tick. Promoted the "serverless mode testing (no --serve, just create the .sdb)"
+TODO. The existing integration tests only exercise in-memory `TripleStore`s, and the
+`loka-core` persistent tests cover quoted-triple provenance rather than the user-facing
+embedded query path — so the plain "create a .sdb, no server, query it" flow was untested.
+Added `loka-sparql/tests/serverless.rs` mirroring `loka query --data-dir`: open a
+`PersistentStore` in a tempdir, intern IRIs + insert 3 triples, flush, drop (close sled),
+reopen, `load_terms_into` + `iter` to hydrate an in-memory store + dict, then `parse` +
+`execute` a SPARQL SELECT and assert the two expected rows plus interned-id round-trip.
+Added `tempfile` to `loka-sparql` dev-deps (loka-core already uses it). Verified: the new
+test passes and the full `loka-sparql` suite is green — 90 lib + 25 integration + 1
+serverless + 9 stress, 0 failures.
+
+---
 ## 2026-06-01 — Python SDK: load `owl:disjointWith` (reconverge with Java port)
 
 Work-loop tick. Closed the cross-SDK divergence flagged two ticks ago. The Python
