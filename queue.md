@@ -6,6 +6,21 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ---
 
+## Java SDK — wire OWL validation into LokaClient insert path (follow-up)
+
+After the validator lands: add `owlValidation` (default on) to `LokaClient`,
+load axioms lazily, and validate in `insertTriples` before sending — matching
+the Python client. Separate commit (changes client behavior + existing tests).
+
+## Python SDK — `OWLValidator.load_from_client` doesn't load `owl:disjointWith` (follow-up)
+
+`sdks/python/loka/owl.py` declares `self.disjoint` and checks it in
+`validate_triple`, but `load_from_client` never populates it, so disjoint
+validation is dead unless set manually. Add the `owl:disjointWith` load query
+(symmetric, like equivalentClasses) so Python matches the Java port.
+
+---
+
 The actionable queue is drained. Remaining work is either GPU-gated
 (v11–v14 training, propgen tests, clean v12 retrain, donor clean-Adam v14) or
 Emma-gated (SDK first publish). The autonomous work-loop cron promotes the next

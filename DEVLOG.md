@@ -7,6 +7,30 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-06-01 — Java SDK: OWL validation (port of Python `owl.py`)
+
+Work-loop tick. Promoted the Java SDK "OWL validation (match Python SDK)" TODO — the
+highest-value remaining unblocked item, and pure client-side logic so it is unit-testable
+in CI with no running server. Ported `sdks/python/loka/owl.py` to Java: `OWLViolation`
+(RuntimeException carrying `constraintType` + the offending triple) and `OWLValidator`
+(domains / ranges / subClassOf / subPropertyOf / functional / disjoint / equivalentClasses /
+sameAs / inverseOf / entityTypes; `getAllTypes` BFS; `validateTriple` enforcing
+domain + range + disjoint with subclass-aware type resolution; `generateVerificationQueries`;
+`validateNtriples`; `loadFromClient` issuing the axiom queries via the typed `SparqlResults`
+API). One deliberate improvement over the Python source: `loadFromClient` also loads
+`owl:disjointWith` — the Python `load_from_client` omits it, leaving its disjoint check dead
+code; disjoint is in the TODO's explicit list, so the Java port loads it symmetrically. The
+Python gap is queued as a follow-up so the two SDKs reconverge. Added 13 JUnit tests
+mirroring `test_owl.py` (domain/range/disjoint violations + valid cases, subclass-satisfied
+domain, transitive `getAllTypes`, literal-object range skip, verification-query generation,
+N-Triples validation) plus a `loadFromClient` test via the embedded `HttpServer`. Verified:
+`gradlew test` BUILD SUCCESSFUL — OWLValidatorTest 13/13, LokaClientTest 20/20,
+SparqlResultsTest 10/10, 0 failures (ran with `JAVA_HOME`=JDK21; default JDK25 breaks Gradle
+8.12's Kotlin parser; CI pins JDK17). Two follow-ups queued: wire the validator into
+`LokaClient`'s insert path (enabled by default, like the Python client), and fix the Python
+`owl:disjointWith` load gap.
+
+---
 ## 2026-06-01 — install-agent `--json`: agent-consumable structured setup output
 
 Work-loop tick. Promoted the AI Agent Installer "agent-consumable structured output (JSON
