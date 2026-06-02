@@ -7,6 +7,28 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-06-01 — .NET SDK: connection retry parity + the SDK's first test project
+
+Work-loop tick. Completed the queued .NET retry parity and, in doing so, gave the .NET SDK
+its first tests (it had none). Added `maxRetries`/`retryBackoff` constructor params (default
+2 / 250ms; existing `LokaClient(endpoint, httpClient?)` still works via optional params) and a
+`SendWithRetryAsync` that takes a request *factory* — since an `HttpRequestMessage` can only
+be sent once, it rebuilds the request each attempt — and retries transient
+`HttpRequestException` + HTTP 502/503/504 with linear backoff. Routed the four data operations
+(Sparql/InsertTriples/DeclareVector/InsertVector) through it; `HealthAsync` stays a single-shot
+probe. Created `sdks/dotnet/tests/` (xUnit, net8.0) with a mock `HttpMessageHandler` and 4
+retry tests (503→200 succeeds, persistent 503 exhausts to maxRetries+1 → 503, 4xx not retried,
+maxRetries=0 disables). Two infrastructure fixes the test project required: a `Compile Remove`
+in the library csproj so its default glob doesn't sweep in the nested `tests/*.cs`, and a
+`sdks/dotnet/.gitignore` (bin/ + obj/ were untracked-but-not-ignored). Wired `dotnet test
+tests/Loka.Client.Tests.csproj` into ci.yml's `sdk-dotnet` job so it's CI-verified going
+forward. Verified locally (8.0 SDK + runtime present): `dotnet build` clean, `dotnet test`
+4/4 pass, `dotnet pack` produces Loka.Client.0.1.0.nupkg (library only). Pre-existing,
+out-of-scope: the lib pins System.Text.Json 8.0.0 which trips NU1903 advisory warnings — left
+as-is (CI already tolerates it). This completes the Java→Go→.NET retry-parity arc; Python/TS/
+Rust parity intentionally not auto-queued.
+
+---
 ## 2026-06-01 — Go SDK: connection retry parity with the Java SDK
 
 Work-loop tick. With the bounded TODO.md items exhausted (the rest are large/need-decomposition

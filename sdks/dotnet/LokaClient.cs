@@ -20,6 +20,8 @@ public class LokaClient : IDisposable
     private readonly HttpClient _http;
     private readonly string _endpoint;
     private readonly JsonSerializerOptions _jsonOptions;
+    private readonly int _maxRetries;
+    private readonly TimeSpan _retryBackoff;
     private bool _disposed;
 
     /// <summary>
@@ -27,11 +29,25 @@ public class LokaClient : IDisposable
     /// </summary>
     /// <param name="endpoint">Base URL without trailing slash, e.g. "http://localhost:7878"</param>
     /// <param name="httpClient">Optional pre-configured HttpClient. If null, a new one is created.</param>
-    public LokaClient(string endpoint, HttpClient? httpClient = null)
+    /// <param name="maxRetries">
+    /// How many times a transient failure is retried on data operations
+    /// (0 disables retry). Default 2. Negative values are clamped to 0.
+    /// </param>
+    /// <param name="retryBackoff">
+    /// Base delay between retry attempts (grows linearly: backoff * attemptNumber).
+    /// Default 250ms.
+    /// </param>
+    public LokaClient(
+        string endpoint,
+        HttpClient? httpClient = null,
+        int maxRetries = 2,
+        TimeSpan? retryBackoff = null)
     {
         _endpoint = endpoint.TrimEnd('/');
         _http = httpClient ?? new HttpClient();
         _http.DefaultRequestHeaders.UserAgent.ParseAdd("loka-dotnet-sdk/0.1.0");
+        _maxRetries = Math.Max(0, maxRetries);
+        _retryBackoff = retryBackoff ?? TimeSpan.FromMilliseconds(250);
         _jsonOptions = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true,
@@ -43,6 +59,11 @@ public class LokaClient : IDisposable
     /// The base endpoint URL this client is configured with.
     /// </summary>
     public string Endpoint => _endpoint;
+
+    /// <summary>
+    /// The configured number of retries for transient failures on data operations.
+    /// </summary>
+    public int MaxRetries => _maxRetries;
 
     /// <summary>
     /// Check whether the Loka instance is reachable and healthy.
@@ -71,14 +92,15 @@ public class LokaClient : IDisposable
     /// <exception cref="LokaException">If the query fails.</exception>
     public async Task<SparqlResults> SparqlAsync(string query, CancellationToken cancellationToken = default)
     {
-        var content = new StringContent(query, Encoding.UTF8, "application/sparql-query");
-        var request = new HttpRequestMessage(HttpMethod.Post, $"{_endpoint}/sparql")
+        var response = await SendWithRetryAsync(() =>
         {
-            Content = content,
-        };
-        request.Headers.Accept.ParseAdd("application/sparql-results+json");
-
-        var response = await _http.SendAsync(request, cancellationToken);
+            var request = new HttpRequestMessage(HttpMethod.Post, $"{_endpoint}/sparql")
+            {
+                Content = new StringContent(query, Encoding.UTF8, "application/sparql-query"),
+            };
+            request.Headers.Accept.ParseAdd("application/sparql-results+json");
+            return request;
+        }, cancellationToken);
         await EnsureSuccessAsync(response, cancellationToken);
 
         var results = await response.Content.ReadFromJsonAsync<SparqlResults>(_jsonOptions, cancellationToken);
@@ -94,8 +116,10 @@ public class LokaClient : IDisposable
     /// <exception cref="LokaException">If the insertion fails.</exception>
     public async Task<InsertResult> InsertTriplesAsync(string ntriples, CancellationToken cancellationToken = default)
     {
-        var content = new StringContent(ntriples, Encoding.UTF8, "application/n-triples");
-        var response = await _http.PostAsync($"{_endpoint}/triples", content, cancellationToken);
+        var response = await SendWithRetryAsync(() => new HttpRequestMessage(HttpMethod.Post, $"{_endpoint}/triples")
+        {
+            Content = new StringContent(ntriples, Encoding.UTF8, "application/n-triples"),
+        }, cancellationToken);
         await EnsureSuccessAsync(response, cancellationToken);
 
         var result = await response.Content.ReadFromJsonAsync<InsertResult>(_jsonOptions, cancellationToken);
@@ -120,7 +144,11 @@ public class LokaClient : IDisposable
         CancellationToken cancellationToken = default)
     {
         var body = new DeclareVectorRequest(predicate, dimensions, hnswM, hnswEfConstruction);
-        var response = await _http.PostAsJsonAsync($"{_endpoint}/vectors/declare", body, _jsonOptions, cancellationToken);
+        var json = JsonSerializer.Serialize(body, _jsonOptions);
+        var response = await SendWithRetryAsync(() => new HttpRequestMessage(HttpMethod.Post, $"{_endpoint}/vectors/declare")
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json"),
+        }, cancellationToken);
         await EnsureSuccessAsync(response, cancellationToken);
 
         var result = await response.Content.ReadFromJsonAsync<DeclareVectorResult>(_jsonOptions, cancellationToken);
@@ -143,7 +171,11 @@ public class LokaClient : IDisposable
         CancellationToken cancellationToken = default)
     {
         var body = new InsertVectorRequest(predicate, subject, vector);
-        var response = await _http.PostAsJsonAsync($"{_endpoint}/vectors", body, _jsonOptions, cancellationToken);
+        var json = JsonSerializer.Serialize(body, _jsonOptions);
+        var response = await SendWithRetryAsync(() => new HttpRequestMessage(HttpMethod.Post, $"{_endpoint}/vectors")
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json"),
+        }, cancellationToken);
         await EnsureSuccessAsync(response, cancellationToken);
 
         var result = await response.Content.ReadFromJsonAsync<InsertVectorResult>(_jsonOptions, cancellationToken);
@@ -161,6 +193,61 @@ public class LokaClient : IDisposable
             _disposed = true;
         }
         GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Send a request built fresh on each attempt, retrying transient failures.
+    /// A transient failure is an <see cref="HttpRequestException"/> or an HTTP
+    /// 502/503/504 response. The request is rebuilt by <paramref name="requestFactory"/>
+    /// on every attempt because an <see cref="HttpRequestMessage"/> can only be
+    /// sent once. Backoff grows linearly. Non-transient responses are returned
+    /// for the caller to inspect.
+    /// </summary>
+    private async Task<HttpResponseMessage> SendWithRetryAsync(
+        Func<HttpRequestMessage> requestFactory,
+        CancellationToken cancellationToken)
+    {
+        HttpRequestException? lastError = null;
+        for (int attempt = 0; attempt <= _maxRetries; attempt++)
+        {
+            using var request = requestFactory();
+            try
+            {
+                var response = await _http.SendAsync(request, cancellationToken);
+                if (IsRetryableStatus((int)response.StatusCode) && attempt < _maxRetries)
+                {
+                    response.Dispose();
+                    await BackoffAsync(attempt, cancellationToken);
+                    continue;
+                }
+                return response;
+            }
+            catch (HttpRequestException ex)
+            {
+                lastError = ex;
+                if (attempt < _maxRetries)
+                {
+                    await BackoffAsync(attempt, cancellationToken);
+                    continue;
+                }
+                throw;
+            }
+        }
+        // Only reached if every attempt threw — the loop returns or rethrows otherwise.
+        throw lastError ?? new HttpRequestException("Request failed after retries");
+    }
+
+    /// <summary>502/503/504 are treated as transient and safe to retry.</summary>
+    private static bool IsRetryableStatus(int status) =>
+        status == 502 || status == 503 || status == 504;
+
+    private async Task BackoffAsync(int attempt, CancellationToken cancellationToken)
+    {
+        var delay = _retryBackoff * (attempt + 1);
+        if (delay > TimeSpan.Zero)
+        {
+            await Task.Delay(delay, cancellationToken);
+        }
     }
 
     private static async Task EnsureSuccessAsync(HttpResponseMessage response, CancellationToken cancellationToken)

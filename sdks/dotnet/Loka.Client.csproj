@@ -14,4 +14,9 @@
   <ItemGroup>
     <PackageReference Include="System.Text.Json" Version="8.0.0" />
   </ItemGroup>
+  <!-- The test project lives under tests/; keep its sources out of the library
+       project's default compile glob (it would otherwise sweep them in). -->
+  <ItemGroup>
+    <Compile Remove="tests/**/*.cs" />
+  </ItemGroup>
 </Project>

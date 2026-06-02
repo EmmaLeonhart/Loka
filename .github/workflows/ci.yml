@@ -152,6 +152,7 @@ jobs:
         with:
           dotnet-version: '8.0.x'
       - run: dotnet build
+      - run: dotnet test tests/Loka.Client.Tests.csproj
       - run: dotnet pack
 
   # ── Go SDK ────────────────────────────────────────────────────────────
