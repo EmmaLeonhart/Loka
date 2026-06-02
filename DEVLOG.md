@@ -7,6 +7,16 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-06-02 — .NET SDK: patch System.Text.Json 8.0.0 (NU1903 high-severity advisory)
+
+Work-loop tick. Fixed the build-flagged security advisory I noted (out of scope) two ticks
+ago. The .NET SDK pinned `System.Text.Json` 8.0.0, which `dotnet build` flagged with NU1903
+(GHSA-8g4q-xg66-9fp4, GHSA-hh2w-p6rv-4g7w — known high-severity). Bumped to 8.0.5 (patched,
+same 8.0 line so no API/runtime impact under the net8.0 target / CI 8.0.x). Verified:
+`dotnet build` now reports 0 warnings (was 4 NU1903), `dotnet test` still 4/4. A real,
+verified vulnerability fix — chosen over idling because the build itself surfaced it.
+
+---
 ## 2026-06-02 — Fix incorrect CLI flag docs (underscore→kebab) + document `--json`
 
 Work-loop tick. While checking for documentation drift from this session's features I found a

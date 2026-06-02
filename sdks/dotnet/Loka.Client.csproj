@@ -12,7 +12,7 @@
     <PackageTags>loka;rdf;sparql;vector;graph-database;triplestore</PackageTags>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="System.Text.Json" Version="8.0.0" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
   </ItemGroup>
   <!-- The test project lives under tests/; keep its sources out of the library
        project's default compile glob (it would otherwise sweep them in). -->
