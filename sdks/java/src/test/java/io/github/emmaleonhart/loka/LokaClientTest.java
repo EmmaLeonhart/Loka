@@ -327,6 +327,86 @@ class LokaClientTest {
         assertEquals(LokaClient.DEFAULT_MAX_RETRIES, new LokaClient("http://localhost:9999").getMaxRetries());
     }
 
+    // ---- OWL validation wiring tests ----
+
+    /**
+     * Register a /sparql context that answers the OWLValidator's load queries:
+     * one rdfs:domain axiom and one rdf:type fact; everything else empty.
+     */
+    private void installOwlSparql(String prop, String domainClass, String entity, String entityType) {
+        server.createContext("/sparql", exchange -> {
+            String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            if (body.contains(OWLValidator.OWL_FUNCTIONAL)) {
+                respond(exchange, 200, owlRows("[\"p\"]", ""));
+            } else if (body.contains(OWLValidator.RDFS_DOMAIN)) {
+                respond(exchange, 200, owlRows("[\"p\",\"d\"]",
+                        uriBind("p", prop) + "," + uriBind("d", domainClass)));
+            } else if (body.contains(OWLValidator.RDF_TYPE)) {
+                respond(exchange, 200, owlRows("[\"e\",\"t\"]",
+                        uriBind("e", entity) + "," + uriBind("t", entityType)));
+            } else {
+                respond(exchange, 200, owlRows("[]", ""));
+            }
+        });
+    }
+
+    @Test
+    void insertTriplesRaisesOnOwlViolation() {
+        installOwlSparql("http://ex.org/worksAt", "http://ex.org/Person",
+                "http://ex.org/car1", "http://ex.org/Car");
+        // /triples should not be reached, but register it so a miss would be obvious.
+        server.createContext("/triples", exchange -> respond(exchange, 200, "{\"inserted\":1}"));
+
+        OWLViolation violation = assertThrows(OWLViolation.class, () -> client.insertTriples(
+                "<http://ex.org/car1> <http://ex.org/worksAt> <http://ex.org/company1> ."));
+        assertEquals("domain", violation.getConstraintType());
+    }
+
+    @Test
+    void insertTriplesSkipsValidationWhenDisabled() {
+        installOwlSparql("http://ex.org/worksAt", "http://ex.org/Person",
+                "http://ex.org/car1", "http://ex.org/Car");
+        server.createContext("/triples", exchange -> respond(exchange, 200, "{\"inserted\":1}"));
+
+        client.setOwlValidation(false);
+        // The same triple that violates above must now sail through.
+        JSONObject result = client.insertTriples(
+                "<http://ex.org/car1> <http://ex.org/worksAt> <http://ex.org/company1> .");
+        assertEquals(1, result.getInt("inserted"));
+    }
+
+    @Test
+    void insertTriplesProceedsWhenNoConstraints() {
+        // /sparql answers every load query with empty bindings → no constraints.
+        server.createContext("/sparql", exchange -> {
+            // drain the request body so the exchange completes cleanly
+            exchange.getRequestBody().readAllBytes();
+            respond(exchange, 200, owlRows("[]", ""));
+        });
+        server.createContext("/triples", exchange -> respond(exchange, 200, "{\"inserted\":1}"));
+
+        JSONObject result = client.insertTriples(
+                "<http://ex.org/a> <http://ex.org/b> <http://ex.org/c> .");
+        assertEquals(1, result.getInt("inserted"));
+    }
+
+    @Test
+    void owlValidationDefaultsOnAndCanBeDisabled() {
+        assertTrue(new LokaClient("http://localhost:9999").isOwlValidation());
+        LokaClient c = new LokaClient("http://localhost:9999");
+        c.setOwlValidation(false);
+        assertFalse(c.isOwlValidation());
+    }
+
+    private static String uriBind(String var, String value) {
+        return "\"" + var + "\":{\"type\":\"uri\",\"value\":\"" + value + "\"}";
+    }
+
+    private static String owlRows(String varsJson, String rowInner) {
+        String rows = rowInner.isEmpty() ? "" : "{" + rowInner + "}";
+        return "{\"head\":{\"vars\":" + varsJson + "},\"results\":{\"bindings\":[" + rows + "]}}";
+    }
+
     // ---- helper ----
 
     private static void respond(HttpExchange exchange, int status, String body) throws IOException {

@@ -6,12 +6,6 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ---
 
-## Java SDK — wire OWL validation into LokaClient insert path (follow-up)
-
-After the validator lands: add `owlValidation` (default on) to `LokaClient`,
-load axioms lazily, and validate in `insertTriples` before sending — matching
-the Python client. Separate commit (changes client behavior + existing tests).
-
 ## Python SDK — `OWLValidator.load_from_client` doesn't load `owl:disjointWith` (follow-up)
 
 `sdks/python/loka/owl.py` declares `self.disjoint` and checks it in

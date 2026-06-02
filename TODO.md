@@ -53,7 +53,6 @@ The SDK is functionally complete (3 classes, ~400 LOC). Build migrated from Mave
 - [x] In-memory GPG signing (no GPG binary needed in CI)
 - [x] GroupId: `io.github.emmaleonhart`, artifact: `loka`
 - [ ] Integration test: start Loka, insert triples, query, verify round-trip
-- [ ] OWL validation (match Python SDK: domain/range/subclass/disjoint/equivalent)
 
 ---
 

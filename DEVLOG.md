@@ -7,6 +7,24 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-06-01 — Java SDK: OWL validation wired into LokaClient insert path
+
+Work-loop tick. Completed the follow-up from the previous tick: wired the freshly-ported
+`OWLValidator` into `LokaClient` so validation happens automatically on insert, matching the
+Python client. Added `owlValidation` (default **on**) with `setOwlValidation`/
+`isOwlValidation`/`reloadOwl`, a lazy `ensureOwlLoaded()` that loads the ontology from the DB
+on first use and silently skips validation if it can't load (e.g. unreachable endpoint — same
+graceful degradation as the Python `_ensure_owl_loaded`), and a check in `insertTriples` that,
+when constraints exist, validates the N-Triples and throws the first `OWLViolation` before
+sending. Added 4 JUnit tests (insert raises on a domain violation; disabled validation lets
+the same triple through; no-constraints proceeds; default-on/can-disable). Verified: `gradlew
+test` BUILD SUCCESSFUL — LokaClientTest 24/24, OWLValidatorTest 13/13, SparqlResultsTest 10/10,
+0 failures (ran with JDK21; CI pins JDK17). Existing insert tests still pass: with no /sparql
+endpoint the lazy load 404s, is caught, and validation is skipped — exactly the intended
+degradation. This closes the Java SDK "OWL validation (match Python SDK)" TODO. The Python
+`owl:disjointWith` load-gap follow-up remains queued.
+
+---
 ## 2026-06-01 — Java SDK: OWL validation (port of Python `owl.py`)
 
 Work-loop tick. Promoted the Java SDK "OWL validation (match Python SDK)" TODO — the

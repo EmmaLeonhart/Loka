@@ -37,6 +37,11 @@ public class LokaClient {
     private final int maxRetries;
     private final Duration retryBackoff;
 
+    // Client-side OWL validation (enabled by default, like the Python SDK).
+    // The ontology is loaded lazily from the database on first insert.
+    private boolean owlValidation = true;
+    private OWLValidator owlValidator;
+
     /**
      * Create a new client pointing at the given Loka endpoint, using the
      * default connect timeout (10s), retry count (2), and backoff (250ms).
@@ -79,6 +84,51 @@ public class LokaClient {
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(connectTimeout)
                 .build();
+    }
+
+    // ---- OWL validation ----
+
+    /**
+     * Enable or disable client-side OWL validation (enabled by default).
+     *
+     * <p>When enabled, {@link #insertTriples(String)} loads the OWL ontology
+     * from the database on first use and rejects triples that violate
+     * {@code rdfs:domain}/{@code rdfs:range}/{@code owl:disjointWith}
+     * constraints before sending them.</p>
+     *
+     * @param enabled whether to validate
+     */
+    public void setOwlValidation(boolean enabled) {
+        this.owlValidation = enabled;
+    }
+
+    /** Whether client-side OWL validation is enabled. */
+    public boolean isOwlValidation() {
+        return owlValidation;
+    }
+
+    /** Force a reload of the OWL ontology from the database on next validation. */
+    public void reloadOwl() {
+        this.owlValidator = null;
+        ensureOwlLoaded();
+    }
+
+    /**
+     * Lazily load the OWL ontology from the database. If it cannot be loaded
+     * (e.g. the endpoint is unreachable or has no SPARQL support), validation
+     * is skipped silently — matching the Python SDK.
+     */
+    private void ensureOwlLoaded() {
+        if (owlValidator != null) {
+            return;
+        }
+        try {
+            OWLValidator validator = new OWLValidator();
+            validator.loadFromClient(this);
+            owlValidator = validator;
+        } catch (RuntimeException e) {
+            owlValidator = null;
+        }
     }
 
     /**
@@ -127,6 +177,17 @@ public class LokaClient {
      * @throws LokaError if the insertion fails
      */
     public JSONObject insertTriples(String ntriples) {
+        // Client-side OWL validation before sending (lean store, smart client).
+        if (owlValidation) {
+            ensureOwlLoaded();
+            if (owlValidator != null && owlValidator.hasConstraints()) {
+                java.util.List<OWLViolation> violations = owlValidator.validateNtriples(ntriples);
+                if (!violations.isEmpty()) {
+                    throw violations.get(0); // raise the first violation
+                }
+            }
+        }
+
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(endpoint + "/triples"))
                 .header("Content-Type", "application/n-triples")
