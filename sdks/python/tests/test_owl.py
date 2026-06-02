@@ -1,7 +1,29 @@
 """Tests for client-side OWL validation."""
 
 import unittest
-from loka.owl import OWLValidator, OWLViolation
+from loka.owl import OWLValidator, OWLViolation, OWL_DISJOINT
+
+
+class _FakeClient:
+    """Minimal client whose sparql() answers load_from_client's axiom queries.
+
+    Returns a disjoint axiom (Cat disjointWith Dog) for the disjoint query and
+    empty bindings for every other query.
+    """
+
+    def sparql(self, query: str) -> dict:
+        if OWL_DISJOINT in query:
+            return {
+                "results": {
+                    "bindings": [
+                        {
+                            "a": {"type": "uri", "value": "http://ex.org/Cat"},
+                            "b": {"type": "uri", "value": "http://ex.org/Dog"},
+                        }
+                    ]
+                }
+            }
+        return {"results": {"bindings": []}}
 
 
 class TestOWLValidator(unittest.TestCase):
@@ -84,6 +106,15 @@ class TestOWLValidator(unittest.TestCase):
         self.assertIsInstance(v, Exception)
         self.assertEqual(v.constraint_type, "domain")
         self.assertEqual(v.triple, ("s", "p", "o"))
+
+    def test_load_from_client_loads_disjoint(self):
+        # Regression: load_from_client previously never populated self.disjoint,
+        # leaving the disjoint check in validate_triple dead. It must now load
+        # owl:disjointWith symmetrically (matching the Java SDK port).
+        self.v.load_from_client(_FakeClient())
+        self.assertTrue(self.v.is_loaded())
+        self.assertIn("http://ex.org/Dog", self.v.disjoint.get("http://ex.org/Cat", set()))
+        self.assertIn("http://ex.org/Cat", self.v.disjoint.get("http://ex.org/Dog", set()))
 
 
 if __name__ == "__main__":

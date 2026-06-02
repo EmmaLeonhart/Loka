@@ -115,6 +115,17 @@ class OWLValidator:
             if p and parent:
                 self.sub_property_of.setdefault(p, set()).add(parent)
 
+        # Load disjoint classes (symmetric)
+        result = client.sparql(
+            f'SELECT ?a ?b WHERE {{ ?a <{OWL_DISJOINT}> ?b }}'
+        )
+        for row in result.get("results", {}).get("bindings", []):
+            a = row.get("a", {}).get("value", "")
+            b = row.get("b", {}).get("value", "")
+            if a and b:
+                self.disjoint.setdefault(a, set()).add(b)
+                self.disjoint.setdefault(b, set()).add(a)
+
         # Load equivalent classes
         result = client.sparql(
             f'SELECT ?a ?b WHERE {{ ?a <{OWL_EQUIVALENT_CLASS}> ?b }}'

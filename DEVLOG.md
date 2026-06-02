@@ -7,6 +7,18 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-06-01 — Python SDK: load `owl:disjointWith` (reconverge with Java port)
+
+Work-loop tick. Closed the cross-SDK divergence flagged two ticks ago. The Python
+`OWLValidator` declared `self.disjoint` and checked it in `validate_triple`, but
+`load_from_client` never issued an `owl:disjointWith` query, so the disjoint check was dead
+code unless a caller populated the dict manually. Added the load query (symmetric
+`setdefault`, mirroring `equivalent_classes` and the Java port). Added a regression test
+(`test_load_from_client_loads_disjoint`) with a minimal fake client. Verified: `pytest`
+green — test_owl.py 10/10, full Python SDK suite 24/24. The Python and Java SDKs now load
+the same OWL axiom set.
+
+---
 ## 2026-06-01 — Java SDK: OWL validation wired into LokaClient insert path
 
 Work-loop tick. Completed the follow-up from the previous tick: wired the freshly-ported
