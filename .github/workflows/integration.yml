@@ -12,6 +12,9 @@ concurrency:
   group: integration-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   integration:
     name: SDK Integration Tests

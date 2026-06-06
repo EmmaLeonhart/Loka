@@ -34,6 +34,9 @@ concurrency:
 permissions:
   contents: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   submit-and-review:
     name: Submit Loka paper and fetch review
