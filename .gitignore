@@ -81,3 +81,6 @@ loka-retrieval-data-stale-20260520/db
 sdks/python/dist/loka-0.3.1-py3-none-any.whl
 sdks/python/dist/loka-0.3.1.tar.gz
 sdks/typescript/loka-0.1.0.tgz
+
+# transient cleanvibe scheduler lock
+.claude/scheduled_tasks.lock
