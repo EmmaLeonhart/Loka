@@ -2,6 +2,24 @@
 
 **Status: 228 of 249 items complete (92%)**
 
+## 🐛 BUG (found 2026-07-20 dogfooding Pramana-on-Loka): prefixed predicate + literal object matches nothing
+
+A SPARQL pattern using a PREFIXED predicate with a LITERAL object returns 0 rows, while the identical
+query with the full predicate URI returns the correct match. Repro (data present in both cases):
+
+```sparql
+# MATCHES (1 row):
+SELECT ?e WHERE { ?e <http://pramana.org/prop/direct/EntityLabel> "GAP2-timing-probe" }
+# MATCHES NOTHING (0 rows) — identical semantics:
+PREFIX wdt: <http://pramana.org/prop/direct/>
+SELECT ?e WHERE { ?e wdt:EntityLabel "GAP2-timing-probe" }
+```
+
+Prefixed predicates with VARIABLE objects work fine (`?e wdt:EntityLabel ?l` matches). So the bug is
+specifically prefixed-name expansion in patterns with a constant literal object — likely in the query
+parser/planner path that special-cases bound-object lookups. Found via Pramana's `_find_entity_by_label`
+silently never matching (caused duplicate entity creation). Pramana works around it with full URIs.
+
 # DO THE STUFF IN THE QUEUE.MD
 
 This is very important! Please actually do the stuff in that file! Do all of it. Base it off of the actual Loka repo's usage of it and its description of it in the CLAUDE.md. The actual Loka repo for the programming language has one that's relatively well done, although it is a bit messy at the same time.
