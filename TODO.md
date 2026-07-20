@@ -2,6 +2,24 @@
 
 **Status: 228 of 249 items complete (92%)**
 
+## 🐛 BUG 2 (found 2026-07-20, same dogfooding): object-variable ⋈ literal-bound join returns 0 rows
+
+A join where a variable appears as the OBJECT of one pattern and the SUBJECT of a literal-bound
+pattern returns 0 rows, though each leg matches alone:
+
+```sparql
+# 0 rows (both legs individually match):
+SELECT ?p WHERE { ?p <.../subject> ?s . ?s <.../uuid> "3946bf48-..." }
+# workaround — bind the object URI directly (works, 5 rows):
+SELECT ?p WHERE { ?p <.../subject> <http://pramana.org/entity/3946bf48-...> }
+```
+
+Subject-side joins on the same store work (`?e <uuid> "..." . ?e <label> ?l` matches). Suspect the
+object→subject join path (OSP/POS usage) when the driving pattern is a literal-bound lookup.
+Distinct from BUG 1 (this one uses full URIs throughout). Behaviour was inconsistent across stores/
+sessions (the same query shape returned rows on an older store) — possibly planner join-order
+dependent. Pramana works around it by constructing entity URIs directly (WD namespace + uuid).
+
 ## 🐛 BUG (found 2026-07-20 dogfooding Pramana-on-Loka): prefixed predicate + literal object matches nothing
 
 A SPARQL pattern using a PREFIXED predicate with a LITERAL object returns 0 rows, while the identical
