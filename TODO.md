@@ -2,6 +2,19 @@
 
 **Status: 228 of 249 items complete (92%)**
 
+## 🐛 BUG 2 addendum + PERF (2026-07-20): join failures are NONDETERMINISTIC per process; ~2s/query at 157k triples
+
+Two additions from continued dogfooding:
+1. **The BUG-2 join failure is nondeterministic across server processes**: the same multi-pattern
+   query on the same `.sdb` returns the correct rows in one `loka serve` process and `[]` in another.
+   Suspect hash-seeded planner join-order (Rust `HashMap` RandomState) selecting the broken
+   object-var⋈literal join path only sometimes. This masked/confused diagnosis badly (looked like
+   whitespace/state effects). A deterministic planner order (or fixing the join path) would make it
+   reproducible.
+2. **Query latency ~2s for even single-pattern lookups at 157k triples** (e.g.
+   `SELECT ?t WHERE { ?t <...EntityLabel> "X" }`). Pramana's page renders need dozens-to-hundreds of
+   such lookups → unusable. POS/SPO prefix scans should make these ~ms; something is scanning.
+
 ## 🐛 BUG 2 (found 2026-07-20, same dogfooding): object-variable ⋈ literal-bound join returns 0 rows
 
 A join where a variable appears as the OBJECT of one pattern and the SUBJECT of a literal-bound
