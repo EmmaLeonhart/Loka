@@ -2,6 +2,13 @@
 
 **Status: 228 of 249 items complete (92%)**
 
+## 🐛 OBS (2026-07-20): /graph export lags recent INSERT DATA writes by more than the sled flush interval
+
+`GET /graph?format=nt` served a snapshot missing triples written seconds earlier via POST /sparql
+INSERT DATA (SELECT saw them immediately). Observed lag sometimes >3s (2s flush config). Pramana
+works around it with a 6s settle before rebuilding its read index. Export should probably read
+through the same view SELECT uses, or flush first.
+
 ## 🐛 BUG 2 addendum + PERF (2026-07-20): join failures are NONDETERMINISTIC per process; ~2s/query at 157k triples
 
 Two additions from continued dogfooding:
