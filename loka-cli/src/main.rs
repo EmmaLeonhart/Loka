@@ -393,7 +393,7 @@ async fn main() -> anyhow::Result<()> {
             }
 
             let app = loka_proto::router(state);
-            let addr = format!("0.0.0.0:{}", port);
+            let addr = format!("127.0.0.1:{}", port);
             tracing::info!("Loka listening on {}", addr);
 
             let listener = tokio::net::TcpListener::bind(&addr).await?;
@@ -948,7 +948,7 @@ Loka Agent Installer v0.1.0
                 });
 
                 let app = loka_proto::router(state);
-                let addr = format!("0.0.0.0:{}", port);
+                let addr = format!("127.0.0.1:{}", port);
                 println!("[OK] Loka listening on http://{}", addr);
                 let listener = tokio::net::TcpListener::bind(&addr).await?;
                 axum::serve(listener, app).await?;

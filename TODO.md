@@ -2,6 +2,17 @@
 
 **Status: 228 of 249 items complete (92%)**
 
+## 🔒 FIX (2026-07-20): `loka serve` now binds 127.0.0.1 (was 0.0.0.0)
+
+Root cause of Emma's "Loka requesting to go past the firewall all night": every `loka serve` launch
+listened on ALL interfaces (0.0.0.0), so Windows Firewall raised its inbound-allow prompt for each
+server process during the Pramana store sessions — dozens overnight, nobody present to dismiss.
+No outbound traffic was involved (the only outbound in the codebase is the GitHub releases
+update-check on the `loka mcp` path, which never ran). Fix: both bind sites now default to
+127.0.0.1 (matches the serverless-by-default principle). Remote access needs an explicit `--host`
+flag (not yet built — add when Remote Studio lands). NOTE: source-only fix; rebuild the binary
+before the next serve (`cargo build --release -p loka-cli`).
+
 ## 🐛 OBS (2026-07-20): /graph export lags recent INSERT DATA writes by more than the sled flush interval
 
 `GET /graph?format=nt` served a snapshot missing triples written seconds earlier via POST /sparql
