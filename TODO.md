@@ -20,6 +20,15 @@ INSERT DATA (SELECT saw them immediately). Observed lag sometimes >3s (2s flush 
 works around it with a 6s settle before rebuilding its read index. Export should probably read
 through the same view SELECT uses, or flush first.
 
+## ⚠ DO NOT RUN LOKA FROM THE INSTALLER (Emma, 2026-07-22)
+
+**The installer dependency is the bug.** `C:\Program Files\Loka\loka.exe` is a **2026-05-27 build**; current source builds to 2026-07-22. Both report `loka 0.4.1`, so two months of drift was invisible. That one fact explains two separately-investigated incidents:
+
+- **The overnight firewall prompts** Emma called critical — the May build binds `0.0.0.0`; source binds `127.0.0.1`. The fix was in source for weeks and never reached the binary being run.
+- **The three “engine bugs” below**, none of which reproduce on a current build — after they had already cost Pramana an in-memory workaround for a problem that wasn't there.
+
+**Rule: always run the repo-local build**, `external/Loka/target/release/loka.exe`, built with `cargo build --release -p loka-cli`. Never invoke bare `loka` (it resolves via PATH to the installer copy). Replacing the installed binary was considered and rejected — it treats the symptom and leaves the same trap for the next stale install.
+
 ## ✅ RE-TESTED 2026-07-22 — ALL THREE DOGFOODING BUGS BELOW FAIL TO REPRODUCE
 
 Re-ran every repro against a **fresh `cargo build --release` of current source**, on the same
