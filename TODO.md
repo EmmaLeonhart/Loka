@@ -20,6 +20,33 @@ INSERT DATA (SELECT saw them immediately). Observed lag sometimes >3s (2s flush 
 works around it with a 6s settle before rebuilding its read index. Export should probably read
 through the same view SELECT uses, or flush first.
 
+## ✅ RE-TESTED 2026-07-22 — ALL THREE DOGFOODING BUGS BELOW FAIL TO REPRODUCE
+
+Re-ran every repro against a **fresh `cargo build --release` of current source**, on the same
+162,761-triple `.sdb` the originals were filed from:
+
+| Filed | Reported | Measured 2026-07-22 |
+|---|---|---|
+| PERF: single-pattern lookup | ~2s | **~1.6 ms** (5 runs: 2.0/1.7/1.6/1.5/2.3 ms) |
+| BUG 2: object-var ⋈ literal-bound join | 0 rows | **8 rows, correct** |
+| BUG 2 addendum: nondeterministic per process | varies by process | **deterministic** — 8 rows in 3 separate fresh `loka serve` processes |
+| BUG 1: prefixed predicate + literal object | 0 rows | **1 row**, same as the full-URI form |
+
+**Likely explanation: the originals were measured against the STALE INSTALLED BINARY.**
+`C:\Program Files\Loka\loka` was never rebuilt after the source fixes — it was still binding
+0.0.0.0 on 2026-07-22 when the 127.0.0.1 change had long been in source. Same staleness would
+explain these. Not proven, but it fits every symptom including the "inconsistent across sessions"
+note.
+
+**Consequence for Pramana:** its in-memory read index (`src/graph_index.py`) was built explicitly
+because "Loka answers even single-pattern SPARQL in ~2s". That premise no longer holds. The index
+is still defensible on round-trip grounds (a page render is hundreds of lookups, and HTTP per
+lookup is worse than one dump), so this is NOT a call to remove it — but the stated reason should
+be corrected, and BUG-2 workarounds (constructing entity URIs to avoid joins) can be revisited.
+
+**Left below unchanged, as filed.** A non-reproducing bug is not a fixed bug: the addendum itself
+says the failure was intermittent, so three clean processes is evidence, not proof.
+
 ## 🐛 BUG 2 addendum + PERF (2026-07-20): join failures are NONDETERMINISTIC per process; ~2s/query at 157k triples
 
 Two additions from continued dogfooding:
