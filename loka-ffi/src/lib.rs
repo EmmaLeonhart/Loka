@@ -303,6 +303,10 @@ pub extern "C" fn loka_insert_ntriples(db: *mut LokaDb, data: *const c_char) -> 
         let triple = loka_core::Triple::new(s_id, p_id, o_id);
         if inner.ps.insert(triple).is_ok() {
             let _ = inner.store.insert(triple);
+            // Live HNSW indexing: a loka:f32vec object becomes
+            // VECTOR_SIMILAR-searchable immediately, no reopen required
+            // (previously only the loka_db_open rebuild picked vectors up).
+            index_vector_literal(&mut inner, p_id, o_id, &parsed.object);
             inserted += 1;
         }
     }
@@ -688,7 +692,156 @@ pub extern "C" fn loka_version() -> *const c_char {
     concat!(env!("CARGO_PKG_VERSION"), "\0").as_ptr() as *const c_char
 }
 
+// ─── Cascade retraction ──────────────────────────────────────────────────────
+
+/// Cascade-retraction on the live handle: remove a node — real data OR
+/// AI-generated — and every generated inference that transitively cited it.
+/// Propagation follows ONLY `http://loka.dev/provenance/propositionInferredFrom`
+/// back-edges (`loka_core::retract_set`); ordinary data edges are never
+/// followed.
+///
+/// `commit == false` is a non-destructive preview. Returns a JSON object
+/// `{"root","total","maxDepth","committed","removed","triples":[{"depth","s","p","o"},…]}`
+/// as a C string that must be freed with `loka_string_free`; null on error
+/// (call `loka_last_error()`). An unknown IRI yields an empty set, not an
+/// error. On commit, removed vector rows are also tombstoned in the live
+/// HNSW registry.
+#[no_mangle]
+pub extern "C" fn loka_retract_node(
+    db: *mut LokaDb,
+    iri: *const c_char,
+    commit: bool,
+) -> *mut c_char {
+    let db = match unsafe_db_ref(db) {
+        Some(d) => d,
+        None => {
+            set_error("Null database handle");
+            return std::ptr::null_mut();
+        }
+    };
+    let iri_str = match unsafe_cstr_to_str(iri) {
+        Some(s) => s,
+        None => {
+            set_error("Invalid or null iri");
+            return std::ptr::null_mut();
+        }
+    };
+    let mut inner = match db.inner.lock() {
+        Ok(i) => i,
+        Err(e) => {
+            set_error(&format!("Lock error: {}", e));
+            return std::ptr::null_mut();
+        }
+    };
+
+    // RetractSet owns its triples (Triple is Copy), so no borrow of the
+    // store survives past this call — the commit loop below may mutate.
+    let set = match inner.dict.lookup(iri_str) {
+        Some(root) => loka_core::retract_set(root, &inner.store, &inner.dict),
+        None => loka_core::RetractSet::default(),
+    };
+
+    let mut triples_json: Vec<String> = Vec::new();
+    for (depth, triples) in set.by_depth.iter().enumerate() {
+        for t in triples {
+            triples_json.push(format!(
+                "{{\"depth\":{},\"s\":\"{}\",\"p\":\"{}\",\"o\":\"{}\"}}",
+                depth,
+                json_escape(&resolve_id(t.subject, &inner.dict)),
+                json_escape(&resolve_id(t.predicate, &inner.dict)),
+                json_escape(&resolve_id(t.object, &inner.dict)),
+            ));
+        }
+    }
+
+    let mut removed = 0usize;
+    if commit {
+        let doomed: Vec<loka_core::Triple> = set.all().copied().collect();
+        for t in &doomed {
+            if inner.ps.remove(t).unwrap_or(false) {
+                removed += 1;
+            }
+            inner.store.remove(t);
+            // Tombstone any vector object in the live registry (no-op for
+            // non-vector triples). Reopen rebuilds cleanly either way.
+            inner.vectors.delete(t.predicate, t.object);
+        }
+        if let Err(e) = inner.ps.flush() {
+            set_error(&format!("Flush error: {}", e));
+            return std::ptr::null_mut();
+        }
+    }
+
+    string_to_c(&format!(
+        "{{\"root\":\"{}\",\"total\":{},\"maxDepth\":{},\"committed\":{},\"removed\":{},\"triples\":[{}]}}",
+        json_escape(iri_str),
+        set.total(),
+        set.max_depth(),
+        commit,
+        removed,
+        triples_json.join(","),
+    ))
+}
+
 // ─── Internal helpers ────────────────────────────────────────────────────────
+
+/// If an inserted object literal is a `loka:f32vec`, feed the live HNSW
+/// registry (auto-declare on first use: dims from data, M=16, cosine) so the
+/// vector is searchable without a reopen. Mirrors the `loka_db_open` rebuild
+/// scan; parse failures are ignored (the row still stores as a plain triple,
+/// exactly as before this hook existed).
+fn index_vector_literal(
+    inner: &mut DbInner,
+    predicate_id: loka_core::TermId,
+    object_id: loka_core::TermId,
+    obj_str: &str,
+) {
+    if !obj_str.contains("^^<http://loka.dev/f32vec>") {
+        return;
+    }
+    let Some(start) = obj_str.find('"') else {
+        return;
+    };
+    let Some(end) = obj_str[start + 1..].find('"').map(|p| p + start + 1) else {
+        return;
+    };
+    let floats: Vec<f32> = obj_str[start + 1..end]
+        .split_whitespace()
+        .filter_map(|s| s.parse::<f32>().ok())
+        .collect();
+    if floats.is_empty() {
+        return;
+    }
+    if !inner.vectors.has_index(predicate_id) {
+        let config = loka_hnsw::VectorPredicateConfig {
+            predicate_id,
+            dimensions: floats.len(),
+            m: 16,
+            ef_construction: 200,
+            metric: loka_hnsw::DistanceMetric::Cosine,
+        };
+        let _ = inner.vectors.declare(config);
+    }
+    let _ = inner.vectors.insert(predicate_id, floats, object_id);
+}
+
+/// Minimal JSON string escaper (quotes, backslashes, control chars). Rust's
+/// `{:?}` is NOT JSON-safe (it emits `\u{XXXX}` with braces).
+fn json_escape(s: &str) -> String {
+    let mut out = String::with_capacity(s.len() + 2);
+    for c in s.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            c if (c as u32) < 0x20 => out.push_str(&format!("\\u{:04x}", c as u32)),
+            c => out.push(c),
+        }
+    }
+    out
+}
 
 fn unsafe_cstr_to_str<'a>(ptr: *const c_char) -> Option<&'a str> {
     if ptr.is_null() {
@@ -811,5 +964,95 @@ mod tests {
         assert!(!v.is_null());
         let version = unsafe { CStr::from_ptr(v) }.to_str().unwrap();
         assert!(!version.is_empty());
+    }
+
+    #[test]
+    fn test_vector_insert_searchable_without_reopen() {
+        // A+ decision (Topaz 2026-07-26): insert_ntriples feeds the live
+        // HNSW registry, so VECTOR_SIMILAR works on the same handle.
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("vec.sdb");
+        let path_c = CString::new(path.to_str().unwrap()).unwrap();
+        let db = loka_db_open(path_c.as_ptr());
+        assert!(!db.is_null());
+
+        let data = CString::new(
+            "<http://t/a> <http://t/emb> \"1 0 0 0\"^^<http://loka.dev/f32vec> .\n\
+             <http://t/b> <http://t/emb> \"0 1 0 0\"^^<http://loka.dev/f32vec> .",
+        )
+        .unwrap();
+        assert_eq!(loka_insert_ntriples(db, data.as_ptr()), 2);
+
+        let query = CString::new(
+            "SELECT ?s WHERE { VECTOR_SIMILAR(?s <http://t/emb> \
+             \"0.9 0.1 0 0\"^^<http://loka.dev/f32vec>, 0.5) }",
+        )
+        .unwrap();
+        let result = loka_query(db, query.as_ptr());
+        assert!(!result.is_null(), "query failed without reopen");
+        let rows = loka_result_row_count(result);
+        assert!(rows >= 1, "expected the near vector, got {} rows", rows);
+        let sval = loka_result_value(result, 0, 0);
+        let s = unsafe { CStr::from_ptr(sval) }.to_str().unwrap().to_string();
+        loka_string_free(sval);
+        assert_eq!(s, "http://t/a");
+        loka_result_free(result);
+        loka_db_close(db);
+    }
+
+    #[test]
+    fn test_retract_node_cascade() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("retract.sdb");
+        let path_c = CString::new(path.to_str().unwrap()).unwrap();
+        let db = loka_db_open(path_c.as_ptr());
+        assert!(!db.is_null());
+
+        // Real fact + a generated inference citing it (star provenance).
+        let data = CString::new(
+            "<http://t/f> <http://t/p> <http://t/x> .\n\
+             <http://t/g> <http://t/p> <http://t/y> .\n\
+             << <http://t/g> <http://t/p> <http://t/y> >> \
+             <http://loka.dev/provenance/propositionInferredFrom> \
+             << <http://t/f> <http://t/p> <http://t/x> >> .",
+        )
+        .unwrap();
+        assert_eq!(loka_insert_ntriples(db, data.as_ptr()), 3);
+        let before = loka_triple_count(db);
+
+        // Preview: non-destructive, must include the generated row at depth>=1.
+        let iri = CString::new("http://t/f").unwrap();
+        let preview_ptr = loka_retract_node(db, iri.as_ptr(), false);
+        assert!(!preview_ptr.is_null());
+        let preview = unsafe { CStr::from_ptr(preview_ptr) }.to_str().unwrap().to_string();
+        loka_string_free(preview_ptr);
+        assert!(preview.contains("\"committed\":false"), "{}", preview);
+        assert!(preview.contains("http://t/g"), "cascade reaches the inference: {}", preview);
+        assert_eq!(loka_triple_count(db), before, "preview must not mutate");
+
+        // Commit: root row + generated row + its provenance annotation go.
+        let commit_ptr = loka_retract_node(db, iri.as_ptr(), true);
+        assert!(!commit_ptr.is_null());
+        let committed = unsafe { CStr::from_ptr(commit_ptr) }.to_str().unwrap().to_string();
+        loka_string_free(commit_ptr);
+        assert!(committed.contains("\"committed\":true"), "{}", committed);
+        assert!(loka_triple_count(db) < before);
+
+        // The generated inference must be gone from queries.
+        let q = CString::new("SELECT ?o WHERE { <http://t/g> <http://t/p> ?o }").unwrap();
+        let result = loka_query(db, q.as_ptr());
+        assert!(!result.is_null());
+        assert_eq!(loka_result_row_count(result), 0, "inference evaporated");
+        loka_result_free(result);
+
+        // Unknown IRI: empty set, not an error.
+        let nope = CString::new("http://t/never-seen").unwrap();
+        let empty_ptr = loka_retract_node(db, nope.as_ptr(), false);
+        assert!(!empty_ptr.is_null());
+        let empty = unsafe { CStr::from_ptr(empty_ptr) }.to_str().unwrap().to_string();
+        loka_string_free(empty_ptr);
+        assert!(empty.contains("\"total\":0"), "{}", empty);
+
+        loka_db_close(db);
     }
 }
