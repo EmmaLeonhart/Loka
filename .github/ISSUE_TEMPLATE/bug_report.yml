@@ -1,0 +1,89 @@
+name: Bug report
+description: Loka stores, queries, or serves something incorrectly.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Version strings do not identify a build.** An installed `loka` two months behind source
+        reported the same version as current source, which hid a changed default and produced three
+        "engine bugs" that did not reproduce on a fresh build. Please answer the build question
+        precisely — it is the single most useful field here.
+
+  - type: dropdown
+    id: build_source
+    attributes:
+      label: Which binary did you run?
+      options:
+        - Repo-local build (./target/release/loka) — recommended
+        - Installed binary (bare `loka` from PATH)
+        - Docker image
+        - SDK only (no binary)
+    validations:
+      required: true
+
+  - type: input
+    id: commit
+    attributes:
+      label: Commit built from
+      description: "`git rev-parse --short HEAD` in the tree you built. If you ran an installed binary, say so."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Mode
+      options:
+        - Serverless (opened a .sdb directly)
+        - Server (loka serve)
+        - MCP (loka mcp)
+        - Studio
+    validations:
+      required: true
+
+  - type: textarea
+    id: query
+    attributes:
+      label: The query
+      description: The exact SPARQL, plus whether each pattern matches on its own when run separately.
+      render: sparql
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual
+    validations:
+      required: true
+
+  - type: input
+    id: scale
+    attributes:
+      label: Dataset scale
+      description: Triple count and .sdb size — several behaviours are scale-dependent.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: cross_process
+    attributes:
+      label: Does it reproduce across separate processes?
+      description: |
+        A past join failure returned correct rows in one `loka serve` process and zero rows in
+        another, which pointed at hash-seeded planner join ordering. If results vary per process,
+        that is important information, not noise.
+      options:
+        - Yes — same result every process
+        - No — varies between processes
+        - Not applicable / not tested
+    validations:
+      required: true
+
+  - type: input
+    id: platform
+    attributes:
+      label: OS and architecture
+    validations:
+      required: true
