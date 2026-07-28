@@ -20,6 +20,23 @@ INSERT DATA (SELECT saw them immediately). Observed lag sometimes >3s (2s flush 
 works around it with a 6s settle before rebuilding its read index. Export should probably read
 through the same view SELECT uses, or flush first.
 
+**DOES NOT REPRODUCE on current source (tested 2026-07-28).** Added
+`graph_export_sees_writes_immediately` (loka-proto/src/server.rs): INSERT DATA over the router,
+then `GET /graph?format=nt` with no sleep and no flush. The triple is present, and SELECT agrees.
+368 workspace tests green.
+
+The code path explains the non-reproduction: `execute_insert_data` takes the write lock on
+`state.store` and inserts there before returning, and `export_graph` iterates that *same*
+in-memory `TripleStore`. The two read paths cannot diverge, and the sled flush interval governs
+durability, not read visibility — so there is no flush for the export to be late behind. The
+suggested fixes ("read through the same view SELECT uses", "flush first") are therefore both
+already true / not the mechanism.
+
+**Not marked fixed.** Same discipline as the three bugs above: the original was intermittent, and
+one passing test is evidence, not proof. Most likely the same root cause as those three — the
+stale installed binary (see the DO-NOT-RUN-FROM-INSTALLER note above), which was a May build.
+Pramana's 6s settle rests on the same premise and can be revisited.
+
 ## ⚠ DO NOT RUN LOKA FROM THE INSTALLER (Emma, 2026-07-22)
 
 **The installer dependency is the bug.** `C:\Program Files\Loka\loka.exe` is a **2026-05-27 build**; current source builds to 2026-07-22. Both report `loka 0.4.1`, so two months of drift was invisible. That one fact explains two separately-investigated incidents:

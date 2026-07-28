@@ -2458,4 +2458,87 @@ mod tests {
             assert_eq!(resolved, term, "ps.resolve must round-trip");
         }
     }
+
+    #[tokio::test]
+    async fn graph_export_sees_writes_immediately() {
+        // Regression guard for the 2026-07-20 dogfooding report: "/graph export
+        // lags recent INSERT DATA writes by more than the sled flush interval"
+        // — GET /graph?format=nt served a snapshot missing triples written
+        // seconds earlier, while SELECT saw them immediately (observed lag >3s
+        // against a 2s flush config).
+        //
+        // The report does not reproduce against current source, and the code
+        // path explains why: execute_insert_data takes the write lock on
+        // state.store and inserts there before returning, and export_graph
+        // iterates that same in-memory TripleStore. There is no flush between
+        // them to be late — the sled flush interval governs durability, not
+        // read visibility. The three sibling bugs filed from the same session
+        // were later traced to a stale installed binary (see TODO.md), which is
+        // the most likely explanation here too.
+        //
+        // A non-reproducing bug is not a fixed bug, so this test does not close
+        // the report. It pins the invariant the report claims was violated, so a
+        // real regression is caught rather than re-litigated by hand.
+        let state = test_state_persistent();
+        let app = router(state.clone());
+
+        let insert = Request::builder()
+            .method("POST")
+            .uri("/sparql")
+            .header("content-type", "application/sparql-query")
+            .body(Body::from(
+                "INSERT DATA { \
+                 <http://export.example.org/S> \
+                 <http://export.example.org/P> \
+                 <http://export.example.org/O> }",
+            ))
+            .unwrap();
+        let resp = app.clone().oneshot(insert).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        // No sleep, no flush: the export must already see it.
+        let export = Request::builder()
+            .uri("/graph?format=nt")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.clone().oneshot(export).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let nt = String::from_utf8(body.to_vec()).unwrap();
+
+        assert!(
+            nt.contains("<http://export.example.org/S>")
+                && nt.contains("<http://export.example.org/P>")
+                && nt.contains("<http://export.example.org/O>"),
+            "/graph?format=nt did not contain the just-inserted triple; \
+             export is lagging writes.\nExport body was:\n{}",
+            nt
+        );
+
+        // And SELECT agrees — the two read paths must not diverge, which is
+        // the actual substance of the original report.
+        let select = Request::builder()
+            .method("POST")
+            .uri("/sparql")
+            .header("content-type", "application/sparql-query")
+            .body(Body::from(
+                "SELECT ?o WHERE { \
+                 <http://export.example.org/S> \
+                 <http://export.example.org/P> ?o }",
+            ))
+            .unwrap();
+        let resp = app.oneshot(select).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let text = String::from_utf8(body.to_vec()).unwrap();
+        assert!(
+            text.contains("http://export.example.org/O"),
+            "SELECT did not see the inserted triple either: {}",
+            text
+        );
+    }
 }
