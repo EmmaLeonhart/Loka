@@ -312,41 +312,35 @@ fn conjuncts(e: Expr, out: &mut Vec<Expr>) {
 
 /// Render one conjunct as the body of a single `FILTER(...)`.
 ///
-/// Loka's FILTER grammar accepts a flat right-nested chain of comparisons
-/// joined by `&&` / `||` and does **not** accept a parenthesised expression in
-/// operand position (`parser.rs::parse_comparison_expr` expects a term). So a
-/// conjunct is representable only if it is a single comparison or a pure `OR`
-/// chain of comparisons. Anything else — an `OR` with a compound left side,
-/// such as `(a AND b) OR c` — has no equivalent in that grammar and is
-/// rejected rather than mis-emitted.
+/// Arbitrary boolean trees are expressible: Loka's FILTER grammar gained
+/// parenthesised grouping (`parser.rs`, 2026-07-28), so a compound branch is
+/// wrapped in parens rather than rejected. This previously could not represent
+/// a disjunction with a conjunctive branch — `(a AND b) OR c` — at all.
+///
+/// Parens go only around compound children. A bare comparison never gets them,
+/// which keeps the common single-comparison and flat-chain output identical to
+/// what the flat grammar produced, and keeps the emitted SPARQL readable.
+///
+/// Grouping is emitted explicitly at every level rather than relying on
+/// precedence, because the grammar still has none between `&&` and `||` — a
+/// chain associates as written. Explicit parens are what make the tree survive
+/// the round trip.
 fn render_conjunct(e: &Expr) -> TResult<String> {
-    fn or_chain(e: &Expr, out: &mut Vec<String>) -> TResult<()> {
+    fn go(e: &Expr) -> String {
         match e {
-            Expr::Cmp(s) => {
-                out.push(s.clone());
-                Ok(())
-            }
-            Expr::Or(l, r) => {
-                or_chain(l, out)?;
-                or_chain(r, out)
-            }
-            Expr::And(_, _) => unsupported(
-                "AND nested inside OR",
-                "Loka's FILTER grammar is a flat chain of comparisons with no parenthesised \
-                 grouping, so a disjunction with a conjunctive branch cannot be expressed. \
-                 Rewrite it in disjunctive normal form, or write the FILTER directly in SPARQL.",
-            ),
+            Expr::Cmp(s) => s.clone(),
+            Expr::And(l, r) => format!("{} && {}", wrap(l), wrap(r)),
+            Expr::Or(l, r) => format!("{} || {}", wrap(l), wrap(r)),
         }
     }
-
-    match e {
-        Expr::Cmp(s) => Ok(s.clone()),
-        _ => {
-            let mut parts = Vec::new();
-            or_chain(e, &mut parts)?;
-            Ok(parts.join(" || "))
+    /// Parenthesise anything that is not a leaf.
+    fn wrap(e: &Expr) -> String {
+        match e {
+            Expr::Cmp(s) => s.clone(),
+            compound => format!("({})", go(compound)),
         }
     }
+    Ok(go(e))
 }
 
 /// The negation of a comparison operator, used to push `NOT` down to the leaves.
@@ -1302,12 +1296,26 @@ mod tests {
     }
 
     #[test]
-    fn rejects_conjunction_nested_in_disjunction() {
-        // (a AND b) OR c has no reading in a grammar without grouping.
-        rejects(
-            "MATCH (a) WHERE (a.x = 1 AND a.y = 2) OR a.z = 3 RETURN a",
-            "disjunctive normal form",
+    fn conjunction_nested_in_disjunction_now_groups() {
+        // Was rejected while the FILTER grammar had no grouping; now emitted
+        // with explicit parens around the compound branch.
+        let out = t("MATCH (a) WHERE (a.x = 1 AND a.y = 2) OR a.z = 3 RETURN a");
+        assert!(
+            out.contains("(?_t0 = 1 && ?_t1 = 2) || ?_t2 = 3"),
+            "expected the conjunctive branch parenthesised: {}",
+            out
         );
+        parses(&out);
+    }
+
+    #[test]
+    fn bare_comparisons_are_not_parenthesised() {
+        // Parens only wrap compound children, so simple output stays simple.
+        let out = t("MATCH (a) WHERE a.x = 1 RETURN a");
+        assert!(out.contains("FILTER(?_t0 = 1)"), "{}", out);
+        let out = t("MATCH (a) WHERE a.x = 1 OR a.y = 2 RETURN a");
+        assert!(out.contains("FILTER(?_t0 = 1 || ?_t1 = 2)"), "{}", out);
+        parses(&out);
     }
 
     #[test]

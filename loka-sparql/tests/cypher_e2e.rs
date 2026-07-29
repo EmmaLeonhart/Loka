@@ -150,6 +150,25 @@ fn de_morgan_disjunction_executes_correctly() {
 }
 
 #[test]
+fn conjunction_nested_in_disjunction_executes() {
+    // (age = 36 AND age < 40) OR age = 50  ->  Ada (36) and Cy (50).
+    // This shape was rejected outright until FILTER gained grouping, and
+    // parsing is not enough — check it selects two rows, not all three.
+    //
+    // Numeric comparisons only, deliberately: string equality inside a FILTER
+    // matches nothing in this engine (see TODO.md, "string equality in FILTER
+    // never matches"), so a `name = "Ada"` conjunct here would silently make
+    // the branch dead and the test would pass for the wrong reason.
+    let rows = run("MATCH (a:Person) WHERE (a.age = 36 AND a.age < 40) OR a.age = 50 RETURN a");
+    assert_eq!(rows.len(), 2, "{:?}", rows);
+
+    // The conjunctive branch must actually constrain: nobody is 36 AND over 40,
+    // so only the disjunct survives.
+    let rows = run("MATCH (a:Person) WHERE (a.age = 36 AND a.age > 40) OR a.age = 50 RETURN a");
+    assert_eq!(rows.len(), 1, "{:?}", rows);
+}
+
+#[test]
 fn top_level_and_conjoins_across_separate_filters() {
     // Emitted as two FILTER clauses; must still behave as a conjunction.
     let rows = run("MATCH (a:Person) WHERE a.age > 30 AND a.age < 40 RETURN a");

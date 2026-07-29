@@ -268,6 +268,35 @@ publish is the irreversible step and needs Emma's explicit go + these setups:
       The Cypher transpiler (`loka-sparql/src/cypher.rs`) is the template — same
       text-in/SPARQL-text-out shape, same rejection discipline. Reuse its tokenizer.
 
+### 🐛 FOUND 2026-07-28: string equality in FILTER never matches
+
+`FILTER(?n = "Ada")` returns **0 rows** against a store that contains the matching triple.
+The same literal in *pattern* position matches fine, so the two paths disagree:
+
+```rust
+let name = dict.intern("http://loka.dev/name");
+let ada  = dict.intern("http://loka.dev/ada");
+store.insert(Triple::new(ada, name, dict.intern("\"Ada\"")));
+```
+
+| query | rows |
+|---|---|
+| `?a loka:name "Ada" .` (pattern position) | **1** ✅ |
+| `?a loka:name ?n . FILTER(?n = "Ada")` | **0** ❌ |
+| `?a loka:name ?n . FILTER(?n = "\"Ada\"")` | **0** ❌ |
+
+Quoting the literal both ways fails, so it is not simply the stored-with-quotes convention.
+Numeric FILTER comparisons are unaffected — `FILTER(?age = 36)` and `FILTER(?age > 30)` work,
+which is why this went unnoticed: the parser produces `Equals(Variable, Literal("Ada"))`
+correctly (verified by dumping the AST), so the defect is in how the executor resolves a
+`Literal` to a `TermId` for comparison, not in parsing.
+
+Not a regression from the grouping work below — pattern position and numeric filters both
+predate it and still behave. Found while writing an end-to-end test that used a string
+conjunct; the branch was silently dead and the test passed for the wrong reason until the
+row counts were checked. Any query filtering on a string literal is currently returning
+nothing rather than erroring, which is the bad shape of failure.
+
 ### ✅ FIXED 2026-07-28: the FILTER grammar now has parenthesised grouping
 
 `FILTER((?a = 1) && (?b = 2))`, `FILTER(?a = 1 && (?b = 2 || ?c = 3))`,
