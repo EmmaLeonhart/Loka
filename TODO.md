@@ -332,12 +332,36 @@ Additive by construction: a `(` in expression position previously fell through t
 `loka-sparql/tests/filter_grouping.rs`, including a guard that the flat chain is unchanged
 and that redundant parens don't alter results. 415 workspace tests green.
 
-**Still open:** there is no operator precedence between `&&` and `||` — the chain is
-left-associative and flat, so `a && b || c` groups as written rather than as
-`a && (b || c)`. Explicit parens now express whatever you mean, so this is a sharp edge
-rather than a blocker. A real SPARQL 1.1 `Expression` grammar (with precedence, and
-arithmetic in operand position, which `parse_comparison_expr` currently only half-handles)
-is the proper fix.
+**Also fixed 2026-07-29: filters of three or more terms.** `parse_filter` inlined a
+one-shot chain — one comparison, at most ONE `&&`/`||` continuation, then `)`. So
+`FILTER(?a = 1 && ?b = 2 && ?c = 3)` was a parse error, which is an ordinary SPARQL filter.
+It now delegates to `parse_bool_expr`, which loops.
+
+Removing the early `bound` / `!bound` / `!` branches from `parse_filter` at the same time
+fixed a positional asymmetry: each consumed FILTER's own closing paren before returning, so
+they worked as an entire filter but not as the left operand of a chain
+(`FILTER(bound(?a) && ?b = 1)` failed while `FILTER(?b = 1 && bound(?a))` worked).
+`parse_filter_inner` already handled all three without eating the outer paren.
+
+**Still open — two things, both narrower than they were:**
+
+1. **No precedence between `&&` and `||`.** The chain associates left-to-right, so
+   `a || b && c` reads as `(a || b) && c` where SPARQL means `a || (b && c)`. Explicit
+   parens express either. Pinned by `association_is_left_to_right_without_precedence` in
+   `loka-sparql/tests/filter_grouping.rs` so a change has to face it deliberately —
+   adding precedence would silently re-associate existing queries, so it is not a
+   drive-by fix.
+
+2. **String functions are still leading-position-only.** `CONTAINS`, `STRSTARTS`,
+   `STRENDS`, `REGEX`, `isIRI`, `isLiteral`, `COALESCE` and `EXISTS`/`NOT EXISTS` return
+   early from `parse_filter` and consume the closing paren, so
+   `FILTER(CONTAINS(?a, "x") && ?b = 1)` is still a parse error. Moving them into
+   `parse_filter_inner` — as was done for `bound`/`!` — would fix it; they were left alone
+   because each has its own argument-parsing shape and the change is larger than the
+   `bound` case.
+
+A real SPARQL 1.1 `Expression` grammar (precedence, arithmetic in operand position — which
+`parse_comparison_expr` currently only half-handles) subsumes both.
 
 The Cypher transpiler's two workarounds — pushing NOT to the leaves and splitting
 top-level ANDs into separate FILTER clauses — are still correct and still tested, but are

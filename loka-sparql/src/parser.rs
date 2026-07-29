@@ -1250,33 +1250,21 @@ impl<'a> Parser<'a> {
             return Ok(FilterExpr::Exists(patterns));
         }
 
-        // Check for bound/!bound
-        if self.peek_keyword("bound") {
-            self.expect_keyword("bound")?;
-            self.expect_char('(')?;
-            let var = self.parse_variable_name()?;
-            self.expect_char(')')?;
-            self.expect_char(')')?;
-            return Ok(FilterExpr::Bound(var));
-        }
-
-        if self.peek_char() == Some('!') {
-            self.pos += 1;
-            self.skip_whitespace();
-            if self.peek_keyword("bound") {
-                self.expect_keyword("bound")?;
-                self.expect_char('(')?;
-                let var = self.parse_variable_name()?;
-                self.expect_char(')')?;
-                self.expect_char(')')?;
-                return Ok(FilterExpr::NotBound(var));
-            }
-            // General negation: !(expr)
-            let inner = self.parse_filter_inner()?;
-            self.skip_whitespace();
-            self.expect_char(')')?;
-            return Ok(FilterExpr::Not(Box::new(inner)));
-        }
+        // `bound`, `!bound` and `!` are deliberately NOT special-cased here.
+        //
+        // They used to be, and each branch consumed FILTER's own closing paren
+        // before returning — which made them work as an *entire* filter but not
+        // as the left operand of a chain:
+        //
+        //     FILTER(bound(?a))                ok
+        //     FILTER(bound(?a) && ?b = 1)      "expected ')', got '&'"
+        //     FILTER(?b = 1 && bound(?a))      ok  (reached via parse_filter_inner)
+        //
+        // parse_filter_inner already handles all three correctly and does not
+        // eat the outer paren, so letting the chain below reach them removes
+        // that positional asymmetry. The remaining special forms (EXISTS /
+        // NOT EXISTS above, and the string functions below) still return early
+        // and so are still leading-position-only; see TODO.md.
 
         // String functions: CONTAINS, STRSTARTS, STRENDS, REGEX
         if self.peek_keyword("CONTAINS") {
@@ -1459,35 +1447,29 @@ impl<'a> Parser<'a> {
         // reaches parse_comparison_expr directly rather than via
         // parse_filter_inner, so a *leading* group (`FILTER((?a = 1) && ...)`)
         // would otherwise still be rejected.
-        let expr = if self.peek_char() == Some('(') {
-            self.pos += 1;
-            let inner = self.parse_bool_expr()?;
-            self.skip_whitespace();
-            self.expect_char(')')?;
-            inner
-        } else {
-            self.parse_comparison_expr()?
-        };
+        // The whole boolean expression, then FILTER's own closing paren.
+        //
+        // This used to inline a one-shot chain: parse a comparison, then accept
+        // at most ONE `&&`/`||` continuation whose right side was a single
+        // `parse_filter_inner`, then demand `)`. That made any filter with three
+        // or more terms a parse error —
+        //
+        //     FILTER(?a = 1 && ?b = 2)              ok
+        //     FILTER(?a = 1 && ?b = 2 && ?c = 3)    "expected ')', got '&'"
+        //
+        // which is an ordinary SPARQL filter. parse_bool_expr loops instead of
+        // accepting one continuation, and reaches groups and leaf forms through
+        // parse_filter_inner, so N-term chains and mixed `&&`/`||` both work.
+        //
+        // Association is left-to-right with no precedence between `&&` and
+        // `||`, unchanged from the two-term behaviour. `a && b || c` therefore
+        // reads as `(a && b) || c`, which matches SPARQL, while `a || b && c`
+        // reads as `(a || b) && c`, which does not — SPARQL binds `&&` tighter.
+        // Explicit parens express either. Recorded in TODO.md rather than
+        // changed here, because adding precedence would silently re-associate
+        // existing queries.
+        let expr = self.parse_bool_expr()?;
         self.skip_whitespace();
-
-        // Check for boolean connectives
-        if self.remaining().starts_with("&&") {
-            self.pos += 2;
-            self.skip_whitespace();
-            let right = self.parse_filter_inner()?;
-            self.skip_whitespace();
-            self.expect_char(')')?;
-            return Ok(FilterExpr::And(Box::new(expr), Box::new(right)));
-        }
-        if self.remaining().starts_with("||") {
-            self.pos += 2;
-            self.skip_whitespace();
-            let right = self.parse_filter_inner()?;
-            self.skip_whitespace();
-            self.expect_char(')')?;
-            return Ok(FilterExpr::Or(Box::new(expr), Box::new(right)));
-        }
-
         self.expect_char(')')?;
         Ok(expr)
     }

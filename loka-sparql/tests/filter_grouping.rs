@@ -101,6 +101,55 @@ fn ungrouped_chain_still_behaves_as_before() {
 }
 
 #[test]
+fn chains_of_three_or_more_terms() {
+    // Any filter with 3+ terms was a parse error: the chain accepted exactly
+    // one `&&`/`||` continuation and then demanded `)`.
+    assert_eq!(rows("?age > 5 && ?age < 60 && ?rank > 0"), 3);
+    assert_eq!(rows("?age = 10 || ?age = 20 || ?age = 30"), 3);
+    assert_eq!(rows("?age = 10 || ?age = 20 || ?age = 99"), 2);
+    assert_eq!(rows("?age > 5 && ?age < 60 && ?rank > 0 && ?age != 20"), 2);
+}
+
+#[test]
+fn mixed_connectives_in_a_long_chain() {
+    // `a && b || c` associates left, which for this shape is (a && b) || c —
+    // what SPARQL means.
+    assert_eq!(rows("?age = 10 && ?rank = 1 || ?age = 30"), 2);
+    assert_eq!(rows("?age = 10 && ?rank = 99 || ?age = 30"), 1);
+}
+
+#[test]
+fn association_is_left_to_right_without_precedence() {
+    // Pinning a known divergence rather than asserting it is correct.
+    //
+    // The chain associates left-to-right with no precedence between `&&` and
+    // `||`, so `a || b && c` reads as `(a || b) && c`. SPARQL binds `&&`
+    // tighter, i.e. `a || (b && c)`. The two disagree, and explicit parens
+    // express either — see TODO.md.
+    //
+    // ages 10/20/30, ranks 1/2/3.
+    //   (age=10 || age=20) && rank=1   -> just the age-10 row
+    //   age=10 || (age=20 && rank=1)   -> the age-10 row only as well, so pick
+    //   a case where the two readings actually differ:
+    //   (age=10 || age=20) && rank=2   -> age-20 row      = 1
+    //   age=10 || (age=20 && rank=2)   -> age-10 + age-20 = 2
+    assert_eq!(rows("?age = 10 || ?age = 20 && ?rank = 2"), 1);
+    // Written with explicit parens, the SPARQL reading is available:
+    assert_eq!(rows("?age = 10 || (?age = 20 && ?rank = 2)"), 2);
+}
+
+#[test]
+fn bound_and_negation_compose_in_a_chain() {
+    // These worked as an entire filter but not as the left operand of a chain,
+    // because each consumed FILTER's own closing paren before returning.
+    assert_eq!(rows("bound(?age) && ?age > 15"), 2);
+    assert_eq!(rows("!bound(?nope) && ?age > 15"), 2);
+    assert_eq!(rows("!(?age = 10) && ?age < 30"), 1);
+    // And still work in trailing position, which always did.
+    assert_eq!(rows("?age > 15 && bound(?age)"), 2);
+}
+
+#[test]
 fn grouping_matches_the_equivalent_flat_query() {
     // Adding redundant parens around a flat chain must not change the result.
     assert_eq!(
