@@ -142,7 +142,7 @@ The script pulls the v14-1M corpus from `EmmaLeonhart/normalized-wikidata` and t
 
 **Please open a GitHub issue at <https://github.com/EmmaLeonhart/Loka/issues> before you start** so the work doesn't get duplicated, and comment on it with your HF link when done — Emma can then mirror your result to `EmmaLeonhart/loka@v14` and credit you.
 
-Wall-time estimate at batch 16: ~4 h/epoch on an RTX 4090, ~8 h/epoch on an RTX 4070 Laptop. Full instructions and the rationale for the contributor path live at <https://loka.emmaleonhart.com/contribute/>.
+Wall-time estimate at batch 16: ~4 h/epoch on an RTX 4090, ~8 h/epoch on an RTX 4070 Laptop. The command above is the whole procedure — this section is the full instructions.
 
 ## What's New — RDF-star hardening + cascade-retraction (2026-05-16)
 

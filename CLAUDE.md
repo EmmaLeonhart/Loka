@@ -12,7 +12,7 @@ Full architecture: see `docs/architecture.md`.
 
 ## Workflow Rules
 
-- **v14 is donor-only.** v11–v13 are tractable on Emma's laptop (4070 Laptop, 8 GB VRAM); v14 (4M-triple corpus, ~40 h sustained GPU) is not. Donor flow: `tools/contribute_v14_training.py`. Full instructions: `pages/contribute/index.html` (live at <https://loka.emmaleonhart.com/contribute/>) and README's "Contributing GPU time" section. **Do NOT add a self-donation/cloud-GPU step to any cron** — v14 stays donor-only until that changes.
+- **v14 is donor-only.** v11–v13 are tractable on Emma's laptop (4070 Laptop, 8 GB VRAM); v14 (4M-triple corpus, ~40 h sustained GPU) is not. Donor flow: `tools/contribute_v14_training.py`. Full instructions: README's "Contributing GPU time" section — that is the **only** surface. The website's donor content was removed deliberately on 2026-05-22 (`3155689`, "over-prominent and no longer wanted"): `pages/contribute/` was deleted along with the nav/footer links on all 37 pages. Do not recreate it or re-add a site link. **Do NOT add a self-donation/cloud-GPU step to any cron** — v14 stays donor-only until that changes.
 - **Training-box hardware — laptop, thermally constrained.** Full specs and 2026-05-13 instability verdict in `planning/system-instability-verdict-2026-05-13.md`. Binding constraints:
     - **RTX 4070 Laptop, ~8 GB VRAM, 35–115 W TGP** (NOT the 200 W desktop 4070). Power-cap-bound during sustained training (~74 W against an 80 W cap observed v13 epoch 4).
     - **Thermally marginal for sustained N-hour GPU runs.** 10 firmware-level unexpected-shutdown events Mar 27 → 2026-05-13 (no BSOD, no minidump — OS doesn't see them coming).
