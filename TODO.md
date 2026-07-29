@@ -268,7 +268,33 @@ publish is the irreversible step and needs Emma's explicit go + these setups:
       The Cypher transpiler (`loka-sparql/src/cypher.rs`) is the template — same
       text-in/SPARQL-text-out shape, same rejection discipline. Reuse its tokenizer.
 
-### 🐛 FOUND 2026-07-28: the FILTER grammar has no parenthesised grouping
+### ✅ FIXED 2026-07-28: the FILTER grammar now has parenthesised grouping
+
+`FILTER((?a = 1) && (?b = 2))`, `FILTER(?a = 1 && (?b = 2 || ?c = 3))`,
+`FILTER((?a = 1 && ?b = 2) || ?c = 3)` and `FILTER(!(?a = 1))` all parse and evaluate.
+Added a `(`-group branch to `parse_filter_inner` **and** to `parse_filter` (which reaches
+`parse_comparison_expr` directly, so a *leading* group needed its own branch), plus
+`parse_bool_expr` — a `&&`/`||` chain that does not consume a closing paren, since the
+existing chain logic in `parse_filter` eats FILTER's own `)` and cannot be reused.
+
+Additive by construction: a `(` in expression position previously fell through to
+`parse_term` and errored, so no query that parsed before reaches the new code. 7 tests in
+`loka-sparql/tests/filter_grouping.rs`, including a guard that the flat chain is unchanged
+and that redundant parens don't alter results. 415 workspace tests green.
+
+**Still open:** there is no operator precedence between `&&` and `||` — the chain is
+left-associative and flat, so `a && b || c` groups as written rather than as
+`a && (b || c)`. Explicit parens now express whatever you mean, so this is a sharp edge
+rather than a blocker. A real SPARQL 1.1 `Expression` grammar (with precedence, and
+arithmetic in operand position, which `parse_comparison_expr` currently only half-handles)
+is the proper fix.
+
+The Cypher transpiler's two workarounds — pushing NOT to the leaves and splitting
+top-level ANDs into separate FILTER clauses — are still correct and still tested, but are
+no longer *necessary*. It can emit grouped filters directly and drop its
+`(a AND b) OR c` rejection whenever someone wants to simplify it.
+
+<details><summary>Original finding, for context</summary>
 
 Surfaced while building the Cypher transpiler. `parser.rs::parse_filter_inner` parses a
 comparison, then optionally `&&` / `||` followed by a recursive call — a flat right-nested
@@ -291,6 +317,8 @@ It rejects `(a AND b) OR c` with a message telling the user to rewrite in DNF.
 Worth fixing in the parser proper — a real SPARQL 1.1 `Expression` grammar with grouping and
 precedence — at which point the transpiler's workarounds can be simplified. Not urgent; the
 workaround is correct, just narrower than SPARQL allows.
+
+</details>
 
 ---
 

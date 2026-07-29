@@ -1450,7 +1450,24 @@ impl<'a> Parser<'a> {
         }
 
         // Parse a comparison expression, then check for && / ||
-        let expr = self.parse_comparison_expr()?;
+        //
+        // A `(` in this position opens a group, not a comparison — FILTER's own
+        // opening paren was already consumed above. Same additive argument as
+        // the branch in parse_filter_inner: this previously fell through to
+        // parse_comparison_expr -> parse_term and errored, so nothing that
+        // parsed before takes this path. Needed separately because parse_filter
+        // reaches parse_comparison_expr directly rather than via
+        // parse_filter_inner, so a *leading* group (`FILTER((?a = 1) && ...)`)
+        // would otherwise still be rejected.
+        let expr = if self.peek_char() == Some('(') {
+            self.pos += 1;
+            let inner = self.parse_bool_expr()?;
+            self.skip_whitespace();
+            self.expect_char(')')?;
+            inner
+        } else {
+            self.parse_comparison_expr()?
+        };
         self.skip_whitespace();
 
         // Check for boolean connectives
@@ -1498,7 +1515,53 @@ impl<'a> Parser<'a> {
             let inner = self.parse_filter_inner()?;
             return Ok(FilterExpr::Not(Box::new(inner)));
         }
+        // Parenthesised grouping: `( expr )` in expression position.
+        //
+        // Additive by construction. Before this branch existed, a `(` here fell
+        // through to parse_comparison_expr -> parse_term, which rejects it
+        // ("expected term"). So no query that parsed before reaches this code,
+        // and none can change meaning; it only admits inputs that were errors.
+        //
+        // This is what lets a filter nest: `FILTER(?a = 1 && (?b = 2 || ?c = 3))`
+        // and `FILTER(!(?a = 1))`. Without it the grammar is a flat right-nested
+        // chain, which cannot express a disjunction with a conjunctive branch at
+        // all -- see the Cypher transpiler, which pushes NOT to the leaves and
+        // splits top-level ANDs into separate FILTER clauses to work around it.
+        if self.peek_char() == Some('(') {
+            self.pos += 1;
+            let inner = self.parse_bool_expr()?;
+            self.skip_whitespace();
+            self.expect_char(')')?;
+            return Ok(inner);
+        }
         self.parse_comparison_expr()
+    }
+
+    /// Parse a boolean chain (`a && b || c`) **without** consuming a closing
+    /// paren, so it can be used inside a parenthesised group.
+    ///
+    /// Kept separate from the `&&`/`||` handling in `parse_filter`, which
+    /// consumes the FILTER's own closing paren as part of the chain and so
+    /// cannot be reused here. Left-associative with no precedence between `&&`
+    /// and `||`, matching how the existing outer chain already behaves.
+    fn parse_bool_expr(&mut self) -> Result<FilterExpr> {
+        let mut expr = self.parse_filter_inner()?;
+        loop {
+            self.skip_whitespace();
+            if self.remaining().starts_with("&&") {
+                self.pos += 2;
+                self.skip_whitespace();
+                let right = self.parse_filter_inner()?;
+                expr = FilterExpr::And(Box::new(expr), Box::new(right));
+            } else if self.remaining().starts_with("||") {
+                self.pos += 2;
+                self.skip_whitespace();
+                let right = self.parse_filter_inner()?;
+                expr = FilterExpr::Or(Box::new(expr), Box::new(right));
+            } else {
+                return Ok(expr);
+            }
+        }
     }
 
     fn parse_comparison_expr(&mut self) -> Result<FilterExpr> {
