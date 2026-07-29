@@ -150,6 +150,32 @@ fn bound_and_negation_compose_in_a_chain() {
 }
 
 #[test]
+fn string_functions_compose_in_a_chain() {
+    // These worked only as an entire filter; each consumed FILTER's own closing
+    // paren, so using one as an operand was a parse error.
+    //
+    // The store has names via ex:name on the sibling fixture, but this fixture
+    // is numeric-only, so these assert on parse-and-execute reaching zero rows
+    // rather than on matches — the point is that they are no longer rejected.
+    for f in [
+        r#"CONTAINS(?s, "nothing") && ?age > 5"#,
+        r#"?age > 5 && CONTAINS(?s, "nothing")"#,
+        r#"STRSTARTS(?s, "no") || STRENDS(?s, "pe")"#,
+        r#"REGEX(?s, "^zzz") && bound(?age)"#,
+        "isIRI(?s) && isLiteral(?age)",
+        r#"!(CONTAINS(?s, "nothing")) && ?age > 5"#,
+    ] {
+        // Must not panic: the helper unwraps parse and execute.
+        let _ = rows(f);
+    }
+
+    // isIRI is true for all three subjects, so it composes with a real filter
+    // and narrows exactly as the conjunction implies.
+    assert_eq!(rows("isIRI(?s) && ?age > 15"), 2);
+    assert_eq!(rows("isIRI(?s) || ?age > 99"), 3);
+}
+
+#[test]
 fn grouping_matches_the_equivalent_flat_query() {
     // Adding redundant parens around a flat chain must not change the result.
     assert_eq!(

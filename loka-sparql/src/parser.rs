@@ -1266,19 +1266,9 @@ impl<'a> Parser<'a> {
         // NOT EXISTS above, and the string functions below) still return early
         // and so are still leading-position-only; see TODO.md.
 
-        // String functions: CONTAINS, STRSTARTS, STRENDS, REGEX
-        if self.peek_keyword("CONTAINS") {
-            return self.parse_two_arg_string_filter("CONTAINS", FilterExpr::Contains);
-        }
-        if self.peek_keyword("STRSTARTS") {
-            return self.parse_two_arg_string_filter("STRSTARTS", FilterExpr::StrStarts);
-        }
-        if self.peek_keyword("STRENDS") {
-            return self.parse_two_arg_string_filter("STRENDS", FilterExpr::StrEnds);
-        }
-        if self.peek_keyword("REGEX") {
-            return self.parse_two_arg_string_filter("REGEX", FilterExpr::Regex);
-        }
+        // CONTAINS / STRSTARTS / STRENDS / REGEX and isIRI / isURI / isLiteral
+        // are handled in parse_filter_inner so they can appear anywhere in a
+        // boolean chain, not only as the whole filter. See the note there.
         if self.peek_keyword("LANGMATCHES") {
             self.expect_keyword("LANGMATCHES")?;
             self.expect_char('(')?;
@@ -1415,28 +1405,6 @@ impl<'a> Parser<'a> {
             }
             return Err(self.error("STR() only supports = comparison"));
         }
-        if self.peek_keyword("isIRI") || self.peek_keyword("isURI") {
-            let kw = if self.peek_keyword("isIRI") {
-                "isIRI"
-            } else {
-                "isURI"
-            };
-            self.expect_keyword(kw)?;
-            self.expect_char('(')?;
-            let var = self.parse_variable_name()?;
-            self.expect_char(')')?;
-            self.expect_char(')')?;
-            return Ok(FilterExpr::IsIri(var));
-        }
-        if self.peek_keyword("isLiteral") {
-            self.expect_keyword("isLiteral")?;
-            self.expect_char('(')?;
-            let var = self.parse_variable_name()?;
-            self.expect_char(')')?;
-            self.expect_char(')')?;
-            return Ok(FilterExpr::IsLiteral(var));
-        }
-
         // Parse a comparison expression, then check for && / ||
         //
         // A `(` in this position opens a group, not a comparison — FILTER's own
@@ -1497,6 +1465,48 @@ impl<'a> Parser<'a> {
             let inner = self.parse_filter_inner()?;
             return Ok(FilterExpr::Not(Box::new(inner)));
         }
+        // Leaf forms that used to live in parse_filter and consumed FILTER's own
+        // closing paren, which pinned them to leading position — they worked as
+        // an entire filter but not as an operand:
+        //
+        //     FILTER(CONTAINS(?a, "x"))              ok
+        //     FILTER(CONTAINS(?a, "x") && ?b = 1)    "expected ')', got '&'"
+        //
+        // Handled here instead, so the chain can reach them in any position.
+        // parse_two_arg_string_filter no longer eats the outer paren; the single
+        // expect_char(')') in parse_filter closes FILTER exactly once.
+        if self.peek_keyword("CONTAINS") {
+            return self.parse_two_arg_string_filter("CONTAINS", FilterExpr::Contains);
+        }
+        if self.peek_keyword("STRSTARTS") {
+            return self.parse_two_arg_string_filter("STRSTARTS", FilterExpr::StrStarts);
+        }
+        if self.peek_keyword("STRENDS") {
+            return self.parse_two_arg_string_filter("STRENDS", FilterExpr::StrEnds);
+        }
+        if self.peek_keyword("REGEX") {
+            return self.parse_two_arg_string_filter("REGEX", FilterExpr::Regex);
+        }
+        if self.peek_keyword("isIRI") || self.peek_keyword("isURI") {
+            let kw = if self.peek_keyword("isIRI") {
+                "isIRI"
+            } else {
+                "isURI"
+            };
+            self.expect_keyword(kw)?;
+            self.expect_char('(')?;
+            let var = self.parse_variable_name()?;
+            self.expect_char(')')?;
+            return Ok(FilterExpr::IsIri(var));
+        }
+        if self.peek_keyword("isLiteral") {
+            self.expect_keyword("isLiteral")?;
+            self.expect_char('(')?;
+            let var = self.parse_variable_name()?;
+            self.expect_char(')')?;
+            return Ok(FilterExpr::IsLiteral(var));
+        }
+
         // Parenthesised grouping: `( expr )` in expression position.
         //
         // Additive by construction. Before this branch existed, a `(` here fell
@@ -1615,8 +1625,6 @@ impl<'a> Parser<'a> {
         self.expect_char(',')?;
         self.skip_whitespace();
         let arg2 = self.parse_term()?;
-        self.skip_whitespace();
-        self.expect_char(')')?;
         self.skip_whitespace();
         self.expect_char(')')?;
         Ok(ctor(arg1, arg2))

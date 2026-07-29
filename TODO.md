@@ -352,13 +352,15 @@ they worked as an entire filter but not as the left operand of a chain
    adding precedence would silently re-associate existing queries, so it is not a
    drive-by fix.
 
-2. **String functions are still leading-position-only.** `CONTAINS`, `STRSTARTS`,
-   `STRENDS`, `REGEX`, `isIRI`, `isLiteral`, `COALESCE` and `EXISTS`/`NOT EXISTS` return
-   early from `parse_filter` and consume the closing paren, so
-   `FILTER(CONTAINS(?a, "x") && ?b = 1)` is still a parse error. Moving them into
-   `parse_filter_inner` — as was done for `bound`/`!` — would fix it; they were left alone
-   because each has its own argument-parsing shape and the change is larger than the
-   `bound` case.
+2. **A few leaf forms are still leading-position-only.** `CONTAINS`, `STRSTARTS`,
+   `STRENDS`, `REGEX`, `isIRI`/`isURI` and `isLiteral` were moved into
+   `parse_filter_inner` on 2026-07-29 and now compose anywhere in a chain
+   (`parse_two_arg_string_filter` no longer eats the outer paren). Still leading-only:
+   **`LANGMATCHES`, `COALESCE`, `STR(...)` comparisons, and `EXISTS`/`NOT EXISTS`**, which
+   return early from `parse_filter` and consume the closing paren. Each has a bespoke
+   argument shape — `EXISTS` takes a whole group, `LANGMATCHES` expects a nested `LANG(...)`
+   — so they are a larger change than the mechanical ones and were left alone rather than
+   moved half-carefully.
 
 A real SPARQL 1.1 `Expression` grammar (precedence, arithmetic in operand position — which
 `parse_comparison_expr` currently only half-handles) subsumes both.
