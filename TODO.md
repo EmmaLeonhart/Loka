@@ -268,7 +268,26 @@ publish is the irreversible step and needs Emma's explicit go + these setups:
       The Cypher transpiler (`loka-sparql/src/cypher.rs`) is the template — same
       text-in/SPARQL-text-out shape, same rejection discipline. Reuse its tokenizer.
 
-### 🐛 FOUND 2026-07-28: string equality in FILTER never matches
+### ✅ FIXED 2026-07-29: string / IRI equality in FILTER now matches
+
+`filter_term_value` resolved only variables and integer literals and returned `None` for
+everything else, so `FILTER(?n = "Ada")` compared `Some(id)` against `None` — always false.
+Equality now goes through `filter_term_id`, which delegates to `resolve_term`, the same
+resolver the triple-pattern path uses. A term therefore means the same thing in a FILTER as
+in a pattern, which is the invariant that was broken.
+
+Fixes string literals, IRIs, prefixed names and typed literals in `=` / `!=` alike — all
+four were silently matching nothing. 8 tests in `loka-sparql/tests/filter_equality.rs`,
+including one asserting the filter and pattern paths agree. 425 workspace tests green.
+
+**Ordering (`<`, `>`, `<=`, `>=`) was deliberately left narrow.** It compares raw `TermId`s,
+which is meaningful for inline-encoded integers and meaningless for interned strings, where
+the id is insertion order. Widening it would turn `FILTER(?name < "M")` from "matches
+nothing" into "matches an arbitrary subset" — silently wrong rather than silently empty,
+which is worse. A test pins the current behaviour so a future widening has to confront the
+choice. Real string collation needs the executor to compare resolved *values*, not ids.
+
+<details><summary>Original finding, for context</summary>
 
 `FILTER(?n = "Ada")` returns **0 rows** against a store that contains the matching triple.
 The same literal in *pattern* position matches fine, so the two paths disagree:
@@ -296,6 +315,8 @@ predate it and still behave. Found while writing an end-to-end test that used a 
 conjunct; the branch was silently dead and the test passed for the wrong reason until the
 row counts were checked. Any query filtering on a string literal is currently returning
 nothing rather than erroring, which is the bad shape of failure.
+
+</details>
 
 ### ✅ FIXED 2026-07-28: the FILTER grammar now has parenthesised grouping
 

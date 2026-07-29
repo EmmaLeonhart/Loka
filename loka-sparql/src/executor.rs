@@ -2705,13 +2705,13 @@ fn resolve_vector_to_entities(vector_object_id: TermId, ctx: &ExecutionContext<'
 fn evaluate_filter(expr: &FilterExpr, row: &Bindings, ctx: &mut ExecutionContext<'_>) -> bool {
     match expr {
         FilterExpr::Equals(left, right) => {
-            let l = filter_term_value(left, row);
-            let r = filter_term_value(right, row);
+            let l = filter_term_id(left, row, ctx);
+            let r = filter_term_id(right, row, ctx);
             l.is_some() && l == r
         }
         FilterExpr::NotEquals(left, right) => {
-            let l = filter_term_value(left, row);
-            let r = filter_term_value(right, row);
+            let l = filter_term_id(left, row, ctx);
+            let r = filter_term_id(right, row, ctx);
             l.is_some() && r.is_some() && l != r
         }
         FilterExpr::LessThan(left, right) => {
@@ -3234,12 +3234,43 @@ fn term_id_is_literal(id: TermId, dict: &TermDictionary) -> bool {
     loka_core::is_inline(id) || dict.resolve(id).is_some_and(|s| s.starts_with('"'))
 }
 
+/// Resolve a term for **ordering** comparisons (`<`, `>`, `<=`, `>=`).
+///
+/// Deliberately narrow: variables and integer literals only. Ordering compares
+/// raw `TermId`s, which is meaningful for inline-encoded integers and
+/// meaningless for dictionary-interned strings, where the id reflects insertion
+/// order. Resolving literals here would turn `FILTER(?name < "M")` from "matches
+/// nothing" into "matches an arbitrary subset", which is the worse failure.
+///
+/// For equality use [`filter_term_id`], which resolves the full term space.
 fn filter_term_value(term: &Term, row: &Bindings) -> Option<TermId> {
     match term {
         Term::Variable(name) => row.get(name).copied(),
         Term::IntegerLiteral(n) => loka_core::inline_integer(*n),
         _ => None,
     }
+}
+
+/// Resolve a term for **equality** comparisons (`=`, `!=`).
+///
+/// Delegates to [`resolve_term`], the same resolver the triple-pattern path
+/// uses, so a term means the same thing in a FILTER as it does in a pattern.
+///
+/// Before this existed, filter comparison handled only variables and integer
+/// literals and returned `None` for everything else, so
+/// `FILTER(?n = "Ada")` compared `Some(id)` against `None` and was **always
+/// false** — matching nothing while the identical literal in pattern position
+/// (`?a loka:name "Ada"`) matched correctly. The same silent failure applied to
+/// IRIs, prefixed names and typed literals. Equality is safe to widen this way
+/// because it compares ids for identity, not order.
+///
+/// An unresolvable prefix yields `None` (no match) rather than propagating an
+/// error, matching how the rest of filter evaluation treats terms it cannot
+/// resolve.
+fn filter_term_id(term: &Term, row: &Bindings, ctx: &ExecutionContext<'_>) -> Option<TermId> {
+    resolve_term(term, row, ctx.dict, ctx.prefixes)
+        .ok()
+        .flatten()
 }
 
 #[cfg(test)]
