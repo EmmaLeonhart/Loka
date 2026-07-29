@@ -1,11 +1,13 @@
 //! Loka SPARQL: parser, query planner, executor, and hybrid VECTOR_SIMILAR extension.
 
+pub mod cypher;
 pub mod error;
 pub mod executor;
 pub mod health;
 pub mod parser;
 pub mod planner;
 
+pub use cypher::{transpile, transpile_with_base, CypherError};
 pub use error::{Result, SparqlError};
 pub use executor::{
     execute, execute_with_config, execute_with_timeout, execute_with_vectors, Bindings, QueryResult,

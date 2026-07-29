@@ -264,9 +264,33 @@ publish is the irreversible step and needs Emma's explicit go + these setups:
 - [ ] Long-term: absorb core Protege functionality
 
 ### Query Language Wrappers
-- [ ] Cypher → SPARQL transpiler: MATCH/WHERE/RETURN mapped to SPARQL patterns
-- [ ] GQL (ISO 39075) → SPARQL transpiler: ISO standard graph query language mapped to SPARQL
-### Query validation: reject constructs that can't map to the RDF data model
+- [ ] GQL (ISO 39075) → SPARQL transpiler: ISO standard graph query language mapped to SPARQL.
+      The Cypher transpiler (`loka-sparql/src/cypher.rs`) is the template — same
+      text-in/SPARQL-text-out shape, same rejection discipline. Reuse its tokenizer.
+
+### 🐛 FOUND 2026-07-28: the FILTER grammar has no parenthesised grouping
+
+Surfaced while building the Cypher transpiler. `parser.rs::parse_filter_inner` parses a
+comparison, then optionally `&&` / `||` followed by a recursive call — a flat right-nested
+chain. `parse_comparison_expr` expects a *term* in operand position, so a parenthesised
+sub-expression is a parse error:
+
+```sparql
+FILTER((?a = 1) && (?b = 2))     -- parse error: expected term
+FILTER(?a = 1 && ?b = 2)         -- ok
+```
+
+Two consequences: `!` only parses in leading position (`FILTER(!bound(?x))`), never nested;
+and a disjunction with a conjunctive branch — `(a && b) || c` — cannot be expressed at all,
+because the flat chain always associates to the right.
+
+The transpiler works around both: it pushes `NOT` down to the leaves (De Morgan + operator
+inversion) and splits top-level `AND`s into separate `FILTER` clauses, which SPARQL conjoins.
+It rejects `(a AND b) OR c` with a message telling the user to rewrite in DNF.
+
+Worth fixing in the parser proper — a real SPARQL 1.1 `Expression` grammar with grouping and
+precedence — at which point the transpiler's workarounds can be simplified. Not urgent; the
+workaround is correct, just narrower than SPARQL allows.
 
 ---
 
