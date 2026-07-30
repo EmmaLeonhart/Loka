@@ -213,6 +213,15 @@ pub enum Term {
         base: Box<Term>,
         modifier: PathModifier,
     },
+    /// A value function call in FILTER or BIND operand position:
+    /// `STR(?x)`, `LCASE(STR(?x))`, `REPLACE(STR(?t), "^.*/", "")`.
+    ///
+    /// Nesting is the point. Before this existed, every string-function argument
+    /// went through `parse_term`, so a function call as an argument was a parse
+    /// error — and the consumer that dogfoods this engine (Pramana) sends
+    /// exactly that shape, e.g.
+    /// `FILTER(CONTAINS(LCASE(?label), LCASE("water")))`.
+    Func { func: ValueFunc, args: Vec<Term> },
     /// Arithmetic in a FILTER comparison operand: `?age + 5` in
     /// `FILTER(?age + 5 > 30)`.
     ///
@@ -224,6 +233,39 @@ pub enum Term {
         op: ArithOp,
         right: Box<Term>,
     },
+}
+
+/// A SPARQL value function usable wherever a value is expected.
+///
+/// Deliberately a small set: the SPARQL 1.1 string functions that a real query
+/// generator emits. `STRLEN` is numeric and composes with arithmetic;
+/// the rest are string-valued.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ValueFunc {
+    /// `STR(x)` — lexical form.
+    Str,
+    /// `LCASE(x)`
+    LCase,
+    /// `UCASE(x)`
+    UCase,
+    /// `STRLEN(x)` — numeric.
+    StrLen,
+    /// `REPLACE(x, pattern, replacement)` — regex.
+    Replace,
+    /// `CONCAT(a, b, ...)`
+    Concat,
+}
+
+impl ValueFunc {
+    /// Keyword, minimum arity, maximum arity.
+    const TABLE: &'static [(&'static str, ValueFunc, usize, usize)] = &[
+        ("STRLEN", ValueFunc::StrLen, 1, 1),
+        ("STR", ValueFunc::Str, 1, 1),
+        ("LCASE", ValueFunc::LCase, 1, 1),
+        ("UCASE", ValueFunc::UCase, 1, 1),
+        ("REPLACE", ValueFunc::Replace, 3, 3),
+        ("CONCAT", ValueFunc::Concat, 1, usize::MAX),
+    ];
 }
 
 /// Arithmetic operator inside a FILTER comparison operand.
@@ -289,8 +331,6 @@ pub enum FilterExpr {
     IsLiteral(String),
     /// LANG(?var) = "en" or LANGMATCHES(LANG(?var), "en")
     LangMatches(String, String),
-    /// STR(?var) — cast to string for comparison
-    StrEquals(String, Term),
     /// DATATYPE(?var) = <xsd:integer> etc.
     DatatypeEquals(String, String),
     /// ?var >= term
@@ -674,7 +714,12 @@ impl<'a> Parser<'a> {
                 self.expect_keyword("BIND")?;
                 self.expect_char('(')?;
                 self.skip_whitespace();
-                let expr = self.parse_term()?;
+                // parse_arith_operand, not parse_term: BIND takes an
+                // expression. `BIND(REPLACE(STR(?type), "^.*/", "") AS ?local)`
+                // and `BIND(?a + 1 AS ?b)` were both parse errors, which failed
+                // the WHOLE query — a client that treats a failed query as an
+                // empty result then shows an empty page with no error.
+                let expr = self.parse_arith_operand()?;
                 self.skip_whitespace();
                 self.expect_keyword("AS")?;
                 self.skip_whitespace();
@@ -1512,22 +1557,14 @@ impl<'a> Parser<'a> {
             }
             return Err(self.error("DATATYPE() only supports = comparison"));
         }
-        // STRSTARTS / STRENDS are matched above; peek_keyword is word-bounded, so
-        // this cannot swallow them even without the earlier branches.
-        if self.peek_function("STR") {
-            self.expect_keyword("STR")?;
-            self.expect_char('(')?;
-            let var = self.parse_variable_name()?;
-            self.expect_char(')')?;
-            self.skip_whitespace();
-            let op = self.parse_comparison_op()?;
-            self.skip_whitespace();
-            let val = self.parse_term()?;
-            if op == "=" {
-                return Ok(FilterExpr::StrEquals(var, val));
-            }
-            return Err(self.error("STR() only supports = comparison"));
-        }
+        // `STR(...)` has no branch of its own any more. It used to have one that
+        // accepted a VARIABLE argument and only `=`, producing FilterExpr::StrEquals
+        // — so `STR(?a) = "x"` worked while `STR(?a) != "x"`, `LCASE(?a) = "x"` and
+        // `STR(LCASE(?a)) = "x"` did not. It now goes through parse_comparison_expr
+        // like any other value, and comparison uses value semantics when either
+        // side is a function call. One path instead of two is the point: the two
+        // paths had different notions of what a string comparison means, which is
+        // how the string-equality defect survived as long as it did.
 
         // Parenthesised grouping: `( expr )` in expression position.
         //
@@ -1641,7 +1678,7 @@ impl<'a> Parser<'a> {
     /// discarded-operand fix first is the better trade; a full
     /// `AdditiveExpression`/`MultiplicativeExpression` split is the real answer.
     fn parse_arith_operand(&mut self) -> Result<Term> {
-        let mut left = self.parse_term()?;
+        let mut left = self.parse_value_expr()?;
         loop {
             self.skip_whitespace();
             let op = match self.peek_char() {
@@ -1665,6 +1702,55 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// A value in FILTER / BIND operand position: a function call, or a plain
+    /// term.
+    ///
+    /// Function arguments recurse here, which is what makes nesting work:
+    /// `LCASE(STR(?x))`, `REPLACE(STR(?t), "^.*/", "")`,
+    /// `CONTAINS(LCASE(?label), LCASE("water"))`. Every one of those was a parse
+    /// error while arguments were parsed with `parse_term`, and every one of
+    /// them appears in Pramana's live queries against this engine — its entity
+    /// page, its search and its entity resolver were all failing to parse, and
+    /// the client treats a failed query as an empty result, so the pages showed
+    /// nothing rather than reporting an error.
+    fn parse_value_expr(&mut self) -> Result<Term> {
+        for &(kw, func, min_arity, max_arity) in ValueFunc::TABLE {
+            if !self.peek_function(kw) {
+                continue;
+            }
+            self.expect_keyword(kw)?;
+            self.expect_char('(')?;
+            let mut args = Vec::new();
+            self.skip_whitespace();
+            if self.peek_char() != Some(')') {
+                loop {
+                    args.push(self.parse_value_expr()?);
+                    self.skip_whitespace();
+                    if self.peek_char() == Some(',') {
+                        self.pos += 1;
+                        continue;
+                    }
+                    break;
+                }
+            }
+            self.expect_char(')')?;
+            if args.len() < min_arity || args.len() > max_arity {
+                return Err(self.error(&format!(
+                    "{} takes {} argument(s), got {}",
+                    kw,
+                    if min_arity == max_arity {
+                        min_arity.to_string()
+                    } else {
+                        format!("{}..{}", min_arity, max_arity)
+                    },
+                    args.len()
+                )));
+            }
+            return Ok(Term::Func { func, args });
+        }
+        self.parse_term()
+    }
+
     fn parse_two_arg_string_filter(
         &mut self,
         keyword: &str,
@@ -1673,11 +1759,13 @@ impl<'a> Parser<'a> {
         self.expect_keyword(keyword)?;
         self.expect_char('(')?;
         self.skip_whitespace();
-        let arg1 = self.parse_term()?;
+        // parse_value_expr, not parse_term: the arguments may themselves be
+        // function calls (`CONTAINS(LCASE(?label), LCASE("water"))`).
+        let arg1 = self.parse_value_expr()?;
         self.skip_whitespace();
         self.expect_char(',')?;
         self.skip_whitespace();
-        let arg2 = self.parse_term()?;
+        let arg2 = self.parse_value_expr()?;
         self.skip_whitespace();
         self.expect_char(')')?;
         Ok(ctor(arg1, arg2))

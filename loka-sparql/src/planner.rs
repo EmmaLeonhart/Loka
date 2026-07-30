@@ -338,9 +338,9 @@ fn term_to_constant_id(term: &Term, dict: Option<&TermDictionary>) -> Option<lok
         Term::Path { .. } => None,
         // Quoted triples can't be resolved without hashing.
         Term::QuotedTriple { .. } => None,
-        // Arithmetic only appears in FILTER operands, never in a pattern the
-        // estimator sees.
-        Term::Arith { .. } => None,
+        // Arithmetic and function calls only appear in FILTER/BIND operands,
+        // never in a pattern the estimator sees.
+        Term::Arith { .. } | Term::Func { .. } => None,
     }
 }
 
@@ -486,11 +486,6 @@ fn collect_filter_expr_variables(expr: &FilterExpr, vars: &mut HashSet<String>) 
         FilterExpr::LangMatches(v, _) => {
             vars.insert(v.clone());
         }
-        // STR(?var) = term: the first argument is a variable name string.
-        FilterExpr::StrEquals(v, t) => {
-            vars.insert(v.clone());
-            collect_term_variables(t, vars);
-        }
         // DATATYPE(?var) = type: the first argument is a variable name string.
         FilterExpr::DatatypeEquals(v, _) => {
             vars.insert(v.clone());
@@ -522,6 +517,21 @@ fn collect_term_variables(term: &Term, vars: &mut HashSet<String>) {
             collect_term_variables(subject, vars);
             collect_term_variables(predicate, vars);
             collect_term_variables(object, vars);
+        }
+        // Computed terms hide their variables one level down. Filters are
+        // currently evaluated after the joins that bind them, so missing these
+        // did not produce wrong rows — but this set is what any filter-pushdown
+        // decision would be based on, and a pushdown that cannot see `?age`
+        // inside `?age + 5` would evaluate the filter against an unbound
+        // variable and silently drop every row.
+        Term::Arith { left, right, .. } => {
+            collect_term_variables(left, vars);
+            collect_term_variables(right, vars);
+        }
+        Term::Func { args, .. } => {
+            for arg in args {
+                collect_term_variables(arg, vars);
+            }
         }
         _ => {}
     }

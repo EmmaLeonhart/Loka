@@ -23,7 +23,7 @@ use loka_hnsw::VectorRegistry;
 use crate::error::{Result, SparqlError};
 use crate::parser::{
     Aggregate, AggregateArg, AggregateFunction, ArithOp, FilterExpr, PathModifier, Pattern, Query,
-    QueryType, SearchMetric, Term,
+    QueryType, SearchMetric, Term, ValueFunc,
 };
 
 /// A single row of variable bindings.
@@ -559,11 +559,18 @@ fn evaluate_pattern(
             expression,
             variable,
         } => {
-            // BIND(term AS ?var): resolve the term and add it as a binding
+            // BIND(expr AS ?var): evaluate the expression and add it as a binding
             let mut result = Vec::new();
             let mut result_scores = Vec::new();
             for (i, row) in current.iter().enumerate() {
-                let value = resolve_term(expression, row, ctx.dict, ctx.prefixes)?;
+                // A computed expression has no interned id, so it has to produce
+                // one. Numbers can: an inline integer is encoded in the id itself,
+                // no dictionary write needed.
+                let value = if has_computed_value(expression) {
+                    bind_computed_value(expression, row, ctx)?
+                } else {
+                    resolve_term(expression, row, ctx.dict, ctx.prefixes)?
+                };
                 if let Some(id) = value {
                     let mut new_row = row.clone();
                     new_row.insert(variable.clone(), id);
@@ -2452,11 +2459,12 @@ fn resolve_term(
             // Path terms are handled at the pattern level, not here
             resolve_term(base, bindings, dict, prefixes)
         }
-        // Arithmetic is a FILTER-operand-only term: it has a numeric value, not
-        // an interned id. Filter evaluation reaches it through
-        // `numeric_operand`; anything that gets here is asking the dictionary
-        // for an id that by construction does not exist.
-        Term::Arith { .. } => Ok(None),
+        // Arithmetic and function calls are FILTER/BIND-operand-only terms: they
+        // have a computed value, not an interned id. Filter evaluation reaches
+        // them through `numeric_operand` / `term_to_string`; anything that gets
+        // here is asking the dictionary for an id that by construction does not
+        // exist.
+        Term::Arith { .. } | Term::Func { .. } => Ok(None),
         Term::QuotedTriple {
             subject,
             predicate,
@@ -2711,10 +2719,10 @@ fn resolve_vector_to_entities(vector_object_id: TermId, ctx: &ExecutionContext<'
 fn evaluate_filter(expr: &FilterExpr, row: &Bindings, ctx: &mut ExecutionContext<'_>) -> bool {
     match expr {
         FilterExpr::Equals(left, right) => {
-            // Arithmetic has a numeric value, not a TermId — compare values.
-            if is_arith(left) || is_arith(right) {
+            // A computed value has no TermId to compare — compare values.
+            if has_computed_value(left) || has_computed_value(right) {
                 return matches!(
-                    compare_filter_terms(left, right, row),
+                    compare_filter_terms(left, right, row, ctx),
                     Some(Ordering::Equal)
                 );
             }
@@ -2723,9 +2731,9 @@ fn evaluate_filter(expr: &FilterExpr, row: &Bindings, ctx: &mut ExecutionContext
             l.is_some() && l == r
         }
         FilterExpr::NotEquals(left, right) => {
-            if is_arith(left) || is_arith(right) {
+            if has_computed_value(left) || has_computed_value(right) {
                 return matches!(
-                    compare_filter_terms(left, right, row),
+                    compare_filter_terms(left, right, row, ctx),
                     Some(Ordering::Less) | Some(Ordering::Greater)
                 );
             }
@@ -2734,11 +2742,14 @@ fn evaluate_filter(expr: &FilterExpr, row: &Bindings, ctx: &mut ExecutionContext
             l.is_some() && r.is_some() && l != r
         }
         FilterExpr::LessThan(left, right) => {
-            matches!(compare_filter_terms(left, right, row), Some(Ordering::Less))
+            matches!(
+                compare_filter_terms(left, right, row, ctx),
+                Some(Ordering::Less)
+            )
         }
         FilterExpr::GreaterThan(left, right) => {
             matches!(
-                compare_filter_terms(left, right, row),
+                compare_filter_terms(left, right, row, ctx),
                 Some(Ordering::Greater)
             )
         }
@@ -2792,11 +2803,11 @@ fn evaluate_filter(expr: &FilterExpr, row: &Bindings, ctx: &mut ExecutionContext
         }
         FilterExpr::Not(inner) => !evaluate_filter(inner, row, ctx),
         FilterExpr::GreaterThanOrEqual(left, right) => matches!(
-            compare_filter_terms(left, right, row),
+            compare_filter_terms(left, right, row, ctx),
             Some(Ordering::Greater) | Some(Ordering::Equal)
         ),
         FilterExpr::LessThanOrEqual(left, right) => matches!(
-            compare_filter_terms(left, right, row),
+            compare_filter_terms(left, right, row, ctx),
             Some(Ordering::Less) | Some(Ordering::Equal)
         ),
         FilterExpr::Contains(haystack, needle) => {
@@ -2809,8 +2820,26 @@ fn evaluate_filter(expr: &FilterExpr, row: &Bindings, ctx: &mut ExecutionContext
             string_filter_op(haystack, suffix, row, ctx, |h, s| h.ends_with(s))
         }
         FilterExpr::Regex(term, pattern) => {
-            // Simple substring match (full regex would need a regex crate)
-            string_filter_op(term, pattern, row, ctx, |h, p| h.contains(p))
+            // Was a substring match, with a comment saying a real regex "would
+            // need a regex crate" — so `REGEX(?s, "^zzz")` matched any row
+            // containing the literal text `^zzz` and, more to the point, failed
+            // to anchor. Anchors and character classes are most of why anyone
+            // writes REGEX, so the substring stand-in answered a different
+            // question. REPLACE needs the same machinery, and `regex` was
+            // already in the dependency tree.
+            let subject = match term_to_string(term, row, ctx) {
+                Some(s) => s,
+                None => return false,
+            };
+            let pattern = match term_to_string(pattern, row, ctx) {
+                Some(p) => p,
+                None => return false,
+            };
+            match compiled_regex(&pattern) {
+                Some(re) => re.is_match(&subject),
+                // An invalid pattern matches nothing rather than erroring.
+                None => false,
+            }
         }
         FilterExpr::LangEquals(var, lang) => {
             if let Some(&id) = row.get(var) {
@@ -2847,23 +2876,6 @@ fn evaluate_filter(expr: &FilterExpr, row: &Bindings, ctx: &mut ExecutionContext
                 }
             }
             false
-        }
-        FilterExpr::StrEquals(var, term) => {
-            let var_str = row.get(var).and_then(|&id| {
-                if let Some(s) = ctx.dict.resolve(id) {
-                    // Strip quotes and language tag
-                    if let Some(inner) = s.strip_prefix('"') {
-                        let end = inner.find('"').unwrap_or(inner.len());
-                        Some(inner[..end].to_string())
-                    } else {
-                        Some(s.to_string())
-                    }
-                } else {
-                    None
-                }
-            });
-            let term_str = term_to_string(term, row, ctx);
-            var_str.is_some() && var_str == term_str
         }
         FilterExpr::DatatypeEquals(var, expected_dt) => {
             if let Some(&id) = row.get(var) {
@@ -2932,8 +2944,78 @@ fn term_to_string(term: &Term, row: &Bindings, ctx: &ExecutionContext<'_>) -> Op
         }
         Term::Literal(s) => Some(s.clone()),
         Term::Iri(s) => Some(s.clone()),
+        Term::IntegerLiteral(n) => Some(n.to_string()),
+        Term::Func { func, args } => eval_value_func(*func, args, row, ctx),
         _ => None,
     }
+}
+
+/// Evaluate a SPARQL value function to its string form.
+///
+/// `None` propagates: an argument with no value makes the call have no value,
+/// which makes the enclosing comparison false. That matches how the rest of
+/// filter evaluation treats terms it cannot resolve, and it is why a query
+/// filtering on an unbound variable returns no rows instead of erroring.
+fn eval_value_func(
+    func: ValueFunc,
+    args: &[Term],
+    row: &Bindings,
+    ctx: &ExecutionContext<'_>,
+) -> Option<String> {
+    match func {
+        ValueFunc::Str => term_to_string(args.first()?, row, ctx),
+        ValueFunc::LCase => Some(term_to_string(args.first()?, row, ctx)?.to_lowercase()),
+        ValueFunc::UCase => Some(term_to_string(args.first()?, row, ctx)?.to_uppercase()),
+        // SPARQL STRLEN counts characters, not bytes.
+        ValueFunc::StrLen => Some(
+            term_to_string(args.first()?, row, ctx)?
+                .chars()
+                .count()
+                .to_string(),
+        ),
+        ValueFunc::Replace => {
+            let subject = term_to_string(args.first()?, row, ctx)?;
+            let pattern = term_to_string(args.get(1)?, row, ctx)?;
+            let replacement = term_to_string(args.get(2)?, row, ctx)?;
+            // An invalid pattern yields no value rather than an error, for the
+            // same reason as above. Compiling per row is wasteful; the regex
+            // cache below exists to make that not matter.
+            let re = compiled_regex(&pattern)?;
+            Some(re.replace_all(&subject, replacement.as_str()).into_owned())
+        }
+        ValueFunc::Concat => {
+            let mut out = String::new();
+            for arg in args {
+                out.push_str(&term_to_string(arg, row, ctx)?);
+            }
+            Some(out)
+        }
+    }
+}
+
+/// Compile (and cache) a regex.
+///
+/// Filters run per row, so compiling on every call would make a REPLACE or
+/// REGEX filter quadratic-feeling on a large result set. The cache is keyed by
+/// pattern text and never invalidated: patterns come from the query, so the
+/// working set is bounded by the queries the process runs.
+fn compiled_regex(pattern: &str) -> Option<std::sync::Arc<regex::Regex>> {
+    use std::collections::HashMap as Map;
+    use std::sync::{Arc, Mutex, OnceLock};
+    static CACHE: OnceLock<Mutex<Map<String, Option<Arc<regex::Regex>>>>> = OnceLock::new();
+    let cache = CACHE.get_or_init(|| Mutex::new(Map::new()));
+    let mut guard = match cache.lock() {
+        Ok(guard) => guard,
+        // A poisoned lock means another thread panicked while holding it. Fall
+        // back to compiling directly rather than propagating that panic.
+        Err(_) => return regex::Regex::new(pattern).ok().map(Arc::new),
+    };
+    if let Some(hit) = guard.get(pattern) {
+        return hit.clone();
+    }
+    let compiled = regex::Regex::new(pattern).ok().map(Arc::new);
+    guard.insert(pattern.to_string(), compiled.clone());
+    compiled
 }
 
 /// Apply GROUP BY and aggregate functions.
@@ -3261,8 +3343,47 @@ fn filter_term_value(term: &Term, row: &Bindings) -> Option<TermId> {
     }
 }
 
-fn is_arith(term: &Term) -> bool {
-    matches!(term, Term::Arith { .. })
+/// Turn a computed BIND expression into a `TermId`, or say why it cannot.
+///
+/// Numeric results are exact and free: an inline integer is encoded in the id
+/// itself, so no dictionary write is involved. A non-integral number (from
+/// division) has no inline encoding, so it yields `None` — SPARQL leaves the
+/// variable unbound when a BIND expression errors, and that is the same shape.
+///
+/// **String results are rejected outright**, and that is deliberate. Binding one
+/// would mean interning a NEW literal, and `execute` holds `&TermDictionary`, not
+/// `&mut` — so the honest options were an explicit error or a variable that is
+/// sometimes bound (when the string happens to already exist in the dictionary)
+/// and sometimes not. The second is the failure mode this engine has been paying
+/// for all week: a query that quietly answers a different question. An error the
+/// caller can see is worth more than a column that silently vanishes. See
+/// TODO.md for what implementing it properly needs.
+fn bind_computed_value(
+    expression: &Term,
+    row: &Bindings,
+    ctx: &ExecutionContext<'_>,
+) -> Result<Option<TermId>> {
+    if let Some(n) = numeric_operand(expression, row, ctx) {
+        if n.fract() == 0.0 {
+            return Ok(loka_core::inline_integer(n as i64));
+        }
+        return Ok(None);
+    }
+    if term_to_string(expression, row, ctx).is_some() {
+        return Err(SparqlError::Execution(
+            "BIND over a string-valued expression is not supported yet: binding one              requires interning a new literal, and the executor holds the term              dictionary immutably. Compute the value in the client, or bind a              numeric expression (arithmetic, STRLEN)."
+                .to_string(),
+        ));
+    }
+    // No value at all (unbound variable, invalid regex): unbound, per SPARQL.
+    Ok(None)
+}
+
+/// A term whose value is computed rather than interned: arithmetic, or a value
+/// function call. Comparisons involving one must use value semantics, because
+/// there is no `TermId` to compare.
+fn has_computed_value(term: &Term) -> bool {
+    matches!(term, Term::Arith { .. } | Term::Func { .. })
 }
 
 /// Evaluate a FILTER operand to a number, if it has one.
@@ -3277,16 +3398,23 @@ fn is_arith(term: &Term) -> bool {
 /// `?a / 3 = 2` should not be true for `?a = 7`, which truncating integer
 /// division would give. Values here come from a 56-bit integer encoding, well
 /// inside f64's exact-integer range, so no precision is lost on the way in.
-fn numeric_operand(term: &Term, row: &Bindings) -> Option<f64> {
+fn numeric_operand(term: &Term, row: &Bindings, ctx: &ExecutionContext<'_>) -> Option<f64> {
     match term {
         Term::Variable(name) => {
             let id = *row.get(name)?;
             loka_core::decode_inline_integer(id).map(|n| n as f64)
         }
         Term::IntegerLiteral(n) => Some(*n as f64),
+        // STRLEN is the one numeric-valued function; the others are strings and
+        // are compared as such. A string that happens to look like a number is
+        // NOT coerced — that would make `STR(?a) > 5` silently numeric.
+        Term::Func {
+            func: ValueFunc::StrLen,
+            args,
+        } => eval_value_func(ValueFunc::StrLen, args, row, ctx).and_then(|s| s.parse::<f64>().ok()),
         Term::Arith { left, op, right } => {
-            let a = numeric_operand(left, row)?;
-            let b = numeric_operand(right, row)?;
+            let a = numeric_operand(left, row, ctx)?;
+            let b = numeric_operand(right, row, ctx)?;
             let value = match op {
                 ArithOp::Add => a + b,
                 ArithOp::Sub => a - b,
@@ -3326,13 +3454,34 @@ fn numeric_operand(term: &Term, row: &Bindings) -> Option<f64> {
 /// [`filter_term_value`] is unchanged — an interned literal against a query
 /// literal yields `None` on one side and so matches nothing rather than
 /// returning an arbitrary subset.
-fn compare_filter_terms(left: &Term, right: &Term, row: &Bindings) -> Option<Ordering> {
-    if let (Some(a), Some(b)) = (numeric_operand(left, row), numeric_operand(right, row)) {
-        return a.partial_cmp(&b);
+fn compare_filter_terms(
+    left: &Term,
+    right: &Term,
+    row: &Bindings,
+    ctx: &ExecutionContext<'_>,
+) -> Option<Ordering> {
+    let (ln, rn) = (
+        numeric_operand(left, row, ctx),
+        numeric_operand(right, row, ctx),
+    );
+    match (ln, rn) {
+        (Some(a), Some(b)) => return a.partial_cmp(&b),
+        // One side is a number and the other is not. SPARQL calls that a type
+        // error, which makes the comparison false; falling through to the string
+        // path would compare "Water" against "4" and answer Greater, so
+        // `FILTER(STR(?label) > 4)` would match every row.
+        (Some(_), None) | (None, Some(_)) => return None,
+        (None, None) => {}
     }
-    // Arithmetic has no id, so there is nothing to fall back to.
-    if is_arith(left) || is_arith(right) {
-        return None;
+    // A computed value (arithmetic, or a function call) has no interned id, so
+    // there is no id comparison to fall back to — compare the values instead.
+    // For a function call that means real string collation, which is exactly
+    // what the id path could not do; `STR(?name) < "M"` therefore answers, while
+    // the bare `?name < "M"` still matches nothing (see filter_term_value).
+    if has_computed_value(left) || has_computed_value(right) {
+        let a = term_to_string(left, row, ctx)?;
+        let b = term_to_string(right, row, ctx)?;
+        return Some(a.cmp(&b));
     }
     let a = filter_term_value(left, row)?;
     let b = filter_term_value(right, row)?;

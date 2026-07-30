@@ -160,3 +160,28 @@ fn division_by_zero_matches_nothing_rather_than_panicking() {
     assert_eq!(rows("?t / 0 = 0"), 0);
     assert_eq!(rows("?t / 0 > -100"), 0);
 }
+
+/// The planner decides where a FILTER can be evaluated from the variables the
+/// filter mentions. An arithmetic operand hides its variables one level down, so
+/// this needs a multi-pattern query — a single-pattern query cannot tell the
+/// difference.
+#[test]
+fn arithmetic_variables_are_visible_to_the_planner() {
+    let mut dict = TermDictionary::new();
+    let mut store = TripleStore::new();
+    let kind = dict.intern("http://example.org/kind");
+    let temp = dict.intern("http://example.org/temp");
+    let sensor = dict.intern("http://example.org/sensor");
+    for (i, t) in [-20i64, 5, 20].iter().enumerate() {
+        let s = dict.intern(&format!("http://example.org/s{}", i));
+        store.insert(Triple::new(s, kind, sensor)).unwrap();
+        store
+            .insert(Triple::new(s, temp, loka_core::inline_integer(*t).unwrap()))
+            .unwrap();
+    }
+
+    // ?t is bound by the SECOND pattern; the filter must not be evaluated before it.
+    let q = "PREFIX ex: <http://example.org/>              SELECT ?s WHERE { ?s ex:kind ex:sensor . ?s ex:temp ?t . FILTER(?t + 25 > 24) }";
+    let parsed = parse(q).unwrap();
+    assert_eq!(execute(&parsed, &store, &dict).unwrap().rows.len(), 2); // 5, 20 -> 30, 45
+}

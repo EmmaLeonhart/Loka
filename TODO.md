@@ -406,6 +406,63 @@ chronological by construction; the deliberately-narrow string behaviour is uncha
 of them fail on the *positive*-bound cases, which is the part that would have been easy to miss.
 448 workspace tests green.
 
+### 🚨 FIXED 2026-07-29: five of the nine query shapes our own consumer sends did not parse
+
+The find that matters most today, and it came from asking a question the test suite could not:
+**what SPARQL does Pramana actually send us?** Pramana is the ERP-for-agents store that runs on
+Loka (118k triples, `src/sparql_connector.py` → `GET /sparql`). Extracting the distinct query
+shapes from its Python and running them through `parse()`:
+
+| shape | before |
+|---|---|
+| `FILTER(LCASE(STR(?label)) = LCASE("Water"))` — entity resolver | **parse error** |
+| `FILTER(CONTAINS(LCASE(?label), LCASE("wat")))` — search box | **parse error** |
+| `FILTER(STRSTARTS(REPLACE(STR(?uuid), "-", ""), "a5bc"))` — uuid lookup | **parse error** |
+| `FILTER(STRSTARTS(STR(?property), "http://…/direct/"))` — property filter | **parse error** |
+| `BIND(REPLACE(STR(?type), "^.*/", "") AS ?typeLocal)` — entity page | **parse error** |
+| the other four (NOT EXISTS, isLiteral, `!=`) | ok |
+
+Two causes: `LCASE`/`UCASE`/`REPLACE`/`STRLEN`/`CONCAT` did not exist at all, and every string
+function's *arguments* were parsed with `parse_term`, so even `STRSTARTS(STR(?p), "…")` — using
+only functions that did exist — was rejected because one function call cannot contain another.
+
+**Why nobody noticed:** Pramana's client returns `None` on a non-200 and its callers treat that
+as "no results", so its entity page, search box and entity resolver rendered *empty* rather than
+erroring. On the Loka side every test passed, because the tests only ever used the shapes Loka's
+author thought to write. A hand-written test suite tests the author's imagination; the consumer
+tests reality.
+
+Fixed by a `Term::Func { func, args }` node and a `parse_value_expr` that arguments recurse
+through, so nesting works everywhere a value is expected — filter operands, string-function
+arguments, and BIND. Functions: `STR`, `LCASE`, `UCASE`, `STRLEN` (numeric), `REPLACE`, `CONCAT`,
+with arity checked at parse time.
+
+Consequences worth knowing:
+
+- **`REGEX` was a substring match**, with a comment admitting it ("full regex would need a regex
+  crate"), so `REGEX(?s, "^zzz")` matched anything *containing* the text `^zzz` and no anchor or
+  character class worked. `REPLACE` needs the same machinery, and `regex` was **already in the
+  lockfile** transitively, so both now use a real regex, compiled once per pattern and cached
+  (filters run per row).
+- **The bespoke `STR(?v) = x` branch is gone**, along with `FilterExpr::StrEquals`. It accepted
+  only a variable argument and only `=`, so `STR(?a) != "x"` and `LCASE(?a) = "x"` were errors
+  while `STR(?a) = "x"` worked. One value path now, not two — two paths with different notions of
+  what a comparison means is how the string-equality defect survived.
+- **Mixed numeric/string comparison is now a type error (no match)** instead of a lexicographic
+  comparison of "Water" against "4". Without that rule `FILTER(STR(?label) > 4)` matched
+  every row.
+- **`BIND` takes an expression.** Numeric results bind for real (an inline integer needs no
+  dictionary write). **String results return an explicit "not supported yet" error**, because
+  binding one means interning a new literal and `execute` holds `&TermDictionary`. The available
+  alternatives were an error or a variable that binds only when the string already happens to be
+  in the dictionary; a column that silently vanishes is the exact failure shape this week has
+  been spent removing. Implementing it properly needs either `&mut` in the executor's public API
+  or a per-query value overlay — a real design decision, not a patch.
+
+`loka-sparql/tests/value_functions.rs` keeps the consumer's real shapes as a permanent regression
+test, so a future change that breaks what Pramana sends fails here rather than in a blank page.
+459 workspace tests green.
+
 ### ✅ FIXED 2026-07-29: `&&` now binds tighter than `||`
 
 `parse_bool_expr` was a single left-associative loop over both connectives, so

@@ -12,6 +12,9 @@ serde = { workspace = true }
 tracing.workspace = true
 loka-core.workspace = true
 loka-hnsw.workspace = true
+# REGEX() and REPLACE() need real regex semantics; already in the dependency tree
+# (transitively, via tracing-subscriber's env-filter), so this adds no new build.
+regex = "1"
 
 [dev-dependencies]
 criterion.workspace = true

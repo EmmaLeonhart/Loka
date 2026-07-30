@@ -11,6 +11,32 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ---
 
+## ACTIVE — BIND over a string-valued expression needs an interning path
+
+`BIND(REPLACE(STR(?type), "^.*/", "") AS ?local)` now parses and returns an explicit
+"not supported yet" execution error. Numeric BIND (`BIND(STRLEN(?x) + 1 AS ?n)`) works, because an
+inline integer is encoded in the id. A string result has to be interned, and `execute` takes
+`&TermDictionary`.
+
+Two designs, both real changes:
+
+1. **`&mut TermDictionary` in the executor.** Honest and simple, but it is a public-API break
+   across loka-proto / loka-ffi / loka-cli, and it makes every query a potential writer — which
+   interacts with the concurrency story (`search is &self`) and with persistence.
+2. **A per-query value overlay** — computed values live in a side table for the duration of the
+   query, with ids from a reserved range that cannot collide with dictionary ids. No API break, no
+   dictionary growth from queries. Needs the reserved-range guarantee to be watertight and every
+   render path (`resolve`, CSV/Turtle/N-Triples output) to consult the overlay.
+
+Option 2 looks right; it also generalises to `SELECT (?a + 1 AS ?b)` and aggregates over computed
+values. Do the range design first and write it into `planning/` before touching code.
+
+**Pramana does not need to wait for this** — its entity page can take the local name from `?type`
+client-side, which is a 3-line change in `web/data_access.py`, and it should not carry a workaround
+for an engine gap that is being fixed anyway.
+
+---
+
 ## ACTIVE — operator precedence inside FILTER arithmetic
 
 The last piece of the SPARQL 1.1 `Expression` grammar. `parse_arith_operand` is one

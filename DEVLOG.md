@@ -7,6 +7,55 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-07-29 (latest) — Ask the consumer: five of nine of Pramana's real queries did not parse
+
+The three fixes below all came from inside Loka — dogfooding its own transpiler, then picking
+better test data. This one came from turning the question around: **what SPARQL does the thing
+that actually uses this database send?**
+
+Pramana is the ERP-for-agents store running on Loka. Its client is 60 lines of Python that GETs
+`/sparql`. Pulling the distinct query shapes out of its source and running them through `parse()`
+took about five minutes and found that **five of nine failed** — its entity page, its search box,
+its entity resolver and its uuid lookup were all sending SPARQL this engine rejects.
+
+The reason the failure was invisible on both sides is worth writing down. Pramana's client returns
+`None` for a non-200 and its callers read that as "no results", so pages rendered *empty* instead
+of erroring. Loka's own suite was green throughout — because a hand-written test suite tests the
+author's imagination, and every shape in it was one the author had thought of. The consumer's
+queries are the part of reality the suite could not reach. `tests/value_functions.rs` now holds
+them verbatim, so this class of blindness costs a test-file diff instead of a silent outage.
+
+What was missing: `LCASE`, `UCASE`, `REPLACE`, `STRLEN`, `CONCAT` did not exist, and — the wider
+problem — string-function *arguments* were parsed as plain terms, so no function could contain
+another. Even `STRSTARTS(STR(?p), "…")`, built entirely from functions that did exist, was a parse
+error. Fixed with a `Term::Func` node and a `parse_value_expr` that arguments recurse through, so
+nesting works in every position a value is expected.
+
+Three things fell out of it, each its own small correction:
+
+- **`REGEX` was a substring match** — with a comment saying so — meaning anchors and character
+  classes silently did nothing. `REPLACE` needed real regex anyway and `regex` was already in the
+  lockfile transitively, so both now use it, with a per-pattern compile cache since filters run
+  per row.
+- **The bespoke `STR(?v) = x` branch is deleted**, and with it `FilterExpr::StrEquals`. It handled
+  a variable argument and only `=`; everything adjacent to it was an error. Two comparison paths
+  with different semantics is precisely how the string-equality defect went unnoticed for weeks,
+  so collapsing to one path matters more than the lines saved.
+- **Mixed numeric/string comparison is a type error now.** Without that rule the new value path
+  compared `"Water"` to `"4"` lexicographically and `FILTER(STR(?label) > 4)` matched every row —
+  a bug the fix itself introduced, caught by asserting a row count for a query that should return
+  nothing.
+
+`BIND` now takes an expression. Numeric results bind for real; string results return an explicit
+"not supported yet" error, because binding one means interning a new literal and the executor
+holds the dictionary immutably. The tempting middle option — bind when the string happens to
+already exist in the dictionary — would produce a column that is sometimes there and sometimes
+not, which is the failure shape this whole week has been spent deleting. The design for doing it
+properly (a per-query value overlay with reserved ids) is in `queue.md`.
+
+459 workspace tests green.
+
+---
 ## 2026-07-29 (later) — FILTER arithmetic is evaluated, and negative numbers order correctly
 
 Immediately after the grammar work below, the remaining gap it named — arithmetic in operand
