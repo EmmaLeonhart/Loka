@@ -338,6 +338,9 @@ fn term_to_constant_id(term: &Term, dict: Option<&TermDictionary>) -> Option<lok
         Term::Path { .. } => None,
         // Quoted triples can't be resolved without hashing.
         Term::QuotedTriple { .. } => None,
+        // Arithmetic only appears in FILTER operands, never in a pattern the
+        // estimator sees.
+        Term::Arith { .. } => None,
     }
 }
 

@@ -11,24 +11,21 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ---
 
-## ACTIVE — arithmetic in FILTER operand position (found closing the two items above)
+## ACTIVE — operator precedence inside FILTER arithmetic
 
-`parse_comparison_expr` parses `?age + 5 > 30` and then **discards the arithmetic**, building
-`Equals/GreaterThan(?age, 30)` from the left variable alone — so the filter silently evaluates
-`?age > 30`. Wrong answers, no error. Full writeup in `TODO.md` (§ "arithmetic in FILTER operand
-position is parsed and then thrown away").
+The last piece of the SPARQL 1.1 `Expression` grammar. `parse_arith_operand` is one
+left-associative loop over `+ - * /`, so `?a + 2 * 3` is `(?a + 2) * 3` where SPARQL means
+`?a + (2 * 3)`. Pinned by `arithmetic_has_no_operator_precedence_yet`
+(`loka-sparql/tests/filter_numeric_ordering.rs`) on a case where the readings select different
+rows, so it is a known divergence rather than a silent one.
 
-Not a mechanical fix: `FilterExpr` has no node that can hold the operation, so it needs an AST
-addition plus executor evaluation, and a decision on non-numeric operands. Steps:
+Same shape as the `&&`/`||` split done 07-29: an `AdditiveExpression` loop over a
+`MultiplicativeExpression` loop. It re-associates queries that already parse, so it goes in its
+own commit with the pinning test rewritten to assert precedence — not as a drive-by.
 
-1. Decide the AST shape — a dedicated `Arith(Term, ArithOp, Term)` usable as a comparison
-   operand, vs. a general `Expr` node. Prefer the narrow one unless the general one is needed
-   for something already queued.
-2. Add executor evaluation over inline integers (the only numeric encoding that exists today);
-   non-numeric operands evaluate the comparison to false, matching how unresolvable terms
-   already behave rather than inventing an error path.
-3. Tests asserting row counts for `?a + n <cmp> v` in all four operators and in both operand
-   positions, plus one pinning what non-numeric operands do.
+Worth doing together with **unary minus** (`FILTER(-?a > 5)`), which `parse_arith_operand` does
+not accept at all: it calls `parse_term` first, so a leading `-` is only handled when it is part
+of a numeric literal.
 
 ---
 

@@ -9,6 +9,7 @@
 //! HNSW index via the VectorRegistry, joining results back into the
 //! binding table like any other index access.
 
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
@@ -21,7 +22,7 @@ use loka_hnsw::VectorRegistry;
 
 use crate::error::{Result, SparqlError};
 use crate::parser::{
-    Aggregate, AggregateArg, AggregateFunction, FilterExpr, PathModifier, Pattern, Query,
+    Aggregate, AggregateArg, AggregateFunction, ArithOp, FilterExpr, PathModifier, Pattern, Query,
     QueryType, SearchMetric, Term,
 };
 
@@ -2451,6 +2452,11 @@ fn resolve_term(
             // Path terms are handled at the pattern level, not here
             resolve_term(base, bindings, dict, prefixes)
         }
+        // Arithmetic is a FILTER-operand-only term: it has a numeric value, not
+        // an interned id. Filter evaluation reaches it through
+        // `numeric_operand`; anything that gets here is asking the dictionary
+        // for an id that by construction does not exist.
+        Term::Arith { .. } => Ok(None),
         Term::QuotedTriple {
             subject,
             predicate,
@@ -2705,30 +2711,36 @@ fn resolve_vector_to_entities(vector_object_id: TermId, ctx: &ExecutionContext<'
 fn evaluate_filter(expr: &FilterExpr, row: &Bindings, ctx: &mut ExecutionContext<'_>) -> bool {
     match expr {
         FilterExpr::Equals(left, right) => {
+            // Arithmetic has a numeric value, not a TermId — compare values.
+            if is_arith(left) || is_arith(right) {
+                return matches!(
+                    compare_filter_terms(left, right, row),
+                    Some(Ordering::Equal)
+                );
+            }
             let l = filter_term_id(left, row, ctx);
             let r = filter_term_id(right, row, ctx);
             l.is_some() && l == r
         }
         FilterExpr::NotEquals(left, right) => {
+            if is_arith(left) || is_arith(right) {
+                return matches!(
+                    compare_filter_terms(left, right, row),
+                    Some(Ordering::Less) | Some(Ordering::Greater)
+                );
+            }
             let l = filter_term_id(left, row, ctx);
             let r = filter_term_id(right, row, ctx);
             l.is_some() && r.is_some() && l != r
         }
         FilterExpr::LessThan(left, right) => {
-            let l = filter_term_value(left, row);
-            let r = filter_term_value(right, row);
-            match (l, r) {
-                (Some(a), Some(b)) => a < b,
-                _ => false,
-            }
+            matches!(compare_filter_terms(left, right, row), Some(Ordering::Less))
         }
         FilterExpr::GreaterThan(left, right) => {
-            let l = filter_term_value(left, row);
-            let r = filter_term_value(right, row);
-            match (l, r) {
-                (Some(a), Some(b)) => a > b,
-                _ => false,
-            }
+            matches!(
+                compare_filter_terms(left, right, row),
+                Some(Ordering::Greater)
+            )
         }
         FilterExpr::Bound(var) => row.contains_key(var),
         FilterExpr::NotBound(var) => !row.contains_key(var),
@@ -2779,22 +2791,14 @@ fn evaluate_filter(expr: &FilterExpr, row: &Bindings, ctx: &mut ExecutionContext
             evaluate_filter(left, row, ctx) || evaluate_filter(right, row, ctx)
         }
         FilterExpr::Not(inner) => !evaluate_filter(inner, row, ctx),
-        FilterExpr::GreaterThanOrEqual(left, right) => {
-            let l = filter_term_value(left, row);
-            let r = filter_term_value(right, row);
-            match (l, r) {
-                (Some(a), Some(b)) => a >= b,
-                _ => false,
-            }
-        }
-        FilterExpr::LessThanOrEqual(left, right) => {
-            let l = filter_term_value(left, row);
-            let r = filter_term_value(right, row);
-            match (l, r) {
-                (Some(a), Some(b)) => a <= b,
-                _ => false,
-            }
-        }
+        FilterExpr::GreaterThanOrEqual(left, right) => matches!(
+            compare_filter_terms(left, right, row),
+            Some(Ordering::Greater) | Some(Ordering::Equal)
+        ),
+        FilterExpr::LessThanOrEqual(left, right) => matches!(
+            compare_filter_terms(left, right, row),
+            Some(Ordering::Less) | Some(Ordering::Equal)
+        ),
         FilterExpr::Contains(haystack, needle) => {
             string_filter_op(haystack, needle, row, ctx, |h, n| h.contains(n))
         }
@@ -3234,13 +3238,19 @@ fn term_id_is_literal(id: TermId, dict: &TermDictionary) -> bool {
     loka_core::is_inline(id) || dict.resolve(id).is_some_and(|s| s.starts_with('"'))
 }
 
-/// Resolve a term for **ordering** comparisons (`<`, `>`, `<=`, `>=`).
+/// Resolve a term to a raw `TermId` for the **id-comparison fallback** in
+/// [`compare_filter_terms`].
 ///
-/// Deliberately narrow: variables and integer literals only. Ordering compares
-/// raw `TermId`s, which is meaningful for inline-encoded integers and
+/// Deliberately narrow: variables and integer literals only. Id comparison is
 /// meaningless for dictionary-interned strings, where the id reflects insertion
 /// order. Resolving literals here would turn `FILTER(?name < "M")` from "matches
 /// nothing" into "matches an arbitrary subset", which is the worse failure.
+///
+/// Numeric ordering no longer comes through here: [`compare_filter_terms`] tries
+/// [`numeric_operand`] first, because an inline integer's id is NOT ordered by
+/// value once negatives are involved. What is left for this function is the
+/// non-numeric residue — chiefly temporal literals, whose ids are chronological
+/// by construction.
 ///
 /// For equality use [`filter_term_id`], which resolves the full term space.
 fn filter_term_value(term: &Term, row: &Bindings) -> Option<TermId> {
@@ -3249,6 +3259,84 @@ fn filter_term_value(term: &Term, row: &Bindings) -> Option<TermId> {
         Term::IntegerLiteral(n) => loka_core::inline_integer(*n),
         _ => None,
     }
+}
+
+fn is_arith(term: &Term) -> bool {
+    matches!(term, Term::Arith { .. })
+}
+
+/// Evaluate a FILTER operand to a number, if it has one.
+///
+/// Handles the only numeric encoding the store has (inline 56-bit integers),
+/// integer literals written in the query, and `Term::Arith` recursively. Returns
+/// `None` for anything non-numeric — a string, an IRI, an unbound variable — so a
+/// comparison over it is false, matching how unresolvable terms already behave
+/// everywhere else in filter evaluation.
+///
+/// `f64` rather than `i64` because division has to mean division:
+/// `?a / 3 = 2` should not be true for `?a = 7`, which truncating integer
+/// division would give. Values here come from a 56-bit integer encoding, well
+/// inside f64's exact-integer range, so no precision is lost on the way in.
+fn numeric_operand(term: &Term, row: &Bindings) -> Option<f64> {
+    match term {
+        Term::Variable(name) => {
+            let id = *row.get(name)?;
+            loka_core::decode_inline_integer(id).map(|n| n as f64)
+        }
+        Term::IntegerLiteral(n) => Some(*n as f64),
+        Term::Arith { left, op, right } => {
+            let a = numeric_operand(left, row)?;
+            let b = numeric_operand(right, row)?;
+            let value = match op {
+                ArithOp::Add => a + b,
+                ArithOp::Sub => a - b,
+                ArithOp::Mul => a * b,
+                // Division by zero has no value: SPARQL raises a type error,
+                // which makes the enclosing comparison false. `None` is how that
+                // is spelled here. Without this it would be an infinity or NaN
+                // and could satisfy a comparison.
+                ArithOp::Div if b == 0.0 => return None,
+                ArithOp::Div => a / b,
+            };
+            if value.is_finite() {
+                Some(value)
+            } else {
+                None
+            }
+        }
+        _ => None,
+    }
+}
+
+/// Order two FILTER operands.
+///
+/// Two things this fixes over the raw-`TermId` comparison it replaces:
+///
+/// 1. **Negative integers.** An inline integer's payload is two's-complement in
+///    the low 56 bits, so a negative value sets the payload's high bit and the
+///    *unsigned* id sorts above every positive one. `FILTER(?t > -5)` therefore
+///    excluded rows it should have kept, and — worse — a store containing any
+///    negative value answered `FILTER(?t > 4)` wrongly too, since the negatives
+///    outranked the bound. Numeric comparison happens on decoded values now.
+/// 2. **Arithmetic operands**, which have a value but no id.
+///
+/// The raw-id fallback is kept for everything that is not a pair of numbers:
+/// temporal literals (whose ids are chronological by construction) still order,
+/// and the deliberately-narrow string behaviour documented on
+/// [`filter_term_value`] is unchanged — an interned literal against a query
+/// literal yields `None` on one side and so matches nothing rather than
+/// returning an arbitrary subset.
+fn compare_filter_terms(left: &Term, right: &Term, row: &Bindings) -> Option<Ordering> {
+    if let (Some(a), Some(b)) = (numeric_operand(left, row), numeric_operand(right, row)) {
+        return a.partial_cmp(&b);
+    }
+    // Arithmetic has no id, so there is nothing to fall back to.
+    if is_arith(left) || is_arith(right) {
+        return None;
+    }
+    let a = filter_term_value(left, row)?;
+    let b = filter_term_value(right, row)?;
+    Some(a.cmp(&b))
 }
 
 /// Resolve a term for **equality** comparisons (`=`, `!=`).

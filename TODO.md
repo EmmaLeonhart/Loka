@@ -343,35 +343,68 @@ they worked as an entire filter but not as the left operand of a chain
 (`FILTER(bound(?a) && ?b = 1)` failed while `FILTER(?b = 1 && bound(?a))` worked).
 `parse_filter_inner` already handled all three without eating the outer paren.
 
-**Both remaining items CLOSED 2026-07-29 — see the two sections below.** What is still
-missing from a full SPARQL 1.1 `Expression` grammar is **arithmetic in operand position**,
-which `parse_comparison_expr` only half-handles: it parses `?a + 1 > 5`, then *discards the
-right-hand side of the arithmetic* and compares `?a` against `5`. That is a wrong-answer
-path, not a parse gap, and it is the next real gap here (§ below).
+**Both remaining items CLOSED 2026-07-29 — see the sections below**, along with arithmetic in
+operand position and a numeric-ordering defect that fell out of it. What is left of a full
+SPARQL 1.1 `Expression` grammar is **operator precedence inside arithmetic** (`?a + 2 * 3`
+associates left instead of binding `*` tighter) — pinned by a test, not silently wrong-shaped.
 
 The Cypher transpiler's two workarounds — pushing NOT to the leaves and splitting
 top-level ANDs into separate FILTER clauses — are still correct and still tested, but are
 no longer *necessary*. It can emit grouped filters directly and drop its
 `(a AND b) OR c` rejection whenever someone wants to simplify it.
 
-### 🐛 OPEN: arithmetic in FILTER operand position is parsed and then thrown away
+### ✅ FIXED 2026-07-29: arithmetic in FILTER operand position was parsed and thrown away
 
-`parse_comparison_expr` recognises `?var (+|-|*|/) term <cmp> term`, and then builds the
-comparison from the LEFT VARIABLE ALONE:
+`parse_comparison_expr` recognised `?var (+|-|*|/) term <cmp> term` and then built the
+comparison from the LEFT VARIABLE ALONE — `let _arith_right = self.parse_term()?;`, dropped —
+so `FILTER(?age + 5 > 30)` evaluated as `FILTER(?age > 30)`. Wrong predicate, no error. The
+branch's own comment ("the executor will need to handle this — for now return a structural
+match") shows it shipped known-incomplete.
 
-```rust
-let _arith_right = self.parse_term()?;   // parsed, dropped
-...
-"=" => Ok(FilterExpr::Equals(left, cmp_val)),
-```
+Fixed with a `Term::Arith { left, op, right }` node (+ `ArithOp`) produced by a new
+`parse_arith_operand`, which is used for **both** sides of a comparison — so `24 < ?age + 5`
+works too, having previously been a parse error. Evaluation is `numeric_operand` in the
+executor, recursive over nested arithmetic.
 
-So `FILTER(?age + 5 > 30)` evaluates as `FILTER(?age > 30)` — silently the wrong predicate,
-with no error. `FilterExpr` has no arithmetic node to hold the operation, so fixing it means
-adding one (`Arith(Term, Op, Term)` as a comparison operand, or a general expression node)
-plus executor evaluation for inline integers, and deciding what non-numeric operands do.
-Filed rather than fixed: it needs an AST change, and the existing comment in that branch
-("the executor will need to handle this — for now return a structural match") shows it was
-known-incomplete when written.
+Decisions worth knowing:
+
+- **`f64`, not `i64`.** Division has to mean division: truncating integer division would make
+  `?a / 3 = 2` true for `?a = 7`. Values come from a 56-bit integer encoding, well inside
+  f64's exact-integer range, so nothing is lost on the way in.
+- **Division by zero yields no value**, so the enclosing comparison is false. SPARQL raises a
+  type error there, which has the same effect on the filter; the alternative is an infinity
+  that can satisfy a comparison.
+- **Non-numeric operands match nothing** rather than erroring, matching how unresolvable terms
+  already behave throughout filter evaluation.
+- **Arithmetic in pattern position is `Ok(None)`/`None`** in `resolve_term` and the planner's
+  `term_to_constant_id` — it is a filter-operand-only term with a value but no interned id.
+
+**Still open: no operator precedence inside arithmetic.** `?a + 2 * 3` parses left-associative
+as `(?a + 2) * 3`; SPARQL binds `*` tighter. Pinned by
+`arithmetic_has_no_operator_precedence_yet` (`loka-sparql/tests/filter_numeric_ordering.rs`) on
+a case where the two readings select different rows. Fixing it is the same shape of change as
+the `&&`/`||` split above — an `AdditiveExpression` level over a `MultiplicativeExpression`
+level — and it likewise re-associates queries that already parse, so it wants to be a
+deliberate commit rather than a drive-by.
+
+### ✅ FIXED 2026-07-29: ordering comparisons were wrong whenever a negative integer was involved
+
+Found while writing the arithmetic tests, and worse than the bug being fixed. Ordering compared
+raw `TermId`s. An inline integer's payload is two's-complement in the low 56 bits, so a negative
+value sets the payload's high bit and the **unsigned** id sorts above every positive one.
+
+- `FILTER(?t > -5)` dropped rows it should have kept.
+- Worse: in a store containing any negative value, `FILTER(?t > 4)` was ALSO wrong — the
+  negatives outranked the bound and came back as matches. So the blast radius was not "queries
+  with negative literals", it was "any ordering query over a column that has negatives".
+
+`compare_filter_terms` now decodes both operands to numbers and compares values, falling back to
+raw-id comparison only for the non-numeric residue (temporal literals, whose ids are
+chronological by construction; the deliberately-narrow string behaviour is unchanged).
+
+9 tests in `loka-sparql/tests/filter_numeric_ordering.rs`; all 9 failed before the fix, and two
+of them fail on the *positive*-bound cases, which is the part that would have been easy to miss.
+448 workspace tests green.
 
 ### ✅ FIXED 2026-07-29: `&&` now binds tighter than `||`
 

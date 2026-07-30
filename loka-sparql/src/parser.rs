@@ -213,6 +213,26 @@ pub enum Term {
         base: Box<Term>,
         modifier: PathModifier,
     },
+    /// Arithmetic in a FILTER comparison operand: `?age + 5` in
+    /// `FILTER(?age + 5 > 30)`.
+    ///
+    /// Only produced in filter operand position — it is not a term a triple
+    /// pattern can contain, and resolving one against the dictionary is a
+    /// programming error rather than a query the store can answer.
+    Arith {
+        left: Box<Term>,
+        op: ArithOp,
+        right: Box<Term>,
+    },
+}
+
+/// Arithmetic operator inside a FILTER comparison operand.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ArithOp {
+    Add,
+    Sub,
+    Mul,
+    Div,
 }
 
 /// Property path modifier.
@@ -1583,49 +1603,13 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_comparison_expr(&mut self) -> Result<FilterExpr> {
-        let left = self.parse_term()?;
+        let left = self.parse_arith_operand()?;
         self.skip_whitespace();
-
-        // Check for arithmetic: ?var +/-/* term compare_op value
-        if matches!(
-            self.peek_char(),
-            Some('+') | Some('-') | Some('*') | Some('/')
-        ) {
-            let arith_op = self.peek_char().unwrap();
-            // Make sure it's not -> or ++ etc
-            if arith_op == '-'
-                && self.pos + 1 < self.input.len()
-                && self.input.as_bytes()[self.pos + 1] == b'>'
-            {
-                // Not arithmetic, it's something else
-            } else {
-                self.pos += 1;
-                self.skip_whitespace();
-                let _arith_right = self.parse_term()?;
-                self.skip_whitespace();
-                let cmp_op = self.parse_comparison_op()?;
-                self.skip_whitespace();
-                let cmp_val = self.parse_term()?;
-
-                // Build: compute left op arith_right, compare to cmp_val
-                // We encode this as a special comparison using IntegerLiteral placeholders
-                // The executor will need to handle this — for now return a structural match
-                return match cmp_op.as_str() {
-                    "=" => Ok(FilterExpr::Equals(left, cmp_val)),
-                    "!=" => Ok(FilterExpr::NotEquals(left, cmp_val)),
-                    "<" => Ok(FilterExpr::LessThan(left, cmp_val)),
-                    ">" => Ok(FilterExpr::GreaterThan(left, cmp_val)),
-                    ">=" => Ok(FilterExpr::GreaterThanOrEqual(left, cmp_val)),
-                    "<=" => Ok(FilterExpr::LessThanOrEqual(left, cmp_val)),
-                    _ => Err(self.error(&format!("unknown operator: {}", cmp_op))),
-                };
-            }
-        }
 
         let op = self.parse_comparison_op()?;
         self.skip_whitespace();
 
-        let right = self.parse_term()?;
+        let right = self.parse_arith_operand()?;
 
         match op.as_str() {
             "=" => Ok(FilterExpr::Equals(left, right)),
@@ -1635,6 +1619,49 @@ impl<'a> Parser<'a> {
             ">=" => Ok(FilterExpr::GreaterThanOrEqual(left, right)),
             "<=" => Ok(FilterExpr::LessThanOrEqual(left, right)),
             _ => Err(self.error(&format!("unknown operator: {}", op))),
+        }
+    }
+
+    /// One side of a FILTER comparison: a term, optionally followed by an
+    /// arithmetic operator and a second term (`?age + 5`).
+    ///
+    /// Replaces a branch that recognised arithmetic on the LEFT side only and
+    /// then **discarded it**: it parsed `?age + 5 > 30`, dropped the `+ 5`, and
+    /// returned `GreaterThan(?age, 30)` — so the filter silently evaluated
+    /// `?age > 30`, with a comment conceding the executor had no way to handle
+    /// the operation. Arithmetic now reaches the executor as `Term::Arith`, and
+    /// because both sides go through this function, `24 < ?age + 5` works too
+    /// (it used to be a parse error).
+    ///
+    /// Left-associative, no operator precedence: `?a + 2 * 3` is `(?a + 2) * 3`.
+    /// SPARQL binds `*` tighter. Not silently papered over — see
+    /// `arithmetic_has_no_operator_precedence_yet` in
+    /// `loka-sparql/tests/filter_numeric_ordering.rs`, which pins it, and
+    /// TODO.md. Chained arithmetic in a filter is rare enough that shipping the
+    /// discarded-operand fix first is the better trade; a full
+    /// `AdditiveExpression`/`MultiplicativeExpression` split is the real answer.
+    fn parse_arith_operand(&mut self) -> Result<Term> {
+        let mut left = self.parse_term()?;
+        loop {
+            self.skip_whitespace();
+            let op = match self.peek_char() {
+                Some('+') => ArithOp::Add,
+                Some('*') => ArithOp::Mul,
+                Some('/') => ArithOp::Div,
+                // `->` is not arithmetic. Kept from the branch this replaces.
+                Some('-') if self.input.as_bytes().get(self.pos + 1).copied() != Some(b'>') => {
+                    ArithOp::Sub
+                }
+                _ => return Ok(left),
+            };
+            self.pos += 1;
+            self.skip_whitespace();
+            let right = self.parse_term()?;
+            left = Term::Arith {
+                left: Box::new(left),
+                op,
+                right: Box::new(right),
+            };
         }
     }
 
