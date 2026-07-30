@@ -44,6 +44,18 @@ pub enum InlineType {
     /// Temporal literal: 48-bit timestamp + 4-bit precision.
     Temporal = 0x03,
     // Future: Float = 0x04, etc.
+    /// A value **computed during one query**, not a term in the graph: the
+    /// payload is an index into that query's [`QueryValues`] table, not a value.
+    ///
+    /// Deliberately the top of the tag space rather than the next free number,
+    /// so it reads as "not a normal literal type" and leaves 0x04.. free.
+    ///
+    /// **A `Computed` id must never be stored.** Its payload only means anything
+    /// while the query that produced it is alive; persisted, it would later
+    /// resolve to whatever value happened to land in that slot — silent data
+    /// corruption rather than a wrong answer. `TripleStore::insert` and the
+    /// persistent insert paths reject it. See `planning/computed-values.md`.
+    Computed = 0x7F,
 }
 
 /// Check if a TermId is an inline literal (not a dictionary pointer).
@@ -110,7 +122,79 @@ pub fn inline_type(id: TermId) -> Option<InlineType> {
         0x01 => Some(InlineType::Integer),
         0x02 => Some(InlineType::Boolean),
         0x03 => Some(InlineType::Temporal),
+        0x7F => Some(InlineType::Computed),
         _ => None,
+    }
+}
+
+/// True if this id is a per-query computed value (see [`InlineType::Computed`]).
+///
+/// The storage boundary checks this; nothing may persist one.
+pub fn is_computed(id: TermId) -> bool {
+    inline_type(id) == Some(InlineType::Computed)
+}
+
+/// Values computed while evaluating ONE query — the results of `BIND`,
+/// projected expressions and the like, which are not terms in the graph and so
+/// have no dictionary id.
+///
+/// Why not just intern them: the dictionary is persisted and `execute` holds it
+/// immutably, so interning query-derived strings would grow the stored
+/// dictionary from read-only traffic and turn every query into a writer. Full
+/// reasoning, alternatives and staging: `planning/computed-values.md`.
+///
+/// Values are interned **within the query**, so two rows that compute the same
+/// string get the same id and `DISTINCT` / `GROUP BY` / joins on a computed
+/// variable behave. Ordering must still compare the *strings* — an id here
+/// reflects the order values were first computed, exactly the trap that made
+/// negative-integer ordering wrong before 2026-07-29.
+#[derive(Debug, Default, Clone)]
+pub struct QueryValues {
+    values: Vec<String>,
+    by_value: HashMap<String, TermId>,
+}
+
+impl QueryValues {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Intern a computed value and return its id, or `None` if the table is
+    /// full (2^56 distinct values in one query — a bound this cannot reach in
+    /// practice, returned rather than panicked because the caller already knows
+    /// how to treat a value it cannot represent: leave the variable unbound).
+    pub fn intern(&mut self, value: &str) -> Option<TermId> {
+        if let Some(&id) = self.by_value.get(value) {
+            return Some(id);
+        }
+        let index = self.values.len() as u64;
+        if index > PAYLOAD_MASK {
+            return None;
+        }
+        let id = INLINE_BIT | ((InlineType::Computed as u64) << TYPE_TAG_SHIFT) | index;
+        self.values.push(value.to_string());
+        self.by_value.insert(value.to_string(), id);
+        Some(id)
+    }
+
+    /// Resolve a computed id back to its value. `None` for any other id,
+    /// including one minted by a *different* `QueryValues` whose table was
+    /// shorter — which is why these ids must not outlive their query.
+    pub fn get(&self, id: TermId) -> Option<&str> {
+        if !is_computed(id) {
+            return None;
+        }
+        self.values
+            .get((id & PAYLOAD_MASK) as usize)
+            .map(|s| s.as_str())
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.values.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.values.len()
     }
 }
 

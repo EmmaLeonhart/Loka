@@ -32,6 +32,16 @@ pub enum CoreError {
     /// A temporal literal string could not be parsed.
     #[error("invalid temporal literal: {0}")]
     InvalidTemporal(String),
+
+    /// A triple carried a per-query computed value (`InlineType::Computed`).
+    ///
+    /// Those ids index a table that only exists while their query runs, so a
+    /// stored one would later resolve to an unrelated value — corruption, not a
+    /// wrong answer. Nothing produces such a triple today (SPARQL update is
+    /// INSERT/DELETE DATA over literal triples only); this exists so that
+    /// `INSERT … WHERE`, when it is built, cannot introduce the hazard quietly.
+    #[error("cannot store a computed value: id {0} is a per-query value, not a term")]
+    ComputedValueNotStorable(u64),
 }
 
 pub type Result<T> = std::result::Result<T, CoreError>;

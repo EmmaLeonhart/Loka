@@ -11,29 +11,24 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ---
 
-## ACTIVE — BIND over a string-valued expression needs an interning path
+## ACTIVE — computed values in query results: stage 2 (BIND over a string expression)
 
-`BIND(REPLACE(STR(?type), "^.*/", "") AS ?local)` now parses and returns an explicit
-"not supported yet" execution error. Numeric BIND (`BIND(STRLEN(?x) + 1 AS ?n)`) works, because an
-inline integer is encoded in the id. A string result has to be interned, and `execute` takes
-`&TermDictionary`.
+**Design settled + written: `planning/computed-values.md`. Stage 1 is done** (`InlineType::Computed`,
+`QueryValues`, the storage rejection, 9 tests). The `&mut TermDictionary` option is rejected there
+with reasons; the id-range question that was open turned out not to exist — the inline tag space
+already gives computed ids a space disjoint from dictionary pointers, so there is no range to
+reserve and no dictionary-size invariant to maintain.
 
-Two designs, both real changes:
+**Stage 2, next:** `ExecutionContext` gains `&mut QueryValues`, `QueryResult` carries it, and
+`bind_computed_value` interns instead of erroring. Acceptance test: Pramana's original
+`BIND(REPLACE(STR(?type), "^.*/", "") AS ?typeLocal)` returns `Entity`.
 
-1. **`&mut TermDictionary` in the executor.** Honest and simple, but it is a public-API break
-   across loka-proto / loka-ffi / loka-cli, and it makes every query a potential writer — which
-   interacts with the concurrency story (`search is &self`) and with persistence.
-2. **A per-query value overlay** — computed values live in a side table for the duration of the
-   query, with ids from a reserved range that cannot collide with dictionary ids. No API break, no
-   dictionary growth from queries. Needs the reserved-range guarantee to be watertight and every
-   render path (`resolve`, CSV/Turtle/N-Triples output) to consult the overlay.
+Then stage 3 (render paths, one commit per crate — a path that forgets the table shows an EMPTY
+CELL, so each needs its own round-trip test), stage 4 (`SELECT (expr AS ?v)`, `ORDER BY expr`),
+stage 5 (`GROUP BY` on a computed value).
 
-Option 2 looks right; it also generalises to `SELECT (?a + 1 AS ?b)` and aggregates over computed
-values. Do the range design first and write it into `planning/` before touching code.
-
-**Pramana does not need to wait for this** — its entity page can take the local name from `?type`
-client-side, which is a 3-line change in `web/data_access.py`, and it should not carry a workaround
-for an engine gap that is being fixed anyway.
+**Pramana does not need to wait** — as of `661df6b` its queries select `?type` and shorten it in
+Python, which is where display-shortening belonged anyway.
 
 ---
 

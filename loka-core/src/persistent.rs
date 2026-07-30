@@ -151,6 +151,7 @@ impl PersistentStore {
     /// Uses sled's multi-tree transaction to ensure SPO/POS/OSP are
     /// always consistent — either all three are written or none are.
     pub fn insert(&self, triple: Triple) -> Result<()> {
+        crate::store::reject_computed(&triple)?;
         let spo_key = triple.spo_key();
         let pos_key = triple.pos_key();
         let osp_key = triple.osp_key();
@@ -195,6 +196,12 @@ impl PersistentStore {
     /// Returns the number of triples that were *newly* inserted (duplicates
     /// silently skipped — they're not errors at batch scale).
     pub fn insert_batch(&self, items: &[BatchInsert]) -> Result<usize> {
+        // Same storage-boundary check as `insert`: a per-query computed id must
+        // never be persisted. Checked before the transaction opens so a bad row
+        // cannot half-commit.
+        for item in items {
+            crate::store::reject_computed(&item.triple)?;
+        }
         // sled transactions take `Fn` (not `FnMut`) closures and may be
         // re-invoked on optimistic-concurrency conflict, so we can't mutate
         // captured variables. The counter and "inserted" count are local

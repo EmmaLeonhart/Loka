@@ -7,6 +7,40 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-07-30 — Computed values: the design, and the id space it needs
+
+Work-loop tick. `BIND` over a *string* expression has been returning an explicit "not supported
+yet" since yesterday, which was the honest placeholder, not the answer. This settles how it gets
+built: `planning/computed-values.md`, plus stage 1 of it in code.
+
+The question that looked hard was where the ids come from. It dissolved on contact with the id
+layout: `TermId` reserves bit 63 for "inline value" and bits 62-56 for a 7-bit type tag with three
+of 128 values used. A new tag (`Computed = 0x7F`, payload = index into a per-query table) is
+therefore **disjoint from dictionary pointers by construction** — no reserved range inside the
+dictionary's space, no "don't let the dictionary grow past N" invariant, and every existing decoder
+already declines an unknown tag, so adding it ahead of its consumers cannot produce a wrong value.
+
+The alternative — `&mut TermDictionary` in the executor — is rejected in the doc for four reasons,
+of which the load-bearing one is not the API break: the dictionary is **persisted**, so interning
+`"Xater"` because someone wrote `REPLACE(?label, "^W", "X")` would grow the stored database from
+read-only traffic. A computed value is not a term in the graph, and interning it asserts that it is.
+
+The invariant worth naming: **a computed id must never be stored.** Its payload indexes a table
+that lives only as long as its query, so a persisted one would later resolve to whatever value
+happened to occupy that slot — silent data *corruption*, a step worse than the silently-wrong
+answers this week has been about. Today nothing can produce that (SPARQL update is INSERT/DELETE
+DATA over literal triples only), which is exactly why the rejection goes in now, at the storage
+boundary, with tests: `INSERT … WHERE` is the feature that would introduce the hazard, and whoever
+builds it should not have to remember this document. One test demonstrates the corruption shape in
+miniature — the same id read against a *different* value table returns a neighbour's string once
+that slot fills.
+
+Stage 1 only: the tag, `QueryValues` (interning by value within the query, so `DISTINCT`/`GROUP BY`
+on a computed variable behave), and the rejection in `TripleStore::insert`,
+`PersistentStore::insert` and `insert_batch` — the batch check runs before the transaction opens so
+a bad row cannot half-commit a good one. Nothing produces these ids yet. 468 workspace tests green.
+
+---
 ## 2026-07-29 (latest) — Ask the consumer: five of nine of Pramana's real queries did not parse
 
 The three fixes below all came from inside Loka — dogfooding its own transpiler, then picking

@@ -7,9 +7,25 @@
 use std::collections::BTreeSet;
 
 use crate::error::{CoreError, Result};
-use crate::id::TermId;
+use crate::id::{is_computed, TermId};
 use crate::temporal::{decode_tspo_key, tspo_key, TemporalSignifier};
 use crate::triple::Triple;
+
+/// Reject a triple carrying a per-query computed id.
+///
+/// A `Computed` id's payload indexes a table that lives only as long as the
+/// query that built it, so a stored one resolves to an unrelated value later —
+/// corruption rather than a wrong answer. Enforced at the storage boundary
+/// instead of by convention, so `INSERT … WHERE` cannot introduce the hazard
+/// when someone builds it. See `planning/computed-values.md`.
+pub(crate) fn reject_computed(triple: &Triple) -> Result<()> {
+    for id in [triple.subject, triple.predicate, triple.object] {
+        if is_computed(id) {
+            return Err(CoreError::ComputedValueNotStorable(id));
+        }
+    }
+    Ok(())
+}
 
 /// An in-memory triple store backed by three sorted indexes.
 ///
@@ -47,7 +63,11 @@ impl TripleStore {
     }
 
     /// Insert a triple. Returns `Err(DuplicateTriple)` if already present.
+    ///
+    /// Rejects a triple containing a per-query computed id — see
+    /// [`crate::id::InlineType::Computed`] and `planning/computed-values.md`.
     pub fn insert(&mut self, triple: Triple) -> Result<()> {
+        reject_computed(&triple)?;
         let spo_key = triple.spo_key();
         if !self.spo.insert(spo_key) {
             return Err(CoreError::DuplicateTriple);

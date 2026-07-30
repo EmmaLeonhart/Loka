@@ -18,7 +18,8 @@ pub use config::{DatabaseConfig, HnswEdgeMode, RdfMode, TemporalAxis};
 pub use error::{CoreError, Result};
 pub use id::{
     decode_inline_boolean, decode_inline_integer, inline_boolean, inline_integer, inline_type,
-    is_inline, quoted_triple_id, InlineType, TermDictionary, TermId, INVALID_ID,
+    is_computed, is_inline, quoted_triple_id, InlineType, QueryValues, TermDictionary, TermId,
+    INVALID_ID,
 };
 pub use jsonld::parse_jsonld;
 pub use ntriples::{
