@@ -7,6 +7,45 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-07-29 — The FILTER grammar closes: `&&` binds tighter than `||`, and every leaf form composes
+
+Two days of dogfooding the Cypher transpiler kept surfacing the same thing from different
+angles: FILTER was not a grammar, it was a stack of special cases, each of which happened to
+work in exactly the position it had been written for. 07-28 added parenthesised grouping,
+07-29 added N-term chains and moved the string functions. This entry closes the last two.
+
+**`&&` had no precedence over `||`.** One left-associative loop handled both connectives, so
+`a || b && c` was `(a || b) && c` where SPARQL means `a || (b && c)`. That is not a parse gap —
+both parse — it is a *different predicate*, so mixed-connective filters silently returned wrong
+rows. The previous session found it and deliberately did not fix it, pinning the behaviour in a
+test instead, on the grounds that adding precedence re-associates queries that already parse.
+That was the right call to make explicit and the wrong place to stop: the affected queries were
+being evaluated as something their author did not write. Split into `||`-over-`&&` levels, which
+is the spec's own `ConditionalOrExpression`/`ConditionalAndExpression` shape, and the pin was
+replaced by a test asserting row counts where the two readings genuinely differ.
+
+**Seven leaf forms were still leading-position-only** — `LANGMATCHES`, `LANG(?v) =`,
+`COALESCE`, `IF`, `DATATYPE(?v) =`, `STR(?v) =`, and parenthesised `EXISTS`/`NOT EXISTS`. Each
+consumed FILTER's own closing paren, which is what pinned them: they worked as an entire filter
+and were a parse error as an operand. Moved into `parse_filter_inner`, so the chain reaches them
+anywhere and `parse_filter` closes FILTER exactly once.
+
+Moving them exposed a trap worth recording. `peek_keyword` is word-bounded, but `:` is not a word
+character — so `peek_keyword("STR")` matches the prefixed name `str:label`. While the branch only
+ran in leading position that was unreachable; as an operand it would demand a `(` and reject a
+valid query. Hence `peek_function`, which requires the `(`. The general lesson: moving a branch to
+a more general position also moves it into a wider input space, and the guard that was adequate in
+the narrow position may not be. (Also fixed in passing: `COALESCE()` with no arguments indexed
+`vars[0]` and panicked.)
+
+**What this leaves.** Arithmetic in operand position is now the last real gap, and it is the same
+*kind* of defect as the string-equality one: `parse_comparison_expr` parses `?age + 5 > 30`, throws
+the arithmetic away, and compares `?age > 30`. Filed in `TODO.md` with the AST change it needs
+rather than patched, and queued. Tests: 8 new in `filter_leaf_position.rs` plus the rewritten
+precedence test, all asserting row counts against a real store — parse-success tests are what let
+a dead filter branch look healthy. 439 workspace tests green.
+
+---
 ## 2026-06-02 — Finish the CLI flag-doc fix: docs/AGENT_SETUP.md
 
 Work-loop tick. A repo-wide sweep after the previous README + cli-reference flag fix found

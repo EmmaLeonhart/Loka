@@ -1228,28 +1228,6 @@ impl<'a> Parser<'a> {
         self.expect_char('(')?;
         self.skip_whitespace();
 
-        // FILTER(NOT EXISTS { ... })
-        if self.peek_keyword("NOT") {
-            self.expect_keyword("NOT")?;
-            self.skip_whitespace();
-            self.expect_keyword("EXISTS")?;
-            self.skip_whitespace();
-            let patterns = self.parse_group()?;
-            self.skip_whitespace();
-            self.expect_char(')')?;
-            return Ok(FilterExpr::NotExists(patterns));
-        }
-
-        // FILTER(EXISTS { ... })
-        if self.peek_keyword("EXISTS") {
-            self.expect_keyword("EXISTS")?;
-            self.skip_whitespace();
-            let patterns = self.parse_group()?;
-            self.skip_whitespace();
-            self.expect_char(')')?;
-            return Ok(FilterExpr::Exists(patterns));
-        }
-
         // `bound`, `!bound` and `!` are deliberately NOT special-cased here.
         //
         // They used to be, and each branch consumed FILTER's own closing paren
@@ -1262,149 +1240,23 @@ impl<'a> Parser<'a> {
         //
         // parse_filter_inner already handles all three correctly and does not
         // eat the outer paren, so letting the chain below reach them removes
-        // that positional asymmetry. The remaining special forms (EXISTS /
-        // NOT EXISTS above, and the string functions below) still return early
-        // and so are still leading-position-only; see TODO.md.
+        // that positional asymmetry.
+        //
+        // As of 2026-07-29 the same is true of EVERY leaf form. `LANGMATCHES`,
+        // `LANG(?v) =`, `COALESCE`, `IF`, `DATATYPE(?v) =`, `STR(?v) =` and the
+        // parenthesised `EXISTS` / `NOT EXISTS` all used to return early from
+        // here, each consuming FILTER's own closing paren, so each worked as an
+        // entire filter and errored as an operand:
+        //
+        //     FILTER(STR(?a) = "x")              ok
+        //     FILTER(STR(?a) = "x" && ?b = 1)    "expected ')', got '&'"
+        //
+        // They now live in parse_filter_inner without the extra paren, so the
+        // chain reaches them in any position and this function closes FILTER
+        // exactly once, below. The only form still handled here is the
+        // *unparenthesised* `FILTER NOT EXISTS { ... }` / `FILTER EXISTS { ... }`
+        // above, which is matched before FILTER's `(` and has no outer paren.
 
-        // CONTAINS / STRSTARTS / STRENDS / REGEX and isIRI / isURI / isLiteral
-        // are handled in parse_filter_inner so they can appear anywhere in a
-        // boolean chain, not only as the whole filter. See the note there.
-        if self.peek_keyword("LANGMATCHES") {
-            self.expect_keyword("LANGMATCHES")?;
-            self.expect_char('(')?;
-            self.skip_whitespace();
-            // Expect LANG(?var)
-            self.expect_keyword("LANG")?;
-            self.expect_char('(')?;
-            let var = self.parse_variable_name()?;
-            self.expect_char(')')?;
-            self.skip_whitespace();
-            self.expect_char(',')?;
-            self.skip_whitespace();
-            let lang_term = self.parse_term()?;
-            let lang = match &lang_term {
-                Term::Literal(s) => s.clone(),
-                _ => return Err(self.error("LANGMATCHES expects a string literal")),
-            };
-            self.skip_whitespace();
-            self.expect_char(')')?;
-            self.skip_whitespace();
-            self.expect_char(')')?;
-            return Ok(FilterExpr::LangMatches(var, lang));
-        }
-        if self.peek_keyword("LANG") {
-            self.expect_keyword("LANG")?;
-            self.expect_char('(')?;
-            let var = self.parse_variable_name()?;
-            self.expect_char(')')?;
-            self.skip_whitespace();
-            let op = self.parse_comparison_op()?;
-            self.skip_whitespace();
-            let lang_term = self.parse_term()?;
-            let lang = match &lang_term {
-                Term::Literal(s) => s.clone(),
-                _ => return Err(self.error("LANG() comparison expects a string literal")),
-            };
-            self.skip_whitespace();
-            self.expect_char(')')?;
-            if op == "=" {
-                return Ok(FilterExpr::LangMatches(var, lang));
-            }
-            return Err(self.error("LANG() only supports = comparison"));
-        }
-        // COALESCE — returns true if any of the variables is bound (for use in FILTER)
-        if self.peek_keyword("COALESCE") {
-            self.expect_keyword("COALESCE")?;
-            self.expect_char('(')?;
-            self.skip_whitespace();
-            let mut vars = Vec::new();
-            while self.peek_char() == Some('?') {
-                vars.push(self.parse_variable_name()?);
-                self.skip_whitespace();
-                if self.peek_char() == Some(',') {
-                    self.pos += 1;
-                    self.skip_whitespace();
-                }
-            }
-            self.expect_char(')')?;
-            self.skip_whitespace();
-            self.expect_char(')')?;
-            // COALESCE as a "any bound" check
-            if vars.len() == 1 {
-                return Ok(FilterExpr::Bound(vars[0].clone()));
-            }
-            // Multiple vars: OR of bounds
-            let mut expr = FilterExpr::Bound(vars[0].clone());
-            for v in &vars[1..] {
-                expr = FilterExpr::Or(Box::new(expr), Box::new(FilterExpr::Bound(v.clone())));
-            }
-            return Ok(expr);
-        }
-        // IF(condition, then, else) — evaluates to the condition for FILTER purposes
-        if self.peek_keyword("IF") {
-            self.expect_keyword("IF")?;
-            self.expect_char('(')?;
-            self.skip_whitespace();
-            let condition = self.parse_filter_inner()?;
-            self.skip_whitespace();
-            if self.peek_char() == Some(',') {
-                self.pos += 1;
-            }
-            self.skip_whitespace();
-            // Skip then/else values — in FILTER context, IF reduces to the condition
-            let _then = self.parse_term()?;
-            self.skip_whitespace();
-            if self.peek_char() == Some(',') {
-                self.pos += 1;
-            }
-            self.skip_whitespace();
-            let _else_val = self.parse_term()?;
-            self.skip_whitespace();
-            self.expect_char(')')?;
-            self.skip_whitespace();
-            self.expect_char(')')?;
-            return Ok(condition);
-        }
-        if self.peek_keyword("DATATYPE") {
-            self.expect_keyword("DATATYPE")?;
-            self.expect_char('(')?;
-            let var = self.parse_variable_name()?;
-            self.expect_char(')')?;
-            self.skip_whitespace();
-            let op = self.parse_comparison_op()?;
-            self.skip_whitespace();
-            let dt_term = self.parse_term()?;
-            let dt = match &dt_term {
-                Term::Iri(s) => s.clone(),
-                Term::PrefixedName { prefix, local } => format!("{}:{}", prefix, local),
-                _ => return Err(self.error("DATATYPE() comparison expects an IRI")),
-            };
-            self.skip_whitespace();
-            self.expect_char(')')?;
-            if op == "=" {
-                return Ok(FilterExpr::DatatypeEquals(var, dt));
-            }
-            return Err(self.error("DATATYPE() only supports = comparison"));
-        }
-        if self.peek_keyword("STR")
-            && !self.peek_keyword("STRSTARTS")
-            && !self.peek_keyword("STRENDS")
-        {
-            self.expect_keyword("STR")?;
-            self.expect_char('(')?;
-            let var = self.parse_variable_name()?;
-            self.expect_char(')')?;
-            self.skip_whitespace();
-            let op = self.parse_comparison_op()?;
-            self.skip_whitespace();
-            let val = self.parse_term()?;
-            self.skip_whitespace();
-            self.expect_char(')')?;
-            if op == "=" {
-                return Ok(FilterExpr::StrEquals(var, val));
-            }
-            return Err(self.error("STR() only supports = comparison"));
-        }
         // Parse a comparison expression, then check for && / ||
         //
         // A `(` in this position opens a group, not a comparison — FILTER's own
@@ -1445,6 +1297,25 @@ impl<'a> Parser<'a> {
     /// Parse a filter expression without the outer parens (for recursive use).
     fn parse_filter_inner(&mut self) -> Result<FilterExpr> {
         self.skip_whitespace();
+
+        // NOT EXISTS / EXISTS in operand position. `parse_filter` still handles
+        // the unparenthesised `FILTER NOT EXISTS { ... }` form, which it matches
+        // before consuming FILTER's `(`; the parenthesised form arrives here, so
+        // `FILTER(EXISTS { ?a :p ?b } && ?c = 1)` composes like any other leaf.
+        if self.peek_keyword("NOT") {
+            self.expect_keyword("NOT")?;
+            self.skip_whitespace();
+            self.expect_keyword("EXISTS")?;
+            self.skip_whitespace();
+            let patterns = self.parse_group()?;
+            return Ok(FilterExpr::NotExists(patterns));
+        }
+        if self.peek_keyword("EXISTS") {
+            self.expect_keyword("EXISTS")?;
+            self.skip_whitespace();
+            let patterns = self.parse_group()?;
+            return Ok(FilterExpr::Exists(patterns));
+        }
         if self.peek_keyword("bound") {
             self.expect_keyword("bound")?;
             self.expect_char('(')?;
@@ -1507,6 +1378,137 @@ impl<'a> Parser<'a> {
             return Ok(FilterExpr::IsLiteral(var));
         }
 
+        // The forms below were the last ones pinned to leading position (they
+        // lived in parse_filter and consumed FILTER's own closing paren). Each
+        // now consumes only its OWN parens, so it composes in any position.
+        // LANGMATCHES before LANG: peek_keyword checks word boundaries, so
+        // "LANGMATCHES" does not match "LANG", but the order documents intent.
+        if self.peek_function("LANGMATCHES") {
+            self.expect_keyword("LANGMATCHES")?;
+            self.expect_char('(')?;
+            self.skip_whitespace();
+            // Expect LANG(?var)
+            self.expect_keyword("LANG")?;
+            self.expect_char('(')?;
+            let var = self.parse_variable_name()?;
+            self.expect_char(')')?;
+            self.skip_whitespace();
+            self.expect_char(',')?;
+            self.skip_whitespace();
+            let lang_term = self.parse_term()?;
+            let lang = match &lang_term {
+                Term::Literal(s) => s.clone(),
+                _ => return Err(self.error("LANGMATCHES expects a string literal")),
+            };
+            self.skip_whitespace();
+            self.expect_char(')')?;
+            return Ok(FilterExpr::LangMatches(var, lang));
+        }
+        if self.peek_function("LANG") {
+            self.expect_keyword("LANG")?;
+            self.expect_char('(')?;
+            let var = self.parse_variable_name()?;
+            self.expect_char(')')?;
+            self.skip_whitespace();
+            let op = self.parse_comparison_op()?;
+            self.skip_whitespace();
+            let lang_term = self.parse_term()?;
+            let lang = match &lang_term {
+                Term::Literal(s) => s.clone(),
+                _ => return Err(self.error("LANG() comparison expects a string literal")),
+            };
+            if op == "=" {
+                return Ok(FilterExpr::LangMatches(var, lang));
+            }
+            return Err(self.error("LANG() only supports = comparison"));
+        }
+        // COALESCE — returns true if any of the variables is bound (for use in FILTER)
+        if self.peek_function("COALESCE") {
+            self.expect_keyword("COALESCE")?;
+            self.expect_char('(')?;
+            self.skip_whitespace();
+            let mut vars = Vec::new();
+            while self.peek_char() == Some('?') {
+                vars.push(self.parse_variable_name()?);
+                self.skip_whitespace();
+                if self.peek_char() == Some(',') {
+                    self.pos += 1;
+                    self.skip_whitespace();
+                }
+            }
+            self.expect_char(')')?;
+            // Argument-less COALESCE used to index vars[0] and panic. It is a
+            // parse error, not a crash.
+            let (first, rest) = match vars.split_first() {
+                Some(split) => split,
+                None => return Err(self.error("COALESCE expects at least one variable")),
+            };
+            // COALESCE as a "any bound" check: OR of bounds.
+            let mut expr = FilterExpr::Bound(first.clone());
+            for v in rest {
+                expr = FilterExpr::Or(Box::new(expr), Box::new(FilterExpr::Bound(v.clone())));
+            }
+            return Ok(expr);
+        }
+        // IF(condition, then, else) — evaluates to the condition for FILTER purposes
+        if self.peek_function("IF") {
+            self.expect_keyword("IF")?;
+            self.expect_char('(')?;
+            self.skip_whitespace();
+            let condition = self.parse_bool_expr()?;
+            self.skip_whitespace();
+            if self.peek_char() == Some(',') {
+                self.pos += 1;
+            }
+            self.skip_whitespace();
+            // Skip then/else values — in FILTER context, IF reduces to the condition
+            let _then = self.parse_term()?;
+            self.skip_whitespace();
+            if self.peek_char() == Some(',') {
+                self.pos += 1;
+            }
+            self.skip_whitespace();
+            let _else_val = self.parse_term()?;
+            self.skip_whitespace();
+            self.expect_char(')')?;
+            return Ok(condition);
+        }
+        if self.peek_function("DATATYPE") {
+            self.expect_keyword("DATATYPE")?;
+            self.expect_char('(')?;
+            let var = self.parse_variable_name()?;
+            self.expect_char(')')?;
+            self.skip_whitespace();
+            let op = self.parse_comparison_op()?;
+            self.skip_whitespace();
+            let dt_term = self.parse_term()?;
+            let dt = match &dt_term {
+                Term::Iri(s) => s.clone(),
+                Term::PrefixedName { prefix, local } => format!("{}:{}", prefix, local),
+                _ => return Err(self.error("DATATYPE() comparison expects an IRI")),
+            };
+            if op == "=" {
+                return Ok(FilterExpr::DatatypeEquals(var, dt));
+            }
+            return Err(self.error("DATATYPE() only supports = comparison"));
+        }
+        // STRSTARTS / STRENDS are matched above; peek_keyword is word-bounded, so
+        // this cannot swallow them even without the earlier branches.
+        if self.peek_function("STR") {
+            self.expect_keyword("STR")?;
+            self.expect_char('(')?;
+            let var = self.parse_variable_name()?;
+            self.expect_char(')')?;
+            self.skip_whitespace();
+            let op = self.parse_comparison_op()?;
+            self.skip_whitespace();
+            let val = self.parse_term()?;
+            if op == "=" {
+                return Ok(FilterExpr::StrEquals(var, val));
+            }
+            return Err(self.error("STR() only supports = comparison"));
+        }
+
         // Parenthesised grouping: `( expr )` in expression position.
         //
         // Additive by construction. Before this branch existed, a `(` here fell
@@ -1529,14 +1531,43 @@ impl<'a> Parser<'a> {
         self.parse_comparison_expr()
     }
 
-    /// Parse a boolean chain (`a && b || c`) **without** consuming a closing
-    /// paren, so it can be used inside a parenthesised group.
+    /// Parse a boolean expression (`a && b || c`) **without** consuming a
+    /// closing paren, so it can be used inside a parenthesised group.
     ///
-    /// Kept separate from the `&&`/`||` handling in `parse_filter`, which
-    /// consumes the FILTER's own closing paren as part of the chain and so
-    /// cannot be reused here. Left-associative with no precedence between `&&`
-    /// and `||`, matching how the existing outer chain already behaves.
+    /// `&&` binds tighter than `||`, as SPARQL 1.1 specifies
+    /// (`ConditionalOrExpression ::= ConditionalAndExpression ( '||' ... )*`),
+    /// expressed as two left-associative levels.
+    ///
+    /// This used to be a SINGLE loop over both connectives, which associates
+    /// strictly left-to-right and so read `a || b && c` as `(a || b) && c`
+    /// where SPARQL means `a || (b && c)`. Those are different predicates, so
+    /// the old grammar returned wrong rows for any mixed-connective filter —
+    /// not a parse gap but a silent wrong-answer bug. (`a && b || c` happened
+    /// to agree, which is why it went unnoticed.)
+    ///
+    /// Fixing it necessarily re-associates existing mixed queries. That is the
+    /// point: they were being evaluated as something the author did not write.
+    /// Explicit parens still express either grouping, and
+    /// `precedence_binds_and_tighter_than_or` in
+    /// `loka-sparql/tests/filter_grouping.rs` pins the semantics with a case
+    /// whose row count differs between the two associations.
     fn parse_bool_expr(&mut self) -> Result<FilterExpr> {
+        let mut expr = self.parse_and_expr()?;
+        loop {
+            self.skip_whitespace();
+            if self.remaining().starts_with("||") {
+                self.pos += 2;
+                self.skip_whitespace();
+                let right = self.parse_and_expr()?;
+                expr = FilterExpr::Or(Box::new(expr), Box::new(right));
+            } else {
+                return Ok(expr);
+            }
+        }
+    }
+
+    /// One `&&` chain — the tighter-binding level of `parse_bool_expr`.
+    fn parse_and_expr(&mut self) -> Result<FilterExpr> {
         let mut expr = self.parse_filter_inner()?;
         loop {
             self.skip_whitespace();
@@ -1545,11 +1576,6 @@ impl<'a> Parser<'a> {
                 self.skip_whitespace();
                 let right = self.parse_filter_inner()?;
                 expr = FilterExpr::And(Box::new(expr), Box::new(right));
-            } else if self.remaining().starts_with("||") {
-                self.pos += 2;
-                self.skip_whitespace();
-                let right = self.parse_filter_inner()?;
-                expr = FilterExpr::Or(Box::new(expr), Box::new(right));
             } else {
                 return Ok(expr);
             }
@@ -1875,6 +1901,27 @@ impl<'a> Parser<'a> {
             }
         }
         false
+    }
+
+    /// `peek_keyword`, but the keyword must be followed by `(` — i.e. it is
+    /// actually a function call, not a term that happens to start with those
+    /// letters.
+    ///
+    /// `peek_keyword` is word-bounded, so `STR` does not match `STRSTARTS`, but
+    /// `:` is not a word character: a prefixed name like `str:label` in operand
+    /// position matches `peek_keyword("STR")` and would then fail on the
+    /// missing `(`. That was harmless while these branches only ran in leading
+    /// position; now that they are reachable as operands, the check is tightened
+    /// rather than left to chance.
+    fn peek_function(&mut self, keyword: &str) -> bool {
+        if !self.peek_keyword(keyword) {
+            return false;
+        }
+        let mut probe = self.pos + keyword.len();
+        while probe < self.input.len() && (self.input.as_bytes()[probe] as char).is_whitespace() {
+            probe += 1;
+        }
+        self.input.as_bytes().get(probe) == Some(&b'(')
     }
 
     fn expect_keyword(&mut self, keyword: &str) -> Result<()> {

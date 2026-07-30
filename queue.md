@@ -11,7 +11,28 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ---
 
-The actionable queue is drained. Remaining work is either GPU-gated
+## ACTIVE — arithmetic in FILTER operand position (found closing the two items above)
+
+`parse_comparison_expr` parses `?age + 5 > 30` and then **discards the arithmetic**, building
+`Equals/GreaterThan(?age, 30)` from the left variable alone — so the filter silently evaluates
+`?age > 30`. Wrong answers, no error. Full writeup in `TODO.md` (§ "arithmetic in FILTER operand
+position is parsed and then thrown away").
+
+Not a mechanical fix: `FilterExpr` has no node that can hold the operation, so it needs an AST
+addition plus executor evaluation, and a decision on non-numeric operands. Steps:
+
+1. Decide the AST shape — a dedicated `Arith(Term, ArithOp, Term)` usable as a comparison
+   operand, vs. a general `Expr` node. Prefer the narrow one unless the general one is needed
+   for something already queued.
+2. Add executor evaluation over inline integers (the only numeric encoding that exists today);
+   non-numeric operands evaluate the comparison to false, matching how unresolvable terms
+   already behave rather than inventing an error path.
+3. Tests asserting row counts for `?a + n <cmp> v` in all four operators and in both operand
+   positions, plus one pinning what non-numeric operands do.
+
+---
+
+The rest of the queue is drained. Remaining work is either GPU-gated
 (v11–v14 training, propgen tests, clean v12 retrain, donor clean-Adam v14) or
 Emma-gated (SDK first publish). The autonomous work-loop cron promotes the next
 genuinely-unblocked, bounded `TODO.md` item into this file each tick — see

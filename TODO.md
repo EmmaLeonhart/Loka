@@ -343,32 +343,74 @@ they worked as an entire filter but not as the left operand of a chain
 (`FILTER(bound(?a) && ?b = 1)` failed while `FILTER(?b = 1 && bound(?a))` worked).
 `parse_filter_inner` already handled all three without eating the outer paren.
 
-**Still open — two things, both narrower than they were:**
-
-1. **No precedence between `&&` and `||`.** The chain associates left-to-right, so
-   `a || b && c` reads as `(a || b) && c` where SPARQL means `a || (b && c)`. Explicit
-   parens express either. Pinned by `association_is_left_to_right_without_precedence` in
-   `loka-sparql/tests/filter_grouping.rs` so a change has to face it deliberately —
-   adding precedence would silently re-associate existing queries, so it is not a
-   drive-by fix.
-
-2. **A few leaf forms are still leading-position-only.** `CONTAINS`, `STRSTARTS`,
-   `STRENDS`, `REGEX`, `isIRI`/`isURI` and `isLiteral` were moved into
-   `parse_filter_inner` on 2026-07-29 and now compose anywhere in a chain
-   (`parse_two_arg_string_filter` no longer eats the outer paren). Still leading-only:
-   **`LANGMATCHES`, `COALESCE`, `STR(...)` comparisons, and `EXISTS`/`NOT EXISTS`**, which
-   return early from `parse_filter` and consume the closing paren. Each has a bespoke
-   argument shape — `EXISTS` takes a whole group, `LANGMATCHES` expects a nested `LANG(...)`
-   — so they are a larger change than the mechanical ones and were left alone rather than
-   moved half-carefully.
-
-A real SPARQL 1.1 `Expression` grammar (precedence, arithmetic in operand position — which
-`parse_comparison_expr` currently only half-handles) subsumes both.
+**Both remaining items CLOSED 2026-07-29 — see the two sections below.** What is still
+missing from a full SPARQL 1.1 `Expression` grammar is **arithmetic in operand position**,
+which `parse_comparison_expr` only half-handles: it parses `?a + 1 > 5`, then *discards the
+right-hand side of the arithmetic* and compares `?a` against `5`. That is a wrong-answer
+path, not a parse gap, and it is the next real gap here (§ below).
 
 The Cypher transpiler's two workarounds — pushing NOT to the leaves and splitting
 top-level ANDs into separate FILTER clauses — are still correct and still tested, but are
 no longer *necessary*. It can emit grouped filters directly and drop its
 `(a AND b) OR c` rejection whenever someone wants to simplify it.
+
+### 🐛 OPEN: arithmetic in FILTER operand position is parsed and then thrown away
+
+`parse_comparison_expr` recognises `?var (+|-|*|/) term <cmp> term`, and then builds the
+comparison from the LEFT VARIABLE ALONE:
+
+```rust
+let _arith_right = self.parse_term()?;   // parsed, dropped
+...
+"=" => Ok(FilterExpr::Equals(left, cmp_val)),
+```
+
+So `FILTER(?age + 5 > 30)` evaluates as `FILTER(?age > 30)` — silently the wrong predicate,
+with no error. `FilterExpr` has no arithmetic node to hold the operation, so fixing it means
+adding one (`Arith(Term, Op, Term)` as a comparison operand, or a general expression node)
+plus executor evaluation for inline integers, and deciding what non-numeric operands do.
+Filed rather than fixed: it needs an AST change, and the existing comment in that branch
+("the executor will need to handle this — for now return a structural match") shows it was
+known-incomplete when written.
+
+### ✅ FIXED 2026-07-29: `&&` now binds tighter than `||`
+
+`parse_bool_expr` was a single left-associative loop over both connectives, so
+`a || b && c` parsed as `(a || b) && c` where SPARQL 1.1 means `a || (b && c)` — different
+predicates, so any mixed-connective filter returned wrong rows. Split into two levels
+(`parse_bool_expr` = `||` loop over `parse_and_expr` = `&&` loop), which is the
+`ConditionalOrExpression`/`ConditionalAndExpression` shape from the spec.
+
+Unlike the earlier grouping work this is **not** additive: it deliberately re-associates
+existing mixed queries, which is why the previous session left it and pinned the old
+behaviour in a test instead. Those queries were being evaluated as something their author
+did not write, so the re-association is the fix. `precedence_binds_and_tighter_than_or`
+(`loka-sparql/tests/filter_grouping.rs`) replaces the pin and asserts row counts on cases
+where the two readings actually differ — including one that returns 2 rows under SPARQL
+precedence and 1 under the old association.
+
+### ✅ FIXED 2026-07-29: every FILTER leaf form composes in any position
+
+`LANGMATCHES`, `LANG(?v) =`, `COALESCE`, `IF`, `DATATYPE(?v) =`, `STR(?v) =` and the
+parenthesised `EXISTS` / `NOT EXISTS` were the last forms still parsed in `parse_filter`,
+each consuming FILTER's own closing paren, so each worked as an entire filter and errored as
+an operand (`FILTER(STR(?a) = "x" && ?b = 1)`). All moved to `parse_filter_inner` without the
+extra paren; `parse_filter` now closes FILTER exactly once after the chain. The
+*unparenthesised* `FILTER NOT EXISTS { ... }` form stays in `parse_filter`, matched before
+FILTER's `(` — it has no outer paren to leave alone.
+
+Two things came out of the move:
+
+- **`peek_function`** — `peek_keyword` is word-bounded but `:` is not a word character, so
+  `peek_keyword("STR")` matches the prefixed name `str:label`. Harmless while the branch only
+  ran in leading position; once reachable as an operand it would demand a `(` and reject a
+  valid query. The new helper requires a following `(`, and a test covers `str:` / `lang:` /
+  `if:` / `datatype:` / `coalesce:` prefixes in operand position.
+- **`COALESCE()` with no arguments** indexed `vars[0]` and panicked. It is a parse error now.
+
+8 tests in `loka-sparql/tests/filter_leaf_position.rs` asserting row counts, not parse
+success (a dead branch parses fine — that is how the string-equality defect hid). 439
+workspace tests green.
 
 <details><summary>Original finding, for context</summary>
 

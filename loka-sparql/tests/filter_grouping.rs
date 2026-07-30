@@ -119,23 +119,38 @@ fn mixed_connectives_in_a_long_chain() {
 }
 
 #[test]
-fn association_is_left_to_right_without_precedence() {
-    // Pinning a known divergence rather than asserting it is correct.
+fn precedence_binds_and_tighter_than_or() {
+    // SPARQL 1.1: `&&` binds tighter than `||`, so `a || b && c` means
+    // `a || (b && c)`. This test replaces one that PINNED the opposite —
+    // the parser used to run a single left-associative loop over both
+    // connectives, reading it as `(a || b) && c`, which is a different
+    // predicate and so returned different rows.
     //
-    // The chain associates left-to-right with no precedence between `&&` and
-    // `||`, so `a || b && c` reads as `(a || b) && c`. SPARQL binds `&&`
-    // tighter, i.e. `a || (b && c)`. The two disagree, and explicit parens
-    // express either — see TODO.md.
-    //
-    // ages 10/20/30, ranks 1/2/3.
-    //   (age=10 || age=20) && rank=1   -> just the age-10 row
-    //   age=10 || (age=20 && rank=1)   -> the age-10 row only as well, so pick
-    //   a case where the two readings actually differ:
-    //   (age=10 || age=20) && rank=2   -> age-20 row      = 1
-    //   age=10 || (age=20 && rank=2)   -> age-10 + age-20 = 2
-    assert_eq!(rows("?age = 10 || ?age = 20 && ?rank = 2"), 1);
-    // Written with explicit parens, the SPARQL reading is available:
+    // The case is chosen so the two readings disagree. ages 10/20/30,
+    // ranks 1/2/3:
+    //   (age=10 || age=20) && rank=2   -> age-20 row only      = 1  (old, wrong)
+    //   age=10 || (age=20 && rank=2)   -> age-10 + age-20 rows = 2  (SPARQL)
+    assert_eq!(rows("?age = 10 || ?age = 20 && ?rank = 2"), 2);
+    // Explicit parens agree with the implicit reading...
     assert_eq!(rows("?age = 10 || (?age = 20 && ?rank = 2)"), 2);
+    // ...and the other grouping is still expressible, and still differs.
+    assert_eq!(rows("(?age = 10 || ?age = 20) && ?rank = 2"), 1);
+
+    // Same on the other side of the `||`: `a && b || c` was already correct
+    // under left association, and must stay correct under precedence.
+    assert_eq!(rows("?age = 20 && ?rank = 2 || ?age = 10"), 2);
+    assert_eq!(rows("?age = 20 && ?rank = 99 || ?age = 10"), 1);
+
+    // Two `&&` groups around one `||` — neither end anchors the parse.
+    //   (age>5 && age<15) || (age>25 && rank=3)  -> age-10 + age-30 = 2
+    assert_eq!(rows("?age > 5 && ?age < 15 || ?age > 25 && ?rank = 3"), 2);
+    assert_eq!(
+        rows("?age > 5 && ?age < 15 || ?age > 25 && ?rank = 3"),
+        rows("(?age > 5 && ?age < 15) || (?age > 25 && ?rank = 3)")
+    );
+    // Under the old left-to-right reading that same string was
+    // `((((age>5 && age<15) || age>25) && rank=3))` -> only the age-30 row.
+    assert_ne!(rows("?age > 5 && ?age < 15 || ?age > 25 && ?rank = 3"), 1);
 }
 
 #[test]
