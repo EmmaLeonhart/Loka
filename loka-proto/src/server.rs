@@ -278,7 +278,7 @@ fn sparql_delimited(
             .iter()
             .map(|col| {
                 row.get(col)
-                    .map(|&id| resolve_term_for_csv(id, &dict))
+                    .map(|&id| resolve_term_for_csv(id, &dict, &result.values))
                     .unwrap_or_default()
             })
             .collect();
@@ -289,7 +289,17 @@ fn sparql_delimited(
     Ok(([(header::CONTENT_TYPE, content_type)], output))
 }
 
-fn resolve_term_for_csv(id: loka_core::TermId, dict: &TermDictionary) -> String {
+fn resolve_term_for_csv(
+    id: loka_core::TermId,
+    dict: &TermDictionary,
+    values: &loka_core::QueryValues,
+) -> String {
+    // Per-query computed values (BIND over an expression) are not in the
+    // dictionary. Without this the fallback below emits `_:idN`, so a computed
+    // column would look like a blank node rather than the string it is.
+    if let Some(value) = values.get(id) {
+        return value.to_string();
+    }
     if let Some(n) = loka_core::decode_inline_integer(id) {
         return n.to_string();
     }
@@ -351,7 +361,7 @@ fn sparql_xml(query_str: &str, state: &AppState) -> Result<impl IntoResponse, Pr
         xml.push_str("    <result>\n");
         for col in &result.columns {
             if let Some(&id) = row.get(col) {
-                let val = resolve_term_for_csv(id, &dict);
+                let val = resolve_term_for_csv(id, &dict, &result.values);
                 let escaped = val
                     .replace('&', "&amp;")
                     .replace('<', "&lt;")
@@ -2203,6 +2213,51 @@ mod tests {
                     .unwrap()
                     .lookup("http://wd/G_died")
                     .unwrap()));
+    }
+
+    /// Every result format must render a computed BIND value, not just the JSON
+    /// one. The failure mode is a `_:idN` blank node (every renderer's fallback
+    /// for an id it cannot resolve), so a missed format emits plausible-looking
+    /// data rather than an error — which is why each one gets a test instead of
+    /// an audit.
+    #[tokio::test]
+    async fn computed_bind_value_renders_in_csv_tsv_and_xml() {
+        let state = test_state();
+        let app = router(state.clone());
+        let body = "<http://example.org/a>                     <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>                     <http://example.org/ontology/Entity> .
+";
+        let req = Request::builder()
+            .method("POST")
+            .uri("/triples")
+            .header("content-type", "text/plain")
+            .body(Body::from(body))
+            .unwrap();
+        assert_eq!(app.oneshot(req).await.unwrap().status(), StatusCode::OK);
+
+        let q = "SELECT ?local WHERE {                  ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?t .                  BIND(REPLACE(STR(?t), \"^.*/\", \"\") AS ?local) }";
+
+        for path in ["/sparql.csv", "/sparql.tsv", "/sparql.xml"] {
+            let app = router(state.clone());
+            let req = Request::builder()
+                .method("POST")
+                .uri(path)
+                .header("content-type", "application/sparql-query")
+                .body(Body::from(q))
+                .unwrap();
+            let resp = app.oneshot(req).await.unwrap();
+            assert_eq!(resp.status(), StatusCode::OK, "{}", path);
+            let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
+                .await
+                .unwrap();
+            let text = String::from_utf8(bytes.to_vec()).unwrap();
+            assert!(text.contains("Entity"), "{} lost the value: {}", path, text);
+            assert!(
+                !text.contains("_:id"),
+                "{} rendered a blank node instead: {}",
+                path,
+                text
+            );
+        }
     }
 
     #[tokio::test]

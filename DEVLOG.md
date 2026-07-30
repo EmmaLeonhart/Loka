@@ -7,6 +7,33 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-07-30 (stage 3) — every result format renders a computed value, and one format turned out not to need it
+
+Finishing the render paths from `planning/computed-values.md`. A computed `BIND` value now appears in
+the SPARQL-results JSON, CSV, TSV and XML, the `loka query` table, the MCP query tool, and across the
+FFI boundary. Each has a test that asserts two things: the value is there, and the string `_:id` is
+**not** — because that is the shape the bug would have taken. Every one of these renderers ends in a
+fallback that turns an unresolvable id into `_:idN`, so a missed path would have emitted a blank node:
+well-formed, plausible, wrong. An audit ("I updated them all") cannot catch that; a test can.
+
+Two things worth recording beyond the mechanics.
+
+**Turtle and N-Triples did not need changing, and finding that out was the useful part.** The design
+doc listed them because it was reasoning from a list of output formats. The code says
+`resolve_term_for_turtle` is reachable only from `export_graph`, which iterates the *store* — and a
+computed id can never be in the store, because stage 1 rejects it at the insert boundary. So the
+invariant added on the way in paid for itself immediately by shrinking the work on the way out. The
+queue entry now says "not applicable" with the reason, rather than quietly dropping two items.
+
+**`loka-cli` had no test module at all** — neither `main.rs` nor `mcp.rs` — so the renderer change
+there had nowhere to be tested. Added one to each. Small, but it is the difference between "the
+function looks right" and "the function is pinned": both tests assert the *precedence* (computed
+table before dictionary) and that the old path still produces `_:idN` for the same id, which is what
+makes the assertion mean something.
+
+476 workspace tests green.
+
+---
 ## 2026-07-30 (later) — BIND over a computed string works, end to end
 
 Stages 2 and part of 3 from `planning/computed-values.md`. `BIND(REPLACE(STR(?type), "^.*/", "") AS

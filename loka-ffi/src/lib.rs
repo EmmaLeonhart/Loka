@@ -433,7 +433,7 @@ pub extern "C" fn loka_query(db: *const LokaDb, query: *const c_char) -> *mut Lo
                 .iter()
                 .map(|col| {
                     row.get(col)
-                        .map(|&id| resolve_id(id, &inner.dict))
+                        .map(|&id| resolve_result_id(id, &inner.dict, &result.values))
                         .unwrap_or_default()
                 })
                 .collect()
@@ -718,6 +718,20 @@ fn resolve_id(id: loka_core::TermId, dict: &loka_core::TermDictionary) -> String
         .unwrap_or_else(|| format!("_:id{}", id))
 }
 
+/// Render a QUERY RESULT id: the per-query computed-value table first, then the
+/// dictionary. Separate from `resolve_id`, which also renders ids read straight
+/// from the store, where no computed value can occur.
+fn resolve_result_id(
+    id: loka_core::TermId,
+    dict: &loka_core::TermDictionary,
+    values: &loka_core::QueryValues,
+) -> String {
+    if let Some(value) = values.get(id) {
+        return value.to_string();
+    }
+    resolve_id(id, dict)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -756,6 +770,47 @@ mod tests {
         assert!(!result.is_null());
         assert_eq!(loka_result_row_count(result), 1);
         assert_eq!(loka_result_column_count(result), 3);
+
+        loka_result_free(result);
+        loka_db_close(db);
+    }
+
+    /// A computed BIND value must survive the FFI boundary.
+    ///
+    /// The FFI resolves every binding to a String before handing it across, so a
+    /// renderer that consults only the dictionary would send `_:idN` — a blank
+    /// node that looks like data — to Loka Studio and every other non-Rust
+    /// consumer.
+    #[test]
+    fn computed_bind_value_crosses_the_ffi_boundary() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("computed.sdb");
+        let path_c = CString::new(path.to_str().unwrap()).unwrap();
+        let db = loka_db_open(path_c.as_ptr());
+        assert!(!db.is_null());
+
+        let data = CString::new(
+            "<http://example.org/a>              <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>              <http://example.org/ontology/Entity> .",
+        )
+        .unwrap();
+        assert_eq!(loka_insert_ntriples(db, data.as_ptr()), 1);
+
+        let query = CString::new(
+            "SELECT ?local WHERE {              ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?t .              BIND(REPLACE(STR(?t), \"^.*/\", \"\") AS ?local) }",
+        )
+        .unwrap();
+        let result = loka_query(db, query.as_ptr());
+        assert!(!result.is_null());
+        assert_eq!(loka_result_row_count(result), 1);
+
+        let value = loka_result_value(result, 0, 0);
+        assert!(!value.is_null());
+        let rendered = unsafe { CStr::from_ptr(value) }
+            .to_str()
+            .unwrap()
+            .to_string();
+        assert_eq!(rendered, "Entity");
+        unsafe { loka_string_free(value) };
 
         loka_result_free(result);
         loka_db_close(db);

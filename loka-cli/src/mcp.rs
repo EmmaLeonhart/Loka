@@ -1312,6 +1312,20 @@ fn resolve_id(id: loka_core::TermId, dict: &loka_core::TermDictionary) -> String
         .unwrap_or_else(|| format!("_:id{}", id))
 }
 
+/// Render a QUERY RESULT id: the per-query computed-value table first, then the
+/// dictionary. Separate from `resolve_id`, which also renders ids read straight
+/// from the store, where no computed value can occur.
+fn resolve_result_id(
+    id: loka_core::TermId,
+    dict: &loka_core::TermDictionary,
+    values: &loka_core::QueryValues,
+) -> String {
+    if let Some(value) = values.get(id) {
+        return value.to_string();
+    }
+    resolve_id(id, dict)
+}
+
 // ─── Tool implementations ────────────────────────────────────────────────────
 
 async fn tool_health_report(ctx: &McpContext) -> Result<String, String> {
@@ -1498,7 +1512,7 @@ async fn tool_sparql_query(ctx: &McpContext, args: &Value) -> Result<String, Str
                     .iter()
                     .map(|col| {
                         row.get(col)
-                            .map(|&id| resolve_id(id, &dict))
+                            .map(|&id| resolve_result_id(id, &dict, &result.values))
                             .unwrap_or_default()
                     })
                     .collect();
@@ -1704,4 +1718,27 @@ fn copy_dir_for_backup(src: &std::path::Path, dst: &std::path::Path) -> std::io:
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Same contract as the CLI renderer: computed values first, then the
+    /// dictionary. An agent reading a `BIND` column through MCP would otherwise
+    /// be handed `_:idN` and have no way to know it was not real data.
+    #[test]
+    fn result_rendering_prefers_computed_values() {
+        let mut dict = loka_core::TermDictionary::new();
+        let mut values = loka_core::QueryValues::new();
+        let computed = values.intern("Entity").unwrap();
+        let iri = dict.intern("http://example.org/a");
+
+        assert_eq!(resolve_result_id(computed, &dict, &values), "Entity");
+        assert!(resolve_id(computed, &dict).starts_with("_:id"));
+        assert_eq!(
+            resolve_result_id(iri, &dict, &values),
+            "http://example.org/a"
+        );
+    }
 }

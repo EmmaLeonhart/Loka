@@ -456,7 +456,7 @@ async fn main() -> anyhow::Result<()> {
                         .iter()
                         .map(|col| {
                             row.get(col)
-                                .map(|&id| resolve_id(id, &dict))
+                                .map(|&id| resolve_result_id(id, &dict, &result.values))
                                 .unwrap_or_default()
                         })
                         .collect();
@@ -976,6 +976,23 @@ Loka Agent Installer v0.1.0
     Ok(())
 }
 
+/// Render a QUERY RESULT id: the per-query computed-value table first, then the
+/// dictionary.
+///
+/// Separate from `resolve_id` because that one also renders ids read straight out
+/// of the store, where no computed value can occur. Threading an always-empty
+/// table through those call sites would suggest they can see one.
+fn resolve_result_id(
+    id: loka_core::TermId,
+    dict: &loka_core::TermDictionary,
+    values: &loka_core::QueryValues,
+) -> String {
+    if let Some(value) = values.get(id) {
+        return value.to_string();
+    }
+    resolve_id(id, dict)
+}
+
 fn resolve_id(id: loka_core::TermId, dict: &loka_core::TermDictionary) -> String {
     if let Some(n) = loka_core::decode_inline_integer(id) {
         return n.to_string();
@@ -1213,4 +1230,35 @@ fn copy_dir_recursive(src: &std::path::Path, dst: &std::path::Path) -> std::io::
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The CLI's result renderer must consult the per-query computed-value table
+    /// before the dictionary. Without that, a `BIND` column prints `_:idN` — the
+    /// fallback for an unresolvable id — which reads as a blank node rather than
+    /// as the string the query computed.
+    #[test]
+    fn result_rendering_prefers_computed_values() {
+        let mut dict = loka_core::TermDictionary::new();
+        let mut values = loka_core::QueryValues::new();
+        let computed = values.intern("Entity").unwrap();
+        let iri = dict.intern("http://example.org/a");
+
+        assert_eq!(resolve_result_id(computed, &dict, &values), "Entity");
+        // Without the table it would fall through to the `_:idN` fallback.
+        assert!(resolve_id(computed, &dict).starts_with("_:id"));
+
+        // Ordinary ids are unaffected, including when a table is present.
+        assert_eq!(
+            resolve_result_id(iri, &dict, &values),
+            "http://example.org/a"
+        );
+        assert_eq!(
+            resolve_result_id(loka_core::inline_integer(42).unwrap(), &dict, &values),
+            "42"
+        );
+    }
 }

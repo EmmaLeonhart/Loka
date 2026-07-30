@@ -152,10 +152,15 @@ than a BIND special case.
 2. **DONE** — `ExecutionContext` owns a `QueryValues`, `QueryResult` carries it,
    `bind_computed_value` interns instead of erroring. `BIND(REPLACE(STR(?type), "^.*/", "") AS
    ?typeLocal)` returns `Entity`, and two rows computing the same string share an id.
-3. **PARTLY DONE** — the SPARQL-results JSON path (`resolve_term_to_json`) consults the table, with
-   an HTTP-level test. Remaining: CSV/TSV, Turtle, N-Triples, `loka-cli query`, `loka-ffi`, MCP.
-   Each needs its own round-trip test; the failure mode is not an error but a `_:idN` blank node,
-   because that is what the JSON fallback did before this branch existed.
+3. **DONE** — every result-rendering path consults the table: SPARQL-results JSON, CSV, TSV, XML
+   (`loka-proto`), the `loka query` table, the MCP query tool, and the FFI boundary. Tests:
+   HTTP round-trips for JSON and for CSV/TSV/XML asserting both that the value appears and that
+   `_:id` does NOT; a real `loka_query` round trip across the FFI; and renderer unit tests for the
+   CLI and MCP paths (neither file had a test module before).
+   **Turtle and N-Triples are not applicable, and that is a conclusion rather than an omission:**
+   `resolve_term_for_turtle` serves only `export_graph`, which iterates the *store*, and a computed
+   id can never be stored (rejected at the boundary in stage 1). The design listed them because it
+   was reasoning from format names; the code says otherwise.
 4. **NOT STARTED** — `SELECT (expr AS ?v)`, `ORDER BY expr` (parser work too).
 5. **NOT STARTED** — `GROUP BY` on a computed value.
 
