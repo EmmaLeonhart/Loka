@@ -7,6 +7,42 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-07-29 (later) — FILTER arithmetic is evaluated, and negative numbers order correctly
+
+Immediately after the grammar work below, the remaining gap it named — arithmetic in operand
+position — turned out to be the smaller of two bugs sitting in the same code.
+
+**Arithmetic was parsed and thrown away.** `parse_comparison_expr` recognised
+`?var (+|-|*|/) term <cmp> term`, then built the comparison from the left variable alone, with a
+comment conceding the executor had nowhere to put the operation. `FILTER(?age + 5 > 30)` quietly
+evaluated `FILTER(?age > 30)`. Fixed with a `Term::Arith` node used on both sides of the
+comparison, so `24 < ?age + 5` — previously a parse error — works as well.
+
+**Then the ordering bug.** Writing the negative-value fixture for those tests showed
+`FILTER(?t > 4)` returning rows with `?t = -20`. Ordering compared raw `TermId`s, and an inline
+integer's payload is two's-complement in the low 56 bits: a negative value sets the payload's
+high bit, so as an *unsigned* id it sorts above every positive one. The reachable consequence is
+much wider than it first looks — not "queries with negative literals are wrong" but "any ordering
+query over a column that contains a negative is wrong", including ones whose bound is positive.
+This had been live since inline integers were introduced, behind a test suite that only ever
+used non-negative fixtures.
+
+That is the second time this week the same lesson has come back: **fixtures with only the easy
+sign / only the leading position / only two conjuncts hide entire branches.** The FILTER work
+below was found by dogfooding the Cypher transpiler; this was found by picking test data that
+spanned zero. Neither needed new machinery, just data that didn't agree with the code's
+assumptions.
+
+Deliberate choices, recorded because they are semantics and not implementation detail: arithmetic
+evaluates in `f64` so that division means division (truncating integers would make `?a / 3 = 2`
+true for `7`); division by zero produces no value, so the comparison is false rather than an
+infinity that can satisfy it; non-numeric operands match nothing, matching how unresolvable terms
+already behave. Left open and pinned by a test rather than papered over: no operator precedence
+*inside* arithmetic, and unary minus does not parse.
+
+448 workspace tests green.
+
+---
 ## 2026-07-29 — The FILTER grammar closes: `&&` binds tighter than `||`, and every leaf form composes
 
 Two days of dogfooding the Cypher transpiler kept surfacing the same thing from different
