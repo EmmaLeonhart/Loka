@@ -7,6 +7,32 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-07-30 (later) — BIND over a computed string works, end to end
+
+Stages 2 and part of 3 from `planning/computed-values.md`. `BIND(REPLACE(STR(?type), "^.*/", "") AS
+?local)` now returns `Entity` — over HTTP, in the SPARQL-results JSON, which is the query Pramana's
+entity page has wanted to send since it was written.
+
+`ExecutionContext` owns a `QueryValues` for the query's lifetime and moves it into the `QueryResult`;
+`bind_computed_value` interns instead of returning yesterday's honest "not supported yet". Because
+interning is by value, two rows computing the same string share one id, so a computed variable can be
+grouped and de-duplicated — the alternative (a fresh id per row) is the kind of bug that looks like
+it works until someone writes `DISTINCT`.
+
+**The render path deserves its own note, because the failure mode is not what you would guess.**
+`resolve_term_to_json` ends with a fallback that turns an id it cannot resolve into `_:idN`. So a
+renderer that forgot the value table would not emit an empty cell or an error — it would emit a
+**blank node**, which is well-formed RDF and looks like real data. That is why each remaining output
+format (CSV/TSV, Turtle, N-Triples, CLI, FFI, MCP) gets its own round-trip test rather than a careful
+audit; "I checked them all" is exactly the reasoning that produced this week's other bugs.
+
+Non-integral arithmetic still leaves the variable unbound: there is no inline float, so
+`BIND(STRLEN(?label) / 2 AS ?half)` binds for a 4-character label and not a 5-character one. Pinned by
+a test so `InlineType::Float` has to confront it rather than inherit it.
+
+472 workspace tests green.
+
+---
 ## 2026-07-30 — Computed values: the design, and the id space it needs
 
 Work-loop tick. `BIND` over a *string* expression has been returning an explicit "not supported

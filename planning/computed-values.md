@@ -1,7 +1,8 @@
 # Computed values in query results — design
 
-**Status:** design, not built. Written 2026-07-29 because `queue.md` says to settle the id-range
-question on paper before touching code.
+**Status:** stages 1–2 built, stage 3 partly built (SPARQL-results JSON only). Written 2026-07-29
+to settle the id-range question on paper before touching code, and kept as the record of *why* it is
+shaped this way. Per-stage status at the bottom.
 
 ## The problem, concretely
 
@@ -143,6 +144,20 @@ Each stage is independently committable and testable.
 
 Stage 2 alone unblocks Pramana's entity page. Stages 4–5 are what make it a general facility rather
 than a BIND special case.
+
+## Status per stage (2026-07-30)
+
+1. **DONE** — `InlineType::Computed`, `QueryValues`, storage rejection (9 tests in
+   `loka-core/tests/computed_values.rs`).
+2. **DONE** — `ExecutionContext` owns a `QueryValues`, `QueryResult` carries it,
+   `bind_computed_value` interns instead of erroring. `BIND(REPLACE(STR(?type), "^.*/", "") AS
+   ?typeLocal)` returns `Entity`, and two rows computing the same string share an id.
+3. **PARTLY DONE** — the SPARQL-results JSON path (`resolve_term_to_json`) consults the table, with
+   an HTTP-level test. Remaining: CSV/TSV, Turtle, N-Triples, `loka-cli query`, `loka-ffi`, MCP.
+   Each needs its own round-trip test; the failure mode is not an error but a `_:idN` blank node,
+   because that is what the JSON fallback did before this branch existed.
+4. **NOT STARTED** — `SELECT (expr AS ?v)`, `ORDER BY expr` (parser work too).
+5. **NOT STARTED** — `GROUP BY` on a computed value.
 
 ## What this does not do
 

@@ -207,17 +207,19 @@ fn pramana_search_and_resolver_return_rows() {
     }
 }
 
-/// BIND over a numeric expression binds; over a string expression it reports
-/// that it is unsupported instead of silently leaving the column missing.
+/// BIND over a computed expression — numeric and string alike.
+///
+/// The string case was an explicit "not supported yet" error until the per-query
+/// value table landed (`planning/computed-values.md`): a computed string has no
+/// dictionary id, and the dictionary is persisted and held immutably, so it could
+/// not be interned there.
 #[test]
 fn bind_over_a_computed_value() {
     let (store, dict) = labelled();
-    let prefixes = "PREFIX pr: <http://pramana.org/ontology/> \
-                    PREFIX wdt: <http://pramana.org/prop/direct/> ";
+    let prefixes = "PREFIX pr: <http://pramana.org/ontology/>                     PREFIX wdt: <http://pramana.org/prop/direct/> ";
 
     let numeric = format!(
-        "{}SELECT ?item ?n WHERE {{ ?item wdt:EntityLabel ?label . \
-         BIND(STRLEN(?label) + 1 AS ?n) }}",
+        "{}SELECT ?item ?n WHERE {{ ?item wdt:EntityLabel ?label .          BIND(STRLEN(?label) + 1 AS ?n) }}",
         prefixes
     );
     let parsed = parse(&numeric).unwrap();
@@ -228,16 +230,66 @@ fn bind_over_a_computed_value() {
         "numeric BIND must actually bind"
     );
 
+    // The query Pramana's entity page has always wanted to send.
     let stringy = format!(
-        "{}SELECT ?item ?local WHERE {{ ?item a ?type . \
-         BIND(REPLACE(STR(?type), \"^.*/\", \"\") AS ?local) }}",
+        "{}SELECT ?item ?local WHERE {{ ?item a ?type .          BIND(REPLACE(STR(?type), \"^.*/\", \"\") AS ?local) }}",
         prefixes
     );
     let parsed = parse(&stringy).unwrap();
-    let err = execute(&parsed, &store, &dict).expect_err("string BIND must not silently no-op");
-    assert!(
-        err.to_string().contains("not supported yet"),
-        "error should say what is unsupported, got: {}",
-        err
-    );
+    let result = execute(&parsed, &store, &dict).unwrap();
+    assert_eq!(result.rows.len(), 2);
+    for row in &result.rows {
+        let id = *row.get("local").expect("?local must be bound");
+        // Resolving through the RESULT's value table, not the dictionary — a
+        // renderer that consults only the dictionary shows an empty cell, which
+        // is the trap stage 3 has to close in every output format.
+        assert_eq!(result.values.get(id), Some("Entity"));
+        assert_eq!(dict.resolve(id), None);
+    }
+}
+
+/// Two rows computing the same string share one id, so a computed variable can
+/// be grouped and de-duplicated. Without by-value interning this is the subtle
+/// bug: equal values that compare unequal.
+#[test]
+fn equal_computed_values_share_an_id() {
+    let (store, dict) = labelled();
+    let q = "PREFIX pr: <http://pramana.org/ontology/>              SELECT ?item ?local WHERE { ?item a ?type .              BIND(REPLACE(STR(?type), \"^.*/\", \"\") AS ?local) }";
+    let parsed = parse(q).unwrap();
+    let result = execute(&parsed, &store, &dict).unwrap();
+
+    let ids: std::collections::HashSet<_> = result
+        .rows
+        .iter()
+        .map(|r| *r.get("local").unwrap())
+        .collect();
+    assert_eq!(ids.len(), 1, "both rows compute \"Entity\"");
+    assert_eq!(result.values.len(), 1);
+}
+
+/// A query that computes nothing carries an empty table — the field is not a
+/// per-query allocation tax on ordinary queries.
+#[test]
+fn a_query_with_no_computed_values_has_an_empty_table() {
+    let (store, dict) = labelled();
+    let q = "PREFIX wdt: <http://pramana.org/prop/direct/>              SELECT ?item WHERE { ?item wdt:EntityLabel ?label }";
+    let result = execute(&parse(q).unwrap(), &store, &dict).unwrap();
+    assert!(result.values.is_empty());
+}
+
+/// Non-integral arithmetic still has no representation (no inline float), so the
+/// variable is unbound rather than rounded. Pinned so adding InlineType::Float
+/// has to confront it.
+#[test]
+fn bind_over_a_non_integral_number_leaves_the_variable_unbound() {
+    let (store, dict) = labelled();
+    let q = "PREFIX wdt: <http://pramana.org/prop/direct/>              SELECT ?item ?half WHERE { ?item wdt:EntityLabel ?label .              BIND(STRLEN(?label) / 2 AS ?half) }";
+    let result = execute(&parse(q).unwrap(), &store, &dict).unwrap();
+    // "Water" is 5 chars -> 2.5, unrepresentable; "Iron" is 4 -> 2, fine.
+    let bound = result
+        .rows
+        .iter()
+        .filter(|r| r.contains_key("half"))
+        .count();
+    assert_eq!(bound, 1, "only the even-length label binds");
 }

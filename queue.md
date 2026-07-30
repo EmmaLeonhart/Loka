@@ -11,24 +11,20 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ---
 
-## ACTIVE — computed values in query results: stage 2 (BIND over a string expression)
+## ACTIVE — computed values: finish stage 3 (the remaining render paths)
 
-**Design settled + written: `planning/computed-values.md`. Stage 1 is done** (`InlineType::Computed`,
-`QueryValues`, the storage rejection, 9 tests). The `&mut TermDictionary` option is rejected there
-with reasons; the id-range question that was open turned out not to exist — the inline tag space
-already gives computed ids a space disjoint from dictionary pointers, so there is no range to
-reserve and no dictionary-size invariant to maintain.
+**Stages 1 and 2 are done, and stage 3 is done for the SPARQL-results JSON** —
+`BIND(REPLACE(STR(?type), "^.*/", "") AS ?local)` now returns `Entity` over HTTP, which is the query
+Pramana's entity page always wanted to send. Design + per-stage status:
+`planning/computed-values.md`.
 
-**Stage 2, next:** `ExecutionContext` gains `&mut QueryValues`, `QueryResult` carries it, and
-`bind_computed_value` interns instead of erroring. Acceptance test: Pramana's original
-`BIND(REPLACE(STR(?type), "^.*/", "") AS ?typeLocal)` returns `Entity`.
+**Remaining render paths, one commit each with its own round-trip test:** CSV/TSV, Turtle,
+N-Triples, `loka-cli query`, `loka-ffi`, MCP. The failure mode is NOT an error — an unknown id
+renders as `_:idN`, so a missed path emits a blank node that looks like real data. That is why each
+path gets a test rather than an audit.
 
-Then stage 3 (render paths, one commit per crate — a path that forgets the table shows an EMPTY
-CELL, so each needs its own round-trip test), stage 4 (`SELECT (expr AS ?v)`, `ORDER BY expr`),
-stage 5 (`GROUP BY` on a computed value).
-
-**Pramana does not need to wait** — as of `661df6b` its queries select `?type` and shorten it in
-Python, which is where display-shortening belonged anyway.
+Then stage 4 (`SELECT (expr AS ?v)`, `ORDER BY expr` — parser work too) and stage 5 (`GROUP BY` on a
+computed value, which is free given by-value interning).
 
 ---
 

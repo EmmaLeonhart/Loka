@@ -15,8 +15,8 @@ use std::time::{Duration, Instant};
 
 use loka_core::{
     batch_gather_nodes, fused_multi_column_scan, parse_temporal, ColumnFilter, DatabaseConfig,
-    HnswEdgeMode, Property, PropertyPosition, PseudoTableRegistry, TemporalAnnotations,
-    TermDictionary, TermId, Triple, TripleStore, DATATYPE_TEMPORAL,
+    HnswEdgeMode, Property, PropertyPosition, PseudoTableRegistry, QueryValues,
+    TemporalAnnotations, TermDictionary, TermId, Triple, TripleStore, DATATYPE_TEMPORAL,
 };
 use loka_hnsw::VectorRegistry;
 
@@ -30,8 +30,13 @@ use crate::parser::{
 pub type Bindings = HashMap<String, TermId>;
 
 /// Result of executing a query: column names + rows of term IDs.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct QueryResult {
+    /// Values computed during this query (`BIND` over an expression), which have
+    /// no dictionary id. A renderer must consult this **before** the dictionary,
+    /// or a computed column silently renders empty. Empty for any query that
+    /// computes nothing. See `planning/computed-values.md`.
+    pub values: QueryValues,
     /// Variable names in projection order.
     pub columns: Vec<String>,
     /// Rows of bindings. Each row maps variable name → TermId.
@@ -70,6 +75,9 @@ pub struct ExecutionContext<'a> {
     /// Optional temporal filter set by AT_TIME/DURING/WORLD_STATE operators.
     /// When present, property path traversal only follows temporally-valid edges.
     pub temporal_filter: Option<TemporalFilter>,
+    /// Values computed during this query, moved into the `QueryResult` at the
+    /// end. Owned rather than borrowed so the lifetime is exactly the query's.
+    pub values: QueryValues,
 }
 
 /// Execute a parsed query against an in-memory store with vector support.
@@ -222,6 +230,7 @@ fn execute_query_with_ctx(query: &Query, ctx: &mut ExecutionContext<'_>) -> Resu
             ],
             rows: all_triples,
             scores: all_scores,
+            values: std::mem::take(&mut ctx.values),
         });
     }
 
@@ -262,6 +271,7 @@ fn execute_query_with_ctx(query: &Query, ctx: &mut ExecutionContext<'_>) -> Resu
             ],
             rows: constructed,
             scores: constructed_scores,
+            values: std::mem::take(&mut ctx.values),
         });
     }
 
@@ -281,6 +291,7 @@ fn execute_query_with_ctx(query: &Query, ctx: &mut ExecutionContext<'_>) -> Resu
             columns: vec!["result".to_string()],
             rows: vec![row],
             scores: vec![HashMap::new()],
+            values: std::mem::take(&mut ctx.values),
         });
     }
 
@@ -369,6 +380,7 @@ fn execute_query_with_ctx(query: &Query, ctx: &mut ExecutionContext<'_>) -> Resu
         columns,
         rows: results,
         scores,
+        values: std::mem::take(&mut ctx.values),
     })
 }
 
@@ -410,6 +422,7 @@ fn execute_with_deadline(
         deadline,
         pseudo_tables: None,
         temporal_filter: None,
+        values: QueryValues::new(),
     };
     execute_query_with_ctx(query, &mut ctx)
 }
@@ -3361,22 +3374,26 @@ fn filter_term_value(term: &Term, row: &Bindings) -> Option<TermId> {
 fn bind_computed_value(
     expression: &Term,
     row: &Bindings,
-    ctx: &ExecutionContext<'_>,
+    ctx: &mut ExecutionContext<'_>,
 ) -> Result<Option<TermId>> {
     if let Some(n) = numeric_operand(expression, row, ctx) {
         if n.fract() == 0.0 {
             return Ok(loka_core::inline_integer(n as i64));
         }
+        // Non-integral: there is no inline float encoding yet, so no value —
+        // which SPARQL spells as an unbound variable. Tracked in TODO.md.
         return Ok(None);
     }
-    if term_to_string(expression, row, ctx).is_some() {
-        return Err(SparqlError::Execution(
-            "BIND over a string-valued expression is not supported yet: binding one              requires interning a new literal, and the executor holds the term              dictionary immutably. Compute the value in the client, or bind a              numeric expression (arithmetic, STRLEN)."
-                .to_string(),
-        ));
+    match term_to_string(expression, row, ctx) {
+        // A string result goes in the per-query value table rather than the
+        // dictionary: the dictionary is persisted, and a value a query computed
+        // is not a term in the graph. `QueryValues::intern` is by-value, so two
+        // rows computing the same string share an id and DISTINCT / GROUP BY on
+        // a computed variable behave.
+        Some(value) => Ok(ctx.values.intern(&value)),
+        // No value at all (unbound variable, invalid regex): unbound, per SPARQL.
+        None => Ok(None),
     }
-    // No value at all (unbound variable, invalid regex): unbound, per SPARQL.
-    Ok(None)
 }
 
 /// A term whose value is computed rather than interned: arithmetic, or a value

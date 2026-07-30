@@ -422,7 +422,7 @@ fn execute_sparql(query_str: &str, state: &AppState) -> Result<Json<SparqlResult
             let mut obj = serde_json::Map::new();
             for col in &result.columns {
                 if let Some(&id) = row.get(col) {
-                    let value = resolve_term_to_json(id, &dict);
+                    let value = resolve_term_to_json(id, &dict, &result.values);
                     obj.insert(col.clone(), value);
                 }
             }
@@ -705,7 +705,23 @@ fn resolve_term_to_id(
     }
 }
 
-fn resolve_term_to_json(id: loka_core::TermId, dict: &TermDictionary) -> serde_json::Value {
+fn resolve_term_to_json(
+    id: loka_core::TermId,
+    dict: &TermDictionary,
+    values: &loka_core::QueryValues,
+) -> serde_json::Value {
+    // Values this query COMPUTED (BIND over an expression) are not in the
+    // dictionary, so they must be looked up here first. Without this branch a
+    // computed column falls through to the `_:idN` fallback at the bottom and
+    // renders as a blank node — data-shaped nonsense rather than the string the
+    // query asked for. See `planning/computed-values.md`.
+    if let Some(value) = values.get(id) {
+        return serde_json::json!({
+            "type": "literal",
+            "value": value
+        });
+    }
+
     if let Some(n) = loka_core::decode_inline_integer(id) {
         return serde_json::json!({
             "type": "literal",
@@ -1774,6 +1790,48 @@ mod tests {
             rate_limit_per_min: 0,
             rate_counter: std::sync::atomic::AtomicU64::new(0),
         })
+    }
+
+    /// A computed BIND value must render as its string over HTTP.
+    ///
+    /// This is the end of the chain that starts in loka-core: the value table is
+    /// per-query, so a renderer that consults only the dictionary drops the
+    /// column. Worse than empty, in fact — `resolve_term_to_json`'s fallback
+    /// turns an unknown id into `_:idN`, so the bug would have surfaced as a
+    /// blank node that looks like real data. Pramana's entity page sends exactly
+    /// this shape.
+    #[tokio::test]
+    async fn computed_bind_value_renders_over_http() {
+        let state = test_state();
+        let app = router(state.clone());
+        let body = "<http://example.org/a>                     <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>                     <http://example.org/ontology/Entity> .
+";
+        let req = Request::builder()
+            .method("POST")
+            .uri("/triples")
+            .header("content-type", "text/plain")
+            .body(Body::from(body))
+            .unwrap();
+        assert_eq!(app.oneshot(req).await.unwrap().status(), StatusCode::OK);
+
+        let app = router(state.clone());
+        let q = "SELECT ?s ?local WHERE {                  ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?t .                  BIND(REPLACE(STR(?t), \"^.*/\", \"\") AS ?local) }";
+        let req = Request::builder()
+            .method("POST")
+            .uri("/sparql")
+            .header("content-type", "application/sparql-query")
+            .body(Body::from(q))
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        let bindings = json["results"]["bindings"].as_array().unwrap();
+        assert_eq!(bindings.len(), 1);
+        assert_eq!(bindings[0]["local"]["value"], "Entity");
+        assert_eq!(bindings[0]["local"]["type"], "literal");
     }
 
     #[tokio::test]
