@@ -7,11 +7,25 @@ use std::sync::{Arc, RwLock};
 
 use clap::{Parser, Subcommand};
 
+/// Version string including the build stamp from `build.rs`.
+///
+/// `CARGO_PKG_VERSION` alone could not distinguish a May binary from today's —
+/// both said `0.4.1` — which is how the installed copy stayed two months stale
+/// while looking current, and cost three separate investigations (see build.rs).
+const VERSION: &str = concat!(
+    env!("CARGO_PKG_VERSION"),
+    " (",
+    env!("LOKA_BUILD_SHA"),
+    " ",
+    env!("LOKA_BUILD_TIME"),
+    ")"
+);
+
 #[derive(Parser)]
 #[command(
     name = "loka",
     about = "Loka — RDF-star triplestore with HNSW vector indexing",
-    version = env!("CARGO_PKG_VERSION"),
+    version = VERSION,
 )]
 struct Cli {
     #[command(subcommand)]
@@ -394,7 +408,10 @@ async fn main() -> anyhow::Result<()> {
 
             let app = loka_proto::router(state);
             let addr = format!("127.0.0.1:{}", port);
-            tracing::info!("Loka listening on {}", addr);
+            // Announce the BUILD, not just the version. A server whose log says
+            // only "0.4.1" cannot tell you it predates the fix you are testing —
+            // which is exactly how a stale binary wasted three investigations.
+            tracing::info!("Loka {} listening on {}", VERSION, addr);
 
             let listener = tokio::net::TcpListener::bind(&addr).await?;
             axum::serve(listener, app).await?;
@@ -949,7 +966,7 @@ Loka Agent Installer v0.1.0
 
                 let app = loka_proto::router(state);
                 let addr = format!("127.0.0.1:{}", port);
-                println!("[OK] Loka listening on http://{}", addr);
+                println!("[OK] Loka {} listening on http://{}", VERSION, addr);
                 let listener = tokio::net::TcpListener::bind(&addr).await?;
                 axum::serve(listener, app).await?;
             }

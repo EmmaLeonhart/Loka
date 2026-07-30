@@ -37,6 +37,28 @@ one passing test is evidence, not proof. Most likely the same root cause as thos
 stale installed binary (see the DO-NOT-RUN-FROM-INSTALLER note above), which was a May build.
 Pramana's 6s settle rests on the same premise and can be revisited.
 
+## ✅ 2026-07-30: `--version` now carries a build stamp, so staleness is visible
+
+`loka --version` printed `CARGO_PKG_VERSION` alone, so a May build and today's build both said
+`loka 0.4.1`. That single fact is why the trap below stayed invisible for two months, and it has now
+cost three separate investigations:
+
+1. `loka serve` binding 0.0.0.0 — Emma's overnight firewall prompts — after the 127.0.0.1 fix had
+   been in source for weeks.
+2. Three "engine bugs" investigated and filed, none of which reproduce on current source.
+3. **2026-07-30:** a Pramana verification run failed with `parse error … expected prefixed name` on
+   exactly the queries the parser had just been fixed to accept — because the release binary had been
+   rebuilt an hour *before* that fix landed. Same trap, one hour of drift instead of two months.
+
+Now: `loka 0.4.1 (306a148 2026-07-30T05:09:58Z)`, with `-dirty` when the tree has uncommitted
+changes, and the same string in the serve banner (`Loka 0.4.1 (…) listening on …`) so a *running*
+server declares its build. `loka-cli/build.rs` stamps sha + UTC time, re-running when `.git/HEAD` or
+the index moves so an incremental build cannot keep a stale stamp. Best-effort: no git, no crash —
+the sha becomes `unknown`.
+
+`GET /health` deliberately still returns exactly `ok`; Pramana's client only checks the status code,
+but changing a health body to carry diagnostics is how a health check stops being a health check.
+
 ## ⚠ DO NOT RUN LOKA FROM THE INSTALLER (Emma, 2026-07-22)
 
 **The installer dependency is the bug.** `C:\Program Files\Loka\loka.exe` is a **2026-05-27 build**; current source builds to 2026-07-22. Both report `loka 0.4.1`, so two months of drift was invisible. That one fact explains two separately-investigated incidents:
