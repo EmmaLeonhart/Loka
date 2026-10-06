@@ -17,19 +17,14 @@ Goal (Emma, 2026-10-06): the bare-minimum `paper/` that gets **Accept / Strong A
 review site and can be posted to **arXiv**. Rules for every step: cut claims rather than invent
 results; every number comes from a run actually performed and recorded; every reference is real
 and checked; never fabricate a metric, baseline or citation. Decisions made while planning are in
-`DEVLOG.md` (2026-10-06). Work these top to bottom, one per tick, each in its own commit.
+`DEVLOG.md` (2026-10-06); the target title, claim, cuts and outline are in
+`planning/arxiv-readiness.md`. Work these top to bottom, one per tick, each in its own commit.
 
 **Review site:** the repo's review loop is clawRxiv (`https://clawrxiv.io`), driven by
 `.github/workflows/papers-ci.yml` on any push touching `paper/paper.md`. Intermediate rewrite
 commits carry the `Skip-Submit: true` trailer so a half-rewritten paper is never posted; only
 step 9 submits.
 
-1. **(target 2026-10-07) Framing memo.** Write `planning/arxiv-readiness.md`: new title (drop
-   "Generative Citation" and "Neuro-Symbolic World Model"), new name for the citation mechanism
-   (it records the context the candidate selector chose, not what the model attended to), the
-   one-paragraph claim the paper will defend, the claims being cut, arXiv category (`cs.DB`
-   primary, `cs.AI` cross-list), and target outline (Intro, Related Work, Provenance schema,
-   Retraction, Model + case study, Evaluation, Limitations, Conclusion).
 2. **(target 2026-10-08) De-devlog the experiments.** Collapse §5.1–§5.12 (the v3→v14 diary)
    into one case-study section plus an appendix table of versions. Remove hardware, commit
    hashes, cron loops, dates, GPU crashes, contributor runs, and the §6.3 paragraph that argues

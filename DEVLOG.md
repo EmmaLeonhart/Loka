@@ -7,6 +7,23 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-06 (later) — arXiv framing memo: new title, "selection provenance", claims cut
+
+Step 1 of the arXiv-readiness timeline: `planning/arxiv-readiness.md` fixes the target before any
+paper text moves. New title: *Loka: Retractable Provenance for Model-Generated Triples in an
+RDF-star Store*. "Generative citation" becomes **selection provenance**: the edge records which
+context triples the inference procedure picked and fed to the model, which is all it ever was.
+The predicate IRIs stay, since they are shipped API.
+
+The paper now defends one claim, a data-management one: model output written into the store with
+reserved-namespace provenance becomes queryable, excluded from future training, and retractable by
+cascade. The model series turns into a case study and an appendix table. Cut: the neuro-symbolic
+framing, perplexity as a headline, the "corpus scale is the binding constraint" reading (corpora
+differed in content as well as size, so the comparison isn't controlled), the repetition penalty as
+a contribution, and the engine-bug and hardware history. Kept: the catalog-noise finding, as a
+corpus-construction note.
+
+---
 ## 2026-10-06 — arXiv-readiness: the plan, and the calls made to write it
 
 The queue's first item asked for a plan before any edit to the paper: read `paper/paper.md`,
