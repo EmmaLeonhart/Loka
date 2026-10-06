@@ -13,7 +13,7 @@ name: Paper PDF — anonymized + named builds
 
 on:
   push:
-    branches: [master]
+    branches: [main, master]
     paths:
       - 'paper/**'
   workflow_dispatch:
