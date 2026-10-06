@@ -7,6 +7,29 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-06 (later still) — paper §5 rewritten from a version diary into a case study
+
+Step 2 of the arXiv-readiness timeline. The twelve per-version subsections (§5.1–§5.12, about half
+the paper's length) are now one case-study section in five parts: setup, datatype leakage,
+catalog noise, residual failure modes, and building the corpus without the store. Version
+numbers, corpora and perplexities moved to a single Appendix A table. `paper.md` went from 74 KB
+to 38 KB.
+
+Out of the paper: hardware, commit hashes, cron automation, GPU crashes and contention, the
+contributor run, the engine-bug section (old §6.1), and the §6.3 paragraph arguing with a
+reviewer. No new number was added; every figure in the new text was already in the old text.
+
+Two claims got weaker on purpose. The catalog-noise table now says which comparison is controlled
+(v6 → v7: only the corpus changed) and which only shows a trend (v8–v10 also change training
+length or corpus slice). The corpus-scale perplexity result is gone, because those corpora
+differed in content as well as size. One figure was dropped instead of carried over: the old
+version table implied v3 trained on the 757,592-line file, but that count is for the
+post-fix extraction, and v3's own line count was never recorded.
+
+The abstract and introduction still describe the old paper; step 3 rewrites them. The commit
+carries `Skip-Submit: true`, so clawRxiv does not see this half-way state.
+
+---
 ## 2026-10-06 (later) — arXiv framing memo: new title, "selection provenance", claims cut
 
 Step 1 of the arXiv-readiness timeline: `planning/arxiv-readiness.md` fixes the target before any

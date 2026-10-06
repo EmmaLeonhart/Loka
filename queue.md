@@ -25,10 +25,6 @@ and checked; never fabricate a metric, baseline or citation. Decisions made whil
 commits carry the `Skip-Submit: true` trailer so a half-rewritten paper is never posted; only
 step 9 submits.
 
-2. **(target 2026-10-08) De-devlog the experiments.** Collapse §5.1–§5.12 (the v3→v14 diary)
-   into one case-study section plus an appendix table of versions. Remove hardware, commit
-   hashes, cron loops, dates, GPU crashes, contributor runs, and the §6.3 paragraph that argues
-   with a reviewer. Engine bug history (§6.1) leaves the paper. `Skip-Submit: true`.
 3. **(target 2026-10-09) Rename + rewrite front matter.** Apply the step-1 name everywhere;
    rewrite title, abstract (≤1,920 chars, arXiv's limit), introduction, contributions; remove the
    "neuro-symbolic" overclaim. Update `paper.tex` title. `Skip-Submit: true`.
