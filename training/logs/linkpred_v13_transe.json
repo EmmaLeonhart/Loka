@@ -1,0 +1,45 @@
+{
+  "model": "TransE",
+  "train": "hf://datasets/EmmaLeonhart/normalized-wikidata@v13-500k/triples_normalized.txt",
+  "later": "hf://datasets/EmmaLeonhart/normalized-wikidata@v14-1M/triples_normalized.txt",
+  "hyperparameters": {
+    "dim": 128,
+    "epochs": 20,
+    "batch_size": 4096,
+    "lr": 0.001,
+    "optimizer": "Adam",
+    "training": "sLCWA, PyKEEN defaults otherwise",
+    "seed": 42
+  },
+  "final_training_loss": 0.012342674667999624,
+  "train_unique_triples": 1663040,
+  "transductive_heldout": 28448,
+  "rankable_queries": 19686,
+  "scored_queries": 19686,
+  "protocol": "filtered, predicate-constrained candidates, realistic rank (same as eval_linkpred.py)",
+  "metrics": {
+    "all": {
+      "n": 19686,
+      "mrr": 0.07422023426093273,
+      "hits@1": 0.04368586812963527,
+      "hits@3": 0.07919333536523418,
+      "hits@10": 0.13293711266890176
+    },
+    "entity": {
+      "n": 6090,
+      "mrr": 0.2021427671065986,
+      "hits@1": 0.12758620689655173,
+      "hits@3": 0.22364532019704433,
+      "hits@10": 0.35763546798029555
+    },
+    "literal": {
+      "n": 13596,
+      "mrr": 0.01692042365265882,
+      "hits@1": 0.0061047366872609594,
+      "hits@3": 0.014489555751691674,
+      "hits@10": 0.032288908502500734
+    }
+  },
+  "seconds": 4313.8,
+  "note": "Local download paths replaced with their Hugging Face sources after the run; numbers unchanged. PyKEEN 1.11.1, torch 2.13.0+cpu, CPU, 4 threads."
+}

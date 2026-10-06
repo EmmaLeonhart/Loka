@@ -7,6 +7,28 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-06 (small hours) — TransE baseline: below both the transformer and the frequency baseline
+
+Step 6 of the arXiv-readiness timeline. `training/baseline_kge.py` trains TransE with PyKEEN
+(1.11.1, in a scratch venv reusing the system CPU torch) on v13's 1,663,040 unique training
+triples, then scores the same 19,686 held-out queries with `eval_linkpred.py`'s own split,
+filtering and ranking code. 20 epochs took 69 minutes on 4 CPU threads.
+
+| MRR | all | entity-valued | literal-valued |
+|---|---|---|---|
+| predicate frequency | 0.129 | 0.318 | 0.044 |
+| v13 transformer | 0.115 | 0.287 | 0.038 |
+| TransE (untuned) | 0.074 | 0.202 | 0.017 |
+
+So on this split the ordering is frequency > v13 > TransE, on every row. The TransE settings
+are fixed, not tuned. There is no validation split to tune on, which holds for v13 too. Its
+training loss went to 0.012, so the gap isn't a failure to train. The paper will call it an
+untuned TransE and won't claim the transformer beats TransE as a method. What the numbers
+support: on this held-out set neither learned model beats predicate frequency.
+
+DistMult was dropped. The plan said "if cheap", and at about 3.5 minutes per CPU epoch it isn't.
+
+---
 ## 2026-10-06 (late night) — link prediction on held-out data: v13 is below a frequency baseline
 
 Step 5 of the arXiv-readiness timeline. `training/eval_linkpred.py` scores the v13 checkpoint on

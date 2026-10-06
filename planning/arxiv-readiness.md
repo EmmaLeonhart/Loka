@@ -122,6 +122,25 @@ predicate-constrained, realistic rank. 19,686 queries (6,090 entity-valued, 13,5
 | v13 model, literal-valued | 0.038 | 0.020 | 0.033 | 0.068 |
 | predicate frequency, literal-valued | 0.044 | 0.018 | 0.040 | 0.090 |
 
+Step 6 added TransE (`training/baseline_kge.py`, output `training/logs/linkpred_v13_transe.json`;
+PyKEEN 1.11.1, dim 128, 20 epochs, Adam lr 0.001, batch 4096, sLCWA, untuned) on the same split
+and protocol:
+
+| | MRR | Hits@1 | Hits@3 | Hits@10 |
+|---|---|---|---|---|
+| TransE, all | 0.074 | 0.044 | 0.079 | 0.133 |
+| TransE, entity-valued | 0.202 | 0.128 | 0.224 | 0.358 |
+| TransE, literal-valued | 0.017 | 0.006 | 0.015 | 0.032 |
+
+Ordering on this split: predicate frequency > v13 > TransE, on every row. TransE's
+hyperparameters are fixed, not tuned (there is no validation split, same as for v13), so the
+paper must say "an untuned TransE" and not read the gap as TransE being a weak method. Its
+training loss fell to 0.012, so it fit the training graph; the held-out set is small, skewed
+toward literals, and keys entities by English label, which hurts an embedding model that
+cannot share information between labels. DistMult was dropped: about 3.5 min per CPU epoch made
+it not "cheap", which was the plan's condition.
+
+
 **The v13 model does not beat the predicate-frequency baseline** (only literal Hits@1, 0.020 vs
 0.018, is higher). This is consistent with its training perplexity (~245, reproduced from the
 checkpoint) and object-token NLL of 5.8 nats. The paper reports it as is: the model exercises
