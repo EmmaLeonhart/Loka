@@ -133,11 +133,27 @@ pub fn generate(seed: u64, n_entities: usize, n_real: usize, n_gen: usize) -> Gr
             } else {
                 gens[rng.below(i)]
             };
-            cite(&mut store, &mut dict, &mut all_rows, &mut cites, &mut annotations, g, src);
+            cite(
+                &mut store,
+                &mut dict,
+                &mut all_rows,
+                &mut cites,
+                &mut annotations,
+                g,
+                src,
+            );
         }
         if i + 1 < gens.len() && rng.below(20) == 0 {
             let later = gens[i + 1 + rng.below(gens.len() - i - 1)];
-            cite(&mut store, &mut dict, &mut all_rows, &mut cites, &mut annotations, g, later);
+            cite(
+                &mut store,
+                &mut dict,
+                &mut all_rows,
+                &mut cites,
+                &mut annotations,
+                g,
+                later,
+            );
         }
         let gq = dict.register_quoted(g.subject, g.predicate, g.object);
         let a = Triple::new(gq, gen_by, model);
@@ -146,7 +162,14 @@ pub fn generate(seed: u64, n_entities: usize, n_real: usize, n_gen: usize) -> Gr
         annotations.push((g, a));
     }
 
-    Graph { store, dict, entities, all_rows, cites, annotations }
+    Graph {
+        store,
+        dict,
+        entities,
+        all_rows,
+        cites,
+        annotations,
+    }
 }
 
 /// The intended closure, computed by fixpoint over the generator's lists.
