@@ -7,6 +7,44 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 — fixed: HTTP-ingested RDF-star data was scrambled after a restart
+
+Emma chose to fix this before going back to the paper.
+
+**Cause.** `POST /triples` gives every term an id from the server's in-memory dictionary and builds
+the SPO/POS/OSP keys from those ids. `PersistentStore::insert_batch` then interned the same term
+*strings* again under a separate persistent counter. Some rows use up a persistent id with no
+in-memory one: a quoted triple's rendered `<< … >>` subject string, and an inline integer
+literal. From then on the two counters drifted. On reopen, the dictionary was rebuilt from the
+persistent ids, so the keys on disk pointed at whatever term the persistent counter had given
+that id. That produced every symptom seen on the live server: wrong quoted-triple components,
+annotation objects pointing at the wrong terms, the provenance predicate matching nothing, and
+non-ASCII text that looked double-encoded (really a lookup landing on the wrong string).
+
+**Fix (`loka-core/src/persistent.rs`).** `insert_batch` now persists each term under the id the
+SPO keys actually use, and advances the persistent counter past it. It skips inline and quoted
+ids, which have no term row. If a term is already stored under a different id, or the id
+already names another term, the whole batch is refused with a new
+`CoreError::TermIdConflict` instead of being written wrong.
+
+**Tests.** `batch_ids_survive_reopen` replays the server path: a quoted-subject annotation, an
+inline integer, non-ASCII literals, reopen, compare renders. `batch_refuses_conflicting_term_id`
+covers the refusal. Run against the old loop, both fail, and the first reproduces the live
+symptom exactly (the annotation's predicate comes back as the rendered `<< … >>` string).
+Workspace: all tests pass; fmt and clippy clean.
+
+**End to end on the fixed binary.** Fresh store, import seed, POST the 402 generated rows, wait
+past the flush interval, kill and restart. Identical before and after: 15,077 rows, 166
+provenance edges, the nested SPARQL-star query's 5 rows, and `Ġ` intact.
+
+Not fixed and worth knowing: (1) the store flushes every 2 s, so a hard kill inside that window
+loses the last writes; that's the existing durability setting, and my first restart test hit it.
+(2) Stores already written over HTTP by older versions keep their scrambled rows; this stops new
+damage but doesn't repair old data.
+
+Also removed an unneeded `mut` in my `retract_reference.rs`.
+
+---
 ## 2026-10-07 (small hours) — 10a found two engine bugs: one fixed (SPARQL-star), one queued (persistence)
 
 **Storage counts (10a, part 1).** `tools/provenance_encodings.py` re-encodes the 59 real v13

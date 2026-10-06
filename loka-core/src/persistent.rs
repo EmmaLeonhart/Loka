@@ -217,7 +217,7 @@ impl PersistentStore {
             &self.meta,
         )
             .transaction(
-                |(spo, pos, osp, terms_fwd, terms_rev, quoted, meta)| -> sled::transaction::ConflictableTransactionResult<usize, ()> {
+                |(spo, pos, osp, terms_fwd, terms_rev, quoted, meta)| -> sled::transaction::ConflictableTransactionResult<usize, String> {
                     let mut next_id_counter = match meta.get(NEXT_ID_KEY)? {
                         Some(b) if b.len() == 8 => {
                             let mut arr = [0u8; 8];
@@ -229,16 +229,44 @@ impl PersistentStore {
                     let mut inserted_this_attempt = 0usize;
 
                     for item in items {
-                        for term in [
-                            item.subject.as_str(),
-                            item.predicate.as_str(),
-                            item.object.as_str(),
+                        // Persist each term under the id the caller's
+                        // in-memory dictionary gave it, because that is the id
+                        // the SPO/POS/OSP keys below are built from. (These
+                        // used to be minted from a separate persistent counter,
+                        // which drifted from the in-memory one, so after a
+                        // reopen the keys pointed at the wrong terms.)
+                        for (term, id) in [
+                            (item.subject.as_str(), item.triple.subject),
+                            (item.predicate.as_str(), item.triple.predicate),
+                            (item.object.as_str(), item.triple.object),
                         ] {
-                            if terms_fwd.get(term.as_bytes())?.is_none() {
-                                let id_bytes = next_id_counter.to_le_bytes();
-                                terms_fwd.insert(term.as_bytes(), &id_bytes)?;
-                                terms_rev.insert(&id_bytes, term.as_bytes())?;
-                                next_id_counter += 1;
+                            // Inline literals carry their value in the id, and a
+                            // quoted triple's id is a content hash reversed by
+                            // the `quoted` tree: neither has a term row.
+                            if crate::id::is_inline(id) || term.starts_with("<<") {
+                                continue;
+                            }
+                            let id_bytes = id.to_le_bytes();
+                            match terms_fwd.get(term.as_bytes())? {
+                                Some(existing) if existing.as_ref() == id_bytes => {}
+                                Some(_) => {
+                                    return Err(sled::transaction::ConflictableTransactionError::Abort(
+                                        format!("term {term:?} is already stored under a different id than {id}"),
+                                    ))
+                                }
+                                None => {
+                                    if let Some(other) = terms_rev.get(id_bytes)? {
+                                        return Err(sled::transaction::ConflictableTransactionError::Abort(
+                                            format!(
+                                                "id {id} already names {:?}, cannot also name {term:?}",
+                                                String::from_utf8_lossy(&other)
+                                            ),
+                                        ));
+                                    }
+                                    terms_fwd.insert(term.as_bytes(), &id_bytes)?;
+                                    terms_rev.insert(&id_bytes, term.as_bytes())?;
+                                    next_id_counter = next_id_counter.max(id + 1);
+                                }
                             }
                         }
 
@@ -269,7 +297,7 @@ impl PersistentStore {
                 },
             )
             .map_err(|e| match e {
-                sled::transaction::TransactionError::Abort(()) => CoreError::DuplicateTriple,
+                sled::transaction::TransactionError::Abort(msg) => CoreError::TermIdConflict(msg),
                 sled::transaction::TransactionError::Storage(e) => CoreError::Sled(e),
             })?;
 
@@ -868,5 +896,141 @@ mod tests {
         let mut dict2 = crate::id::TermDictionary::new();
         store.load_terms_into(&mut dict2);
         assert_eq!(dict2.resolve_quoted(qid2), Some((44, 55, 66)));
+    }
+
+    /// The `POST /triples` path: ids come from the in-memory dictionary and
+    /// `insert_batch` persists them. After a reopen every triple must render
+    /// exactly as before. Found 2026-10-06: the batch minted its own persistent
+    /// ids, which drifted from the in-memory ones (a quoted triple's rendered
+    /// string and an inline integer each used one up), so the reopened store
+    /// rendered generated triples with the wrong components.
+    #[test]
+    fn batch_ids_survive_reopen() {
+        use crate::id::{inline_integer, TermDictionary};
+
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("batch.sdb");
+
+        let mut expected: Vec<(String, String, String)> = Vec::new();
+        {
+            let ps = PersistentStore::open(&path).unwrap();
+            // Pre-existing data loaded the way the CLI importer writes it.
+            let q42 = ps.intern("http://wd/Q42").unwrap();
+            let p31 = ps.intern("http://wd/P31").unwrap();
+            let q5 = ps.intern("http://wd/Q5").unwrap();
+            ps.insert(Triple::new(q42, p31, q5)).unwrap();
+
+            // The server loads the dictionary from the store at startup.
+            let mut dict = TermDictionary::new();
+            ps.load_terms_into(&mut dict);
+
+            let mut batch = Vec::new();
+            let row = |dict: &mut TermDictionary,
+                       batch: &mut Vec<BatchInsert>,
+                       s: &str,
+                       p: &str,
+                       o: &str| {
+                let t = Triple::new(dict.intern(s), dict.intern(p), dict.intern(o));
+                batch.push(BatchInsert {
+                    triple: t,
+                    subject: s.into(),
+                    predicate: p.into(),
+                    object: o.into(),
+                    quoted: None,
+                });
+                t
+            };
+            // A generated triple with a non-ASCII literal...
+            let g = row(
+                &mut dict,
+                &mut batch,
+                "http://wd/Q1",
+                "http://wd/P17",
+                "\"People 's ĠRepublic Ġof\"",
+            );
+            // ...asserted as the inner row of a quoted subject, as the server does.
+            batch.last_mut().unwrap().quoted = Some((g.subject, g.predicate, g.object));
+            let qid = dict.register_quoted(g.subject, g.predicate, g.object);
+            let rendered = dict.render_term(qid).unwrap();
+            let gen_by = dict.intern("http://loka.dev/provenance/propositionGeneratedBy");
+            let model = dict.intern("\"loka-wikidata-v13\"");
+            let ann = Triple::new(qid, gen_by, model);
+            batch.push(BatchInsert {
+                triple: ann,
+                subject: rendered.clone(),
+                predicate: "http://loka.dev/provenance/propositionGeneratedBy".into(),
+                object: "\"loka-wikidata-v13\"".into(),
+                quoted: None,
+            });
+            // An inline integer object: no term row, but it used to consume
+            // a persistent id.
+            let five = inline_integer(5).unwrap();
+            let p_count = dict.intern("http://wd/P1082");
+            let q2 = dict.intern("http://wd/Q2");
+            batch.push(BatchInsert {
+                triple: Triple::new(q2, p_count, five),
+                subject: "http://wd/Q2".into(),
+                predicate: "http://wd/P1082".into(),
+                object: "\"5\"^^<http://www.w3.org/2001/XMLSchema#integer>".into(),
+                quoted: None,
+            });
+            // Terms interned after the drift points.
+            row(
+                &mut dict,
+                &mut batch,
+                "http://wd/Q3",
+                "http://wd/P19",
+                "\"Zürich\"",
+            );
+
+            ps.insert_batch(&batch).unwrap();
+            ps.flush().unwrap();
+            for t in ps.iter() {
+                expected.push((
+                    dict.render_term(t.subject).unwrap(),
+                    dict.render_term(t.predicate).unwrap(),
+                    dict.render_term(t.object).unwrap(),
+                ));
+            }
+        }
+
+        let ps = PersistentStore::open(&path).unwrap();
+        let mut dict = TermDictionary::new();
+        ps.load_terms_into(&mut dict);
+        let mut got: Vec<(String, String, String)> = ps
+            .iter()
+            .map(|t| {
+                (
+                    dict.render_term(t.subject).unwrap_or_default(),
+                    dict.render_term(t.predicate).unwrap_or_default(),
+                    dict.render_term(t.object).unwrap_or_default(),
+                )
+            })
+            .collect();
+        got.sort();
+        expected.sort();
+        assert_eq!(got, expected);
+        assert_eq!(got.len(), 5);
+    }
+
+    /// A batch whose ids disagree with the stored dictionary is refused rather
+    /// than written.
+    #[test]
+    fn batch_refuses_conflicting_term_id() {
+        let ps = PersistentStore::temporary().unwrap();
+        let a = ps.intern("http://wd/A").unwrap();
+        let p = ps.intern("http://wd/P").unwrap();
+        let wrong = a + 1000;
+        let err = ps
+            .insert_batch(&[BatchInsert {
+                triple: Triple::new(wrong, p, p),
+                subject: "http://wd/A".into(),
+                predicate: "http://wd/P".into(),
+                object: "http://wd/P".into(),
+                quoted: None,
+            }])
+            .unwrap_err();
+        assert!(matches!(err, CoreError::TermIdConflict(_)), "{err:?}");
+        assert!(ps.is_empty());
     }
 }

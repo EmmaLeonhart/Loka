@@ -106,7 +106,7 @@ pub fn generate(seed: u64, n_entities: usize, n_real: usize, n_gen: usize) -> Gr
 
     let mut cites = Vec::new();
     let mut annotations = Vec::new();
-    let mut cite = |store: &mut TripleStore,
+    let cite = |store: &mut TripleStore,
                     dict: &mut TermDictionary,
                     all_rows: &mut Vec<Triple>,
                     cites: &mut Vec<(Triple, Triple)>,

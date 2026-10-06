@@ -29,6 +29,13 @@ pub enum CoreError {
     #[error("corrupt stored value: expected {expected} bytes, got {actual}")]
     CorruptValue { expected: usize, actual: usize },
 
+    /// A batch tried to persist a term under an id that disagrees with the
+    /// store's existing term dictionary (the term is stored under another id,
+    /// or the id already names another term). Writing it would make the SPO
+    /// keys point at the wrong terms after a reopen, so the batch is refused.
+    #[error("term id conflict: {0}")]
+    TermIdConflict(String),
+
     /// A temporal literal string could not be parsed.
     #[error("invalid temporal literal: {0}")]
     InvalidTemporal(String),
