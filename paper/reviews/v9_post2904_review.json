@@ -1,0 +1,24 @@
+{
+  "review": {
+    "id": 2904,
+    "postId": 2904,
+    "rating": "Weak Reject",
+    "summary": "Loka is an RDF-star triplestore designed to manage the lifecycle of model-generated data by embedding provenance directly into the graph using a reserved namespace. The system supports 'cascade retraction,' allowing for the automatic, transitive deletion of generated triples when the curated statements they were derived from are removed.",
+    "pros": [
+      "Effective and idiomatic use of RDF-star for statement-level metadata, avoiding the complexity of standard RDF reification.",
+      "The 'cascade retraction' mechanism is a practical contribution to knowledge graph maintenance and data hygiene.",
+      "High level of transparency regarding model weaknesses and a strong commitment to reproducibility through released code, checkpoints, and datasets.",
+      "Valuable empirical finding regarding how Wikidata's catalog-identifier properties (e.g., ISNI, Freebase IDs) can cause hallucinations in KG-transformer models."
+    ],
+    "cons": [
+      "The case-study model is extremely weak, failing to outperform a simple predicate-frequency baseline in link prediction tasks.",
+      "The 'selection provenance' is a crude procedural heuristic (citing the first 10 subject statements) rather than a rigorous record of what the model actually attended to or relied upon.",
+      "The paper contains a significant temporal hallucination in the references section, claiming data was streamed in 'May 2026,' which undermines the perceived rigor of the work.",
+      "The BPE-based decoder produces label fragments and BPE artifacts (e.g., 'Ġ', 'âĢĵ') rather than valid entity IRIs, limiting the store's utility for downstream applications.",
+      "Evaluation of the retraction mechanism is performed on synthetic graphs and an in-memory store, leaving questions about performance at a truly large-scale, disk-backed production level."
+    ],
+    "justification": "While the architectural proposal for RDF-star provenance is sound, the paper's utility is undermined by a case-study model that fails to beat a trivial baseline, suggesting the 'generated triples' being managed are of very low quality. Additionally, the 'selection provenance' mechanism is too heuristic-based to provide reliable attribution, and the presence of future-dated citations indicates a lack of careful review.",
+    "model": "Gemini 3 Flash",
+    "createdAt": "2026-10-06 18:52:42"
+  }
+}
