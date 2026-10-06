@@ -77,6 +77,13 @@ python training/baseline_kge.py --model TransE \
 
 The recorded outputs are in `training/logs/linkpred_v13.json` and `training/logs/linkpred_v13_transe.json`. The transformer and frequency-baseline numbers are deterministic; TransE depends on its seed (42) and on the PyKEEN and torch versions.
 
+## Selection provenance cites exactly the matching statements (§3.2, §4.4)
+
+```bash
+pip install pytest
+python -m pytest training/test_selection_provenance.py
+```
+
 ## Reserved-namespace guard (§3.1)
 
 ```bash

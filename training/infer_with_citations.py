@@ -359,7 +359,7 @@ def build_inference_state(triples, property_cache="training/property_label_cache
     return labels, subj_facts, pred_usage, n_reserved_skipped
 
 
-def candidate_predicates(
+def candidate_predicates_with_evidence(
     s_uri,
     *,
     labels,
@@ -368,15 +368,22 @@ def candidate_predicates(
     max_candidates_per_subject=5,
     fallback_candidates=False,
 ):
-    """Predicates worth trying to generate for S: those used by graph-
-    neighbours (subjects sharing a (p, o-key) with S) but missing from S,
-    ranked by shared-neighbour count; optionally topped up from global
-    predicate frequency on sparse graphs. Shared by the from-scratch
-    `generate_for_subject` and the fine-tune `training/finetune/infer.py`
-    so both model paths see the same candidate set (no parallel impl)."""
-    s_existing_preds = {p for p, _ in subj_facts.get(s_uri, [])}
+    """Predicates worth trying to generate for S, plus the evidence for each.
+
+    A predicate p2 is proposed when a graph-neighbour s2 shares one of S's
+    (p, o-key) pairs and s2 has p2 while S does not; candidates are ranked by
+    how many such matches support them. ``evidence[p2]`` lists exactly the
+    statements of S whose (p, o-key) matched a neighbour that has p2, in S's
+    fact order. Those are the statements the proposal depended on, which is
+    what ``propositionInferredFrom`` should cite: retracting any of them must
+    retract the prediction. Fallback candidates (global predicate frequency,
+    off by default) depend on no particular statement of S and get no
+    evidence."""
+    s_facts = subj_facts.get(s_uri, [])
+    s_existing_preds = {p for p, _ in s_facts}
     neighbor_pred_score: dict[str, int] = defaultdict(int)
-    for p, o_term in subj_facts.get(s_uri, []):
+    evidence_idx: dict[str, set[int]] = defaultdict(set)
+    for i, (p, o_term) in enumerate(s_facts):
         ok = o_key(o_term)
         for s2, o2_term in pred_usage.get(p, []):
             if s2 == s_uri:
@@ -389,10 +396,12 @@ def candidate_predicates(
                 if p2 not in labels:
                     continue
                 neighbor_pred_score[p2] += 1
+                evidence_idx[p2].add(i)
     ranked = sorted(neighbor_pred_score.items(), key=lambda kv: -kv[1])
     cand = [p for p, _ in ranked if not is_reserved_predicate(p)][
         :max_candidates_per_subject
     ]
+    evidence = {p: [s_facts[i] for i in sorted(evidence_idx[p])] for p in cand}
     if fallback_candidates and len(cand) < max_candidates_per_subject:
         have = set(cand) | s_existing_preds
         for p, _users in sorted(pred_usage.items(), key=lambda kv: -len(kv[1])):
@@ -401,8 +410,17 @@ def candidate_predicates(
             if p in have or p not in labels or is_reserved_predicate(p):
                 continue
             cand.append(p)
+            evidence[p] = []
             have.add(p)
-    return cand
+    return cand, evidence
+
+
+def candidate_predicates(s_uri, **kwargs):
+    """Predicates worth trying to generate for S (see
+    `candidate_predicates_with_evidence`). Shared by the from-scratch
+    `generate_for_subject` and the fine-tune `training/finetune/infer.py`
+    so both model paths see the same candidate set (no parallel impl)."""
+    return candidate_predicates_with_evidence(s_uri, **kwargs)[0]
 
 
 def generate_for_subject(
@@ -420,7 +438,7 @@ def generate_for_subject(
     confidence=0.4,
     repetition_penalty=3.0,
     max_candidates_per_subject=5,
-    max_citations=10,
+    max_citations=None,
     encode_fn=None,
     decode_fn=None,
     fallback_candidates=False,
@@ -446,7 +464,7 @@ def generate_for_subject(
         return out_lines, log
 
     s_label = labels[s_uri]
-    candidate_preds = candidate_predicates(
+    candidate_preds, evidence = candidate_predicates_with_evidence(
         s_uri, labels=labels, subj_facts=subj_facts, pred_usage=pred_usage,
         max_candidates_per_subject=max_candidates_per_subject,
         fallback_candidates=fallback_candidates,
@@ -495,7 +513,7 @@ def generate_for_subject(
         out_lines.append(f'{qt} <{LOKA_GENERATED}> "true"^^<{XSD_BOOLEAN}> .')
         out_lines.append(f'{qt} <{LOKA_GENERATED_BY}> "{escape_literal(model_version)}" .')
         out_lines.append(f'{qt} <{LOKA_CONFIDENCE}> "{conf:.4f}"^^<{XSD_DECIMAL}> .')
-        for cp_uri, co_term in subj_facts[s_uri][:max_citations]:
+        for cp_uri, co_term in evidence[p_uri][:max_citations]:
             cited = quoted(s_term, f"<{cp_uri}>", fmt_term(co_term))
             out_lines.append(f"{qt} <{LOKA_INFERRED_FROM}> {cited} .")
         log.append(f"  + {s_label!s} | {p_label!s} | {o_label!s}  (conf={conf:.3f})")
@@ -521,7 +539,8 @@ def main() -> None:
     parser.add_argument("--property-cache", default="training/property_label_cache.json")
     parser.add_argument("--max-subjects", type=int, default=20)
     parser.add_argument("--max-candidates-per-subject", type=int, default=5)
-    parser.add_argument("--max-citations", type=int, default=10)
+    parser.add_argument("--max-citations", type=int, default=None,
+                        help="cap on cited statements per prediction (default: cite all evidence)")
     parser.add_argument(
         "--confidence",
         type=float,

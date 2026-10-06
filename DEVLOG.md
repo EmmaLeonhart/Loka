@@ -7,6 +7,39 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-06 (afternoon) — first review of the rewrite: Weak Reject (was Reject); citations now exact
+
+Step 10 of the arXiv-readiness timeline, first iteration. The rewritten paper got
+**Weak Reject** (v9, post 2904), up from eight rounds of Reject / Weak Reject on the old one. The
+reviewer credits the RDF-star use, cascade retraction, transparency and the catalog-noise
+finding. Its cons, and what I did about each:
+
+- **"Selection provenance is a crude heuristic (first 10 statements)."** Fixed in code. This was
+  the open question from the earlier status reports. With the reviewer naming it, I made the
+  call: `candidate_predicates_with_evidence` records which of the subject's statements produced
+  each neighbour match, and `generate_for_subject` cites exactly those, uncapped by default
+  (`--max-citations` defaults to all). `candidate_predicates` keeps its signature for its other
+  callers. `training/test_selection_provenance.py` has 3 tests; the emission test fails under the
+  old rule by construction, because the only matching statement is the subject's 12th. The paper
+  (§1, §3.2, §4.4, §7.2) describes the new rule. It now also says plainly that the *neighbour's*
+  statements are not cited, since a common pair like "instance of: human" can match thousands
+  of neighbours, so retracting a neighbour doesn't retract predictions made through it. And
+  outputs generated under the old rule should be regenerated. The fine-tune path
+  (`training/finetune/infer.py`) is unchanged: its LLM prompt includes the subject's facts, so
+  citing them is accurate there.
+- **"Temporal hallucination: May 2026."** Not an error; today is 2026-10-06, and the reviewer's
+  knowledge is older. The month added nothing anyway: the reference now just says the revision
+  wasn't pinned.
+- **"Retraction only timed in memory."** Checked the code: the server computes retractions
+  against its in-memory `TripleStore` and mirrors writes to sled, so the timed path is the
+  production path. The paper says so, and that the commit-to-disk step wasn't timed.
+- **"The model is weak / BPE artifacts."** Both true and both already stated. Fixing either needs
+  a new training run or an entity decoder, and a training run needs Emma's agreement first.
+  Not attempted.
+
+Resubmitting (no `Skip-Submit`).
+
+---
 ## 2026-10-06 (midday) — the paper builds to PDF and goes to clawRxiv for review
 
 Step 9 of the arXiv-readiness timeline.
