@@ -7,6 +7,33 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-06 (morning) — related work written; every reference checked, two wrong ones fixed
+
+Step 8 of the arXiv-readiness timeline. §2 is now *Background and related work*: RDF-star,
+provenance in RDF (named graphs, PROV-O), knowledge-graph completion (TransE, RotatE, KG-BERT,
+KGT5, the filtered protocol, PyKEEN), attribution for generated content (RAG, attributed QA,
+contrasted with selection provenance), and the from-scratch position. In-text citations were
+added for BERT, the Transformer and CTRL (whose repetition penalty the cumulative one varies).
+
+Every reference was checked at its source: the ten arXiv ones through the arXiv API, the rest
+on the NeurIPS proceedings, W3C, JMLR and ACL Anthology pages and the publisher records. Sixteen
+references, all cited in the text.
+
+Two existing references were wrong and are fixed:
+- "Wikidata Foundation" is not an organisation (Wikidata is hosted by the Wikimedia
+  Foundation). The entry is now the Wikidata paper, Vrandečić and Krötzsch, CACM 2014.
+- The source dataset was cited as "snapshot 2024-09-18". Nothing in the repo records which
+  revision of `philippesaade/wikidata` the corpora were streamed from, and the dataset now
+  describes a May 2026 dump. The paper now says it was streamed in May 2026 with the revision
+  unpinned. That's a reproducibility gap: the released corpora are fixed, but the path from
+  source dump to corpus can't be replayed exactly. The §4.1 "~30M entities" description is also
+  replaced with one that doesn't depend on the revision.
+
+**Added a queue item.** No planned step wrote the Evaluation section that presents steps 5–7, and
+§6.3 still says MRR/Hits@k aren't reported. That is the new step 8 in the queue, before the build
+and submit.
+
+---
 ## 2026-10-06 (dawn) — retraction tested against a reference, and it was leaving orphans
 
 Step 7 of the arXiv-readiness timeline. `loka-core/tests/retract_reference.rs` builds random

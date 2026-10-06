@@ -30,11 +30,11 @@ We are specific about what the dependency edge means. In our prediction procedur
 
 ---
 
-## 2. Background
+## 2. Background and related work
 
 ### 2.1 RDF-star
 
-RDF-star is an extension of RDF in which any of the three positions of a triple — subject, predicate, object — may be a *quoted* (referenced, not asserted) triple. The notation `<<s p o>>` means "the triple s p o, treated as a term." This admits direct annotation of facts:
+RDF-star extends RDF so that a triple can appear, *quoted*, as the subject or object of another triple (Hartig, 2017; W3C RDF-star Community Group). The notation `<<s p o>>` denotes the triple s p o as a term, without asserting it. This admits direct annotation of statements:
 
 ```
 :Tokyo  :population  "13929286" .
@@ -42,15 +42,23 @@ RDF-star is an extension of RDF in which any of the three positions of a triple 
 <<:Tokyo :population "13929286">>  :statedIn    :census2020 .
 ```
 
-The same shape that Wikidata expresses through reified statement nodes (e.g., `wds:Q1490-abc...`) collapses into one structural primitive. Two storage strategies exist: separate-asserted-graph (RDF 1.2 working draft) and synthetic-ID interning (used by Loka, where `quoted_triple_id(s_id, p_id, o_id) = xxh3` deterministically). We use the latter for compact joins on quoted-triple subjects.
+Wikidata expresses the same information through reified statement nodes carrying qualifiers and references (Vrandečić and Krötzsch, 2014); RDF-star collapses them into one structural primitive. Loka interns a quoted triple to a content-addressed identifier, `quoted_triple_id(s, p, o)`, a hash of the three component ids, and keeps a reverse index from that identifier to (s, p, o) so that a quoted triple can be rendered and dereferenced.
 
-### 2.2 Transformer-based knowledge graph completion
+### 2.2 Provenance in RDF
 
-The dominant patterns in KG completion split into translational (TransE, RotatE, etc.) and transformer-based (KG-BERT, KGT5, recent work using LLMs as scoring functions). Most predict a single missing entity given (subject, predicate, ?) and report top-k accuracy on held-out triples. Two limitations relevant here: (a) outputs are scores or candidate IDs, not triples that can be re-stored; (b) provenance — which other triples in the corpus made this prediction confident — is not surfaced.
+Recording where statements come from is an old concern of the Semantic Web. Named graphs attach provenance and trust information to sets of triples (Carroll et al., 2005), and the W3C PROV-O ontology gives a vocabulary for entities, activities and agents and their derivation relations (Lebo et al., 2013). Both operate at the granularity of a graph or an explicit provenance resource. We use RDF-star to attach provenance to individual triples directly, with a small fixed vocabulary for one case, model-generated statements; mapping it onto PROV-O terms (e.g. `prov:wasDerivedFrom` for `propositionInferredFrom`) is straightforward and left to consumers. What we add is not a provenance vocabulary but an operational use of it inside the store: exclusion from training corpora and cascade retraction.
 
-### 2.3 The from-scratch position
+### 2.3 Knowledge-graph completion
 
-Loka's training is from scratch on RDF-derived text, not fine-tuning of a pretrained LLM. The position is not anti-LLM — it is that the closed-form auditability of "model knowledge ⊆ training corpus" is what makes the provenance record complete: everything the model knows came from statements in the store. With a fine-tuned LLM, even with the same RDF-star output schema, a generated triple may be drawn from base-model pretraining that the user never authorized as authoritative. We document a parallel near-term track admitting fine-tuning under stricter provenance assumptions in `planning/fine-tuning-track.md`; for the experiments in this paper, all results are from-scratch.
+Link prediction scores candidate completions of (subject, predicate, ?) queries. Embedding models such as TransE (Bordes et al., 2013) and RotatE (Sun et al., 2019) learn entity and relation vectors; transformer-based models score triples as text (KG-BERT; Yao et al., 2019) or generate the missing entity as a sequence (KGT5; Saxena et al., 2022). The standard evaluation reports mean reciprocal rank and Hits@k in the filtered setting, which removes other known true answers before ranking (Bordes et al., 2013); we follow it, with the tie-aware rank of Berrendorf et al. (2020), and use PyKEEN (Ali et al., 2021) for the TransE baseline. These systems output scores or ranked candidates. Writing the chosen completions back into the graph, with a record of what they were derived from, is outside their scope, and is the part this paper addresses.
+
+### 2.4 Attribution for generated content
+
+Retrieval-augmented generation conditions a language model on retrieved passages (Lewis et al., 2020), and attributed question answering asks a model to return evidence supporting its answer and evaluates whether the evidence does support it (Bohnet et al., 2022). Those lines of work aim at support: the cited source should justify the output. Selection provenance makes a weaker, procedural claim: the cited statements were the input to the procedure that produced the output. That is enough for retraction, which needs to know what an output depended on, and it is not a claim of support (§6.2).
+
+### 2.5 Training from scratch
+
+The models in our case study are trained from scratch on triples, not fine-tuned from a pretrained language model. With a pretrained model, a generated triple can draw on pretraining data the store knows nothing about, so its provenance record would be incomplete by construction; training only on the corpus keeps everything the model learned inside a known, released dataset. The schema itself does not depend on this choice.
 
 ---
 
@@ -152,7 +160,7 @@ The loop is closed: generated triples land in the store with `propositionGenerat
 
 ### 4.1 Corpus
 
-Source: `philippesaade/wikidata` on Hugging Face — a CC0 parquet dump of ~30M Wikidata entities, each row a JSON-shaped record with labels (every language), descriptions, sitelinks, and claims. We stream via the `datasets` library, converting each entity to N-Triples-star form: one main triple per claim, plus one RDF-star annotation per qualifier and per reference, all sharing the same `<<S P O>>` quoted-triple subject. Wikidata's `pq:` (qualifier) and `pr:` (reference) namespaces collapse into the same `wdt:` predicate URI on the annotation row — the qualifier-vs-reference distinction is structural (subject is a quoted triple), not lexical.
+Source: `philippesaade/wikidata` on Hugging Face, a CC0 conversion of a Wikidata JSON dump with one row per entity, each row a JSON-shaped record with labels (every language), descriptions, sitelinks, and claims. We stream via the `datasets` library, converting each entity to N-Triples-star form: one main triple per claim, plus one RDF-star annotation per qualifier and per reference, all sharing the same `<<S P O>>` quoted-triple subject. Wikidata's `pq:` (qualifier) and `pr:` (reference) namespaces collapse into the same `wdt:` predicate URI on the annotation row — the qualifier-vs-reference distinction is structural (subject is a quoted triple), not lexical.
 
 The v3–v6 store (the corpus this section describes): 5,055,385 triples / 1,695,402 RDF-star annotations / 27,780 entities / 770 MB on-disk Loka store, every language label and description Wikidata has. This slice trained v3–v6. Later corpora were rebuilt with catalog datatypes excluded (§5.3), and from v11 on built by streaming the source dump directly (§5.5).
 
@@ -176,7 +184,7 @@ After cleaning, the training file holds 757,592 lines for our 5M-triple corpus.
 
 ### 4.3 Model and training
 
-Architecture: a role-aware Transformer encoder. Each triple is tokenized as
+Architecture: a role-aware Transformer encoder (Vaswani et al., 2017). Each triple is tokenized as
 
 ```
 [CLS] s_tokens [SEP_S] p_tokens [SEP_P] o_tokens [SEP_O]
@@ -184,7 +192,7 @@ Architecture: a role-aware Transformer encoder. Each triple is tokenized as
 
 Token + position + role embeddings sum at each position, where the role is one of `{SPECIAL, S, P, O}`. The classification head is tied to the input embedding for parameter efficiency.
 
-Training objective: pick one role (S, P, or O) at random per example, mask its tokens with `[MASK]`, predict the originals. Cross-entropy on the masked positions, AdamW, 3e-4 LR, β=(0.9, 0.95), weight decay 0.01, gradient clipping at 1.0. Standard.
+Training objective: masked-token prediction in the style of BERT (Devlin et al., 2019), applied per role: pick one role (S, P, or O) at random per example, mask its tokens with `[MASK]`, predict the originals. Cross-entropy on the masked positions, AdamW, 3e-4 LR, β=(0.9, 0.95), weight decay 0.01, gradient clipping at 1.0. Standard.
 
 Three model sizes at this corpus size:
 
@@ -205,7 +213,7 @@ For each candidate subject in the corpus:
 2. **Masked decoding with cumulative repetition penalty.** Build the input as `[CLS] s_tokens [SEP_S] p_tokens [SEP_P] [MASK]^k [SEP_O]`. At each masked position, the model emits a logit distribution. We apply:
 
    - Hard skip-set: special tokens never win.
-   - Cumulative repetition penalty: `logit[t] /= penalty^count[t]` where `count[t]` is the number of times `t` has already been emitted in this sequence. Default `penalty = 3.0`.
+   - Cumulative repetition penalty, a per-occurrence variant of the penalty of Keskar et al. (2019): `logit[t] /= penalty^count[t]` where `count[t]` is the number of times `t` has already been emitted in this sequence. Default `penalty = 3.0`.
    - Per-token confidence floor: emission halts when the top-token probability falls below 0.05.
 
    Greedy top-1 selection, no beam search.
@@ -294,7 +302,7 @@ We treat MRR / Hits@k as *blocked future work*, gated on the entity-decoder, not
 
 ## 7. Discussion
 
-The from-scratch training position (§2.3) coexists with a documented parallel near-term track admitting fine-tuning of a small base model (e.g., Qwen 2.5 1.5B-Instruct + QLoRA) under the same `propositionInferredFrom` output schema. The corpus cleanup (§5.3) removed the catalog-format hallucinations; the remaining failure modes (§5.4, §6.1: numeric-placeholder degenerations like `spouse -> "1 ."` and BPE-artifact leakage on Commons-category templates) might still be addressed faster by a fine-tuned 1B–3B parameter base model with English already encoded than by the from-scratch path waiting for corpus scale. We accept the provenance tradeoff this introduces — base-model pretraining is opaque — and record `propositionGeneratedBy "qwen-2.5-1.5b-loka-v1"` to track what was emitted by what.
+The from-scratch training position (§2.5) coexists with a documented parallel near-term track admitting fine-tuning of a small base model (e.g., Qwen 2.5 1.5B-Instruct + QLoRA) under the same `propositionInferredFrom` output schema. The corpus cleanup (§5.3) removed the catalog-format hallucinations; the remaining failure modes (§5.4, §6.1: numeric-placeholder degenerations like `spouse -> "1 ."` and BPE-artifact leakage on Commons-category templates) might still be addressed faster by a fine-tuned 1B–3B parameter base model with English already encoded than by the from-scratch path waiting for corpus scale. We accept the provenance tradeoff this introduces — base-model pretraining is opaque — and record `propositionGeneratedBy "qwen-2.5-1.5b-loka-v1"` to track what was emitted by what.
 
 Two larger questions are open:
 
@@ -306,15 +314,28 @@ Two larger questions are open:
 
 ## References
 
-- Loka. *Loka / Loka — RDF-star triplestore with native HNSW vector indexing.* GitHub release `v0.4.0`, 2026. https://github.com/EmmaLeonhart/Loka/releases/tag/v0.4.0. Apache-2.0.
-- Wikidata Foundation. *Wikidata.* https://www.wikidata.org/. CC0.
-- philippesaade. *philippesaade/wikidata.* Hugging Face dataset, snapshot 2024-09-18. https://huggingface.co/datasets/philippesaade/wikidata. CC0.
-- W3C. *RDF-star and SPARQL-star.* https://w3c.github.io/rdf-star/cg-spec/.
-- Devlin, J., Chang, M.-W., Lee, K., Toutanova, K. *BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding.* NAACL 2019. (Masked-token-prediction substrate.)
-- Vaswani, A., et al. *Attention is All You Need.* NeurIPS 2017. (Transformer architecture.)
-- Bordes, A., et al. *Translating Embeddings for Modeling Multi-relational Data.* NeurIPS 2013. (TransE; comparison-only context for §2.2.)
-- Yao, L., Mao, C., Luo, Y. *KG-BERT: BERT for Knowledge Graph Completion.* arXiv:1909.03193. (Transformer-on-KG comparison-only context.)
-- Saxena, A., Kochsiek, A., Gemulla, R. *Sequence-to-Sequence Knowledge Graph Completion and Question Answering.* ACL 2022. (KGT5; comparison-only context.)
+- Ali, M., Berrendorf, M., Hoyt, C. T., Vermue, L., Sharifzadeh, S., Tresp, V., Lehmann, J. *PyKEEN 1.0: A Python Library for Training and Evaluating Knowledge Graph Embeddings.* Journal of Machine Learning Research 22(82):1–6, 2021.
+- Berrendorf, M., Faerman, E., Vermue, L., Tresp, V. *On the Ambiguity of Rank-Based Evaluation of Entity Alignment or Link Prediction Methods.* arXiv:2002.06914, 2020.
+- Bohnet, B., Tran, V. Q., Verga, P., Aharoni, R., Andor, D., Baldini Soares, L., Ciaramita, M., et al. *Attributed Question Answering: Evaluation and Modeling for Attributed Large Language Models.* arXiv:2212.08037, 2022.
+- Bordes, A., Usunier, N., Garcia-Durán, A., Weston, J., Yakhnenko, O. *Translating Embeddings for Modeling Multi-relational Data.* Advances in Neural Information Processing Systems 26 (NIPS 2013).
+- Carroll, J. J., Bizer, C., Hayes, P., Stickler, P. *Named Graphs, Provenance and Trust.* Proceedings of the 14th International World Wide Web Conference (WWW 2005), 613–622.
+- Devlin, J., Chang, M.-W., Lee, K., Toutanova, K. *BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding.* NAACL 2019. arXiv:1810.04805.
+- Hartig, O. *Foundations of RDF\* and SPARQL\* — An Alternative Approach to Statement-Level Metadata in RDF.* Proceedings of the 11th Alberto Mendelzon International Workshop on Foundations of Data Management (AMW 2017).
+- Keskar, N. S., McCann, B., Varshney, L. R., Xiong, C., Socher, R. *CTRL: A Conditional Transformer Language Model for Controllable Generation.* arXiv:1909.05858, 2019.
+- Lebo, T., Sahoo, S., McGuinness, D. (eds.). *PROV-O: The PROV Ontology.* W3C Recommendation, 30 April 2013. https://www.w3.org/TR/prov-o/.
+- Lewis, P., Perez, E., Piktus, A., Petroni, F., Karpukhin, V., Goyal, N., et al. *Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks.* NeurIPS 2020. arXiv:2005.11401.
+- Saxena, A., Kochsiek, A., Gemulla, R. *Sequence-to-Sequence Knowledge Graph Completion and Question Answering.* Proceedings of ACL 2022 (Volume 1: Long Papers), 2814–2828.
+- Sun, Z., Deng, Z.-H., Nie, J.-Y., Tang, J. *RotatE: Knowledge Graph Embedding by Relational Rotation in Complex Space.* ICLR 2019. arXiv:1902.10197.
+- Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., Kaiser, Ł., Polosukhin, I. *Attention Is All You Need.* NeurIPS 2017. arXiv:1706.03762.
+- Vrandečić, D., Krötzsch, M. *Wikidata: A Free Collaborative Knowledgebase.* Communications of the ACM 57(10):78–85, 2014.
+- W3C RDF-star Community Group. *RDF-star and SPARQL-star.* Final Community Group Report. https://w3c.github.io/rdf-star/cg-spec/.
+- Yao, L., Mao, C., Luo, Y. *KG-BERT: BERT for Knowledge Graph Completion.* arXiv:1909.03193, 2019.
+
+**Software and data.**
+
+- Loka engine, release `v0.4.0`. https://github.com/EmmaLeonhart/Loka. Apache-2.0.
+- Model checkpoints: https://huggingface.co/datasets/EmmaLeonhart/loka. Training corpora: https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata.
+- Source data: philippesaade, *wikidata*, Hugging Face dataset, CC0. https://huggingface.co/datasets/philippesaade/wikidata. Streamed for the v11–v14 corpora in May 2026; the dataset revision was not pinned, and the dataset has been updated since.
 
 <!-- v0.4.0 — first clawRxiv submission cycle: 2026-05-09 -->
 
