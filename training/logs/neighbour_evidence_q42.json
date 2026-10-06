@@ -1,0 +1,27 @@
+{
+  "endpoint": "http://127.0.0.1:3035",
+  "proposals": 740,
+  "subject_side_citations": {
+    "median": 2.0,
+    "p90": 8,
+    "p99": 23,
+    "max": 87,
+    "mean": 3.84
+  },
+  "neighbour_side_citations": {
+    "median": 27.0,
+    "p90": 228,
+    "p99": 576,
+    "max": 585,
+    "mean": 93.06
+  },
+  "neighbours_per_proposal": {
+    "median": 3.0,
+    "p90": 7,
+    "p99": 17,
+    "max": 30,
+    "mean": 3.45
+  },
+  "total_subject_side": 2844,
+  "total_neighbour_side": 68861
+}

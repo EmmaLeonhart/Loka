@@ -28,11 +28,9 @@ step 9 submits.
 10. **(target 2026-10-17 → 2026-10-24) Review iteration.** Read each new review in
     `paper/reviews/`; fix what is fixable by cutting or by real runs; resubmit. Stop at Accept /
     Strong Accept, or at 2026-10-24 with a written list of what the remaining cons would need.
-    Iteration plan after review v10 (post 2905, Weak Reject), in order, no training runs:
-    - **10c. Neighbour-side provenance, bounded.** Measure how many neighbour statements a
-      proposal actually matches on real data; if a cap keeps volume sane, cite them too so
-      retraction covers the neighbour case, else keep it as a stated limitation with numbers.
-    - Then resubmit. Weak model: Emma decided 2026-10-06 to keep it, no training.
+    Resubmitted 2026-10-07 after 10a–10c (citation fix, real-data retraction, encoding and query
+    comparison, neighbour citations). Next: read review v11, fix what can be fixed by cutting or by
+    real runs, resubmit. Weak model: Emma decided 2026-10-06 to keep it, no training.
 11. **(target 2026-10-25) arXiv package + handoff.** Build the arXiv source tarball
     (`paper.tex`, generated body, `neurips_2026.sty`, figures), verify it compiles from a clean
     directory, write the metadata (title, abstract, `cs.DB` + `cs.AI`, license). Ask Emma with

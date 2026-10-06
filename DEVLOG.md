@@ -7,6 +7,34 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (night) — neighbour citations bounded and added; real-data numbers rerun; resubmitted
+
+Step 10c. `tools/neighbour_evidence_stats.py` runs the candidate selector's own code over the real
+Q42 store: 740 proposals. Citing **every** neighbour statement a proposal depended on would mean
+a mean of 93 citations per proposal (p99 576, max 585) against 3.8 subject-side, about 24×
+the volume. But there are only a few neighbours per proposal (median 3, max 30), and Loka
+retracts whole nodes. So citing **one statement per contributing neighbour** (its first statement
+with the proposed predicate) is enough for retracting that neighbour to reach the prediction.
+
+Implemented in `candidate_predicates_with_evidence`, which now returns `neighbour_evidence` as a
+third value, and in the emitter. The tests pin the exact pair of citations (subject's matched
+statement plus the neighbour's statement).
+
+Every real-data number came from the old rule, so the whole pipeline was rerun on v0.4.3 with a
+fresh store and the same seed:
+- v13 again makes the same 59 predictions; 522 provenance rows (was 402), 286 edges, 208
+  distinct cited statements.
+- Retraction on real data: **264** exact dependency checks (was 139; neighbour retraction is
+  now covered), 0 mismatches, median 1.35 ms per preview.
+- Encodings: RDF-star 522 rows, reification + PROV-O 1,590, named graphs 1,354 quads.
+- Query comparison: identical answers for all 169 entities; RDF-star median 5.14 ms against
+  reification 1.13 ms. The gap widened from about 3× to about 4.5× with more citations to scan.
+  The paper reports that.
+
+The paper's §4.4, §6.2 (which never had the 10b real-data results; added now), §6.3 and §7 are
+updated. The skill file gains the real-data commands. Resubmitting (no `Skip-Submit`).
+
+---
 ## 2026-10-07 (evening) — encoding comparison done: RDF-star 3.2× smaller, but its query is 3× slower
 
 Step 10a, second half. Two fresh v0.4.3 stores hold the same real Q42 seed. One has the 59 v13

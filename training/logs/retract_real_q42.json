@@ -1,20 +1,19 @@
 {
-  "endpoint": "http://127.0.0.1:3031",
+  "endpoint": "http://127.0.0.1:3037",
   "roots": 169,
   "generated_triples": 59,
-  "annotation_rows": 343,
-  "cited_statements_per_prediction": 2.81,
-  "dependency_checks": 139,
+  "annotation_rows": 463,
+  "cited_statements_per_prediction": 4.85,
+  "dependency_checks": 264,
   "dependency_mismatches": 0,
   "mismatch_examples": [],
   "latency_ms": {
-    "median": 0.93,
-    "p95": 2.69,
-    "max": 4.45
+    "median": 1.35,
+    "p95": 3.99,
+    "max": 11.82
   },
   "removed_triples": {
-    "median": 40,
-    "max": 1088
-  },
-  "setup": "Wikidata BFS neighbourhood of Q42 (tools/wikidata_random_seed.py --max-entities 300 --max-depth 2): 14,819 triples, 14,633 imported; v13 inference (confidence 0.25, all subjects) posted 59 generated triples; loka v0.4.2 serve, CPU laptop."
+    "median": 44,
+    "max": 1244
+  }
 }

@@ -39,10 +39,13 @@ def graph():
 
 def test_evidence_is_exactly_the_matching_statements():
     subj_facts, pred_usage, labels = graph()
-    cand, evidence = iwc.candidate_predicates_with_evidence(
+    cand, evidence, neighbour_evidence = iwc.candidate_predicates_with_evidence(
         EX + "S", labels=labels, subj_facts=subj_facts, pred_usage=pred_usage)
     assert cand == [EX + "p_mayor"]
     assert evidence[EX + "p_mayor"] == [(EX + "p_city", uri("Paris"))]
+    # One statement per contributing neighbour: N's statement with the
+    # proposed predicate.
+    assert neighbour_evidence[EX + "p_mayor"] == [(EX + "N", EX + "p_mayor", uri("Hidalgo"))]
 
 
 def test_candidate_predicates_unchanged():
@@ -61,5 +64,6 @@ def test_emitted_citations_are_the_evidence(monkeypatch):
         model_version="test",
     )
     cited = [ln for ln in lines if iwc.LOKA_INFERRED_FROM in ln]
-    assert len(cited) == 1
+    assert len(cited) == 2
     assert f"<< <{EX}S> <{EX}p_city> <{EX}Paris> >> ." in cited[0]
+    assert f"<< <{EX}N> <{EX}p_mayor> <{EX}Hidalgo> >> ." in cited[1]

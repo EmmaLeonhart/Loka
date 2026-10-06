@@ -376,13 +376,26 @@ def candidate_predicates_with_evidence(
     statements of S whose (p, o-key) matched a neighbour that has p2, in S's
     fact order. Those are the statements the proposal depended on, which is
     what ``propositionInferredFrom`` should cite: retracting any of them must
-    retract the prediction. Fallback candidates (global predicate frequency,
-    off by default) depend on no particular statement of S and get no
-    evidence."""
+    retract the prediction.
+
+    ``neighbour_evidence[p2]`` lists one statement per neighbour that produced
+    a match for p2: that neighbour's first statement with predicate p2. The
+    proposal depended on those neighbours too, and Loka retracts whole nodes,
+    so citing one statement of each is enough for retracting a neighbour to
+    reach the prediction. (Citing every neighbour statement involved was
+    measured at ~24x the annotation volume on real data; one per neighbour
+    roughly doubles it.)
+
+    Fallback candidates (global predicate frequency, off by default) depend on
+    no particular statement and get no evidence of either kind.
+
+    Returns ``(candidates, evidence, neighbour_evidence)``."""
     s_facts = subj_facts.get(s_uri, [])
     s_existing_preds = {p for p, _ in s_facts}
     neighbor_pred_score: dict[str, int] = defaultdict(int)
     evidence_idx: dict[str, set[int]] = defaultdict(set)
+    # p2 -> {neighbour -> (neighbour, p2, object term)}, first seen per neighbour.
+    nb_first: dict[str, dict[str, tuple]] = defaultdict(dict)
     for i, (p, o_term) in enumerate(s_facts):
         ok = o_key(o_term)
         for s2, o2_term in pred_usage.get(p, []):
@@ -390,18 +403,20 @@ def candidate_predicates_with_evidence(
                 continue
             if o_key(o2_term) != ok:
                 continue
-            for p2, _ in subj_facts.get(s2, []):
+            for p2, o3_term in subj_facts.get(s2, []):
                 if p2 in s_existing_preds:
                     continue
                 if p2 not in labels:
                     continue
                 neighbor_pred_score[p2] += 1
                 evidence_idx[p2].add(i)
+                nb_first[p2].setdefault(s2, (s2, p2, o3_term))
     ranked = sorted(neighbor_pred_score.items(), key=lambda kv: -kv[1])
     cand = [p for p, _ in ranked if not is_reserved_predicate(p)][
         :max_candidates_per_subject
     ]
     evidence = {p: [s_facts[i] for i in sorted(evidence_idx[p])] for p in cand}
+    neighbour_evidence = {p: list(nb_first[p].values()) for p in cand}
     if fallback_candidates and len(cand) < max_candidates_per_subject:
         have = set(cand) | s_existing_preds
         for p, _users in sorted(pred_usage.items(), key=lambda kv: -len(kv[1])):
@@ -411,8 +426,9 @@ def candidate_predicates_with_evidence(
                 continue
             cand.append(p)
             evidence[p] = []
+            neighbour_evidence[p] = []
             have.add(p)
-    return cand, evidence
+    return cand, evidence, neighbour_evidence
 
 
 def candidate_predicates(s_uri, **kwargs):
@@ -464,7 +480,7 @@ def generate_for_subject(
         return out_lines, log
 
     s_label = labels[s_uri]
-    candidate_preds, evidence = candidate_predicates_with_evidence(
+    candidate_preds, evidence, neighbour_evidence = candidate_predicates_with_evidence(
         s_uri, labels=labels, subj_facts=subj_facts, pred_usage=pred_usage,
         max_candidates_per_subject=max_candidates_per_subject,
         fallback_candidates=fallback_candidates,
@@ -513,8 +529,10 @@ def generate_for_subject(
         out_lines.append(f'{qt} <{LOKA_GENERATED}> "true"^^<{XSD_BOOLEAN}> .')
         out_lines.append(f'{qt} <{LOKA_GENERATED_BY}> "{escape_literal(model_version)}" .')
         out_lines.append(f'{qt} <{LOKA_CONFIDENCE}> "{conf:.4f}"^^<{XSD_DECIMAL}> .')
-        for cp_uri, co_term in evidence[p_uri][:max_citations]:
-            cited = quoted(s_term, f"<{cp_uri}>", fmt_term(co_term))
+        cited_rows = [(s_term, f"<{cp}>", fmt_term(co)) for cp, co in evidence[p_uri]]
+        cited_rows += [(f"<{ns}>", f"<{np_}>", fmt_term(no)) for ns, np_, no in neighbour_evidence[p_uri]]
+        for cited_s, cited_p, cited_o in cited_rows[:max_citations]:
+            cited = quoted(cited_s, cited_p, cited_o)
             out_lines.append(f"{qt} <{LOKA_INFERRED_FROM}> {cited} .")
         log.append(f"  + {s_label!s} | {p_label!s} | {o_label!s}  (conf={conf:.3f})")
 

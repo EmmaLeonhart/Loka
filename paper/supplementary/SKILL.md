@@ -42,6 +42,29 @@ cargo bench -p loka-core --bench retract
 
 Prints store rows, triples removed and max depth for each size (1k, 10k, 100k generated triples), then the criterion timings. Absolute times depend on the machine; the paper's were taken on one laptop.
 
+## §6.2–6.3 Real-data retraction and encoding cost
+
+```bash
+# A real Wikidata neighbourhood, a fresh store, and the v13 model's predictions.
+python tools/wikidata_random_seed.py --seed Q42 --max-entities 300 --max-time 300 --max-depth 2 --output-dir real
+loka import real/seed_Q42.nt --data-dir real/db
+loka serve --data-dir real/db --port 3037 &
+python training/infer_with_citations.py --checkpoint data/model/checkpoints/wikidata_v13.pt     --vocab data/model/corpus/vocab_bpe.json --bpe-tokenizer data/model/corpus/tokenizer_bpe.json     --endpoint http://127.0.0.1:3037 --max-subjects 1000 --confidence 0.25     --model-version loka-wikidata-v13 --output real/generated_v13.nt --post --device cpu
+# (data/model/corpus/vocab_bpe.json comes from EmmaLeonhart/loka at tag v13, like the checkpoint.)
+
+python tools/retract_real_eval.py --endpoint http://127.0.0.1:3037     --seed real/seed_Q42.nt --generated real/generated_v13.nt --output retract_real.json
+python tools/neighbour_evidence_stats.py --endpoint http://127.0.0.1:3037 --output neighbour.json
+python tools/provenance_encodings.py real/generated_v13.nt real/enc
+
+# Query comparison: a second store with the seed plus the reification encoding.
+loka import real/seed_Q42.nt --data-dir real/db_reif
+loka serve --data-dir real/db_reif --port 3038 &
+curl -X POST http://127.0.0.1:3038/triples --data-binary @real/enc/reification.nt
+python tools/provenance_query_compare.py --star http://127.0.0.1:3037     --reif http://127.0.0.1:3038 --seed real/seed_Q42.nt --output compare.json
+```
+
+The Wikidata pull is live, so a rerun gets the neighbourhood as it is today, not the one in the paper. The recorded outputs are in `training/logs/` (`retract_real_q42.json`, `neighbour_evidence_q42.json`, `provenance_query_compare_q42.json`).
+
 ## §6.3 Link prediction
 
 ```bash
