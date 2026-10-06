@@ -7,6 +7,19 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-06 (evening) — review v10: still Weak Reject; next iteration planned
+
+The v10 review (post 2905) arrived via a dispatched `pull-reviews.yml` run. The rating holds at
+**Weak Reject**. The citation fix took "first 10 statements" off the cons list, but the reviewer
+still objects that selection provenance is procedural (the model sees only subject and
+predicate) and that the model loses to the frequency baseline. New cons: no real-data retraction
+run, no storage/query comparison with named graphs or PROV-O, and the neighbour-statement gap.
+
+The next iteration is queued as 10a–10c: storage comparison, real-data retraction, and measuring
+neighbour-side citations. None of them needs training. The weak model is the one con that does,
+and it waits for Emma.
+
+---
 ## 2026-10-06 (afternoon) — first review of the rewrite: Weak Reject (was Reject); citations now exact
 
 Step 10 of the arXiv-readiness timeline, first iteration. The rewritten paper got
