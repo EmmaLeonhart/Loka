@@ -142,7 +142,7 @@ pub fn optimize_full(
 ) {
     let mut bound_vars: HashSet<String> = HashSet::new();
     let mut reordered: Vec<Pattern> = Vec::new();
-    let mut remaining: Vec<Pattern> = query.patterns.drain(..).collect();
+    let mut remaining: Vec<Pattern> = std::mem::take(&mut query.patterns);
 
     while !remaining.is_empty() {
         let best_idx = remaining

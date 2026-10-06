@@ -7,6 +7,18 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-06 (late morning) — CI was red from a clippy upgrade, not a code change
+
+While starting step 9 I found CI failing on every commit since `aeef33c`, the last commit before
+this session. It was green through 2026-07-30. The cause: the runner's clippy (rust-1.99) added
+the `drain_collect` lint, and `loka-sparql/src/planner.rs:145` did
+`query.patterns.drain(..).collect()`. The local toolchain (rustc 1.97.1) doesn't have the lint,
+which is why local clippy passed. Fixed with `std::mem::take(&mut query.patterns)`, which has
+the same effect (the source vector is left empty) without allocating a new one. loka-sparql
+tests pass. Every commit this session went out while CI was red; the failure was this one lint,
+not anything those commits changed.
+
+---
 ## 2026-10-06 (mid-morning) — the paper gets its Evaluation section
 
 The step queued during step 8 of the arXiv-readiness timeline. The paper now has the
