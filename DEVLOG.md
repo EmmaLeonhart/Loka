@@ -7,6 +7,24 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (evening) — encoding comparison done: RDF-star 3.2× smaller, but its query is 3× slower
+
+Step 10a, second half. Two fresh v0.4.3 stores hold the same real Q42 seed. One has the 59 v13
+predictions as RDF-star annotation blocks (POSTed); the other has the same predictions as
+reification + PROV-O (`tools/provenance_encodings.py` output, POSTed). For each of the 169
+entities X, `tools/provenance_query_compare.py` asks both "which generated triples cite a
+statement whose object is X?". Answers are identical for all 169 (15 non-empty). Latency over
+HTTP: RDF-star median 2.68 ms (p95 3.25), reification 0.90 ms (p95 1.24).
+
+That's an unfavourable result and it goes in the paper as is: new §6.3 with the row/byte table
+(402 / 1,278 / 1,042) and the timing, plus a Limitations bullet. My guess for the cause, not
+profiled: the nested-pattern path scans the inner pattern's candidates (`find_by_object(X)`),
+hashes each into a quoted id and probes again, where the reified join walks straight from X's
+reification nodes. Making that path faster is engine work, not part of this step. Output in
+`training/logs/provenance_query_compare_q42.json`. `Skip-Submit: true`; 10c next, then
+resubmit.
+
+---
 ## 2026-10-07 (later) — v0.4.3 released; paper cites it
 
 Tagged `v0.4.3` at `9041568` with CI green. Binaries for all five platforms, hand-written

@@ -1,0 +1,16 @@
+{
+  "roots": 169,
+  "roots_with_results": 15,
+  "disagreements": 0,
+  "disagreement_examples": [],
+  "rdfstar_ms": {
+    "median": 2.68,
+    "p95": 3.25,
+    "max": 34.1
+  },
+  "reification_ms": {
+    "median": 0.9,
+    "p95": 1.24,
+    "max": 2.28
+  }
+}

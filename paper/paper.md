@@ -209,7 +209,7 @@ The cumulative penalty matters: a *non*-cumulative penalty (set membership) was 
 
 ## 5. Case study: a model series on cleaned Wikidata
 
-We exercised the provenance loop with a series of from-scratch models (v3–v14) trained on progressively rebuilt Wikidata corpora. Every checkpoint and corpus is released (links at the top of the paper); Appendix A lists each version's tokenizer, corpus size, training length and perplexity. This section reports what the series taught about *corpus construction*, which is the result that transfers to other work training on Wikidata. Completion accuracy is evaluated separately, against baselines, in §6.3.
+We exercised the provenance loop with a series of from-scratch models (v3–v14) trained on progressively rebuilt Wikidata corpora. Every checkpoint and corpus is released (links at the top of the paper); Appendix A lists each version's tokenizer, corpus size, training length and perplexity. This section reports what the series taught about *corpus construction*, which is the result that transfers to other work training on Wikidata. Completion accuracy is evaluated separately, against baselines, in §6.4.
 
 ### 5.1 Setup
 
@@ -277,7 +277,21 @@ We time `retract_set` with criterion on generated graphs of three sizes, using t
 
 Time grows with the size of the removed set, as the algorithm's per-triple index lookups predict: about 0.5 µs per removed triple at the largest size.
 
-### 6.3 Link prediction
+### 6.3 Encoding cost against reification and named graphs
+
+We compare the annotation block with the two standard ways of attaching provenance to individual statements in plain RDF, using real data. We pulled a breadth-first Wikidata neighbourhood of `Q42` (14,819 triples, 169 entities), loaded it, and ran the v13 model's inference over every subject, which wrote 59 generated triples with 166 selection-provenance edges (160 distinct cited statements). The same generated set was then re-encoded (a) as standard RDF reification with PROV-O, where each generated triple gets an `rdf:Statement` node carrying the metadata and `prov:wasDerivedFrom` links to `rdf:Statement` nodes for the cited statements, and (b) as one named graph per generated triple, with the cited statements still reified so they can be pointed at.
+
+| Encoding | Rows | Bytes (N-Triples / N-Quads) |
+|---|---|---|
+| RDF-star annotation block (ours) | **402** | **88,034** |
+| Reification + PROV-O | 1,278 | 169,853 |
+| Named graph per prediction | 1,042 quads | 141,224 |
+
+Most of the difference is the cost of making a curated statement citable: RDF-star quotes it in place, while the other encodings need four extra rows per cited statement.
+
+We also asked both triple-based stores the same question for each of the 169 entities X, "which generated triples cite a statement whose object is X?" (a nested SPARQL-star pattern on one side, a five-pattern join over reification nodes on the other). Both returned identical answers for all 169 entities. Loka currently answers the reified form faster: median 0.90 ms against 2.68 ms per query over HTTP (p95 1.24 against 3.25 ms). The RDF-star encoding is three times smaller; on this query it is not faster. Loka has no named-graph support, so (b) was counted but not queried.
+
+### 6.4 Link prediction
 
 To place the case-study model against standard baselines, we evaluate it on held-out triples. The corpus tiers are prefixes of one stream, so the `v14-1M` corpus contains triples the v13 model never trained on. We keep those whose subject, predicate and object labels all occur in v13's training corpus (the transductive setting): 28,448 unique triples over 542 predicates. For each held-out (s, p, o) we rank candidate objects for (s, p, ?). Candidates are the objects seen with p in training, which excludes 8,762 queries whose true object never occurs with p in training and leaves 19,686. We use the filtered setting (other known true objects of (s, p), from training or held-out data, are removed) and the tie-aware rank of Berrendorf et al. (2020).
 
@@ -303,7 +317,7 @@ Entity-valued objects are those whose label also occurs as a subject in training
 
 ### 7.1 Model and decoding
 
-- **Weak completion accuracy.** The case-study model does not beat a predicate-frequency baseline on held-out triples (§6.3).
+- **Weak completion accuracy.** The case-study model does not beat a predicate-frequency baseline on held-out triples (§6.4).
 - **Mode collapse on common tokens.** Even with the cumulative penalty, predictions for predicates the model knows weakly fall back to connectors (`of`, `and`) or to format placeholders (`spouse -> "1 ."`, §5.4). The corpus cleanup removed the worst of these (§5.3) but not all.
 - **Label-space output.** The model emits subword tokens of an English label, not an entity IRI, so outputs can contain BPE fragments and cannot be checked against an entity identifier directly.
 - **Greedy decoding only.** No beam search or sampling.
@@ -318,6 +332,7 @@ Entity-valued objects are those whose label also occurs as a subject in training
 
 - The link-prediction set is small (19,686 rankable queries), skewed toward literal-valued predicates, and drawn from the triples a larger label cache newly resolved rather than sampled uniformly from Wikidata. Entities are identified by English label, so distinct entities with the same label are merged, which affects the transformer and TransE alike.
 - No model was tuned, and only one checkpoint (v13) has a held-out set that requires no retraining.
+- In Loka's current executor, the nested SPARQL-star query for provenance is about three times slower than the equivalent query over a reification encoding (§6.3), although the RDF-star encoding is three times smaller.
 - Retraction was evaluated on synthetic graphs on one machine. The in-memory store is the one retraction runs against in every deployment mode (the server keeps its indexes in memory and mirrors writes to the persistent store), but the commit step that deletes the computed set from the persistent store was not timed.
 - The source dataset revision was not pinned when the corpora were built (References). The released corpora are fixed, but the path from source dump to corpus cannot be replayed exactly.
 

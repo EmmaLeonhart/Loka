@@ -29,11 +29,6 @@ step 9 submits.
     `paper/reviews/`; fix what is fixable by cutting or by real runs; resubmit. Stop at Accept /
     Strong Accept, or at 2026-10-24 with a written list of what the remaining cons would need.
     Iteration plan after review v10 (post 2905, Weak Reject), in order, no training runs:
-    - **10a. Storage comparison with named graphs and PROV-O-style reification.** Row counts done
-      (402 / 1,278 / 1,042, tools/provenance_encodings.py); query timing still to do. Count, for a
-      real set of generated triples, the rows each encoding needs (RDF-star annotation block vs.
-      a named graph per prediction vs. standard reification + PROV-O), measured by building
-      each in the engine, plus one SPARQL query per encoding for "generated triples citing X".
     - **10c. Neighbour-side provenance, bounded.** Measure how many neighbour statements a
       proposal actually matches on real data; if a cap keeps volume sane, cite them too so
       retraction covers the neighbour case, else keep it as a stated limitation with numbers.
