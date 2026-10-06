@@ -7,6 +7,25 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-06 (night) — Emma's decisions: no retraining, release the fix, author email
+
+Asked with AskUserQuestion after the v10 review:
+
+- **Weak model: keep it, no training.** The paper keeps reporting that v13 is below the
+  predicate-frequency baseline and keeps resting its claims on the provenance machinery. No
+  training run will be started for the paper.
+- **Release the retraction fix.** Emma approved "v0.4.1", but v0.4.1 already exists (2026-05-27),
+  and the paper's "last release v0.4.0" was wrong. So this release is **v0.4.2**: same intent,
+  next free number. Workspace version bumped to 0.4.2 (`Cargo.lock` is gitignored), and
+  `loka --version` reports 0.4.2.
+- **Author line:** Emma Leonhart only, email **emma@topazcomputing.com** (not
+  contact@emmaleonhart.com).
+- Emma is already an arXiv endorsed author, so the endorser question is closed.
+
+Also found while drafting the release notes: the engine was relicensed to **AGPL-3.0-or-later**
+after v0.4.1, but the paper still says Apache-2.0. Fixed in the next paper commit.
+
+---
 ## 2026-10-06 (evening) — review v10: still Weak Reject; next iteration planned
 
 The v10 review (post 2905) arrived via a dispatched `pull-reviews.yml` run. The rating holds at

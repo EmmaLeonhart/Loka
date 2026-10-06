@@ -38,11 +38,11 @@ step 9 submits.
     - **10c. Neighbour-side provenance, bounded.** Measure how many neighbour statements a
       proposal actually matches on real data; if a cap keeps volume sane, cite them too so
       retraction covers the neighbour case, else keep it as a stated limitation with numbers.
-    - Then resubmit. The weak-model objection needs a training run: raise with Emma, don't start.
+    - Then resubmit. Weak model: Emma decided 2026-10-06 to keep it, no training.
 11. **(target 2026-10-25) arXiv package + handoff.** Build the arXiv source tarball
     (`paper.tex`, generated body, `neurips_2026.sty`, figures), verify it compiles from a clean
     directory, write the metadata (title, abstract, `cs.DB` + `cs.AI`, license). Ask Emma with
-    AskUserQuestion who the arXiv author list and endorser are. Submitting is Emma's action.
+    Author: Emma Leonhart, emma@topazcomputing.com; Emma is already endorsed. Submitting is Emma's action.
 
 ---
 
