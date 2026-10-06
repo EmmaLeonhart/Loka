@@ -7,6 +7,39 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-06 (dawn) — retraction tested against a reference, and it was leaving orphans
+
+Step 7 of the arXiv-readiness timeline. `loka-core/tests/retract_reference.rs` builds random
+provenance graphs, cycles included, and compares `retract_set` with an independent brute-force
+closure over the generator's own triple lists.
+
+**It failed on its first run, and the failure was real.** When the retracted node touches a
+generated triple directly, that triple is removed at depth 0. Its `propositionInferredFrom` and
+`propositionGeneratedBy` rows were only swept for triples reached by a provenance hop, so here
+they stayed behind, annotating a triple that no longer existed. The design doc says a removed
+generated triple goes with "ALL its prov annotation rows" and makes no depth-0 exception, so this
+was an omission, not a choice. The fix is in `retract.rs`: depth 0 now sweeps the
+reserved-namespace annotations of its own rows. The new unit test fails without the fix (checked
+by removing it and rerunning) and passes with it. The reference test was not loosened; it now
+passes as written. The workspace suite is at 479 passing, previously 476.
+
+Latency, criterion, in-memory store: 0.26 ms, 1.9 ms and 58 ms to compute a retraction of 1.4k,
+7.4k and 120k triples from stores of 5k, 50k and 504k rows. The table is in
+`planning/arxiv-readiness.md`.
+
+**Call made without asking:** the first-ten citation cap in `infer_with_citations.py` stays as
+it is. This step measures the engine's closure, which doesn't depend on how the inference script
+picks citations, and changing the script would make the shipped outputs and the paper's
+description disagree. The cap stays a stated limitation in §6.2.
+
+Also: the abstract and contribution 3 said "removing a statement"; the engine retracts a *node*,
+so both are corrected. Abstract is now 1,458 characters.
+
+Environment note: in Git Bash, coreutils `link` shadows MSVC's `link.exe`, and PowerShell has
+no MSVC environment, so cargo has to run under `vcvars64.bat`
+(`C:\Program Files (x86)\Microsoft Visual Studio2\BuildTools\VC\Auxiliary\Build`).
+
+---
 ## 2026-10-06 (small hours) — TransE baseline: below both the transformer and the frequency baseline
 
 Step 6 of the arXiv-readiness timeline. `training/baseline_kge.py` trains TransE with PyKEEN

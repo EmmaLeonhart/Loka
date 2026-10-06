@@ -22,3 +22,7 @@ tempfile = "3"
 [[bench]]
 name = "triple_insert"
 harness = false
+
+[[bench]]
+name = "retract"
+harness = false

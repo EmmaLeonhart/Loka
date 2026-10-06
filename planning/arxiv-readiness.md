@@ -152,6 +152,36 @@ through `train.py`'s own `collate` (245 vs 242.75 recorded); the harness builds 
 the same way `collate` does; scoring 300 training triples gives MRR 0.071 vs frequency 0.077, so
 even on seen triples the model is near the baseline, which rules out a held-out-specific bug.
 
+## Retraction evaluation (step 7, 2026-10-06)
+
+**Correctness.** `loka-core/tests/retract_reference.rs` generates random provenance graphs (real
+triples; generated triples citing 1–3 earlier triples; ~5 % back-citations, so cycles occur;
+a `propositionGeneratedBy` row each) and compares `retract_set` to an independent fixpoint over
+the generator's own lists. 50 small graphs × 10 roots and 10 medium graphs (2,000 real + 2,000
+generated) × 20 roots.
+
+It found a real defect on its first run: a generated triple that touched the root directly was
+removed at depth 0, but its provenance annotation rows were swept only when it was reached by a
+provenance hop, so they survived as orphans (every missing row was an annotation). The spec in
+`planning/cascade-retraction.md` says a removed generated triple goes with "ALL its prov
+annotation rows" and has no depth-0 exception, so this was an omission. Fixed in
+`loka-core/src/retract.rs`, with a unit test
+(`depth_zero_generated_triple_takes_its_annotations`) that fails without the fix and passes
+with it. After the fix both reference tests pass; workspace suite 479 passing.
+
+**Latency.** `cargo bench -p loka-core --bench retract` (criterion, release profile, this
+laptop, in-memory `TripleStore`). The root is the entity with the largest retraction set among
+the first 50.
+
+| Generated triples | Store rows | Triples removed | Max depth | Time (median) |
+|---|---|---|---|---|
+| 1,000 | 5,034 | 1,439 | 14 | 0.26 ms |
+| 10,000 | 50,484 | 7,367 | 24 | 1.91 ms |
+| 100,000 | 504,389 | 120,461 | 34 | 58.3 ms |
+
+Paper caveats: synthetic graphs, in-memory store (not the sled-backed persistent one), a
+single machine.
+
 ## Open items carried by later steps
 
 - Author list and arXiv endorser: ask Emma at step 11.

@@ -25,9 +25,6 @@ and checked; never fabricate a metric, baseline or citation. Decisions made whil
 commits carry the `Skip-Submit: true` trailer so a half-rewritten paper is never posted; only
 step 9 submits.
 
-7. **(target 2026-10-14) Retraction evaluation.** Measure `retract_set` on synthetic provenance
-   graphs of increasing size (correctness against a brute-force reference + latency), as a
-   criterion bench or test. This is the systems contribution's evidence; record real numbers.
 8. **(target 2026-10-15) Related work + references.** Write a Related Work section (KG
    completion, provenance/PROV-O, RDF-star annotation, retrieval attribution). Every reference
    checked against its publisher/arXiv page; drop anything that can't be verified.

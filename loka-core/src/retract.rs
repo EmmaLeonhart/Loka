@@ -94,6 +94,21 @@ pub fn retract_set(root_id: TermId, store: &TripleStore, dict: &TermDictionary) 
             frontier.push(t);
         }
     }
+    // A generated triple removed here (because it touches the root) takes
+    // its provenance annotation rows with it, exactly as one reached by a
+    // provenance hop does below; otherwise they would survive as orphaned
+    // annotations on a triple that no longer exists.
+    let own_rows = depth0.clone();
+    for t in &own_rows {
+        let qid_t = quoted_triple_id(t.subject, t.predicate, t.object);
+        for a in store.find_by_subject(qid_t) {
+            if is_reserved_predicate(a.predicate, dict)
+                && seen.insert((a.subject, a.predicate, a.object))
+            {
+                depth0.push(a);
+            }
+        }
+    }
     out.by_depth.push(depth0);
     if frontier.is_empty() {
         return out;
@@ -371,5 +386,27 @@ mod tests {
         // Must terminate.
         let set = retract_set(s, &store, &dict);
         assert!(set.total() >= 1);
+    }
+
+    /// Retracting a node that a generated triple touches directly removes that
+    /// triple at depth 0, and its provenance annotation rows must go with it
+    /// (found by `tests/retract_reference.rs`: they used to survive as orphans).
+    #[test]
+    fn depth_zero_generated_triple_takes_its_annotations() {
+        let (store, dict, _) = fixture();
+        // Q999 is the object of G1 (Q350 G_died Q999), so G1 is a depth-0 row.
+        let q999 = dict.lookup("http://wd/Q999").unwrap();
+        let set = retract_set(q999, &store, &dict);
+        let q350 = dict.lookup("http://wd/Q350").unwrap();
+        let g_died = dict.lookup("http://wd/G_died").unwrap();
+        let g1 = quoted_triple_id(q350, g_died, q999);
+        let annotations: Vec<_> = store.find_by_subject(g1);
+        assert!(!annotations.is_empty());
+        for a in &annotations {
+            assert!(
+                set.by_depth[0].iter().any(|t| t == a),
+                "annotation {a:?} of a depth-0 generated triple was left behind"
+            );
+        }
     }
 }
