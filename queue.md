@@ -11,36 +11,62 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ---
 
-## ⭐ FIRST — make the Loka paper submittable to arXiv (Emma, 2026-10-06)
+## ⭐ FIRST — arXiv-readiness timeline for the Loka paper (planned 2026-10-06)
 
-**Goal, in Emma's words:** the bare-minimum version of `paper/` that would get an **accept or
-strong accept on the Claude4S review site** and could be **posted on arXiv**. This item comes
-before the engineering items below.
+Goal (Emma, 2026-10-06): the bare-minimum `paper/` that gets **Accept / Strong Accept** on the
+review site and can be posted to **arXiv**. Rules for every step: cut claims rather than invent
+results; every number comes from a run actually performed and recorded; every reference is real
+and checked; never fabricate a metric, baseline or citation. Decisions made while planning are in
+`DEVLOG.md` (2026-10-06). Work these top to bottom, one per tick, each in its own commit.
 
-**This item's first job is to PLAN, not to edit the paper.** Read `paper/paper.md`,
-`paper/paper.tex` and every review in `paper/reviews/` (v1 to v8; v8, post 2601, is a **Reject**).
-Then replace this item with a concrete, ordered queue of steps, **each with a target date**,
-forming a timeline from today to "submitted to arXiv". Commit and push that queue on its own
-before starting step one. After that, work the steps top to bottom like any other item.
+**Review site:** the repo's review loop is clawRxiv (`https://clawrxiv.io`), driven by
+`.github/workflows/papers-ci.yml` on any push touching `paper/paper.md`. Intermediate rewrite
+commits carry the `Skip-Submit: true` trailer so a half-rewritten paper is never posted; only
+step 9 submits.
 
-**What the reviews already say needs fixing** (v8; check the earlier ones for anything else):
-- No standard KG-completion metrics (MRR, Hits@k) and no comparison with existing baselines.
-- A small experiment (44M parameters, 4M triples), with perplexity as the main metric.
-- The writing reads like a dev log: hardware, commit hashes, cron loops. arXiv needs an academic
-  paper.
-- "Generative citation" comes from a heuristic candidate selector, not the model, so the name
-  overclaims. Either rename it or back it up.
-- The "neuro-symbolic" claim is shallow.
-
-**The bare minimum is the point.** Cut claims rather than inventing results. Every number in the
-paper must come from a run that was actually performed and recorded. Never fabricate a metric, a
-baseline or a citation. arXiv also needs: the LaTeX building cleanly from `paper/paper.tex` to a
-PDF, a references list where every entry is real, an abstract within arXiv's length limit, and a
-category, probably `cs.AI` or `cs.DB`.
-
-**Unknowns, to ask Emma about with `AskUserQuestion` when they come up, one at a time:** the
-Claude4S site's URL and how to submit to it, if nothing in the repo says; and who the arXiv
-author and endorser will be. Submitting to arXiv itself is Emma's action, not the session's.
+1. **(target 2026-10-07) Framing memo.** Write `planning/arxiv-readiness.md`: new title (drop
+   "Generative Citation" and "Neuro-Symbolic World Model"), new name for the citation mechanism
+   (it records the context the candidate selector chose, not what the model attended to), the
+   one-paragraph claim the paper will defend, the claims being cut, arXiv category (`cs.DB`
+   primary, `cs.AI` cross-list), and target outline (Intro, Related Work, Provenance schema,
+   Retraction, Model + case study, Evaluation, Limitations, Conclusion).
+2. **(target 2026-10-08) De-devlog the experiments.** Collapse §5.1–§5.12 (the v3→v14 diary)
+   into one case-study section plus an appendix table of versions. Remove hardware, commit
+   hashes, cron loops, dates, GPU crashes, contributor runs, and the §6.3 paragraph that argues
+   with a reviewer. Engine bug history (§6.1) leaves the paper. `Skip-Submit: true`.
+3. **(target 2026-10-09) Rename + rewrite front matter.** Apply the step-1 name everywhere;
+   rewrite title, abstract (≤1,920 chars, arXiv's limit), introduction, contributions; remove the
+   "neuro-symbolic" overclaim. Update `paper.tex` title. `Skip-Submit: true`.
+4. **(target 2026-10-10) Held-out data check.** Find out, from the recorded corpora on HF
+   (`EmmaLeonhart/normalized-wikidata` tags `v11-50k`…`v14-1M`), whether a set of triples
+   exists that a shipped checkpoint was never trained on but whose entities it saw (needed for
+   transductive link prediction). Record the answer in `planning/arxiv-readiness.md`.
+5. **(target 2026-10-12) Link-prediction harness, no training.** `training/eval_linkpred.py`:
+   for held-out (s, p, ?) queries, rank candidate object labels by the model's masked
+   log-likelihood; report filtered MRR and Hits@1/3/10, plus a predicate-frequency baseline on
+   the same split. Inference only. If step 4 found no usable split, the held-out set needs a
+   retrain: **ask Emma with AskUserQuestion before any training run** (CLAUDE.md: no silent
+   run escalation); if declined, the paper drops every completion-performance claim and keeps
+   perplexity only as a training diagnostic.
+6. **(target 2026-10-13) Standard baseline on the same split.** TransE (and DistMult if cheap)
+   via PyKEEN on CPU over the identical split; results table next to step 5. Skip only if step
+   5 resolved to the cut-claims route.
+7. **(target 2026-10-14) Retraction evaluation.** Measure `retract_set` on synthetic provenance
+   graphs of increasing size (correctness against a brute-force reference + latency), as a
+   criterion bench or test. This is the systems contribution's evidence; record real numbers.
+8. **(target 2026-10-15) Related work + references.** Write a Related Work section (KG
+   completion, provenance/PROV-O, RDF-star annotation, retrieval attribution). Every reference
+   checked against its publisher/arXiv page; drop anything that can't be verified.
+9. **(target 2026-10-16) Clean build + submit for review.** Get `pandoc` + `latexmk` building
+   `paper.tex` to PDF locally with no undefined refs or overfull-table disasters; check
+   abstract length; then push `paper.md` **without** `Skip-Submit` so clawRxiv reviews it.
+10. **(target 2026-10-17 → 2026-10-24) Review iteration.** Read each new review in
+    `paper/reviews/`; fix what is fixable by cutting or by real runs; resubmit. Stop at Accept /
+    Strong Accept, or at 2026-10-24 with a written list of what the remaining cons would need.
+11. **(target 2026-10-25) arXiv package + handoff.** Build the arXiv source tarball
+    (`paper.tex`, generated body, `neurips_2026.sty`, figures), verify it compiles from a clean
+    directory, write the metadata (title, abstract, `cs.DB` + `cs.AI`, license). Ask Emma with
+    AskUserQuestion who the arXiv author list and endorser are. Submitting is Emma's action.
 
 ---
 

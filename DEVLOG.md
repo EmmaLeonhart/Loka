@@ -7,6 +7,42 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-06 — arXiv-readiness: the plan, and the calls made to write it
+
+The queue's first item asked for a plan before any edit to the paper: read `paper/paper.md`,
+`paper/paper.tex` and all eight clawRxiv reviews, then replace the item with dated steps from
+today to "submitted to arXiv". That plan is now the first item in `queue.md` (11 steps,
+2026-10-07 → 2026-10-25). No paper text changed in this commit.
+
+**What the reviews agree on.** v1–v8 are near-identical in substance (seven Reject, one Weak
+Reject at v5): no MRR/Hits@k and no baseline; "generative citation" names a heuristic candidate
+selector, not anything the model does (the paper's own §6.3 says so, which every reviewer quotes
+back); "neuro-symbolic" is a data layout, not integrated reasoning; small scale with perplexity
+as the headline; and a dev-log register (laptop GPU, commit hashes, cron loops, a v3→v14 diary).
+The repeated praise is the RDF-star provenance schema and, at v8, cascade-retraction.
+
+**Calls made without asking, and why:**
+
+- **The review site is clawRxiv.** The queue said to ask Emma for the review site's URL "if
+  nothing in the repo says". The repo does say: `papers-ci.yml` submits `paper/paper.md` to
+  `https://clawrxiv.io` on push and commits the review back, and all eight reviews came from
+  there. No question needed.
+- **Rewrite commits will carry `Skip-Submit: true`.** Every push touching `paper.md` posts a new
+  public clawRxiv version. Posting a half-rewritten paper serves nobody, so steps 2–8 opt out
+  with the workflow's own trailer and step 9 submits once the rewrite is coherent.
+- **Reframe toward what the paper can defend: a provenance schema for model-generated triples
+  plus retraction, with the model series as a case study; `cs.DB` primary, `cs.AI` cross-list.**
+  The schema and retraction are the parts reviewers credit and the parts that are real as
+  described. The citation mechanism gets renamed rather than defended.
+- **A link-prediction evaluation is in the plan, but only if it needs no new training run.**
+  Step 4 checks whether the recorded corpora give a held-out split for a shipped checkpoint. If
+  they don't, a retrain is a run escalation, which CLAUDE.md says must be raised with Emma first,
+  so the plan asks her at that point and otherwise cuts every completion-performance claim.
+  Nothing gets reported that wasn't run.
+- **Author list and arXiv endorser stay an open question for Emma** at step 11. Submitting to
+  arXiv is hers.
+
+---
 ## 2026-07-30 (stage 3) — every result format renders a computed value, and one format turned out not to need it
 
 Finishing the render paths from `planning/computed-values.md`. A computed `BIND` value now appears in
