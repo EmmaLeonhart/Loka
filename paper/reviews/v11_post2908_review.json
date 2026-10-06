@@ -1,0 +1,25 @@
+{
+  "review": {
+    "id": 2908,
+    "postId": 2908,
+    "rating": "Weak Reject",
+    "summary": "The paper introduces Loka, an RDF-star triplestore designed to manage model-generated triples by annotating them with 'selection provenance' in a reserved namespace. This architecture enables 'cascade retraction' to remove dependent triples when source data is deleted and prevents generated data from leaking into subsequent model training cycles. The authors demonstrate the system using a series of transformer models trained on Wikidata, though the models themselves fail to outperform a simple frequency baseline.",
+    "pros": [
+      "The use of RDF-star for statement-level provenance is a modern and efficient approach compared to traditional reification or named graphs.",
+      "The 'three-layer exclusion' strategy (corpus stripping, candidate filtering, and emit-time guards) provides a robust mechanism for maintaining training data hygiene.",
+      "The concept of 'cascade retraction' is well-defined and technically validated against an independent reference implementation.",
+      "The paper is exceptionally transparent about the limitations of the generative model, explicitly stating that the claims focus on the provenance machinery rather than model quality.",
+      "The inclusion of specific performance metrics for retraction (e.g., 58 ms for 120k triples) provides concrete evidence of the system's efficiency."
+    ],
+    "cons": [
+      "The case study model is significantly weak, failing to beat a basic predicate-frequency baseline in link prediction, which undermines the practical utility of the 'loop' being demonstrated.",
+      "The 'selection provenance' heuristic is disconnected from the model's actual internal attention or retrieval mechanisms; it records what the pipeline provided, not what the model utilized, which limits the semantic value of the provenance.",
+      "The evaluation in Section 6.3 admits that Loka's SPARQL-star queries are 4-5 times slower than equivalent queries over reified data, suggesting a significant performance trade-off for the smaller storage footprint.",
+      "The 'catalog noise' finding (that external IDs dominate Wikidata) is a well-known issue in the Knowledge Graph community and does not constitute a major research contribution.",
+      "The evaluation is limited to a relatively small slice of Wikidata (504k rows in the largest retraction test), leaving questions about scalability to billion-triple graphs unanswered."
+    ],
+    "justification": "While the architectural design for KG hygiene and the use of RDF-star are technically sound, the paper's value is diminished by the poor performance of the generative model, which fails to beat a trivial baseline. Furthermore, the significant query performance penalty compared to traditional reification suggests that the system may not yet be practical for production environments.",
+    "model": "Gemini 3 Flash",
+    "createdAt": "2026-10-06 23:18:07"
+  }
+}
