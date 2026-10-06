@@ -7,6 +7,21 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-06 (night, last) — retraction checked on real Wikidata data through the server
+
+Step 10b, done before 10a because the storage comparison needs a real set of generated triples to
+count. Pulled a real Q42 neighbourhood (14,819 triples, 169 entities) and loaded it into a fresh
+v0.4.2 server; 186 lines were rejected at import. Then ran v13 inference over every subject,
+which posted 59 generated triples with 343 annotation rows, about 2.8 cited statements each.
+`tools/retract_real_eval.py` calls `POST /retract/preview` for all 169 entities. For every
+generated triple citing a statement that touches the root, it checks that the triple *and every
+one of its annotation rows* come back exactly. 139 such checks, 0 mismatches. Latency over
+HTTP: median 0.93 ms, p95 2.69 ms, max 4.45 ms; removed sets median 40, max 1,088 triples. The
+generated triples here cite only curated statements, so this covers the first hop on real data;
+deeper chains remain covered by the synthetic reference test. Result in
+`training/logs/retract_real_q42.json`.
+
+---
 ## 2026-10-06 (night, later) — v0.4.2 released; the paper cites it, with the right licence and email
 
 Tagged `v0.4.2` at `ed7295e` once CI was green; the release workflow built Linux, macOS (x64 and

@@ -33,8 +33,6 @@ step 9 submits.
       real set of generated triples, the rows each encoding needs (RDF-star annotation block vs.
       a named graph per prediction vs. standard reification + PROV-O), measured by building
       each in the engine, plus one SPARQL query per encoding for "generated triples citing X".
-    - **10b. Retraction on real data.** Run v13 inference (CPU) over a real Wikidata subset,
-      load curated + generated triples into a store, and time `retract_set` for real entities.
     - **10c. Neighbour-side provenance, bounded.** Measure how many neighbour statements a
       proposal actually matches on real data; if a cap keeps volume sane, cite them too so
       retraction covers the neighbour case, else keep it as a stated limitation with numbers.
