@@ -107,12 +107,12 @@ pub fn generate(seed: u64, n_entities: usize, n_real: usize, n_gen: usize) -> Gr
     let mut cites = Vec::new();
     let mut annotations = Vec::new();
     let cite = |store: &mut TripleStore,
-                    dict: &mut TermDictionary,
-                    all_rows: &mut Vec<Triple>,
-                    cites: &mut Vec<(Triple, Triple)>,
-                    annotations: &mut Vec<(Triple, Triple)>,
-                    g: Triple,
-                    src: Triple| {
+                dict: &mut TermDictionary,
+                all_rows: &mut Vec<Triple>,
+                cites: &mut Vec<(Triple, Triple)>,
+                annotations: &mut Vec<(Triple, Triple)>,
+                g: Triple,
+                src: Triple| {
         let gq = dict.register_quoted(g.subject, g.predicate, g.object);
         let sq = dict.register_quoted(src.subject, src.predicate, src.object);
         let a = Triple::new(gq, inferred, sq);
