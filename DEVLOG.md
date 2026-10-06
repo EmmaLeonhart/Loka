@@ -37,7 +37,7 @@ so both are corrected. Abstract is now 1,458 characters.
 
 Environment note: in Git Bash, coreutils `link` shadows MSVC's `link.exe`, and PowerShell has
 no MSVC environment, so cargo has to run under `vcvars64.bat`
-(`C:\Program Files (x86)\Microsoft Visual Studio2\BuildTools\VC\Auxiliary\Build`).
+(`C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Auxiliary/Build`).
 
 ---
 ## 2026-10-06 (small hours) — TransE baseline: below both the transformer and the frequency baseline
