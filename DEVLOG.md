@@ -7,6 +7,21 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-06 (night, later) — v0.4.2 released; the paper cites it, with the right licence and email
+
+Tagged `v0.4.2` at `ed7295e` once CI was green; the release workflow built Linux, macOS (x64 and
+arm64) and Windows (zip and installer) binaries. The release notes are written by hand from the
+235 commits since v0.4.1, grouped into breaking changes, fixes, features, SDKs and tools.
+
+Writing the notes surfaced one wrong assumption of mine: `loka serve`'s bind address is hard-coded
+to 127.0.0.1, with no host flag. The notes say so and point to a reverse proxy, rather than
+telling users to pass a flag that doesn't exist.
+
+The paper now cites release v0.4.2 instead of a commit hash. The engine licence is
+AGPL-3.0-or-later, not Apache-2.0, and the author email is emma@topazcomputing.com. The skill
+file checks out v0.4.2. `Skip-Submit: true`; the next resubmission waits for 10a–10c.
+
+---
 ## 2026-10-06 (night) — Emma's decisions: no retraining, release the fix, author email
 
 Asked with AskUserQuestion after the v10 review:

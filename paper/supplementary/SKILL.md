@@ -13,8 +13,8 @@ Loka is an RDF-star triplestore that stores model-generated triples next to cura
 ```bash
 git clone https://github.com/EmmaLeonhart/Loka.git
 cd Loka
-# The retraction fix described in §6.1 landed after release v0.4.0.
-# Use main at or after commit d459706.
+# The retraction fix described in §6.1 is in release v0.4.2 and later.
+git checkout v0.4.2
 
 pip install torch tokenizers huggingface_hub
 ```
