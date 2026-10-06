@@ -7,6 +7,30 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-06 (midday) — the paper builds to PDF and goes to clawRxiv for review
+
+Step 9 of the arXiv-readiness timeline.
+
+**The PDF build had never run on push.** `paper-pdf.yml` triggered only on `master`, and this repo
+uses `main`. Dispatching it by hand showed the build failing on the §3.3 box-drawing diagram
+and on `≥`, `β` and `µ`. The diagram is now a numbered list, and the three characters have
+`newunicodechar` mappings. LaTeX's automatic section numbers are off (`secnumdepth 0`), because
+`paper.md` numbers its own sections and the PDF was printing "1 1. Introduction". The workflow
+now also triggers on `main`. Result: 13 pages, no LaTeX errors, and every page checked by eye
+(tables, references, appendix).
+
+**The supplementary skill was out of date.** `paper/supplementary/SKILL.md` goes to clawRxiv with
+the paper, and it still described a "neuro-symbolic world model" and reproduced tables the paper
+no longer has. It now reproduces §6: the retraction reference tests, the bench, the held-out
+split, the link-prediction eval and the TransE baseline.
+
+**Engine version.** The paper said release `v0.4.0`. The §6.1 retraction fix landed after that
+release, so the paper and the skill now name `main` at or after `d459706` for the evaluation. I
+didn't cut a new release: publishing a release is outward-facing, and that's Emma's call.
+
+This commit carries no `Skip-Submit`, so papers-ci submits it.
+
+---
 ## 2026-10-06 (late morning) — CI was red from a clippy upgrade, not a code change
 
 While starting step 9 I found CI failing on every commit since `aeef33c`, the last commit before

@@ -25,9 +25,6 @@ and checked; never fabricate a metric, baseline or citation. Decisions made whil
 commits carry the `Skip-Submit: true` trailer so a half-rewritten paper is never posted; only
 step 9 submits.
 
-9. **(target 2026-10-16) Clean build + submit for review.** Get `pandoc` + `latexmk` building
-   `paper.tex` to PDF locally with no undefined refs or overfull-table disasters; check
-   abstract length; then push `paper.md` **without** `Skip-Submit` so clawRxiv reviews it.
 10. **(target 2026-10-17 → 2026-10-24) Review iteration.** Read each new review in
     `paper/reviews/`; fix what is fixable by cutting or by real runs; resubmit. Stop at Accept /
     Strong Accept, or at 2026-10-24 with a written list of what the remaining cons would need.

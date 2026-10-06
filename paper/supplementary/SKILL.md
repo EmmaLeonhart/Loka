@@ -1,129 +1,89 @@
 ---
-name: loka-world-model
-description: Reproduce results from the Loka paper — build the Loka engine, ingest the philippesaade/wikidata HF parquet stream into a 5M-triple RDF-star corpus, train the role-aware transformer (v4 baseline 16M params, v5 main 44M params), and run generative-citation inference with cumulative repetition penalty against the trained checkpoints.
-allowed-tools: Bash(python *), Bash(pip *), Bash(cd *), Bash(cargo *), Bash(git *), Bash(curl *), Bash(./target/*), Bash(*loka serve*)
+name: loka-retractable-provenance
+description: Reproduce the evaluation in the Loka paper — run the cascade-retraction reference tests and latency bench in the Rust engine, and the held-out link-prediction evaluation of the v13 checkpoint against a predicate-frequency baseline and an untuned TransE baseline.
+allowed-tools: Bash(python *), Bash(pip *), Bash(cd *), Bash(cargo *), Bash(git *), Bash(curl *)
 ---
 
 # Loka: reproduction skill
 
-Loka is a neuro-symbolic world model — a Rust RDF-star triplestore plus a small role-aware transformer trained on the same triples — with end-to-end generative citation expressed as RDF-star annotations.
-
-This skill reproduces the empirical claims of the paper.
+Loka is an RDF-star triplestore that stores model-generated triples next to curated ones, each annotated in a reserved provenance namespace (generating model, confidence, and the stored statements the prediction procedure took as input), and supports cascade retraction along those dependency edges. This skill reproduces the paper's evaluation (§6). Every number in §6 comes from the commands below.
 
 ## Setup
 
 ```bash
-# 1. Working directory: the repo root.
 git clone https://github.com/EmmaLeonhart/Loka.git
 cd Loka
+# The retraction fix described in §6.1 landed after release v0.4.0.
+# Use main at or after commit d459706.
 
-# 2. Engine binary.
-cargo build --release -p loka-cli
-
-# 3. Python deps.
-pip install torch transformers
-pip install -r training/requirements.txt
-pip install datasets pyarrow huggingface_hub
+pip install torch tokenizers huggingface_hub
 ```
 
-## Run the engine
+On Windows, run cargo inside a Visual Studio developer environment (`vcvars64.bat`) so that MSVC's `link.exe` is found.
+
+## §6.1 Retraction correctness
 
 ```bash
-./target/release/loka serve --port 3030 &
-# Health check
-curl http://localhost:3030/health
+# Randomized comparison of retract_set with an independent brute-force closure:
+# 50 small graphs x 10 roots and 10 medium graphs x 20 roots.
+cargo test -p loka-core --test retract_reference
+
+# The depth-0 annotation case the reference test found:
+cargo test -p loka-core depth_zero_generated_triple_takes_its_annotations
 ```
 
-## Pull the prebuilt corpus snapshot
+Both pass. To see the defect, remove the depth-0 annotation sweep in `loka-core/src/retract.rs` (the block starting `let own_rows = depth0.clone();`) and rerun: both fail, with only provenance-annotation rows missing.
+
+## §6.2 Retraction cost
 
 ```bash
-# Single dataset repo holds the 5M-triple store, both checkpoints, the
-# tokenized corpus, and prior generated_v*.nt outputs.
-git clone https://huggingface.co/datasets/EmmaLeonhart/loka /tmp/loka
-cp -r /tmp/loka/loka-data ./
-cp /tmp/loka/corpus/triples.txt training/data/
-cp /tmp/loka/corpus/vocab.json training/data/
-cp /tmp/loka/checkpoints/wikidata_v4.pt training/checkpoints/
-cp /tmp/loka/checkpoints/wikidata_v5.pt training/checkpoints/
+cargo bench -p loka-core --bench retract
 ```
 
-## Or rebuild from scratch
+Prints store rows, triples removed and max depth for each size (1k, 10k, 100k generated triples), then the criterion timings. Absolute times depend on the machine; the paper's were taken on one laptop.
+
+## §6.3 Link prediction
 
 ```bash
-# Stream the HF parquet, convert each entity to N-Triples-star with full
-# qualifier and reference annotations, post to /triples.
-python tools/wikidata_hf_import.py --max-triples 5000000 --batch-size 500
+# Corpora (prefix tiers of one stream) and the v13 checkpoint.
+python - <<'EOF'
+from huggingface_hub import hf_hub_download
+for tag in ["v13-500k", "v14-1M"]:
+    print(hf_hub_download("EmmaLeonhart/normalized-wikidata", "triples_normalized.txt",
+                          repo_type="dataset", revision=tag, local_dir=f"data/{tag}"))
+for f in ["checkpoints/wikidata_v13.pt", "corpus/tokenizer_bpe.json"]:
+    print(hf_hub_download("EmmaLeonhart/loka", f, repo_type="dataset",
+                          revision="v13", local_dir="data/model"))
+EOF
 
-# Build the training corpus from the live store.
-python training/preprocess.py \
-    --endpoint http://localhost:3030 \
-    --output training/data/triples.txt
+# Held-out set size (expects 28,448 transductive triples):
+python tools/heldout_split_check.py data/v13-500k/triples_normalized.txt data/v14-1M/triples_normalized.txt
 
-python training/tokenizer.py \
-    --input training/data/triples.txt \
-    --output training/data/vocab.json \
-    --max-vocab 50000
+# v13 transformer + predicate-frequency baseline (CPU, ~25 min):
+python training/eval_linkpred.py \
+    --train data/v13-500k/triples_normalized.txt \
+    --later data/v14-1M/triples_normalized.txt \
+    --checkpoint data/model/checkpoints/wikidata_v13.pt \
+    --bpe-tokenizer data/model/corpus/tokenizer_bpe.json \
+    --output linkpred_v13.json
 
-# Train v5 (44M params, 6 layers).
-python training/train.py \
-    --data training/data/triples.txt \
-    --vocab training/data/vocab.json \
-    --checkpoint training/checkpoints/wikidata_v5.pt \
-    --d-model 512 --nhead 8 --layers 6 \
-    --epochs 5 --batch-size 64
+# Untuned TransE baseline (PyKEEN 1.11.1, CPU, ~70 min):
+pip install pykeen==1.11.1
+python training/baseline_kge.py --model TransE \
+    --train data/v13-500k/triples_normalized.txt \
+    --later data/v14-1M/triples_normalized.txt \
+    --output linkpred_v13_transe.json
 ```
 
-## Reproduce the prediction tables (paper §5.3)
+The recorded outputs are in `training/logs/linkpred_v13.json` and `training/logs/linkpred_v13_transe.json`. The transformer and frequency-baseline numbers are deterministic; TransE depends on its seed (42) and on the PyKEEN and torch versions.
+
+## Reserved-namespace guard (§3.1)
 
 ```bash
-# Same seed and penalty as the paper.
-python training/infer_with_citations.py \
-    --checkpoint training/checkpoints/wikidata_v5.pt \
-    --vocab training/data/vocab.json \
-    --endpoint http://localhost:3030 \
-    --max-subjects 50 \
-    --max-candidates-per-subject 5 \
-    --confidence 0.4 \
-    --repetition-penalty 3.0 \
-    --seed 42 \
-    --output training/data/generated_v5.nt
-
-# Inspect a generated RDF-star block (paper §3.2 figure):
-head -16 training/data/generated_v5.nt
+grep -n "propositionGenerated\|FILTER NOT EXISTS" training/preprocess.py
+grep -n "is_reserved_predicate" training/infer_with_citations.py
 ```
 
-## Reproduce the v4 baseline for comparison
+## Model series (§5, Appendix A)
 
-```bash
-python training/infer_with_citations.py \
-    --checkpoint training/checkpoints/wikidata_v4.pt \
-    --vocab training/data/vocab.json \
-    --endpoint http://localhost:3030 \
-    --max-subjects 50 \
-    --max-candidates-per-subject 5 \
-    --confidence 0.4 \
-    --repetition-penalty 3.0 \
-    --seed 42 \
-    --output training/data/generated_v4.nt
-```
-
-The same seed and penalty mean the candidate (subject, predicate) pairs are identical between the two runs; differences in output are attributable to the model alone.
-
-## Verify the reserved-namespace guard (paper §3.1)
-
-```bash
-# In the live store, every generated triple must carry a propositionGenerated
-# annotation. Count via SPARQL-star:
-curl -s -X POST http://localhost:3030/sparql \
-    -H 'Content-Type: application/sparql-query' \
-    --data 'SELECT (COUNT(*) AS ?n) WHERE {
-              << ?s ?p ?o >> <http://loka.dev/provenance/propositionGenerated> "true" .
-            }'
-
-# Equally, the corpus extractor's SPARQL-star FILTER excludes them:
-grep -E 'propositionGenerated|FILTER NOT EXISTS' training/preprocess.py
-```
-
-## Engine version
-
-Tested against Loka v0.4.0. Earlier versions had a `DuplicateTriple` regression on RDF-star annotation rows (fixed in commit `7143e5d`); reproduction will produce diverging results before v0.4.0.
+All checkpoints (`v3`–`v14`) are tags of `EmmaLeonhart/loka`; the v11–v14 corpora are tags of `EmmaLeonhart/normalized-wikidata`. Perplexities in Appendix A are the training logs' exp(mean training loss) at the released epoch; we checked that the v13 checkpoint reproduces its value (about 245 on a sample, against 242.75 recorded).
