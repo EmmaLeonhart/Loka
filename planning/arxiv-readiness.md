@@ -16,10 +16,14 @@ store and query interface, which the new title describes directly).
 
 Old: **generative citation**. New: **selection provenance**.
 
-What the system records under `propositionInferredFrom` is the set of context triples the
-*inference procedure* selected (graph neighbours sharing a (predicate, object) key) and
-conditioned the model's input on. It is not attention, not a learned retrieval head, and not a
-claim that the cited triple supports the prediction. "Selection provenance" says exactly that.
+What the system records under `propositionInferredFrom` is up to ten of the subject's existing
+statements, which are the input to the candidate selector (it proposes a predicate from graph
+neighbours sharing a (predicate, object) key). The model never sees them: its input is the
+subject and predicate labels only (`training/infer_with_citations.py`). So the edge is not
+attention, not a learned retrieval head, not model conditioning, and not a claim that the cited
+triple supports the prediction. "Selection provenance" means exactly "input to the procedure".
+(Corrected 2026-10-06 in step 3: the first draft of this memo said the model's input was
+conditioned on the cited triples. The code shows it is not.)
 The predicate IRIs (`propositionInferredFrom`, etc.) stay as they are — they are shipped API —
 and the paper states in one sentence what the edge means and does not mean.
 
@@ -27,7 +31,7 @@ and the paper states in one sentence what the edge means and does not mean.
 
 > Writing model-generated triples into the same RDF-star store as curated data, each annotated
 > under a reserved namespace with its generator, its confidence, and quoted pointers to the
-> context triples the inference procedure conditioned on, makes model output (i) queryable and
+> stored statements the prediction procedure took as input, makes model output (i) queryable and
 > filterable with ordinary SPARQL-star, (ii) structurally excluded from future training corpora,
 > and (iii) retractable: withdrawing a source removes every generated triple that transitively
 > depended on it, without touching curated data.

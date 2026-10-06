@@ -25,9 +25,6 @@ and checked; never fabricate a metric, baseline or citation. Decisions made whil
 commits carry the `Skip-Submit: true` trailer so a half-rewritten paper is never posted; only
 step 9 submits.
 
-3. **(target 2026-10-09) Rename + rewrite front matter.** Apply the step-1 name everywhere;
-   rewrite title, abstract (≤1,920 chars, arXiv's limit), introduction, contributions; remove the
-   "neuro-symbolic" overclaim. Update `paper.tex` title. `Skip-Submit: true`.
 4. **(target 2026-10-10) Held-out data check.** Find out, from the recorded corpora on HF
    (`EmmaLeonhart/normalized-wikidata` tags `v11-50k`…`v14-1M`), whether a set of triples
    exists that a shipped checkpoint was never trained on but whose entities it saw (needed for

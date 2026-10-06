@@ -7,6 +7,33 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-06 (evening) — paper retitled; "generative citation" was describing something the code doesn't do
+
+Step 3 of the arXiv-readiness timeline. New title, *Loka: Retractable Provenance for
+Model-Generated Triples in an RDF-star Store* (in `paper.md` and `paper.tex`). New abstract,
+1,444 characters (arXiv's limit is 1,920), and a new introduction and contribution list. The
+repetition penalty is no longer listed as a contribution. "Generative citation", "neuro-symbolic"
+and "world model" are gone from the paper.
+
+**What reading the code turned up.** Before writing the definition of selection provenance I
+checked `training/infer_with_citations.py`. The model's input is the subject and predicate
+labels and nothing else. The `propositionInferredFrom` objects are the first ten of the
+subject's existing statements, written by the procedure. The old paper said the cited context
+was what "the prediction was conditioned on". It wasn't, and the step-1 memo repeated the
+error; both are corrected now. The paper defines the edge as "a stored statement the prediction
+procedure took as input" and says plainly that the model never sees it.
+
+That also exposed a real limitation, now stated in §6.2. The candidate selector reads all of a
+subject's statements but only the first ten get cited. For a subject with more than ten
+statements, cascade retraction can therefore miss a real dependency, and a cited statement may
+have played no part. Citing exactly the statements that matched a neighbour would fix both. That
+is a code change and isn't in the plan; recorded here so it can be weighed before step 7
+measures retraction.
+
+`Skip-Submit: true` again: the body still has seams (retraction lives in a Limitations bullet
+until step 7, Related Work arrives in step 8).
+
+---
 ## 2026-10-06 (later still) — paper §5 rewritten from a version diary into a case study
 
 Step 2 of the arXiv-readiness timeline. The twelve per-version subsections (§5.1–§5.12, about half
