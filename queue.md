@@ -11,6 +11,39 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ---
 
+## ⭐ FIRST — make the Loka paper submittable to arXiv (Emma, 2026-10-06)
+
+**Goal, in Emma's words:** the bare-minimum version of `paper/` that would get an **accept or
+strong accept on the Claude4S review site** and could be **posted on arXiv**. This item comes
+before the engineering items below.
+
+**This item's first job is to PLAN, not to edit the paper.** Read `paper/paper.md`,
+`paper/paper.tex` and every review in `paper/reviews/` (v1 to v8; v8, post 2601, is a **Reject**).
+Then replace this item with a concrete, ordered queue of steps, **each with a target date**,
+forming a timeline from today to "submitted to arXiv". Commit and push that queue on its own
+before starting step one. After that, work the steps top to bottom like any other item.
+
+**What the reviews already say needs fixing** (v8; check the earlier ones for anything else):
+- No standard KG-completion metrics (MRR, Hits@k) and no comparison with existing baselines.
+- A small experiment (44M parameters, 4M triples), with perplexity as the main metric.
+- The writing reads like a dev log: hardware, commit hashes, cron loops. arXiv needs an academic
+  paper.
+- "Generative citation" comes from a heuristic candidate selector, not the model, so the name
+  overclaims. Either rename it or back it up.
+- The "neuro-symbolic" claim is shallow.
+
+**The bare minimum is the point.** Cut claims rather than inventing results. Every number in the
+paper must come from a run that was actually performed and recorded. Never fabricate a metric, a
+baseline or a citation. arXiv also needs: the LaTeX building cleanly from `paper/paper.tex` to a
+PDF, a references list where every entry is real, an abstract within arXiv's length limit, and a
+category, probably `cs.AI` or `cs.DB`.
+
+**Unknowns, to ask Emma about with `AskUserQuestion` when they come up, one at a time:** the
+Claude4S site's URL and how to submit to it, if nothing in the repo says; and who the arXiv
+author and endorser will be. Submitting to arXiv itself is Emma's action, not the session's.
+
+---
+
 ## ACTIVE — computed values: stage 4 (projected expressions + ORDER BY)
 
 **Stages 1–3 are done.** `BIND` over a computed string binds and renders in every result format —
