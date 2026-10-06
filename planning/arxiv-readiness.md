@@ -78,7 +78,34 @@ Wikidata.
 8. Conclusion.
 Appendix — model versions table (params, corpus size, epochs, perplexity).
 
+## Held-out split (step 4 result, 2026-10-06)
+
+**A transductive held-out set exists for the v13 checkpoint without any new training.**
+
+- `train.py` has no validation split; its reported perplexity is exp(mean training loss) over
+  the epoch. So no checkpoint has a built-in held-out set.
+- The corpus tiers are prefixes of one unshuffled stream (`tools/preprocess_from_hf.py
+  --max-rows N`), so `v14-1M` contains triples `v13-500k` does not, and the v13 model never
+  trained on them.
+- Measured with `tools/heldout_split_check.py` over both corpus files:
+  - v13-500k: 2,511,771 lines, **1,663,040 unique triples**, 816,826 distinct entity/literal
+    labels, 1,348 predicates.
+  - v14-1M: 4,021,409 lines; 1,142,131 not in v13, of which 947,676 have a subject label v13
+    never saw (inductive, unusable for TransE).
+  - **Transductive held-out (subject, predicate and object labels all occur in v13): 29,893
+    triples over 542 predicates.** 7,190 of them have an (s, p) that already has another object
+    in v13's training data (needed for the filtered setting).
+  - Dominated by literal-valued predicates (population 4,293; date of birth 1,841; publication
+    date 1,655; inception 1,428; elevation 1,203), then entity-valued ones (located in the
+    administrative territorial entity 642; instance of 571; given name 720).
+- Caveats to state in the paper: entities are identified by English label, so two entities with
+  the same label merge (no QIDs in the corpus); the held-out set skews to whatever the larger
+  label cache newly resolved, not a random sample of Wikidata.
+- Consequence for step 5: evaluate **v13**, not v14, on this set. The candidate set for (s, p, ?)
+  is the object labels seen with p in v13 training. Restricting to entity-valued objects is
+  probably needed for a meaningful ranking (ranking one population figure among thousands
+  measures little); step 5 decides and records it.
+
 ## Open items carried by later steps
 
-- Held-out split availability (step 4) decides whether section 6 has a link-prediction table.
 - Author list and arXiv endorser: ask Emma at step 11.

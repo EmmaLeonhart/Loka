@@ -7,6 +7,25 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-06 (night) — a held-out set for link prediction exists, for v13, with no new training
+
+Step 4 of the arXiv-readiness timeline. The question was whether a fair completion evaluation is
+possible without a training run, which would need Emma's sign-off. It is possible.
+
+`train.py` has no validation split, so no checkpoint carries one. But the normalized-wikidata
+tiers are prefixes of one unshuffled stream, so `v14-1M` contains triples the v13 model never
+trained on. Downloading both tiers and diffing them: of v14's 1,142,131 triples not in v13,
+**29,893** have subject, predicate and object labels that all occur in v13's training data. That
+is a transductive held-out set over 542 predicates, usable both for the v13 model and for a TransE
+trained on v13's corpus. Most of the other new triples have a subject v13 never saw, so neither
+kind of model can be scored on them.
+
+Two side findings. v13's corpus has 2,511,771 lines but only 1,663,040 unique triples, so about a
+third of the lines are duplicates. And the held-out set is mostly literal-valued (population,
+dates), which matters for how step 5 builds candidate sets. Details and caveats (label identity
+instead of QIDs; a skewed, non-random held-out sample) are in `planning/arxiv-readiness.md`.
+
+---
 ## 2026-10-06 (evening) — paper retitled; "generative citation" was describing something the code doesn't do
 
 Step 3 of the arXiv-readiness timeline. New title, *Loka: Retractable Provenance for

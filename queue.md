@@ -25,14 +25,11 @@ and checked; never fabricate a metric, baseline or citation. Decisions made whil
 commits carry the `Skip-Submit: true` trailer so a half-rewritten paper is never posted; only
 step 9 submits.
 
-4. **(target 2026-10-10) Held-out data check.** Find out, from the recorded corpora on HF
-   (`EmmaLeonhart/normalized-wikidata` tags `v11-50k`…`v14-1M`), whether a set of triples
-   exists that a shipped checkpoint was never trained on but whose entities it saw (needed for
-   transductive link prediction). Record the answer in `planning/arxiv-readiness.md`.
 5. **(target 2026-10-12) Link-prediction harness, no training.** `training/eval_linkpred.py`:
    for held-out (s, p, ?) queries, rank candidate object labels by the model's masked
    log-likelihood; report filtered MRR and Hits@1/3/10, plus a predicate-frequency baseline on
-   the same split. Inference only. If step 4 found no usable split, the held-out set needs a
+   the same split. Inference only. Step 4 found a usable split for the **v13** checkpoint (29,893 triples; see
+   `planning/arxiv-readiness.md`), so no retrain is needed. If it proves unusable, a held-out set needs a
    retrain: **ask Emma with AskUserQuestion before any training run** (CLAUDE.md: no silent
    run escalation); if declined, the paper drops every completion-performance claim and keeps
    perplexity only as a training diagnostic.
