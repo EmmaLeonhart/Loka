@@ -7,6 +7,17 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (later) — v0.4.3 released; paper cites it
+
+Tagged `v0.4.3` at `9041568` with CI green. Binaries for all five platforms, hand-written
+notes covering the restart-corruption fix and the SPARQL-star nested-pattern fix. The notes say
+plainly that stores written over HTTP by older versions are not repaired, and that the 2 s flush
+window still applies. The paper and skill now cite v0.4.3: it is the first release where the
+paper's "queryable with SPARQL-star" claim holds for the provenance-edge queries. All my
+scratch Loka servers are stopped. Next: back to step 10a (storage/query comparison), then 10c,
+then resubmit.
+
+---
 ## 2026-10-07 — fixed: HTTP-ingested RDF-star data was scrambled after a restart
 
 Emma chose to fix this before going back to the paper.
