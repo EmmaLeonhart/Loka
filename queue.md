@@ -25,17 +25,10 @@ and checked; never fabricate a metric, baseline or citation. Decisions made whil
 commits carry the `Skip-Submit: true` trailer so a half-rewritten paper is never posted; only
 step 9 submits.
 
-5. **(target 2026-10-12) Link-prediction harness, no training.** `training/eval_linkpred.py`:
-   for held-out (s, p, ?) queries, rank candidate object labels by the model's masked
-   log-likelihood; report filtered MRR and Hits@1/3/10, plus a predicate-frequency baseline on
-   the same split. Inference only. Step 4 found a usable split for the **v13** checkpoint (29,893 triples; see
-   `planning/arxiv-readiness.md`), so no retrain is needed. If it proves unusable, a held-out set needs a
-   retrain: **ask Emma with AskUserQuestion before any training run** (CLAUDE.md: no silent
-   run escalation); if declined, the paper drops every completion-performance claim and keeps
-   perplexity only as a training diagnostic.
 6. **(target 2026-10-13) Standard baseline on the same split.** TransE (and DistMult if cheap)
-   via PyKEEN on CPU over the identical split; results table next to step 5. Skip only if step
-   5 resolved to the cut-claims route.
+   via PyKEEN on CPU over the identical split and protocol as `training/eval_linkpred.py`
+   (v13-500k train, 19,686 rankable held-out queries); results next to step 5's in
+   `planning/arxiv-readiness.md`. Step 5: v13 is below the predicate-frequency baseline.
 7. **(target 2026-10-14) Retraction evaluation.** Measure `retract_set` on synthetic provenance
    graphs of increasing size (correctness against a brute-force reference + latency), as a
    criterion bench or test. This is the systems contribution's evidence; record real numbers.

@@ -7,6 +7,37 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-06 (late night) — link prediction on held-out data: v13 is below a frequency baseline
+
+Step 5 of the arXiv-readiness timeline. `training/eval_linkpred.py` scores the v13 checkpoint on
+the held-out set from step 4: filtered MRR and Hits@k, candidates restricted to objects seen with
+the predicate in training, ties ranked by the mean of optimistic and pessimistic rank. Each
+candidate is scored the way training masks a role: L mask tokens for an L-token object, then the
+sum of token log-probabilities. One forward pass per (query, L) covers every candidate of that
+length, so the 19,686-query run took 23 minutes on CPU with no training.
+
+| | MRR | Hits@1 | Hits@10 |
+|---|---|---|---|
+| v13, all 19,686 | 0.115 | 0.085 | 0.170 |
+| predicate frequency, all | 0.129 | 0.090 | 0.202 |
+| v13, entity-valued 6,090 | 0.287 | 0.230 | 0.399 |
+| predicate frequency, entity-valued | 0.318 | 0.250 | 0.451 |
+
+**The model is below the trivial baseline on almost every cell.** Before the full run I checked
+that this wasn't a harness bug: the checkpoint reproduces its recorded perplexity through
+`train.py`'s own collate path (245 vs 242.75), the harness builds the same masked input, and on 300
+*training* triples it also lands at the baseline (0.071 vs 0.077). The model is weak, which is
+what a training perplexity of about 245 says. The paper will report the table as is. It fits the
+step-1 decision: this is a data-management paper, and the model is there to exercise the
+provenance loop, not to claim completion accuracy.
+
+Two corrections to step 4. The held-out set is 28,448 unique triples, not 29,893, and v14 holds
+1,058,279 new triples, not 1,142,131. Both first counts included duplicate lines in the v14
+file. `tools/heldout_split_check.py` de-duplicates now, and the memo has the corrected numbers.
+Also: torch on this machine is a CPU-only build, so the whole evaluation ran on CPU, capped at
+4 threads.
+
+---
 ## 2026-10-06 (night) — a held-out set for link prediction exists, for v13, with no new training
 
 Step 4 of the arXiv-readiness timeline. The question was whether a fair completion evaluation is

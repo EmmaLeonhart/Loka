@@ -1,0 +1,59 @@
+{
+  "checkpoint": "hf://datasets/EmmaLeonhart/loka@v13/checkpoints/wikidata_v13.pt (epoch 2)",
+  "train": "hf://datasets/EmmaLeonhart/normalized-wikidata@v13-500k/triples_normalized.txt",
+  "later": "hf://datasets/EmmaLeonhart/normalized-wikidata@v14-1M/triples_normalized.txt",
+  "train_unique_triples": 1663040,
+  "transductive_heldout": 28448,
+  "rankable_queries": 19686,
+  "scored_queries": 19686,
+  "protocol": "filtered, predicate-constrained candidates, realistic rank",
+  "model": {
+    "all": {
+      "n": 19686,
+      "mrr": 0.11483365984011851,
+      "hits@1": 0.08483186020522199,
+      "hits@3": 0.11774865386569136,
+      "hits@10": 0.17007010057909175
+    },
+    "entity": {
+      "n": 6090,
+      "mrr": 0.28656011973354184,
+      "hits@1": 0.2297208538587849,
+      "hits@3": 0.3075533661740558,
+      "hits@10": 0.3985221674876847
+    },
+    "literal": {
+      "n": 13596,
+      "mrr": 0.0379129375136298,
+      "hits@1": 0.019932333039129155,
+      "hits@3": 0.03273021476904972,
+      "hits@10": 0.0677405119152692
+    }
+  },
+  "predicate_frequency_baseline": {
+    "all": {
+      "n": 19686,
+      "mrr": 0.12898189096325743,
+      "hits@1": 0.08991161231331911,
+      "hits@3": 0.13080361678350097,
+      "hits@10": 0.20181855125469877
+    },
+    "entity": {
+      "n": 6090,
+      "mrr": 0.3177990471911585,
+      "hits@1": 0.25024630541871923,
+      "hits@3": 0.3330049261083744,
+      "hits@10": 0.4513957307060755
+    },
+    "literal": {
+      "n": 13596,
+      "mrr": 0.04440580377379676,
+      "hits@1": 0.018093556928508385,
+      "hits@3": 0.040232421300382466,
+      "hits@10": 0.09002647837599294
+    }
+  },
+  "seconds": 1360.4,
+  "tokenizer": "hf://datasets/EmmaLeonhart/loka@v13/corpus/tokenizer_bpe.json",
+  "note": "Local download paths replaced with their Hugging Face sources after the run; numbers unchanged. Run on CPU, 4 threads."
+}

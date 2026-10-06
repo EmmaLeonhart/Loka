@@ -31,17 +31,19 @@ n14 = 0
 new = 0
 trans = []
 subj_new = 0
+seen = set()
 for t in read(v14_path):
     n14 += 1
-    if t in train:
+    if t in train or t in seen:
         continue
+    seen.add(t)
     new += 1
     s, p, o = t
     if s in ents and o in ents and p in preds:
         trans.append(t)
     if s not in ents:
         subj_new += 1
-print("v14 triples:", n14, "not in v13:", new, "with subject label unseen in v13:", subj_new)
+print("v14 lines:", n14, "unique triples not in v13:", new, "with subject label unseen in v13:", subj_new)
 print("transductive held-out (s,p,o labels all seen in v13):", len(trans))
 pc = Counter(p for _, p, _ in trans)
 print("distinct predicates in held-out:", len(pc))

@@ -90,21 +90,48 @@ Appendix — model versions table (params, corpus size, epochs, perplexity).
 - Measured with `tools/heldout_split_check.py` over both corpus files:
   - v13-500k: 2,511,771 lines, **1,663,040 unique triples**, 816,826 distinct entity/literal
     labels, 1,348 predicates.
-  - v14-1M: 4,021,409 lines; 1,142,131 not in v13, of which 947,676 have a subject label v13
-    never saw (inductive, unusable for TransE).
-  - **Transductive held-out (subject, predicate and object labels all occur in v13): 29,893
-    triples over 542 predicates.** 7,190 of them have an (s, p) that already has another object
-    in v13's training data (needed for the filtered setting).
-  - Dominated by literal-valued predicates (population 4,293; date of birth 1,841; publication
-    date 1,655; inception 1,428; elevation 1,203), then entity-valued ones (located in the
-    administrative territorial entity 642; instance of 571; given name 720).
+  - v14-1M: 4,021,409 lines; 1,058,279 unique triples not in v13, of which 925,171 have a
+    subject label v13 never saw (inductive, unusable for TransE).
+  - **Transductive held-out (subject, predicate and object labels all occur in v13): 28,448
+    unique triples over 542 predicates.** (Step 4 first reported 29,893 and 1,142,131; both
+    counted duplicate lines in the v14 file. Corrected in step 5; the script de-duplicates now.)
+    6,943 have an (s, p) that already has another object in v13's training data.
+  - Dominated by literal-valued predicates (population 3,905; date of birth 1,839; publication
+    date 1,646; inception 1,422; elevation 1,202), then entity-valued ones (located in the
+    administrative territorial entity 610; instance of 557; given name 511).
 - Caveats to state in the paper: entities are identified by English label, so two entities with
   the same label merge (no QIDs in the corpus); the held-out set skews to whatever the larger
   label cache newly resolved, not a random sample of Wikidata.
-- Consequence for step 5: evaluate **v13**, not v14, on this set. The candidate set for (s, p, ?)
-  is the object labels seen with p in v13 training. Restricting to entity-valued objects is
-  probably needed for a meaningful ranking (ranking one population figure among thousands
-  measures little); step 5 decides and records it.
+- Step 5 evaluated **v13** on this set. Decisions: candidates for (s, p, ?) are the objects
+  seen with p in v13 training (predicate-constrained); queries whose true object was never an
+  object of p in training are dropped (8,762 of 28,448, leaving 19,686); results are reported
+  overall and split into entity-valued objects (object label also occurs as a subject) and
+  literal-valued ones, rather than dropping literals.
+
+## Link-prediction result (step 5, 2026-10-06)
+
+`training/eval_linkpred.py`, output `training/logs/linkpred_v13.json`. Filtered,
+predicate-constrained, realistic rank. 19,686 queries (6,090 entity-valued, 13,596 literal).
+
+| | MRR | Hits@1 | Hits@3 | Hits@10 |
+|---|---|---|---|---|
+| v13 model, all | 0.115 | 0.085 | 0.118 | 0.170 |
+| predicate frequency, all | 0.129 | 0.090 | 0.131 | 0.202 |
+| v13 model, entity-valued | 0.287 | 0.230 | 0.308 | 0.399 |
+| predicate frequency, entity-valued | 0.318 | 0.250 | 0.333 | 0.451 |
+| v13 model, literal-valued | 0.038 | 0.020 | 0.033 | 0.068 |
+| predicate frequency, literal-valued | 0.044 | 0.018 | 0.040 | 0.090 |
+
+**The v13 model does not beat the predicate-frequency baseline** (only literal Hits@1, 0.020 vs
+0.018, is higher). This is consistent with its training perplexity (~245, reproduced from the
+checkpoint) and object-token NLL of 5.8 nats. The paper reports it as is: the model exercises
+the provenance loop, and its completion accuracy is below a trivial baseline. That supports the
+framing decision in this memo (a data-management contribution, not a completion one).
+
+Harness checks done before the full run: the checkpoint reproduces its recorded perplexity
+through `train.py`'s own `collate` (245 vs 242.75 recorded); the harness builds the masked input
+the same way `collate` does; scoring 300 training triples gives MRR 0.071 vs frequency 0.077, so
+even on seen triples the model is near the baseline, which rules out a held-out-specific bug.
 
 ## Open items carried by later steps
 
