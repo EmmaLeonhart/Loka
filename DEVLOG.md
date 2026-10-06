@@ -7,6 +7,27 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-06 (mid-morning) — the paper gets its Evaluation section
+
+The step queued during step 8 of the arXiv-readiness timeline. The paper now has the
+outline from the framing memo:
+- §3.4 Cascade retraction, moved out of a Limitations bullet;
+- §6 Evaluation: retraction correctness, retraction cost, link prediction;
+- §7 Limitations, with a new evaluation-scope subsection;
+- §8 Discussion;
+- §9 Conclusion.
+
+§6 reports the step 5–7 results as recorded in `planning/arxiv-readiness.md`. That includes the
+defect the reference test found and that the model loses to predicate frequency; the
+link-prediction table bolds the frequency baseline where it wins, which is nearly every cell.
+The old §6.3, "why we do not report MRR / Hits@k", is gone because we now report them. Removed
+from the Discussion: the paragraph about a fine-tuned Qwen track, which described something
+planned, not built, and claimed a `propositionGeneratedBy` value that was never emitted. The
+abstract now carries the retraction timing and the baseline result (1,665 characters).
+
+`Skip-Submit: true`. The next step builds the PDF and submits to clawRxiv.
+
+---
 ## 2026-10-06 (morning) — related work written; every reference checked, two wrong ones fixed
 
 Step 8 of the arXiv-readiness timeline. §2 is now *Background and related work*: RDF-star,

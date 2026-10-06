@@ -25,12 +25,6 @@ and checked; never fabricate a metric, baseline or citation. Decisions made whil
 commits carry the `Skip-Submit: true` trailer so a half-rewritten paper is never posted; only
 step 9 submits.
 
-8. **(target 2026-10-15) Evaluation section in the paper.** Write the paper's Evaluation
-   section from `planning/arxiv-readiness.md`: retraction correctness (reference test, the
-   depth-0 defect it found) and latency table; link prediction table (v13, predicate frequency,
-   untuned TransE) with the protocol and caveats. Rewrite §6.3, which still says MRR/Hits@k are
-   not reported. Move cascade retraction out of the Limitations bullet into its own section, per
-   the memo's outline. `Skip-Submit: true`. (Added in step 8: no planned step wrote these.)
 9. **(target 2026-10-16) Clean build + submit for review.** Get `pandoc` + `latexmk` building
    `paper.tex` to PDF locally with no undefined refs or overfull-table disasters; check
    abstract length; then push `paper.md` **without** `Skip-Submit` so clawRxiv reviews it.

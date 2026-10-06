@@ -6,7 +6,7 @@
 
 ## Abstract
 
-Once model-generated statements are written into a knowledge graph next to curated data, it is hard to tell them apart, to keep them out of the next model's training data, or to remove them when a statement they depended on turns out to be wrong. We describe Loka, an RDF-star triplestore that stores model-predicted triples alongside curated ones and annotates each with RDF-star statements in a reserved namespace: the generating model, a confidence, and quoted pointers to the stored statements the prediction procedure took as input, which we call selection provenance. The namespace is enforced at corpus extraction, candidate selection and write time, so generated triples never re-enter a training corpus. Because these dependencies are explicit graph edges, the store supports cascade retraction: removing a node also removes every generated triple that transitively depended on one of its statements, without following ordinary data edges. We exercise the loop with a series of small transformers trained from scratch on label-substituted Wikidata triples, and report a corpus-construction finding: catalog-identifier properties made up three quarters of our initial training corpus and caused identifier-shaped hallucinations, which excluding them removed. Selection provenance records what the procedure used, not what the model relied on, and we make no claim about completion accuracy. Code, all checkpoints and the cleaned corpora are released.
+Once model-generated statements are written into a knowledge graph next to curated data, it is hard to tell them apart, to keep them out of the next model's training data, or to remove them when a statement they depended on turns out to be wrong. We describe Loka, an RDF-star triplestore that stores model-predicted triples alongside curated ones and annotates each with RDF-star statements in a reserved namespace: the generating model, a confidence, and quoted pointers to the stored statements the prediction procedure took as input, which we call selection provenance. The namespace is enforced at corpus extraction, candidate selection and write time, so generated triples never re-enter a training corpus. Because these dependencies are explicit graph edges, the store supports cascade retraction: removing a node also removes every generated triple that transitively depended on one of its statements, without following ordinary data edges. We exercise the loop with a series of small transformers trained from scratch on label-substituted Wikidata triples, and report a corpus-construction finding: catalog-identifier properties made up three quarters of our initial training corpus and caused identifier-shaped hallucinations, which excluding them removed. Tested against an independent reference, retraction computes a 120k-triple removal from a 504k-row store in 58 ms. Selection provenance records what the procedure used, not what the model relied on, and on held-out triples the model does not beat a predicate-frequency baseline: our claims concern the provenance machinery, not the model. Code, all checkpoints and the cleaned corpora are released.
 
 ---
 
@@ -24,7 +24,7 @@ We are specific about what the dependency edge means. In our prediction procedur
 
 2. **An RDF-star annotation schema for generated triples.** Each generated triple carries a fixed block of annotations on the quoted triple: a generated flag, the model version, a confidence, and selection-provenance edges whose objects are themselves quoted triples. (§3.2)
 
-3. **Cascade retraction.** Removing a node removes its statements and every generated triple that transitively depended on them. Traversal follows only selection-provenance edges and stays inside the reserved namespace, so ordinary data edges are never treated as dependencies. (§6.2)
+3. **Cascade retraction.** Removing a node removes its statements and every generated triple that transitively depended on them. Traversal follows only selection-provenance edges and stays inside the reserved namespace, so ordinary data edges are never treated as dependencies. We test it against an independent reference implementation and measure its cost. (§3.4, §6.1–6.2)
 
 4. **A case study on Wikidata.** A from-scratch masked-triple transformer series (v3–v14, all checkpoints and corpora released) exercises the loop end to end and yields a corpus-construction finding: Wikidata's catalog-identifier datatypes dominate a naive corpus and cause identifier-shaped hallucinations, which excluding them removes. (§5)
 
@@ -54,7 +54,7 @@ Link prediction scores candidate completions of (subject, predicate, ?) queries.
 
 ### 2.4 Attribution for generated content
 
-Retrieval-augmented generation conditions a language model on retrieved passages (Lewis et al., 2020), and attributed question answering asks a model to return evidence supporting its answer and evaluates whether the evidence does support it (Bohnet et al., 2022). Those lines of work aim at support: the cited source should justify the output. Selection provenance makes a weaker, procedural claim: the cited statements were the input to the procedure that produced the output. That is enough for retraction, which needs to know what an output depended on, and it is not a claim of support (§6.2).
+Retrieval-augmented generation conditions a language model on retrieved passages (Lewis et al., 2020), and attributed question answering asks a model to return evidence supporting its answer and evaluates whether the evidence does support it (Bohnet et al., 2022). Those lines of work aim at support: the cited source should justify the output. Selection provenance makes a weaker, procedural claim: the cited statements were the input to the procedure that produced the output. That is enough for retraction, which needs to know what an output depended on, and it is not a claim of support (§7.2).
 
 ### 2.5 Training from scratch
 
@@ -115,7 +115,7 @@ When the inference layer accepts a candidate `(S, P)` and emits a predicted obje
 
 `prov:` abbreviates the reserved namespace. The `propositionInferredFrom` objects are up to ten of the subject's existing statements, the input to the candidate selector (§4.4). Wikidata qualifiers and references are imported with the same RDF-star pattern (a quoted statement as subject), so curated and generated annotations share one shape.
 
-Because the `propositionInferredFrom` objects are written by the procedure, not generated by the model, they always point at statements that exist in the store. What they cannot guarantee is relevance: a cited statement may have had no bearing on the predicted object (§6.2).
+Because the `propositionInferredFrom` objects are written by the procedure, not generated by the model, they always point at statements that exist in the store. What they cannot guarantee is relevance: a cited statement may have had no bearing on the predicted object (§7.2).
 
 ### 3.3 The two-system loop
 
@@ -153,6 +153,15 @@ Because the `propositionInferredFrom` objects are written by the procedure, not 
 ```
 
 The loop is closed: generated triples land in the store with `propositionGenerated true`. The next training-corpus extraction's SPARQL-star FILTER excludes them. The model never trains on its own output. Inference can be re-run repeatedly to grow the citation graph without polluting the training distribution.
+
+### 3.4 Cascade retraction
+
+Because every generated triple carries `propositionInferredFrom` edges to the statements its prediction procedure took as input, the store can retract by dependency. Given a node to remove, `retract_set` computes:
+
+1. **Depth 0:** every triple whose subject or object is the node. A generated triple among them takes its reserved-namespace annotation rows with it.
+2. **Closure:** for each removed triple *T*, every generated triple *G* with an annotation `<<G>> propositionInferredFrom <<T>>` is removed together with all of *G*'s reserved-namespace annotations, and the step repeats on *G*.
+
+Traversal follows only `propositionInferredFrom` and only sweeps predicates under the reserved namespace, so an ordinary data edge is never treated as a dependency: retracting a curated entity does not chase its curated neighbours. A triple is processed at most once, so cycles in the citation graph terminate. Dereferencing `<<T>>` requires the reverse index from content-addressed quoted-triple ids to (s, p, o) described in §2.1. The computation is read-only; the engine exposes it as a preview, and deletion is a separate, explicitly confirmed operation (dry run is the default at every interface). §6.1–6.2 evaluate its correctness and cost.
 
 ---
 
@@ -226,7 +235,7 @@ The cumulative penalty matters: a *non*-cumulative penalty (set membership) was 
 
 ## 5. Case study: a model series on cleaned Wikidata
 
-We exercised the provenance loop with a series of from-scratch models (v3–v14) trained on progressively rebuilt Wikidata corpora. Every checkpoint and corpus is released (links at the top of the paper); Appendix A lists each version's tokenizer, corpus size, training length and perplexity. This section reports what the series taught about *corpus construction*, which is the result that transfers to other work training on Wikidata. It does not report completion accuracy; §6.3 explains why, and what that evaluation needs.
+We exercised the provenance loop with a series of from-scratch models (v3–v14) trained on progressively rebuilt Wikidata corpora. Every checkpoint and corpus is released (links at the top of the paper); Appendix A lists each version's tokenizer, corpus size, training length and perplexity. This section reports what the series taught about *corpus construction*, which is the result that transfers to other work training on Wikidata. Completion accuracy is evaluated separately, against baselines, in §6.3.
 
 ### 5.1 Setup
 
@@ -274,41 +283,84 @@ Extracting training triples from the store with paged SPARQL (`LIMIT`/`OFFSET`) 
 
 ---
 
-## 6. Limitations
+## 6. Evaluation
 
-### 6.1 Model and decoding
+### 6.1 Retraction correctness
 
-- **Mode collapse on common tokens.** Even with the cumulative penalty, predictions for predicates the model knows weakly fall back to connectors (`of`, `and`) or to format placeholders (`spouse -> "1 ."`, §5.4). The corpus cleanup removed the worst of these (§5.3) but not all.
-- **Label-space output.** The model emits subword tokens of an English label, not an entity IRI, so outputs can contain BPE fragments and cannot be checked against an entity identifier directly.
-- **No beam search or top-p sampling.** Greedy top-1 only. Some failure cases would resolve with beam-2.
+We test `retract_set` against an independent reference on randomly generated provenance graphs. The generator creates curated triples and generated triples; each generated triple cites one to three earlier triples (curated or generated), about 5 % also cite a *later* generated triple so that the citation graph contains cycles, and each carries a `propositionGeneratedBy` annotation. The reference computes the intended closure (§3.4) by fixpoint iteration over the generator's own lists, without using the store's indexes. We compare the two on 50 small graphs (60 curated and 60 generated triples, 10 roots each) and 10 medium graphs (2,000 and 2,000, 20 roots each).
 
-### 6.2 Provenance
+The comparison found a defect on its first run. When the retracted node was itself the subject or object of a generated triple, that triple was removed at depth 0, but its annotation rows were swept only for generated triples reached through a provenance edge, so they remained as annotations on a triple no longer in the store. Every discrepancy was of this kind. After the fix (depth 0 now sweeps the annotations of its own generated rows, as §3.4 states) the engine and the reference agree on all 700 roots, and a unit test covering the case fails without the fix.
 
-- **Selection provenance is not support.** A `propositionInferredFrom` row points at a concrete context triple, which is auditable, but the *choice* of which context triples to cite is heuristic (§4.4 step 1). The model does not see these statements during prediction; it sees only the subject and predicate labels. The cited set is the first ten of the subject's statements, while the selector reads all of them. So for a subject with more than ten statements, retraction can miss a real dependency, and for any subject a cited statement may have played no part in the proposal. Both are properties of the current procedure, not of the schema; citing exactly the statements that matched a neighbour would fix both.
+### 6.2 Retraction cost
 
-- **The provenance graph is actionable, not just auditable: cascade-retraction.** Because every generated triple carries `propositionInferredFrom` edges to the statements its prediction procedure took as input, the provenance graph supports a *retraction* operation: remove a node — real data or model-generated — and every generated inference that transitively cited it disappears with it. Propagation follows **only** `propositionInferredFrom` edges and is bounded to the reserved `http://loka.dev/provenance/` namespace, so an ordinary data edge is never mistaken for a derivation (real→real is not a dependency) and the traversal is cycle-safe. This ships end-to-end as a pure engine function (`retract_set`), a read-only preview endpoint, a commit-gated `POST /retract` + `retract_node` MCP tool, and a Loka Studio confirm action; the destructive path is opt-in (dry-run is the default at every surface). It depends on the store keeping a reverse index from each content-addressed quoted-triple id to its (s, p, o), without which a `propositionInferredFrom` source could not be dereferenced. This is the concrete payoff of the provenance schema beyond inspection: when a source is found to be wrong, the contaminated model output can be excised precisely rather than left as orphaned hallucination.
+We time `retract_set` with criterion on generated graphs of three sizes, using the same generator (curated and generated triples in equal number, entities = a quarter of that number). The root is the entity with the largest retraction set among a fixed sample of 50. Single laptop, in-memory store, release build:
 
-### 6.3 What we are *not* claiming, and why we do not report MRR / Hits@k
+| Generated triples | Store rows | Triples removed | Max depth | Median time |
+|---|---|---|---|---|
+| 1,000 | 5,034 | 1,439 | 14 | 0.26 ms |
+| 10,000 | 50,484 | 7,367 | 24 | 1.91 ms |
+| 100,000 | 504,389 | 120,461 | 34 | 58.3 ms |
 
-The dominant evaluation regime in transformer-on-KG completion (KG-BERT, KGT5, et al.) reports MRR and Hits@k against held-out triples on closed benchmarks like FB15k-237 or WN18RR. We do not report these numbers, and we want to be explicit about why — both so the gap is visible and so future work in the regime is well-scoped.
+Time grows with the size of the removed set, as the algorithm's per-triple index lookups predict: about 0.5 µs per removed triple at the largest size.
 
-1. **Prediction space, not entity space.** Loka v0 emits *labels*, not entity IRIs. The model produces `"university of halle"` token-by-token, not `<wd:Q156667>`. MRR and Hits@k assume a finite candidate set of entities to rank; we have a vocabulary over English subword pieces (BPE in v6, word-level in v3–v5). The HNSW-as-decoder direction sketched in §7 would close this gap and is a precondition for a meaningful Hits@k number — until then, comparing to a benchmark that ranks entities is category-mistaken, not just unflattering.
-2. **Open-world Wikidata, not closed-world benchmarks.** The 5M-triple slice has no held-out test set in the FB15k sense, and constructing one is non-trivial without leakage: Wikidata is open-world, the corpus is updated continuously, and the same predicate often has many correct values (a city has many `instance of` claims, all valid). The held-out set we *would* construct would be a soft top-k accuracy rather than a hard "correct/incorrect" split.
-3. **What we report instead.** Perplexity (Appendix A) is a training diagnostic, not a completion metric. The behavioural probe of §5.3 is a small fixed test for comparing versions, not a benchmark. The right systematic evaluation, after the entity-decoder lands, is filtered Hits@k against a held-out wikidata snapshot constructed as the symmetric difference between two dump dates.
+### 6.3 Link prediction
 
-We treat MRR / Hits@k as *blocked future work*, gated on the entity-decoder, not as a comparison the paper sidesteps. The reproducibility supplement records the held-out construction we would run.
+To place the case-study model against standard baselines, we evaluate it on held-out triples. The corpus tiers are prefixes of one stream, so the `v14-1M` corpus contains triples the v13 model never trained on. We keep those whose subject, predicate and object labels all occur in v13's training corpus (the transductive setting): 28,448 unique triples over 542 predicates. For each held-out (s, p, o) we rank candidate objects for (s, p, ?). Candidates are the objects seen with p in training, which excludes 8,762 queries whose true object never occurs with p in training and leaves 19,686. We use the filtered setting (other known true objects of (s, p), from training or held-out data, are removed) and the tie-aware rank of Berrendorf et al. (2020).
+
+The model scores a candidate of L tokens by masking L object positions, exactly as in training, and summing the candidate tokens' log-probabilities; one forward pass per (query, L) scores all candidates of that length. We compare with a predicate-frequency baseline (rank by how often the candidate occurs as an object of p in training) and with TransE (Bordes et al., 2013) trained with PyKEEN (Ali et al., 2021) on the same training triples, with entities identified by label as in the transformer's corpus (dimension 128, 20 epochs, Adam, learning rate 0.001, batch 4,096, PyKEEN defaults otherwise). No model was tuned; there is no validation split.
+
+| Model | Objects | n | MRR | Hits@1 | Hits@3 | Hits@10 |
+|---|---|---|---|---|---|---|
+| Predicate frequency | all | 19,686 | **0.129** | **0.090** | **0.131** | **0.202** |
+| v13 transformer | all | 19,686 | 0.115 | 0.085 | 0.118 | 0.170 |
+| TransE | all | 19,686 | 0.074 | 0.044 | 0.079 | 0.133 |
+| Predicate frequency | entity-valued | 6,090 | **0.318** | **0.250** | **0.333** | **0.451** |
+| v13 transformer | entity-valued | 6,090 | 0.287 | 0.230 | 0.308 | 0.399 |
+| TransE | entity-valued | 6,090 | 0.202 | 0.128 | 0.224 | 0.358 |
+| Predicate frequency | literal-valued | 13,596 | **0.044** | 0.018 | **0.040** | **0.090** |
+| v13 transformer | literal-valued | 13,596 | 0.038 | **0.020** | 0.033 | 0.068 |
+| TransE | literal-valued | 13,596 | 0.017 | 0.006 | 0.015 | 0.032 |
+
+Entity-valued objects are those whose label also occurs as a subject in training. Neither learned model beats predicate frequency on this split. The v13 transformer ranks above the untuned TransE, but with no tuning for either model we do not read that as a comparison of methods. The result is consistent with the model's training perplexity (Appendix A): it is a weak completion model. This is why the paper's claims concern the provenance machinery and not the quality of what the model predicts; the machinery is independent of the model it records.
 
 ---
 
-## 7. Discussion
+## 7. Limitations
 
-The from-scratch training position (§2.5) coexists with a documented parallel near-term track admitting fine-tuning of a small base model (e.g., Qwen 2.5 1.5B-Instruct + QLoRA) under the same `propositionInferredFrom` output schema. The corpus cleanup (§5.3) removed the catalog-format hallucinations; the remaining failure modes (§5.4, §6.1: numeric-placeholder degenerations like `spouse -> "1 ."` and BPE-artifact leakage on Commons-category templates) might still be addressed faster by a fine-tuned 1B–3B parameter base model with English already encoded than by the from-scratch path waiting for corpus scale. We accept the provenance tradeoff this introduces — base-model pretraining is opaque — and record `propositionGeneratedBy "qwen-2.5-1.5b-loka-v1"` to track what was emitted by what.
+### 7.1 Model and decoding
 
-Two larger questions are open:
+- **Weak completion accuracy.** The case-study model does not beat a predicate-frequency baseline on held-out triples (§6.3).
+- **Mode collapse on common tokens.** Even with the cumulative penalty, predictions for predicates the model knows weakly fall back to connectors (`of`, `and`) or to format placeholders (`spouse -> "1 ."`, §5.4). The corpus cleanup removed the worst of these (§5.3) but not all.
+- **Label-space output.** The model emits subword tokens of an English label, not an entity IRI, so outputs can contain BPE fragments and cannot be checked against an entity identifier directly.
+- **Greedy decoding only.** No beam search or sampling.
 
-**Where does the OWL layer live?** OWL ontologies are stored in the engine as triples but the engine does not reason. A reasonable role for OWL in the prediction loop is as a *prediction template*: an ontology declares "an instance of class C is expected to have properties P1, P2, P3 with values matching constraints X, Y, Z," and the inference loop reads the template, identifies expected-but-missing predicates for an entity, and predicts values for them. The OWL template becomes the *prompt* of a generative-citation inference call, and `propositionInferredFrom` cites the OWL declaration alongside the supporting context triples. We have not implemented this; it is the cleanest next step.
+### 7.2 Provenance
 
-**What is the right output decoder?** The HNSW vector index in the engine is currently used for vector search (a separate feature) but could serve as a *decoder*: the model emits an embedding, HNSW resolves the nearest known IRI, and the IRI becomes the predicted object. This would close the gap between prediction in label-space and prediction in entity-space, eliminating cases like "metropolitan museum of museum" (decoded label) in favor of `<wd:Q160236>` (decoded entity). Open work.
+- **Selection provenance is not support.** A `propositionInferredFrom` row points at a concrete stored statement, which is auditable, but the statement was chosen by the candidate-selection heuristic (§4.4 step 1), and the model does not see it: the model's input is the subject and predicate labels only. A cited statement may have played no part in the predicted value.
+- **The cited set is truncated.** The procedure cites the first ten of the subject's statements, while the selector reads all of them. For a subject with more than ten statements, retraction can therefore miss a real dependency. This is a property of the current inference procedure, not of the schema or of `retract_set`; citing exactly the statements that matched a neighbour would remove it.
+
+### 7.3 Evaluation scope
+
+- The link-prediction set is small (19,686 rankable queries), skewed toward literal-valued predicates, and drawn from the triples a larger label cache newly resolved rather than sampled uniformly from Wikidata. Entities are identified by English label, so distinct entities with the same label are merged, which affects the transformer and TransE alike.
+- No model was tuned, and only one checkpoint (v13) has a held-out set that requires no retraining.
+- Retraction was evaluated on synthetic graphs with an in-memory store on one machine; the sled-backed persistent store was not timed.
+- The source dataset revision was not pinned when the corpora were built (References). The released corpora are fixed, but the path from source dump to corpus cannot be replayed exactly.
+
+---
+
+## 8. Discussion
+
+Two directions would strengthen the provenance record itself.
+
+**Ontology templates as the selector.** OWL ontologies can be stored in the engine as triples, though the engine does not reason over them. An ontology could serve as the candidate selector: a class declares the properties its instances are expected to have, the inference loop proposes the missing ones, and `propositionInferredFrom` cites the class declaration alongside the subject's statements. The citation would then name the reason a predicate was proposed, which the current neighbour heuristic only approximates.
+
+**An entity-space decoder.** The engine's HNSW vector index could resolve a predicted embedding to the nearest known IRI, so that predictions are entities rather than label strings. That would make completion directly comparable with entity-ranking methods and remove BPE artifacts from stored output.
+
+---
+
+## 9. Conclusion
+
+We described how a triplestore can hold model-generated statements next to curated ones without losing track of them: each generated triple carries RDF-star annotations, in a reserved namespace, naming its model, its confidence and the stored statements its procedure used. The namespace keeps generated statements out of training corpora, and the dependency edges support cascade retraction, which we tested against an independent reference (finding and fixing one defect) and timed at 58 ms for a 120k-triple retraction in a 504k-row store. A case study on Wikidata showed that catalog-identifier datatypes dominate a naive training corpus and cause identifier-shaped hallucinations; the model trained on the cleaned corpus remains weak at completion, below a frequency baseline, which is why our claims rest on the provenance machinery rather than on the model. Code, checkpoints and corpora are released.
 
 ---
 
