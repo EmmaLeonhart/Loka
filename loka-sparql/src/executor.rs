@@ -1594,6 +1594,21 @@ fn evaluate_triple_pattern(
                             } else {
                                 new_row.insert(name.clone(), outer_triple.object);
                             }
+                        } else if o_id.is_none()
+                            && matches!(object, Term::QuotedTriple { .. })
+                            && !bind_term_to_id(
+                                object,
+                                outer_triple.object,
+                                &mut new_row,
+                                ctx.dict,
+                                ctx.prefixes,
+                            )?
+                        {
+                            // Quoted triple in BOTH positions, with variables in
+                            // the object one: its hash can't be computed up
+                            // front, so dereference the stored object id and
+                            // match it component by component.
+                            continue;
                         }
 
                         results.push(new_row);
@@ -2507,7 +2522,58 @@ fn resolve_term(
 /// (it silently widens the predicate/object filter to match every
 /// annotation on the quoted triple — engine-bug-#2 follow-up).
 fn is_unresolved_constant(term: &Term, id: Option<TermId>) -> bool {
-    id.is_none() && !matches!(term, Term::Variable(_))
+    id.is_none() && !matches!(term, Term::Variable(_)) && !contains_variable(term)
+}
+
+/// Whether a term is, or (for a quoted-triple pattern) contains, a variable.
+fn contains_variable(term: &Term) -> bool {
+    match term {
+        Term::Variable(_) => true,
+        Term::QuotedTriple {
+            subject,
+            predicate,
+            object,
+        } => {
+            contains_variable(subject) || contains_variable(predicate) || contains_variable(object)
+        }
+        _ => false,
+    }
+}
+
+/// Match a stored term id against a pattern term, binding variables in `row`.
+///
+/// A quoted-triple pattern is matched by dereferencing `id` through the
+/// dictionary's quoted-triple reverse index and matching each component
+/// recursively; an id that is not a registered quoted triple never matches
+/// one. Returns false (leaving `row` partly updated, so callers must work on a
+/// copy) when the id does not fit the pattern.
+fn bind_term_to_id(
+    pattern: &Term,
+    id: TermId,
+    row: &mut Bindings,
+    dict: &TermDictionary,
+    prefixes: &HashMap<String, String>,
+) -> Result<bool> {
+    match pattern {
+        Term::Variable(name) => match row.get(name) {
+            Some(&existing) => Ok(existing == id),
+            None => {
+                row.insert(name.clone(), id);
+                Ok(true)
+            }
+        },
+        Term::QuotedTriple {
+            subject,
+            predicate,
+            object,
+        } => match dict.resolve_quoted(id) {
+            Some((s, p, o)) => Ok(bind_term_to_id(subject, s, row, dict, prefixes)?
+                && bind_term_to_id(predicate, p, row, dict, prefixes)?
+                && bind_term_to_id(object, o, row, dict, prefixes)?),
+            None => Ok(false),
+        },
+        _ => Ok(resolve_term(pattern, row, dict, prefixes)? == Some(id)),
+    }
 }
 
 /// Try to evaluate a triple pattern as a virtual HNSW edge query.
@@ -3781,6 +3847,73 @@ mod tests {
                 .unwrap()
         );
         assert_eq!(*row.get("qv").unwrap(), dict.lookup("\"0.9\"").unwrap());
+    }
+
+    /// A provenance edge between two quoted triples:
+    /// `<< Q1 G Q2 >> inferredFrom << Q42 P20 Q31 >>`, plus an unrelated
+    /// annotation whose object is a plain IRI.
+    fn nested_star_fixture() -> (TripleStore, TermDictionary) {
+        let mut dict = TermDictionary::new();
+        let mut store = TripleStore::new();
+        let q42 = dict.intern("http://wd/Q42");
+        let p20 = dict.intern("http://wd/P20");
+        let q31 = dict.intern("http://wd/Q31");
+        let q1 = dict.intern("http://wd/Q1");
+        let g = dict.intern("http://wd/G");
+        let q2 = dict.intern("http://wd/Q2");
+        let inferred = dict.intern("http://loka.dev/provenance/propositionInferredFrom");
+        let by = dict.intern("http://loka.dev/provenance/propositionGeneratedBy");
+        let model = dict.intern("http://wd/model");
+        store.insert(Triple::new(q42, p20, q31)).unwrap();
+        store.insert(Triple::new(q1, g, q2)).unwrap();
+        let gen = dict.register_quoted(q1, g, q2);
+        let src = dict.register_quoted(q42, p20, q31);
+        store.insert(Triple::new(gen, inferred, src)).unwrap();
+        store.insert(Triple::new(gen, by, model)).unwrap();
+        (store, dict)
+    }
+
+    #[test]
+    fn sparql_star_quoted_in_both_positions_matches() {
+        // Found 2026-10-06 on real provenance data: a quoted pattern with
+        // variables in the OBJECT, when the subject is also a quoted pattern,
+        // matched nothing (it was treated as an unknown constant).
+        let (store, dict) = nested_star_fixture();
+        let q = parser::parse(
+            "SELECT ?s ?cs ?co WHERE { << ?s ?p ?o >> \
+             <http://loka.dev/provenance/propositionInferredFrom> << ?cs ?cp ?co >> }",
+        )
+        .unwrap();
+        let result = execute(&q, &store, &dict).unwrap();
+        assert_eq!(result.rows.len(), 1);
+        let row = &result.rows[0];
+        assert_eq!(*row.get("s").unwrap(), dict.lookup("http://wd/Q1").unwrap());
+        assert_eq!(
+            *row.get("cs").unwrap(),
+            dict.lookup("http://wd/Q42").unwrap()
+        );
+        assert_eq!(
+            *row.get("co").unwrap(),
+            dict.lookup("http://wd/Q31").unwrap()
+        );
+    }
+
+    #[test]
+    fn sparql_star_quoted_object_with_constant_inside() {
+        let (store, dict) = nested_star_fixture();
+        let hit = parser::parse(
+            "SELECT ?s WHERE { << ?s ?p ?o >> \
+             <http://loka.dev/provenance/propositionInferredFrom> << ?cs ?cp <http://wd/Q31> >> }",
+        )
+        .unwrap();
+        assert_eq!(execute(&hit, &store, &dict).unwrap().rows.len(), 1);
+        // A constant that matches no cited triple must give no rows, and the
+        // plain-IRI annotation (generatedBy -> model) must never match a
+        // quoted pattern.
+        let miss =
+            parser::parse("SELECT ?s WHERE { << ?s ?p ?o >> ?ap << ?cs ?cp <http://wd/Q2> >> }")
+                .unwrap();
+        assert_eq!(execute(&miss, &store, &dict).unwrap().rows.len(), 0);
     }
 
     #[test]

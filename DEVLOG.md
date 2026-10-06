@@ -7,6 +7,34 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (small hours) — 10a found two engine bugs: one fixed (SPARQL-star), one queued (persistence)
+
+**Storage counts (10a, part 1).** `tools/provenance_encodings.py` re-encodes the 59 real v13
+predictions from 10b three ways. RDF-star annotations: **402 rows**. Standard reification +
+PROV-O: **1,278** (3.2×). Named graph per prediction: **1,042 quads** (2.6×). Most of the
+overhead is reifying each cited source (160 distinct) so it can be pointed at.
+
+**Bug 1, fixed: SPARQL-star with quoted triples in both positions matched nothing.**
+`<< ?s ?p ?o >> propositionInferredFrom << ?cs ?cp ?co >>` returned 0 rows on the real store,
+while `<< ?s ?p ?o >> propositionInferredFrom ?c` returned all 166. Cause in
+`loka-sparql/src/executor.rs`: the subject-side quoted branch ran
+`is_unresolved_constant(object, …)`, which treated a quoted pattern *containing variables* as an
+unknown constant and skipped the row. Fix: such a pattern is not a constant, and the subject-side
+branch now dereferences the stored object id through the quoted-triple reverse index and
+binds/matches it component by component (`bind_term_to_id`). Two new tests both fail with the old
+check and pass with the fix. On a fresh real-data server the nested query now returns 166, and
+the bound form returns the 5 predictions citing Q867541 (0 before). loka-sparql: 120 tests
+pass; fmt and clippy clean.
+
+**Bug 2, queued as a top-of-queue BUG item: data POSTed over HTTP is corrupted after a restart.**
+I restarted my test server to load the new binary. The row count survived, but quoted triples
+came back with wrong components, annotation objects pointed at wrong terms, the provenance
+predicate matched nothing, and non-ASCII literals were double-encoded. The 10b retraction
+numbers were all measured before any restart, so they stand. This is a data-integrity bug in the
+product, bigger than the paper step, so it's queued above the paper with a repro and asked of
+Emma for priority.
+
+---
 ## 2026-10-06 (night, last) — retraction checked on real Wikidata data through the server
 
 Step 10b, done before 10a because the storage comparison needs a real set of generated triples to

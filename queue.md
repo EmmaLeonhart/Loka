@@ -11,6 +11,26 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ---
 
+## ⭐ BUG — RDF-star data POSTed over HTTP comes back corrupted after a server restart (found 2026-10-06)
+
+Repro (v0.4.2 binary): `loka import seed.nt --data-dir D`; `loka serve --data-dir D`; `POST
+/triples` an N-Triples-star file of generated triples with annotation blocks (e.g.
+`training/infer_with_citations.py --post` output); queries are correct. Stop the server and
+start it again on D: the row count is unchanged, but
+- quoted triples come back with wrong components (a generated triple renders as
+  `<< Q39546 P4333 "0.7377"^^xsd:decimal >>`, the confidence literal in its object slot);
+- annotation objects point at wrong terms (a `propositionGeneratedBy` row's object renders as
+  the `propositionInferredFrom` IRI);
+- `?g propositionInferredFrom ?c` matches 0 rows (166 before restart);
+- non-ASCII literals come back double-encoded (`Ġ` → `Ä `).
+Suspects: term/quoted-id rehydration order on reopen (`load_terms_into`, `load_quoted_into`)
+vs. ids assigned at insert time over HTTP; and a bytes-vs-chars encoding step for literals.
+Needs: a failing persistence test in loka-core first (insert RDF-star + non-ASCII via the same
+path as `POST /triples`, reopen, compare), then the fix. Data dir with the corruption is in the
+session scratchpad (`realret/db`), not committed.
+
+---
+
 ## ⭐ FIRST — arXiv-readiness timeline for the Loka paper (planned 2026-10-06)
 
 Goal (Emma, 2026-10-06): the bare-minimum `paper/` that gets **Accept / Strong Accept** on the
@@ -29,7 +49,8 @@ step 9 submits.
     `paper/reviews/`; fix what is fixable by cutting or by real runs; resubmit. Stop at Accept /
     Strong Accept, or at 2026-10-24 with a written list of what the remaining cons would need.
     Iteration plan after review v10 (post 2905, Weak Reject), in order, no training runs:
-    - **10a. Storage comparison with named graphs and PROV-O-style reification.** Count, for a
+    - **10a. Storage comparison with named graphs and PROV-O-style reification.** Row counts done
+      (402 / 1,278 / 1,042, tools/provenance_encodings.py); query timing still to do. Count, for a
       real set of generated triples, the rows each encoding needs (RDF-star annotation block vs.
       a named graph per prediction vs. standard reification + PROV-O), measured by building
       each in the engine, plus one SPARQL query per encoding for "generated triples citing X".
