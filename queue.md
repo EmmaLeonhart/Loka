@@ -28,8 +28,13 @@ step 9 submits.
 10. **(reopened 2026-10-08) Review iteration toward Strong Accept.** Emma: aim for Strong
     Accept, not Weak Accept (v12). Model stays as is, no training (Emma, 2026-10-08). Work the
     other v12 cons:
-    Resubmitted 2026-10-07 after 10g (IRI resolution) and 10h (153k-triple real graph, two-hop
-    chains, 27,142 transitive checks, 0 misses, 0 extras). Next: read review v13 and iterate.
+    Review v13 (post 2912): **Accept**. Still aiming for Strong Accept (Emma). Next, no training:
+    - **10i. Commit-phase cost on the persistent store.** Time `POST /retract` with commit on a
+      sled-backed server holding the real graph, not just the in-memory preview.
+    - **10j. Node-level dependency edges.** Record one dependency edge per contributing neighbour
+      *node* instead of one statement each, teach `retract_set` to follow it, and remeasure
+      volume and correctness on the real graph. Reduces the >100-rows-per-prediction overhead.
+    - Then resubmit and read review v14.
 
 11. **(target 2026-10-25) arXiv package + handoff.** Build the arXiv source tarball
     (`paper.tex`, generated body, `neurips_2026.sty`, figures), verify it compiles from a clean

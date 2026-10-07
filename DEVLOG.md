@@ -7,6 +7,14 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (later) — review v13: Accept
+
+Post 2912 got **Accept**, up from Weak Accept. Remaining cons: the weak model, procedural
+provenance and poor IRI resolution (all from the model, which stays by Emma's decision); plus
+annotation overhead over 100 rows per prediction at scale, and an unmeasured persistent commit
+phase. Emma wants Strong Accept, so the last two are queued as 10i and 10j.
+
+---
 ## 2026-10-07 — 10h done: real two-hop chains, 27,142 transitive checks, 0 errors; resubmitted
 
 Pass 2 (`--include-generated-context`) made 90 predictions, 83 of them citing a pass-1 prediction,
