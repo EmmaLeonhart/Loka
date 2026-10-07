@@ -35,12 +35,8 @@ step 9 submits.
     Review v16 (post 2915): **Accept**. Remaining cons: weak model, exact-match entity
     resolution, heuristic selector, real-data scale up to 2M (billion-triple untested),
     label-space output: all model-bound or out of laptop reach. Waiting on Emma: push further
-    (would need the model) or move to step 11.
-
-11. **(target 2026-10-25) arXiv package + handoff.** Build the arXiv source tarball
-    (`paper.tex`, generated body, `neurips_2026.sty`, figures), verify it compiles from a clean
-    directory, write the metadata (title, abstract, `cs.DB` + `cs.AI`, license). Ask Emma with
-    Author: Emma Leonhart, emma@topazcomputing.com; Emma is already endorsed. Submitting is Emma's action.
+    (would need the model) or submit. The arXiv package is ready (paper/arxiv/METADATA.md); the
+    upload itself is Emma's action.
 
 ---
 

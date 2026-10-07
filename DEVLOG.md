@@ -7,6 +7,23 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (late night) — step 11: arXiv package built and verified in CI
+
+Step 10 is waiting on Emma's call: chase Strong Accept with a better model, or submit. The loop
+says to make a call when blocked. Mine: don't train, since that contradicts her explicit "keep
+it, no training". Build the arXiv package instead. It's non-destructive, it gets regenerated on
+every paper change, so it doesn't close off further revision, and submitting stays her action.
+
+`paper-pdf.yml` now copies `paper.tex`, the generated `paper.tex.body` and `neurips_2026.sty`
+into a clean directory, compiles there with pdflatex (failing on undefined references), and
+uploads `loka-arxiv-source.tar.gz` and `paper-arxiv-check.pdf` with the PDFs. The first run built
+16 pages with no undefined references, and the tarball holds exactly those three files. I checked
+page 1 by eye: title, author line with the new email, abstract. `paper/arxiv/METADATA.md` holds
+title, author, contact, categories (cs.DB primary, cs.AI cross-list), a comments line, the
+plain-text abstract (1,661 of 1,920 characters) and the upload steps. The licence is left for
+Emma to pick.
+
+---
 ## 2026-10-07 (night, last) — review v16: Accept
 
 Post 2915 is **Accept**, back up from v15's Weak Accept. The pros now name the independent
