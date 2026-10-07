@@ -29,7 +29,7 @@ step 9 submits.
     `paper/reviews/`; fix what is fixable by cutting or by real runs; resubmit. Stop at Accept /
     Strong Accept, or at 2026-10-24 with a written list of what the remaining cons would need.
     Review v11 (post 2908): Weak Reject. Iteration plan, no training:
-    - **10f. Release + resubmit.** Cut v0.4.4 (query speed-up), point the paper at it, resubmit.
+    Resubmitted 2026-10-08 after 10d–10f (v0.4.4). Next: read review v12 and iterate.
     Weak model: Emma decided 2026-10-06 to keep it, no training.
 11. **(target 2026-10-25) arXiv package + handoff.** Build the arXiv source tarball
     (`paper.tex`, generated body, `neurips_2026.sty`, figures), verify it compiles from a clean

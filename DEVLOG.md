@@ -7,6 +7,15 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 (evening) — v0.4.4 released; paper resubmitted
+
+10f. Tagged `v0.4.4` at `dad7156` with CI green: the predicate-driven SPARQL-star path
+(`cd3fd3c`), binaries for all five platforms, and notes stating the behaviour change (annotations
+on unasserted quoted triples now match). The paper and skill cite v0.4.4. This is the
+resubmission for review v11's cons: the RDF-star query is now within 0.13 ms of the reified
+join; retraction is measured at 5M rows; catalog noise is demoted. No `Skip-Submit`.
+
+---
 ## 2026-10-08 (later) — retraction at 5M rows; catalog noise demoted
 
 **10d.** The retraction bench gains a 1M-generated-triple size (5,050,435 rows in memory; 8 GB
