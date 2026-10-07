@@ -7,6 +7,31 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (night) — 10j: bounded selector cuts provenance ~8× with retraction still exact
+
+`infer_with_citations.py` now consults at most 20 subject statements and 20 neighbours per
+subject (`73ec9e5`) and still cites everything it used. Both real-data pipelines were rerun from
+fresh stores on the batched-commit binary.
+
+**Large graph** (153k triples, two inference passes): 263 + 93 predictions, 83 of the second
+pass citing a first-pass prediction. 4,817 annotation rows for 356 generated triples, against
+39,470 for 371 before. Citations per prediction: median 9, p90 20, max 26 (median 105 before).
+Transitive retraction check: 4,354 required removals over 983 entities, **0 missed, 0 extra**;
+preview median 1.4 ms, p95 5.6 ms. Committed retraction of 30 entities: 6,380 rows, median
+4.6 ms, max 31 ms; a restart reloads exactly 152,126 rows. IRI resolution: 5 of 356.
+
+**Small graph** (15k triples): 38 predictions; RDF-star 333 rows against reification 937 and
+named graphs 785; same answers for all 169 entities; query median 0.66 ms against 0.56 ms;
+retraction 195 checks, 0 missed, 0 extra.
+
+The reruns overwrote two log files the paper still cites for the earlier, unbounded run. They're
+restored from git as `retract_real_q42_large_unbounded.json` (27,142 checks) and
+`retract_commit_q42_large_unbounded_after_batch.json` (8.3 ms median), so every number keeps
+its source. The paper is updated in §4.4, §6.2, §6.3 and §7. The node-level-dependency future-
+work paragraph is removed, since the bounded selector addresses the volume. `Skip-Submit:
+true`; v0.4.5 release next, then resubmit.
+
+---
 ## 2026-10-07 (evening) — 10j replanned before building: node edges wouldn't reduce volume
 
 On the large graph the neighbour-side citations are already one per neighbour (median 82), so

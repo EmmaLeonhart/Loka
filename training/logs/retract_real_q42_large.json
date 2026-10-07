@@ -1,22 +1,22 @@
 {
-  "endpoint": "http://127.0.0.1:3040",
+  "endpoint": "http://127.0.0.1:3043",
   "roots": 983,
-  "generated_triples": 371,
-  "annotation_rows": 39470,
-  "cited_statements_per_prediction": 103.39,
-  "dependency_checks": 27142,
+  "generated_triples": 356,
+  "annotation_rows": 4817,
+  "cited_statements_per_prediction": 10.52,
+  "dependency_checks": 4354,
   "dependency_mismatches": 0,
   "unexpected_removals": 0,
   "unexpected_examples": [],
   "deepest_generated_chain": 2,
   "mismatch_examples": [],
   "latency_ms": {
-    "median": 2.99,
-    "p95": 306.41,
-    "max": 1037.72
+    "median": 1.4,
+    "p95": 5.58,
+    "max": 41.63
   },
   "removed_triples": {
-    "median": 182,
-    "max": 38122
+    "median": 83,
+    "max": 4451
   }
 }

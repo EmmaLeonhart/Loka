@@ -1,0 +1,17 @@
+{
+  "rdfstar": {
+    "rows": 333,
+    "bytes": 82839
+  },
+  "reification": {
+    "rows": 937,
+    "bytes": 125570
+  },
+  "namedgraph": {
+    "rows": 785,
+    "bytes": 106767
+  },
+  "generated_triples": 38,
+  "citations": 181,
+  "distinct_cited_sources": 113
+}

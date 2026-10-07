@@ -29,12 +29,6 @@ step 9 submits.
     Accept, not Weak Accept (v12). Model stays as is, no training (Emma, 2026-10-08). Work the
     other v12 cons:
     Review v13 (post 2912): **Accept**. Still aiming for Strong Accept (Emma). Next, no training:
-    - **10j (replanned). Bound the selector, keep the record complete.** Node-level edges would not
-      shrink anything (neighbour citations are already one per neighbour; median 82). Instead
-      cap the candidate selector's inputs: at most M subject statements and K neighbours per
-      proposal, chosen deterministically, and cite all of them. Volume is then bounded by M + K
-      by construction, and retraction stays complete relative to what the procedure used.
-      Rerun the real-data pipeline (small and large graph) and update the paper's numbers.
     - Release v0.4.5 (10i batched commit + this).
     - Then resubmit and read review v14.
 

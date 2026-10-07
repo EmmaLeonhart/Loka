@@ -1,27 +1,27 @@
 {
-  "endpoint": "http://127.0.0.1:3035",
-  "proposals": 740,
+  "endpoint": "http://127.0.0.1:3045",
+  "proposals": 654,
   "subject_side_citations": {
-    "median": 2.0,
-    "p90": 8,
-    "p99": 23,
-    "max": 87,
-    "mean": 3.84
+    "median": 1.0,
+    "p90": 4,
+    "p99": 7,
+    "max": 7,
+    "mean": 1.9
   },
   "neighbour_side_citations": {
-    "median": 27.0,
-    "p90": 228,
-    "p99": 576,
-    "max": 585,
-    "mean": 93.06
+    "median": 12.0,
+    "p90": 118,
+    "p99": 293,
+    "max": 576,
+    "mean": 42.28
   },
   "neighbours_per_proposal": {
-    "median": 3.0,
-    "p90": 7,
-    "p99": 17,
+    "median": 2.0,
+    "p90": 5,
+    "p99": 8,
     "max": 30,
-    "mean": 3.45
+    "mean": 2.62
   },
-  "total_subject_side": 2844,
-  "total_neighbour_side": 68861
+  "total_subject_side": 1245,
+  "total_neighbour_side": 27654
 }
