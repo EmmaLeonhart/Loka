@@ -32,11 +32,6 @@ step 9 submits.
     Review v14 (post 2913): **Accept** again. Remaining non-model cons, no training:
     Review v15 (post 2914): Weak Accept (v13/v14 Accept). Emma (2026-10-07): "More background
     research". Read as: position the contribution against the closest prior work.
-    - **10m. Background research.** Find, verify at source, and fold into §2 (and §3.4 where it
-      sharpens the contrast): truth maintenance systems (Doyle 1979), why-/where-provenance
-      (Buneman et al.), provenance semirings (Green et al.), deletion propagation in
-      materialised views / Datalog (DRed, Gupta et al.), nanopublications, machine unlearning.
-      Every citation checked; say plainly what is new relative to each.
     - Then resubmit and read review v16.
 
 11. **(target 2026-10-25) arXiv package + handoff.** Build the arXiv source tarball

@@ -7,6 +7,25 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (night, later) — 10m: background research added; resubmitted
+
+Six references were verified at source (publisher, DOI or proceedings pages) and added: Doyle
+1979 (truth maintenance), Buneman, Khanna & Tan 2001 (why/where-provenance), Green,
+Karvounarakis & Tannen 2007 (provenance semirings), Gupta, Mumick & Subrahmanian 1993
+(incremental view maintenance under deletion), Groth, Gibson & Velterop 2010 (nanopublications),
+Bourtoule et al. 2021 (machine unlearning). I didn't name a specific unlearning method, because I
+couldn't confirm its name from the source.
+
+The paper now places cascade retraction against its nearest precedent, in a new §2.5. A JTMS
+withdraws a belief only when *no* justification remains. In Loka each generated triple has
+exactly one justification, the full set of inputs its procedure consumed, so removing any one
+input retracts it and no derivation counting is needed. Unlike view maintenance, the derived
+statements are model outputs, not recomputable from rules, so the dependency record has to be
+stored at write time. §2.2 now places selection provenance as single-witness why-provenance;
+§2.4 contrasts retraction with machine unlearning (outputs, not model). 22 references, all
+cited. Resubmitting.
+
+---
 ## 2026-10-07 (late, later) — Emma: "More background research"
 
 Asked how to proceed after v15 (go to arXiv / train / keep iterating), Emma answered "More

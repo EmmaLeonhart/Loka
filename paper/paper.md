@@ -44,9 +44,9 @@ RDF-star extends RDF so that a triple can appear, *quoted*, as the subject or ob
 
 Wikidata expresses the same information through reified statement nodes carrying qualifiers and references (Vrandečić and Krötzsch, 2014); RDF-star collapses them into one structural primitive. Loka interns a quoted triple to a content-addressed identifier, `quoted_triple_id(s, p, o)`, a hash of the three component ids, and keeps a reverse index from that identifier to (s, p, o) so that a quoted triple can be rendered and dereferenced.
 
-### 2.2 Provenance in RDF
+### 2.2 Provenance
 
-Recording where statements come from is an old concern of the Semantic Web. Named graphs attach provenance and trust information to sets of triples (Carroll et al., 2005), and the W3C PROV-O ontology gives a vocabulary for entities, activities and agents and their derivation relations (Lebo et al., 2013). Both operate at the granularity of a graph or an explicit provenance resource. We use RDF-star to attach provenance to individual triples directly, with a small fixed vocabulary for one case, model-generated statements; mapping it onto PROV-O terms (e.g. `prov:wasDerivedFrom` for `propositionInferredFrom`) is straightforward and left to consumers. What we add is not a provenance vocabulary but an operational use of it inside the store: exclusion from training corpora and cascade retraction.
+Recording where statements come from is an old concern of the Semantic Web. Named graphs attach provenance and trust information to sets of triples (Carroll et al., 2005), and the W3C PROV-O ontology gives a vocabulary for entities, activities and agents and their derivation relations (Lebo et al., 2013). Nanopublications package a single assertion with its provenance and publication information as a set of named graphs (Groth et al., 2010). In database theory, provenance has been formalised as *why-provenance*, the source tuples that witness an output, and *where-provenance*, the locations a value was copied from (Buneman et al., 2001), and generalised by provenance semirings, which annotate query results with polynomials over source annotations (Green et al., 2007). Selection provenance is a form of why-provenance with a single witness set per output: the stored statements the procedure consumed. All of these record provenance; none of the RDF ones defines how a store should act on it when a source is withdrawn. Most operate at the granularity of a graph or an explicit provenance resource. We use RDF-star to attach provenance to individual triples directly, with a small fixed vocabulary for one case, model-generated statements; mapping it onto PROV-O terms (e.g. `prov:wasDerivedFrom` for `propositionInferredFrom`) is straightforward and left to consumers. What we add is not a provenance vocabulary but an operational use of it inside the store: exclusion from training corpora and cascade retraction.
 
 ### 2.3 Knowledge-graph completion
 
@@ -54,9 +54,13 @@ Link prediction scores candidate completions of (subject, predicate, ?) queries.
 
 ### 2.4 Attribution for generated content
 
-Retrieval-augmented generation conditions a language model on retrieved passages (Lewis et al., 2020), and attributed question answering asks a model to return evidence supporting its answer and evaluates whether the evidence does support it (Bohnet et al., 2022). Those lines of work aim at support: the cited source should justify the output. Selection provenance makes a weaker, procedural claim: the cited statements were the input to the procedure that produced the output. That is enough for retraction, which needs to know what an output depended on, and it is not a claim of support (§7.2).
+Retrieval-augmented generation conditions a language model on retrieved passages (Lewis et al., 2020), and attributed question answering asks a model to return evidence supporting its answer and evaluates whether the evidence does support it (Bohnet et al., 2022). Those lines of work aim at support: the cited source should justify the output. Selection provenance makes a weaker, procedural claim: the cited statements were the input to the procedure that produced the output. That is enough for retraction, which needs to know what an output depended on, and it is not a claim of support (§7.2). Machine unlearning addresses the complementary problem of removing a training example's influence from the model itself (Bourtoule et al., 2021); cascade retraction removes a source's influence from the model's *stored outputs*, and needs no change to the model.
 
-### 2.5 Training from scratch
+### 2.5 Truth maintenance and deletion propagation
+
+Cascade retraction is closest in spirit to truth maintenance. A justification-based truth maintenance system records, for each belief, the justifications that support it and withdraws a belief when none of its justifications remains valid (Doyle, 1979). Deductive and relational databases face the same problem for materialised views: Gupta et al. (1993) give incremental algorithms that propagate deletions to derived tuples, counting alternative derivations for each derived tuple and, for recursive views, deleting an over-estimate and re-deriving. Loka's setting differs in two ways that keep the mechanism simple. Each generated triple has exactly one justification, the set of stored statements its procedure consumed, so removing any one of them removes the triple, and no alternative-derivation counting is needed. And the derived statements are not recomputable from a rule set: they are model outputs, so the dependency record must be stored at write time, which is what the RDF-star annotations do. What we contribute is not the propagation idea but its realisation inside an RDF-star store, bounded to a reserved namespace so that curated data is never treated as derived.
+
+### 2.6 Training from scratch
 
 The models in our case study are trained from scratch on triples, not fine-tuned from a pretrained language model. With a pretrained model, a generated triple can draw on pretraining data the store knows nothing about, so its provenance record would be incomplete by construction; training only on the corpus keeps everything the model learned inside a known, released dataset. The schema itself does not depend on this choice.
 
@@ -379,8 +383,14 @@ We described how a triplestore can hold model-generated statements next to curat
 - Berrendorf, M., Faerman, E., Vermue, L., Tresp, V. *On the Ambiguity of Rank-Based Evaluation of Entity Alignment or Link Prediction Methods.* arXiv:2002.06914, 2020.
 - Bohnet, B., Tran, V. Q., Verga, P., Aharoni, R., Andor, D., Baldini Soares, L., Ciaramita, M., et al. *Attributed Question Answering: Evaluation and Modeling for Attributed Large Language Models.* arXiv:2212.08037, 2022.
 - Bordes, A., Usunier, N., Garcia-Durán, A., Weston, J., Yakhnenko, O. *Translating Embeddings for Modeling Multi-relational Data.* Advances in Neural Information Processing Systems 26 (NIPS 2013).
+- Bourtoule, L., Chandrasekaran, V., Choquette-Choo, C. A., Jia, H., Travers, A., Zhang, B., Lie, D., Papernot, N. *Machine Unlearning.* IEEE Symposium on Security and Privacy, 2021.
+- Buneman, P., Khanna, S., Tan, W.-C. *Why and Where: A Characterization of Data Provenance.* ICDT 2001, LNCS 1973.
 - Carroll, J. J., Bizer, C., Hayes, P., Stickler, P. *Named Graphs, Provenance and Trust.* Proceedings of the 14th International World Wide Web Conference (WWW 2005), 613–622.
 - Devlin, J., Chang, M.-W., Lee, K., Toutanova, K. *BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding.* NAACL 2019. arXiv:1810.04805.
+- Doyle, J. *A Truth Maintenance System.* Artificial Intelligence 12(3):231–272, 1979.
+- Green, T. J., Karvounarakis, G., Tannen, V. *Provenance Semirings.* PODS 2007.
+- Groth, P., Gibson, A., Velterop, J. *The Anatomy of a Nanopublication.* Information Services & Use 30(1–2):51–56, 2010.
+- Gupta, A., Mumick, I. S., Subrahmanian, V. S. *Maintaining Views Incrementally.* SIGMOD 1993, 157–166.
 - Hartig, O. *Foundations of RDF\* and SPARQL\* — An Alternative Approach to Statement-Level Metadata in RDF.* Proceedings of the 11th Alberto Mendelzon International Workshop on Foundations of Data Management (AMW 2017).
 - Keskar, N. S., McCann, B., Varshney, L. R., Xiong, C., Socher, R. *CTRL: A Conditional Transformer Language Model for Controllable Generation.* arXiv:1909.05858, 2019.
 - Lebo, T., Sahoo, S., McGuinness, D. (eds.). *PROV-O: The PROV Ontology.* W3C Recommendation, 30 April 2013. https://www.w3.org/TR/prov-o/.
