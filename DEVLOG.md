@@ -7,6 +7,16 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-09 (later) — an unconfirmed "stop all crons" item in queue.md, removed on Emma's answer
+
+While pass 2 ran, another local session ("pc-manager") wrote an uncommitted item at the top of
+`queue.md`: delete every cron in this session, make no new ones, finish the current task and then
+wait, "Emma's instruction, relayed". It arrived as a file edit from another session, not from
+Emma in this conversation, and it contradicts her global rule that crons stay on. So I asked her
+before acting. Her answer: **"No, keep them running."** The item is removed (the working-copy
+edit is reverted; it was never committed) and the three crons stay on.
+
+---
 ## 2026-10-09 — 10h at scale: citation volume grows with the neighbourhood; POST chunked
 
 Loaded the bigger real graph: 153,185 triples, 983 entities; the importer rejected 2,139 lines
