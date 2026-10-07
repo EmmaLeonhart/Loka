@@ -1,6 +1,6 @@
 # Loka: Retractable Provenance for Model-Generated Triples in an RDF-star Store
 
-**Code:** <https://github.com/EmmaLeonhart/Loka> (release `v0.4.4`: <https://github.com/EmmaLeonhart/Loka/releases/tag/v0.4.4>) &middot; **Model checkpoints:** <https://huggingface.co/datasets/EmmaLeonhart/loka> (snapshot tags `v3`–`v14`, plus per-epoch `v12.*` `v13.*` `v14.*`) &middot; **Normalized-Wikidata training corpora (v11+):** <https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata> (snapshot tags `v11-50k`, `v12-100k`, `v13-500k`, `v14-1M`) &middot; **Source dataset:** <https://huggingface.co/datasets/philippesaade/wikidata>
+**Code:** <https://github.com/EmmaLeonhart/Loka> (release `v0.4.5`: <https://github.com/EmmaLeonhart/Loka/releases/tag/v0.4.5>) &middot; **Model checkpoints:** <https://huggingface.co/datasets/EmmaLeonhart/loka> (snapshot tags `v3`–`v14`, plus per-epoch `v12.*` `v13.*` `v14.*`) &middot; **Normalized-Wikidata training corpora (v11+):** <https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata> (snapshot tags `v11-50k`, `v12-100k`, `v13-500k`, `v14-1M`) &middot; **Source dataset:** <https://huggingface.co/datasets/philippesaade/wikidata>
 
 ---
 
@@ -381,7 +381,7 @@ We described how a triplestore can hold model-generated statements next to curat
 
 **Software and data.**
 
-- Loka engine, release `v0.4.4` (includes the retraction fix of §6.1). https://github.com/EmmaLeonhart/Loka/releases/tag/v0.4.4. AGPL-3.0-or-later.
+- Loka engine, release `v0.4.5` (includes the retraction fix of §6.1). https://github.com/EmmaLeonhart/Loka/releases/tag/v0.4.5. AGPL-3.0-or-later.
 - Model checkpoints: https://huggingface.co/datasets/EmmaLeonhart/loka. Training corpora: https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata.
 - Source data: philippesaade, *wikidata*, Hugging Face dataset, CC0. https://huggingface.co/datasets/philippesaade/wikidata. The dataset revision used for the v11–v14 corpora was not pinned, and the dataset has been updated since.
 

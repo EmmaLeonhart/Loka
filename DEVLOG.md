@@ -7,6 +7,14 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (late night) — v0.4.5 released; resubmitted for review v14
+
+Tagged `v0.4.5` at `968eadf` with CI green: the batched retraction commit (`d8bac26`) and the
+bounded selector (`73ec9e5`), binaries for all five platforms, hand-written notes. The paper and
+skill cite v0.4.5. Resubmitting after 10i and 10j, which answer review v13's two
+non-model cons (commit phase unmeasured, annotation overhead).
+
+---
 ## 2026-10-07 (night) — 10j: bounded selector cuts provenance ~8× with retraction still exact
 
 `infer_with_citations.py` now consults at most 20 subject statements and 20 neighbours per

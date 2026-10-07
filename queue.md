@@ -29,8 +29,7 @@ step 9 submits.
     Accept, not Weak Accept (v12). Model stays as is, no training (Emma, 2026-10-08). Work the
     other v12 cons:
     Review v13 (post 2912): **Accept**. Still aiming for Strong Accept (Emma). Next, no training:
-    - Release v0.4.5 (10i batched commit + this).
-    - Then resubmit and read review v14.
+    Resubmitted 2026-10-07 after 10i–10j (v0.4.5). Next: read review v14 and iterate.
 
 11. **(target 2026-10-25) arXiv package + handoff.** Build the arXiv source tarball
     (`paper.tex`, generated body, `neurips_2026.sty`, figures), verify it compiles from a clean
