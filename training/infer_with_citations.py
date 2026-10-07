@@ -367,8 +367,17 @@ def candidate_predicates_with_evidence(
     pred_usage,
     max_candidates_per_subject=5,
     fallback_candidates=False,
+    max_subject_statements=20,
+    max_neighbours=20,
 ):
     """Predicates worth trying to generate for S, plus the evidence for each.
+
+    The selector's inputs are bounded so that its complete provenance is too:
+    it consults at most ``max_subject_statements`` of S's statements (in store
+    order) and at most ``max_neighbours`` distinct neighbours (in the order
+    they are first matched). Everything it consulted and used is cited, so the
+    record stays complete relative to the procedure while its size is capped
+    at roughly the two bounds. ``None`` lifts a bound.
 
     A predicate p2 is proposed when a graph-neighbour s2 shares one of S's
     (p, o-key) pairs and s2 has p2 while S does not; candidates are ranked by
@@ -396,13 +405,19 @@ def candidate_predicates_with_evidence(
     evidence_idx: dict[str, set[int]] = defaultdict(set)
     # p2 -> {neighbour -> (neighbour, p2, object term)}, first seen per neighbour.
     nb_first: dict[str, dict[str, tuple]] = defaultdict(dict)
-    for i, (p, o_term) in enumerate(s_facts):
+    consulted = s_facts if max_subject_statements is None else s_facts[:max_subject_statements]
+    neighbours_seen: set = set()
+    for i, (p, o_term) in enumerate(consulted):
         ok = o_key(o_term)
         for s2, o2_term in pred_usage.get(p, []):
             if s2 == s_uri:
                 continue
             if o_key(o2_term) != ok:
                 continue
+            if s2 not in neighbours_seen:
+                if max_neighbours is not None and len(neighbours_seen) >= max_neighbours:
+                    continue
+                neighbours_seen.add(s2)
             for p2, o3_term in subj_facts.get(s2, []):
                 if p2 in s_existing_preds:
                     continue
@@ -480,6 +495,8 @@ def generate_for_subject(
     fallback_candidates=False,
     per_token_floor=0.05,
     label_index=None,
+    max_subject_statements=20,
+    max_neighbours=20,
 ):
     """Generate provenance-tagged N-Triples-star for ONE subject.
 
@@ -508,6 +525,7 @@ def generate_for_subject(
     s_label = labels[s_uri]
     candidate_preds, evidence, neighbour_evidence = candidate_predicates_with_evidence(
         s_uri, labels=labels, subj_facts=subj_facts, pred_usage=pred_usage,
+        max_subject_statements=max_subject_statements, max_neighbours=max_neighbours,
         max_candidates_per_subject=max_candidates_per_subject,
         fallback_candidates=fallback_candidates,
     )
@@ -630,6 +648,10 @@ def main() -> None:
              "If provided, encode S/P labels with BPE instead of the word-level vocab. "
              "Use the same tokenizer that the checkpoint was trained with.",
     )
+    parser.add_argument("--max-subject-statements", type=int, default=20,
+                        help="Statements of each subject the candidate selector consults (bounds provenance)")
+    parser.add_argument("--max-neighbours", type=int, default=20,
+                        help="Distinct neighbours the candidate selector consults per subject (bounds provenance)")
     parser.add_argument(
         "--no-resolve-iris",
         action="store_true",
@@ -701,6 +723,8 @@ def main() -> None:
             max_citations=args.max_citations,
             encode_fn=encode_fn,
             label_index=label_index,
+            max_subject_statements=args.max_subject_statements,
+            max_neighbours=args.max_neighbours,
         )
         out_lines.extend(lines)
         for m in log:

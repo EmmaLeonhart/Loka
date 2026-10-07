@@ -97,3 +97,30 @@ def test_ambiguous_label_stays_literal(monkeypatch):
     )
     assert lines[0] == f'<{EX}S> <{EX}p_mayor> "Twin" .'
     assert not any(iwc.LOKA_PREDICTED_LABEL in ln for ln in lines)
+
+
+def test_selector_consults_at_most_m_subject_statements():
+    subj_facts, pred_usage, labels = graph()
+    # The only matching statement is S's 12th; with M=11 it is not consulted,
+    # so nothing is proposed (and nothing unconsulted is cited).
+    cand, evidence, nb = iwc.candidate_predicates_with_evidence(
+        EX + "S", labels=labels, subj_facts=subj_facts, pred_usage=pred_usage,
+        max_subject_statements=11)
+    assert cand == []
+
+
+def test_selector_consults_at_most_k_neighbours():
+    subj_facts, pred_usage, labels = graph()
+    for name in ["N2", "N3"]:
+        subj_facts[EX + name] = [(EX + "p_city", uri("Paris")), (EX + "p_mayor", uri("Hidalgo"))]
+        labels[EX + name] = name
+        pred_usage[EX + "p_city"].append((EX + name, uri("Paris")))
+        pred_usage[EX + "p_mayor"].append((EX + name, uri("Hidalgo")))
+    _, _, unbounded = iwc.candidate_predicates_with_evidence(
+        EX + "S", labels=labels, subj_facts=subj_facts, pred_usage=pred_usage,
+        max_neighbours=None)
+    assert len(unbounded[EX + "p_mayor"]) == 3
+    _, _, bounded = iwc.candidate_predicates_with_evidence(
+        EX + "S", labels=labels, subj_facts=subj_facts, pred_usage=pred_usage,
+        max_neighbours=2)
+    assert [n for n, _, _ in bounded[EX + "p_mayor"]] == [EX + "N", EX + "N2"]
