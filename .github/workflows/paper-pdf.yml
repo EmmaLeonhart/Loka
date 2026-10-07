@@ -117,6 +117,24 @@ jobs:
             -usepretex='\newif\ifanon\anontrue' paper.tex
           mv paper.pdf paper-anonymized.pdf
 
+      - name: Build and verify the arXiv source package
+        working-directory: paper
+        run: |
+          # arXiv compiles the uploaded sources itself, so the package
+          # must build from a clean directory with only its own files.
+          rm -rf arxiv && mkdir arxiv
+          cp paper.tex paper.tex.body neurips_2026.sty arxiv/
+          cd arxiv
+          pdflatex -interaction=nonstopmode -halt-on-error paper.tex
+          pdflatex -interaction=nonstopmode -halt-on-error paper.tex
+          if grep -q "undefined references" paper.log; then
+            echo "undefined references in clean build"; exit 1
+          fi
+          mv paper.pdf ../paper-arxiv-check.pdf
+          rm -f paper.aux paper.log paper.out
+          tar -czf ../loka-arxiv-source.tar.gz paper.tex paper.tex.body neurips_2026.sty
+          cd .. && tar -tzf loka-arxiv-source.tar.gz
+
       - name: Upload PDFs as artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -124,4 +142,6 @@ jobs:
           path: |
             paper/paper-named.pdf
             paper/paper-anonymized.pdf
+            paper/paper-arxiv-check.pdf
+            paper/loka-arxiv-source.tar.gz
           retention-days: 90
