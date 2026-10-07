@@ -371,7 +371,10 @@ fn execute_query_with_ctx(query: &Query, ctx: &mut ExecutionContext<'_>) -> Resu
         let mut vars: Vec<String> = results
             .iter()
             .flat_map(|row| row.keys().cloned())
-            .filter(|v| !v.starts_with(crate::parser::ORDER_KEY_PREFIX))
+            .filter(|v| {
+                !v.starts_with(crate::parser::ORDER_KEY_PREFIX)
+                    && !v.starts_with(crate::parser::GROUP_KEY_PREFIX)
+            })
             .collect();
         vars.sort();
         vars.dedup();

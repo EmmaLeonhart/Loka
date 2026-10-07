@@ -79,6 +79,9 @@ pub struct Query {
 /// bound like any BIND but never projected by `SELECT *`.
 pub const ORDER_KEY_PREFIX: &str = "__order_";
 
+/// Prefix of the hidden variables that carry bare GROUP BY expression keys.
+pub const GROUP_KEY_PREFIX: &str = "__group_";
+
 /// An ORDER BY clause entry.
 #[derive(Debug, Clone)]
 pub struct OrderClause {
@@ -484,8 +487,50 @@ impl<'a> Parser<'a> {
             self.expect_keyword("GROUP")?;
             self.expect_keyword("BY")?;
             self.skip_whitespace();
-            while self.peek_char() == Some('?') {
-                group_by.push(self.parse_variable_name()?);
+            // `?var`, `(expr AS ?var)`, or a bare expression (grouped under a
+            // hidden key). Expressions become BINDs after the WHERE patterns;
+            // computed values are interned by value, so equal strings share an
+            // id and group together.
+            loop {
+                if self.peek_char() == Some('?') {
+                    group_by.push(self.parse_variable_name()?);
+                } else if self.peek_char() == Some('(') {
+                    let saved = self.pos;
+                    match self.parse_expression_projection() {
+                        Ok((expression, variable)) => {
+                            group_by.push(variable.clone());
+                            projection_binds.push(Pattern::Bind {
+                                expression,
+                                variable,
+                            });
+                        }
+                        Err(_) => {
+                            self.pos = saved;
+                            let expression = self.parse_arith_operand()?;
+                            let variable = format!("{}{}", GROUP_KEY_PREFIX, group_by.len());
+                            group_by.push(variable.clone());
+                            projection_binds.push(Pattern::Bind {
+                                expression,
+                                variable,
+                            });
+                        }
+                    }
+                } else if self.peek_char().is_some_and(|c| c.is_ascii_alphabetic())
+                    && !self.peek_keyword("HAVING")
+                    && !self.peek_keyword("ORDER")
+                    && !self.peek_keyword("LIMIT")
+                    && !self.peek_keyword("OFFSET")
+                {
+                    let expression = self.parse_arith_operand()?;
+                    let variable = format!("{}{}", GROUP_KEY_PREFIX, group_by.len());
+                    group_by.push(variable.clone());
+                    projection_binds.push(Pattern::Bind {
+                        expression,
+                        variable,
+                    });
+                } else {
+                    break;
+                }
                 self.skip_whitespace();
             }
         }

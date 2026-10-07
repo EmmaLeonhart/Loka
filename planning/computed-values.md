@@ -139,7 +139,7 @@ Each stage is independently committable and testable.
    appears in that output format.
 4. **Projection and ORDER BY** — `SELECT (expr AS ?v)`, `ORDER BY expr`. This is where the parser
    also needs `(expr AS ?var)` in the select clause.
-5. **`GROUP BY` on a computed value**, which needs the group key to be the value not the id — free
+5. **DONE (2026-10-07)** — `GROUP BY (expr AS ?v)` and `GROUP BY expr` (hidden `__group_N` key) desugar to BINDs; computed values intern by value, so equal strings group together. Pramana's type-count query now groups by type local name server-side. Tests: `loka-sparql/tests/group_by_computed.rs`.
    if by-value interning is in place from stage 1.
 
 Stage 2 alone unblocks Pramana's entity page. Stages 4–5 are what make it a general facility rather

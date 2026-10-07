@@ -40,16 +40,6 @@ step 9 submits.
 
 ---
 
-## ACTIVE — computed values: stage 5 (GROUP BY on a computed value)
-
-Stages 1–4 are done (stage 4, projection and ORDER BY expressions, on 2026-10-07; see
-`planning/computed-values.md`). **Stage 5:** `GROUP BY` on a computed value, e.g.
-`GROUP BY (REPLACE(STR(?type), "^.*/", "") AS ?t)`. It should come nearly free, since interning is
-by value and equal strings already share an id. It closes Pramana's type-count query, which
-currently groups on the full IRI and folds local names client-side.
-
----
-
 ## ACTIVE — operator precedence inside FILTER arithmetic
 
 The last piece of the SPARQL 1.1 `Expression` grammar. `parse_arith_operand` is one

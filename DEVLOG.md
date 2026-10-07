@@ -7,6 +7,22 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (night, engineering, later) — computed values stage 5: GROUP BY on a computed value
+
+`GROUP BY` accepted only `?variables`. It now also takes `(expr AS ?v)`, grouping under `?v`,
+and a bare expression, grouped under a hidden `__group_N` key that `SELECT *` omits. Both become
+BINDs after the WHERE patterns. Grouping needed no executor change: groups are keyed by term
+id, and computed values are interned by value, so equal computed strings already share an id.
+
+`loka-sparql/tests/group_by_computed.rs` uses Pramana's type-count shape: items typed with two
+*different* `.../Entity` IRIs and one `.../Thing`. Grouping on
+`REPLACE(STR(?type), "^.*/", "")` gives Entity = 3, Thing = 1. The control, grouping on
+`?type`, gives three groups. That closes Pramana's client-side folding of local names. The
+old parser's GROUP BY loop only accepted `?`, so these queries couldn't parse; I'm going on the
+code there, not a run against the old build. Workspace tests pass; fmt and clippy clean. The
+computed-values plan (stages 1–5) is now complete.
+
+---
 ## 2026-10-07 (night, engineering) — computed values stage 4; ORDER BY sorted strings by insertion
 
 With step 10 parked on Emma's decision, the work loop moved to the next actionable item,
