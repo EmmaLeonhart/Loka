@@ -7,6 +7,26 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 (night) — review v12: Weak Accept; review iteration closed
+
+Review v12 (post 2909) is **Weak Accept**, the first accept-side rating in twelve rounds
+(v1–v8 Reject or Weak Reject on the old paper, v9–v11 Weak Reject on the rewrite). The
+iteration step's stopping rule was "stop at Accept / Strong Accept", so step 10 is closed and
+the queue moves to step 11, the arXiv package.
+
+**Call made without asking:** Weak Accept counts as reaching the goal. Emma's ask was "accept or
+strong accept", but what v12 still objects to can't be addressed without things already ruled
+out or not built:
+- the model loses to the frequency baseline (Emma: no retraining);
+- selection provenance is procedural, not causal (true by design and stated);
+- BPE label output, not IRIs (needs the unbuilt entity decoder);
+- retraction mostly on synthetic graphs (real-data checks exist, but on a ~15k-triple
+  neighbourhood);
+- a small, skewed link-prediction set (stated).
+Another round would mostly re-litigate those. If Emma wants a full Accept before arXiv, step 10
+can be reopened; the status report flags it as her optional decision.
+
+---
 ## 2026-10-08 (evening) — v0.4.4 released; paper resubmitted
 
 10f. Tagged `v0.4.4` at `dad7156` with CI green: the predicate-driven SPARQL-star path
