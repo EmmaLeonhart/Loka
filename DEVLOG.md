@@ -7,6 +7,15 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (late night, later) — review v14: Accept again
+
+Post 2913 got **Accept**. The reviewer praises the rigour; its cons are the weak model, brittle
+exact-match IRI resolution (5 of 356), the bounded selector's heuristic nature, real-chain scale
+(153k triples), and no stronger generator. The model-bound ones stay (Emma's decision). Queued
+10k (real data at about 2M triples via the HF importer) and 10l (a second generator, to show
+provenance volume and retraction don't depend on the generator).
+
+---
 ## 2026-10-07 (late night) — v0.4.5 released; resubmitted for review v14
 
 Tagged `v0.4.5` at `968eadf` with CI green: the batched retraction commit (`d8bac26`) and the
