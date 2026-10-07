@@ -124,3 +124,21 @@ def test_selector_consults_at_most_k_neighbours():
         EX + "S", labels=labels, subj_facts=subj_facts, pred_usage=pred_usage,
         max_neighbours=2)
     assert [n for n, _, _ in bounded[EX + "p_mayor"]] == [EX + "N", EX + "N2"]
+
+
+def test_frequency_generator_same_provenance_as_model(monkeypatch):
+    subj_facts, pred_usage, labels = graph()
+    # Model path (stubbed) and frequency path must cite exactly the same statements.
+    monkeypatch.setattr(iwc, "predict_object", lambda *a, **k: ("Anything", 0.9))
+    model_lines, _ = iwc.generate_for_subject(
+        None, EX + "S", labels=labels, subj_facts=subj_facts, pred_usage=pred_usage,
+        vocab=None, inv_vocab=None, tokens_per_role=8, device="cpu", model_version="m")
+    freq = iwc.build_frequency_predictor(subj_facts, pred_usage, labels)
+    freq_lines, _ = iwc.generate_for_subject(
+        None, EX + "S", labels=labels, subj_facts=subj_facts, pred_usage=pred_usage,
+        vocab=None, inv_vocab=None, tokens_per_role=8, device="cpu", model_version="f",
+        object_predictor=freq)
+    # The frequency generator emits the most common object of p_mayor as its real term.
+    assert freq_lines[0] == f"<{EX}S> <{EX}p_mayor> <{EX}Hidalgo> ."
+    cited = lambda ls: [ln.split(iwc.LOKA_INFERRED_FROM + "> ")[1] for ln in ls if iwc.LOKA_INFERRED_FROM in ln]
+    assert cited(model_lines) == cited(freq_lines)

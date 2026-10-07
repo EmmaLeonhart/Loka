@@ -474,6 +474,37 @@ def build_label_index(labels, pred_usage) -> dict:
     return index
 
 
+def build_frequency_predictor(subj_facts, pred_usage, labels):
+    """The predicate-frequency generator: for (S, P), the object that occurs
+    most often with P in the store, among objects S does not already have for
+    P. Confidence is that object's share of P's occurrences. It beats the v13
+    model on held-out link prediction, and stands in for "a different
+    generator" when comparing provenance cost."""
+    from collections import Counter
+    ranked = {}
+    for p, uses in pred_usage.items():
+        c = Counter()
+        term_of = {}
+        for _s, o_term in uses:
+            k = o_key(o_term)
+            c[k] += 1
+            term_of.setdefault(k, o_term)
+        total = sum(c.values())
+        ranked[p] = [(term_of[k], n / total) for k, n in c.most_common(50)]
+
+    def predict(s_uri, p_uri):
+        have = {o_key(o) for q, o in subj_facts.get(s_uri, []) if q == p_uri}
+        for o_term, share in ranked.get(p_uri, []):
+            if o_key(o_term) in have:
+                continue
+            label = (labels.get(o_term["value"], o_term["value"]) if o_term["type"] == "uri"
+                     else parse_literal(o_term)[0])
+            return fmt_term(o_term), label, share
+        return None
+
+    return predict
+
+
 def generate_for_subject(
     model,
     s_uri,
@@ -497,8 +528,14 @@ def generate_for_subject(
     label_index=None,
     max_subject_statements=20,
     max_neighbours=20,
+    object_predictor=None,
 ):
     """Generate provenance-tagged N-Triples-star for ONE subject.
+
+    ``object_predictor`` replaces the model: a callable ``(s_uri, p_uri) ->
+    (object N-Triples term, display label, confidence)`` or ``None``. The
+    candidate selection, filtering and provenance are unchanged, so outputs
+    differ only in the generator.
 
     With ``label_index`` (from `build_label_index`), a predicted label that
     normalises to exactly one entity's label is emitted as that entity's IRI,
@@ -534,16 +571,23 @@ def generate_for_subject(
         if is_reserved_predicate(p_uri):
             continue
         p_label = labels[p_uri]
-        res = predict_object(
-            model, s_label, p_label, vocab, inv_vocab, tokens_per_role, device,
-            per_token_floor=per_token_floor,
-            repetition_penalty=repetition_penalty,
-            encode_fn=encode_fn,
-            decode_fn=decode_fn,
-        )
-        if res is None:
-            continue
-        o_label, conf = res
+        fixed_term = None
+        if object_predictor is not None:
+            res = object_predictor(s_uri, p_uri)
+            if res is None:
+                continue
+            fixed_term, o_label, conf = res
+        else:
+            res = predict_object(
+                model, s_label, p_label, vocab, inv_vocab, tokens_per_role, device,
+                per_token_floor=per_token_floor,
+                repetition_penalty=repetition_penalty,
+                encode_fn=encode_fn,
+                decode_fn=decode_fn,
+            )
+            if res is None:
+                continue
+            o_label, conf = res
         if conf < confidence:
             continue
         if len(o_label) < 2:
@@ -568,7 +612,9 @@ def generate_for_subject(
         p_term = f"<{p_uri}>"
         o_term = f'"{escape_literal(o_label)}"'
         resolved = None
-        if label_index is not None:
+        if fixed_term is not None:
+            o_term = fixed_term
+        elif label_index is not None:
             matches = label_index.get(normalize_label(o_label), set())
             if len(matches) == 1:
                 resolved = next(iter(matches))
@@ -652,6 +698,9 @@ def main() -> None:
                         help="Statements of each subject the candidate selector consults (bounds provenance)")
     parser.add_argument("--max-neighbours", type=int, default=20,
                         help="Distinct neighbours the candidate selector consults per subject (bounds provenance)")
+    parser.add_argument("--generator", choices=["model", "frequency"], default="model",
+                        help="Object generator: the trained model (default) or the "
+                             "predicate-frequency baseline. Provenance is identical.")
     parser.add_argument(
         "--no-resolve-iris",
         action="store_true",
@@ -695,6 +744,8 @@ def main() -> None:
     )
     print(f"  resolved {len(labels):,} URI -> label mappings", file=sys.stderr)
     label_index = None if args.no_resolve_iris else build_label_index(labels, pred_usage)
+    object_predictor = (build_frequency_predictor(subj_facts, pred_usage, labels)
+                        if args.generator == "frequency" else None)
     if n_reserved_skipped:
         print(
             f"  dropped {n_reserved_skipped} reserved-namespace rows from inference state",
@@ -725,6 +776,7 @@ def main() -> None:
             label_index=label_index,
             max_subject_statements=args.max_subject_statements,
             max_neighbours=args.max_neighbours,
+            object_predictor=object_predictor,
         )
         out_lines.extend(lines)
         for m in log:
