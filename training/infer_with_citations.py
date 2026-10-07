@@ -439,6 +439,26 @@ def candidate_predicates(s_uri, **kwargs):
     return candidate_predicates_with_evidence(s_uri, **kwargs)[0]
 
 
+LOKA_PREDICTED_LABEL = RESERVED_PROVENANCE_PREFIX + "propositionPredictedLabel"
+
+
+def normalize_label(text: str) -> str:
+    """Normalise a label for exact matching: the byte-level BPE word-boundary
+    marker becomes a space, `" 's"` re-attaches, whitespace collapses, case folds."""
+    text = text.replace("Ġ", " ").replace(" 's", "'s")
+    return " ".join(text.split()).casefold()
+
+
+def build_label_index(labels, pred_usage) -> dict:
+    """Normalised label -> set of entity IRIs carrying it (predicates excluded)."""
+    index: dict[str, set] = defaultdict(set)
+    for uri, label in labels.items():
+        if uri in pred_usage:
+            continue
+        index[normalize_label(label)].add(uri)
+    return index
+
+
 def generate_for_subject(
     model,
     s_uri,
@@ -459,8 +479,14 @@ def generate_for_subject(
     decode_fn=None,
     fallback_candidates=False,
     per_token_floor=0.05,
+    label_index=None,
 ):
     """Generate provenance-tagged N-Triples-star for ONE subject.
+
+    With ``label_index`` (from `build_label_index`), a predicted label that
+    normalises to exactly one entity's label is emitted as that entity's IRI,
+    and the raw model output is kept under ``propositionPredictedLabel``.
+    Ambiguous or unmatched labels stay literals.
 
     Candidate predicates are those used by graph-neighbours (subjects sharing a
     ``(p, o-key)`` with S) but missing from S. Returns ``(out_lines, log)``:
@@ -523,18 +549,30 @@ def generate_for_subject(
         s_term = f"<{s_uri}>"
         p_term = f"<{p_uri}>"
         o_term = f'"{escape_literal(o_label)}"'
+        resolved = None
+        if label_index is not None:
+            matches = label_index.get(normalize_label(o_label), set())
+            if len(matches) == 1:
+                resolved = next(iter(matches))
+                if any(oo["type"] == "uri" and oo["value"] == resolved
+                       for op, oo in subj_facts[s_uri] if op == p_uri):
+                    continue  # already stated
+                o_term = f"<{resolved}>"
 
         out_lines.append(f"{s_term} {p_term} {o_term} .")
         qt = quoted(s_term, p_term, o_term)
         out_lines.append(f'{qt} <{LOKA_GENERATED}> "true"^^<{XSD_BOOLEAN}> .')
         out_lines.append(f'{qt} <{LOKA_GENERATED_BY}> "{escape_literal(model_version)}" .')
         out_lines.append(f'{qt} <{LOKA_CONFIDENCE}> "{conf:.4f}"^^<{XSD_DECIMAL}> .')
+        if resolved is not None:
+            out_lines.append(f'{qt} <{LOKA_PREDICTED_LABEL}> "{escape_literal(o_label)}" .')
         cited_rows = [(s_term, f"<{cp}>", fmt_term(co)) for cp, co in evidence[p_uri]]
         cited_rows += [(f"<{ns}>", f"<{np_}>", fmt_term(no)) for ns, np_, no in neighbour_evidence[p_uri]]
         for cited_s, cited_p, cited_o in cited_rows[:max_citations]:
             cited = quoted(cited_s, cited_p, cited_o)
             out_lines.append(f"{qt} <{LOKA_INFERRED_FROM}> {cited} .")
-        log.append(f"  + {s_label!s} | {p_label!s} | {o_label!s}  (conf={conf:.3f})")
+        shown = f"{o_label!s} -> <{resolved}>" if resolved else f"{o_label!s}"
+        log.append(f"  + {s_label!s} | {p_label!s} | {shown}  (conf={conf:.3f})")
 
     return out_lines, log
 
@@ -592,6 +630,19 @@ def main() -> None:
              "If provided, encode S/P labels with BPE instead of the word-level vocab. "
              "Use the same tokenizer that the checkpoint was trained with.",
     )
+    parser.add_argument(
+        "--no-resolve-iris",
+        action="store_true",
+        help="Emit predicted objects as label literals even when exactly one entity in "
+             "the store carries that label (default: emit the entity IRI).",
+    )
+    parser.add_argument(
+        "--include-generated-context",
+        action="store_true",
+        help="Let earlier generated triples (not their annotations) take part in "
+             "candidate selection, so new predictions can cite them. Training-corpus "
+             "extraction still excludes them; this only affects inference.",
+    )
     args = parser.parse_args()
 
     random.seed(args.seed)
@@ -613,7 +664,7 @@ def main() -> None:
     args.model_version = bundle["model_version"]
 
     print(f"Fetching triples from {args.endpoint}...", file=sys.stderr)
-    triples = fetch_all_triples(args.endpoint)
+    triples = fetch_all_triples(args.endpoint, exclude_generated=not args.include_generated_context)
     print(f"  got {len(triples):,} triples", file=sys.stderr)
 
     print("Building label maps...", file=sys.stderr)
@@ -621,6 +672,7 @@ def main() -> None:
         triples, args.property_cache
     )
     print(f"  resolved {len(labels):,} URI -> label mappings", file=sys.stderr)
+    label_index = None if args.no_resolve_iris else build_label_index(labels, pred_usage)
     if n_reserved_skipped:
         print(
             f"  dropped {n_reserved_skipped} reserved-namespace rows from inference state",
@@ -648,6 +700,7 @@ def main() -> None:
             max_candidates_per_subject=args.max_candidates_per_subject,
             max_citations=args.max_citations,
             encode_fn=encode_fn,
+            label_index=label_index,
         )
         out_lines.extend(lines)
         for m in log:

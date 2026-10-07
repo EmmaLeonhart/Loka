@@ -67,3 +67,33 @@ def test_emitted_citations_are_the_evidence(monkeypatch):
     assert len(cited) == 2
     assert f"<< <{EX}S> <{EX}p_city> <{EX}Paris> >> ." in cited[0]
     assert f"<< <{EX}N> <{EX}p_mayor> <{EX}Hidalgo> >> ." in cited[1]
+
+
+def test_predicted_label_resolves_to_unique_entity(monkeypatch):
+    subj_facts, pred_usage, labels = graph()
+    labels[EX + "AnneH"] = "Anne Hidalgo"
+    index = iwc.build_label_index(labels, pred_usage)
+    # BPE-style output with word-boundary markers normalises to the label.
+    monkeypatch.setattr(iwc, "predict_object", lambda *a, **k: ("Anne ĠHidalgo", 0.9))
+    lines, _ = iwc.generate_for_subject(
+        None, EX + "S", labels=labels, subj_facts=subj_facts, pred_usage=pred_usage,
+        vocab=None, inv_vocab=None, tokens_per_role=8, device="cpu",
+        model_version="test", label_index=index,
+    )
+    assert lines[0] == f"<{EX}S> <{EX}p_mayor> <{EX}AnneH> ."
+    assert any(iwc.LOKA_PREDICTED_LABEL in ln and "Anne" in ln for ln in lines)
+
+
+def test_ambiguous_label_stays_literal(monkeypatch):
+    subj_facts, pred_usage, labels = graph()
+    labels[EX + "A1"] = "Twin"
+    labels[EX + "A2"] = "twin"
+    index = iwc.build_label_index(labels, pred_usage)
+    monkeypatch.setattr(iwc, "predict_object", lambda *a, **k: ("Twin", 0.9))
+    lines, _ = iwc.generate_for_subject(
+        None, EX + "S", labels=labels, subj_facts=subj_facts, pred_usage=pred_usage,
+        vocab=None, inv_vocab=None, tokens_per_role=8, device="cpu",
+        model_version="test", label_index=index,
+    )
+    assert lines[0] == f'<{EX}S> <{EX}p_mayor> "Twin" .'
+    assert not any(iwc.LOKA_PREDICTED_LABEL in ln for ln in lines)
