@@ -117,6 +117,17 @@ signal.signal(signal.SIGTERM, handle_signal)
 
 # ── Parsing helpers ──────────────────────────────────────────────────────────
 
+def _text_value(entry) -> str:
+    """A label/description entry as text. The dataset has used both
+    {"en": {"language": "en", "value": "..."}} and, since its 2026 refresh,
+    {"en": "..."}. Anything else gives "" and is skipped."""
+    if isinstance(entry, dict):
+        return str(entry.get("value", ""))
+    if isinstance(entry, str):
+        return entry
+    return ""
+
+
 def maybe_json(value) -> dict:
     """Some columns are JSON strings, others may already be dicts. Be flexible."""
     if not value:
@@ -146,9 +157,7 @@ def entity_to_triples(row: dict, skip_deprecated: bool = True) -> list[str]:
 
     # Labels — every language Wikidata has for this entity.
     for lang, lab in maybe_json(row.get("labels")).items():
-        if not isinstance(lab, dict):
-            continue
-        val = str(lab.get("value", "")).replace('"', '\\"').replace("\n", " ")
+        val = _text_value(lab).replace('"', '\\"').replace("\n", " ")
         if val:
             triples.append(
                 f'<{wd}> <http://www.w3.org/2000/01/rdf-schema#label> "{val}"@{lang} .'
@@ -156,9 +165,7 @@ def entity_to_triples(row: dict, skip_deprecated: bool = True) -> list[str]:
 
     # Descriptions — every language too.
     for lang, desc in maybe_json(row.get("descriptions")).items():
-        if not isinstance(desc, dict):
-            continue
-        val = str(desc.get("value", "")).replace('"', '\\"').replace("\n", " ")
+        val = _text_value(desc).replace('"', '\\"').replace("\n", " ")
         if val:
             triples.append(
                 f'<{wd}> <http://schema.org/description> "{val}"@{lang} .'

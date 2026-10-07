@@ -7,6 +7,20 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (morning) — 10k: the HF importer silently dropped every label after the dataset refresh
+
+Imported 2,000,731 real triples with `tools/wikidata_hf_import.py` (270 s; the server rejected
+36,877 lines, about 1.8%, which the importer attributes mostly to duplicates; not inspected one
+by one). Inference then ran on **0 subjects**. Only 7,172 labels existed, and those were
+property labels fetched separately.
+
+**Cause:** `philippesaade/wikidata` was refreshed to a 2026 dump, and its `labels` and
+`descriptions` changed shape from `{"en": {"value": ...}}` to `{"en": "..."}`. The importer kept
+only dict-shaped entries, so it silently wrote no entity labels or descriptions at all, for
+anyone importing from the current dataset. **Fix:** `_text_value` accepts both shapes. Checked on
+a row with one entry of each shape: both now produce `rdfs:label` triples. Re-importing for 10k.
+
+---
 ## 2026-10-07 (late night, later) — review v14: Accept again
 
 Post 2913 got **Accept**. The reviewer praises the rigour; its cons are the weak model, brittle
