@@ -319,6 +319,17 @@ The model scores a candidate of L tokens by masking L object positions, exactly 
 
 Entity-valued objects are those whose label also occurs as a subject in training. Neither learned model beats predicate frequency on this split. The v13 transformer ranks above the untuned TransE, but with no tuning for either model we do not read that as a comparison of methods. The result is consistent with the model's training perplexity (Appendix A): it is a weak completion model. This is why the paper's claims concern the provenance machinery and not the quality of what the model predicts; the machinery is independent of the model it records.
 
+### 6.5 Independence from the generator
+
+The provenance record depends on the candidate selector, not on the model that fills in the object. To check this, we reran the two-pass pipeline of §6.2 on the 153k-triple graph with the v13 model replaced by the predicate-frequency predictor of §6.4 (for a proposed (s, p), the most frequent object of p that s does not already have), emitting for every proposed pair. Selection, filtering and annotation code were unchanged.
+
+| Generator | Generated triples | Citations per prediction (median / mean / p90 / max) | Required removals checked | Missed / extra |
+|---|---|---|---|---|
+| v13 model | 356 | 9 / 10.5 / 20 / 26 | 4,354 | 0 / 0 |
+| Predicate frequency | 8,637 | 9 / 10.3 / 19 / 36 | 127,958 | 0 / 0 |
+
+Per prediction, the provenance cost is the same under both generators; only the number of predictions differs. The frequency run produced 3,818 second-pass predictions citing first-pass ones, so its retraction check covered far more chained dependencies, and committed retractions of 30 entities on it (44,131 rows) took a median of 34 ms (maximum 0.25 s), with a restart reloading exactly the expected rows. We did not test stronger learned generators; by this result, a generator changes what is predicted, not what the record costs.
+
 ---
 
 ## 7. Limitations

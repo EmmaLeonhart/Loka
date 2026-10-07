@@ -7,6 +7,21 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (evening) — 10l done: provenance cost doesn't depend on the generator
+
+Same two-pass pipeline on the 153k-triple graph with `--generator frequency` (the
+predicate-frequency predictor; `--confidence 0`, since its "confidence" is an object's share,
+not comparable to the model's). Result against the v13 model run under the same bounded selector:
+- citations per prediction: frequency median 9, mean 10.3, p90 19, max 36; model median 9,
+  mean 10.5, p90 20, max 26;
+- frequency: 8,637 generated triples, 3,818 chained; retraction **127,958 required removals,
+  0 missed, 0 extra**; 30 committed retractions (44,131 rows), median 34 ms, max 0.25 s; the
+  restart reloaded exactly the expected rows.
+The 7 rows rejected in pass 2 were duplicate triples (checked in the log). The paper gets a new
+§6.5. It says plainly that stronger learned generators weren't tested. Logs:
+`training/logs/retract_real_q42_large_freq.json`, `retract_commit_q42_large_freq.json`.
+
+---
 ## 2026-10-07 (afternoon) — 10k done: retraction exact on a real 2M-triple store
 
 2,000,623 real triples (8,806 entities) imported with the fixed HF importer into a fresh v0.4.5

@@ -1,0 +1,22 @@
+{
+  "endpoint": "http://127.0.0.1:3043",
+  "roots": 983,
+  "generated_triples": 8637,
+  "annotation_rows": 114625,
+  "cited_statements_per_prediction": 10.27,
+  "dependency_checks": 127958,
+  "dependency_mismatches": 0,
+  "unexpected_removals": 0,
+  "unexpected_examples": [],
+  "deepest_generated_chain": 2,
+  "mismatch_examples": [],
+  "latency_ms": {
+    "median": 8.59,
+    "p95": 66.88,
+    "max": 563.44
+  },
+  "removed_triples": {
+    "median": 1023,
+    "max": 66324
+  }
+}

@@ -30,9 +30,6 @@ step 9 submits.
     other v12 cons:
     Review v13 (post 2912): **Accept**. Still aiming for Strong Accept (Emma). Next, no training:
     Review v14 (post 2913): **Accept** again. Remaining non-model cons, no training:
-    - **10l. Generator independence.** Run the same pipeline with a second generator (the
-      predicate-frequency predictor, which beats v13 on link prediction) and show that
-      provenance volume and retraction correctness do not depend on the generator.
     - Then resubmit and read review v15.
 
 11. **(target 2026-10-25) arXiv package + handoff.** Build the arXiv source tarball
