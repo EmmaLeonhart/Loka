@@ -102,14 +102,45 @@ fn ordering_still_works_on_integers() {
 }
 
 #[test]
-fn ordering_on_strings_deliberately_matches_nothing() {
-    // Ordering compares raw TermIds, which encode insertion order for
-    // dictionary-interned strings — meaningless as a collation. Resolving
-    // literals here would return an arbitrary subset, so the ordering path is
-    // left narrow on purpose and a string comparison simply matches nothing.
-    // Pinned so a future "fix" to widen it has to confront the choice.
-    assert_eq!(rows("?s ex:name ?n .", r#"?n > "Ada""#), 0);
-    assert_eq!(rows("?s ex:name ?n .", r#"?n < "Zed""#), 0);
+fn ordering_on_strings_and_iris_compares_values() {
+    // Until 2026-10-07 this was `ordering_on_strings_deliberately_matches_nothing`:
+    // ordering compared raw term ids (insertion order), so it was kept narrow.
+    // It now compares values: strings with strings, IRIs with IRIs.
+    assert_eq!(rows("?s ex:name ?n .", r#"?n > "Ada""#), 2); // Bob, Cy
+    assert_eq!(rows("?s ex:name ?n .", r#"?n < "Zed""#), 3);
+    assert_eq!(rows("?s ex:name ?n .", r#"?n < "Bob""#), 1); // Ada
+    assert_eq!(rows("?s ex:name ?n .", r#"?n >= "Bob""#), 2); // Bob, Cy
+    assert_eq!(rows("?s ex:city ?c .", "?c < ex:Paris"), 2); // London, London
+                                                             // A string against an IRI is a type error: no match.
+    assert_eq!(rows("?s ex:name ?n .", "?n < ex:Paris"), 0);
+}
+
+#[test]
+fn string_ordering_is_by_value_not_insertion_order() {
+    // The fixture above interns names alphabetically, so id order happens to
+    // agree with value order there. Here they are interned out of order.
+    let mut dict = TermDictionary::new();
+    let mut store = TripleStore::new();
+    let name = dict.intern("http://example.org/name");
+    for (who, nm) in [("z", "Zoe"), ("m", "Mia"), ("a", "Ann")] {
+        let s = dict.intern(&format!("http://example.org/{}", who));
+        store
+            .insert(Triple::new(s, name, dict.intern(&format!("\"{}\"", nm))))
+            .unwrap();
+    }
+    let q = parse(
+        r#"PREFIX ex: <http://example.org/> SELECT ?s WHERE { ?s ex:name ?n . FILTER(?n < "N") }"#,
+    )
+    .unwrap();
+    let got: Vec<String> = execute(&q, &store, &dict)
+        .unwrap()
+        .rows
+        .iter()
+        .map(|r| dict.resolve(*r.get("s").unwrap()).unwrap().to_string())
+        .collect();
+    let mut got = got;
+    got.sort();
+    assert_eq!(got, vec!["http://example.org/a", "http://example.org/m"]);
 }
 
 #[test]

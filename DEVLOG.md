@@ -7,6 +7,26 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (night, engineering, TODO promotion) — FILTER ordering compares values
+
+With the queue's engineering items done and step 10 parked on Emma, the work loop promoted the
+next bounded `TODO.md` item and did it in the same tick: FILTER ordering (`<`, `>`, `<=`, `>=`)
+compared raw term ids. That was meaningful only for inline integers and temporal ids, so string
+ordering had been deliberately kept narrow: it matched nothing rather than an arbitrary,
+insertion-ordered subset. The fix is to compare values, the same treatment ORDER BY got in
+stage 4: strings with strings, IRIs with IRIs, numbers numerically (already handled first).
+Mixed kinds are a type error, so no match. Two temporal ids still compare by id, because their
+ids are chronological by construction; a temporal against anything else stays unmatched, as
+before. The dead `filter_term_value` is removed and stale comments are updated.
+
+The pinning test `ordering_on_strings_deliberately_matches_nothing` is rewritten as
+`ordering_on_strings_and_iris_compares_values`. Its fixture interns names alphabetically, so it
+can't tell id order from value order, so `string_ordering_is_by_value_not_insertion_order`
+interns them out of order. On the old code every string-ordering filter returned 0 rows, which
+the old test asserted. Workspace tests pass, including the existing temporal filters; fmt and
+clippy clean. TODO.md entries for string ordering and operator precedence are marked fixed.
+
+---
 ## 2026-10-07 (night, engineering, last) — FILTER/BIND arithmetic gets SPARQL precedence and unary minus
 
 `parse_arith_operand` was a single left-to-right loop over `+ - * /`, so `?a + 2 * 3` meant

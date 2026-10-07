@@ -3549,25 +3549,15 @@ fn term_id_is_literal(id: TermId, dict: &TermDictionary) -> bool {
     loka_core::is_inline(id) || dict.resolve(id).is_some_and(|s| s.starts_with('"'))
 }
 
-/// Resolve a term to a raw `TermId` for the **id-comparison fallback** in
-/// [`compare_filter_terms`].
-///
-/// Deliberately narrow: variables and integer literals only. Id comparison is
-/// meaningless for dictionary-interned strings, where the id reflects insertion
-/// order. Resolving literals here would turn `FILTER(?name < "M")` from "matches
-/// nothing" into "matches an arbitrary subset", which is the worse failure.
-///
-/// Numeric ordering no longer comes through here: [`compare_filter_terms`] tries
-/// [`numeric_operand`] first, because an inline integer's id is NOT ordered by
-/// value once negatives are involved. What is left for this function is the
-/// non-numeric residue — chiefly temporal literals, whose ids are chronological
-/// by construction.
-///
-/// For equality use [`filter_term_id`], which resolves the full term space.
-fn filter_term_value(term: &Term, row: &Bindings) -> Option<TermId> {
+/// The inline temporal id bound to a FILTER operand, if it is one. Temporal ids
+/// are chronological by construction, so two of them compare by id; that was
+/// the id path's one meaningful case and is kept as is.
+fn temporal_id(term: &Term, row: &Bindings) -> Option<TermId> {
     match term {
-        Term::Variable(name) => row.get(name).copied(),
-        Term::IntegerLiteral(n) => loka_core::inline_integer(*n),
+        Term::Variable(name) => row
+            .get(name)
+            .copied()
+            .filter(|&id| loka_core::inline_type(id) == Some(loka_core::InlineType::Temporal)),
         _ => None,
     }
 }
@@ -3681,12 +3671,10 @@ fn numeric_operand(term: &Term, row: &Bindings, ctx: &ExecutionContext<'_>) -> O
 ///    outranked the bound. Numeric comparison happens on decoded values now.
 /// 2. **Arithmetic operands**, which have a value but no id.
 ///
-/// The raw-id fallback is kept for everything that is not a pair of numbers:
-/// temporal literals (whose ids are chronological by construction) still order,
-/// and the deliberately-narrow string behaviour documented on
-/// [`filter_term_value`] is unchanged — an interned literal against a query
-/// literal yields `None` on one side and so matches nothing rather than
-/// returning an arbitrary subset.
+/// Everything else compares by value: two temporal ids by id (they are
+/// chronological by construction), strings with strings and IRIs with IRIs by
+/// text (since 2026-10-07; before, bare `?name < "M"` matched nothing because
+/// ids are insertion-ordered), and mixed kinds not at all.
 fn compare_filter_terms(
     left: &Term,
     right: &Term,
@@ -3709,16 +3697,52 @@ fn compare_filter_terms(
     // A computed value (arithmetic, or a function call) has no interned id, so
     // there is no id comparison to fall back to — compare the values instead.
     // For a function call that means real string collation, which is exactly
-    // what the id path could not do; `STR(?name) < "M"` therefore answers, while
-    // the bare `?name < "M"` still matches nothing (see filter_term_value).
+    // what the id path could not do.
     if has_computed_value(left) || has_computed_value(right) {
         let a = term_to_string(left, row, ctx)?;
         let b = term_to_string(right, row, ctx)?;
         return Some(a.cmp(&b));
     }
-    let a = filter_term_value(left, row)?;
-    let b = filter_term_value(right, row)?;
-    Some(a.cmp(&b))
+    // Compare VALUES, not term ids. Ids are assigned in insertion order, so an
+    // id comparison on strings or IRIs answered by storage order; it was kept
+    // narrow (matching nothing) for that reason until 2026-10-07. Like kinds
+    // compare (string with string, IRI with IRI); mixed kinds are a SPARQL type
+    // error, which makes the comparison false.
+    match (temporal_id(left, row), temporal_id(right, row)) {
+        (Some(a), Some(b)) => return Some(a.cmp(&b)),
+        // A temporal value against anything else has no defined order here.
+        (Some(_), None) | (None, Some(_)) => return None,
+        (None, None) => {}
+    }
+    let a = filter_order_key(left, row, ctx)?;
+    let b = filter_order_key(right, row, ctx)?;
+    match (&a, &b) {
+        (OrderKey::Literal(x), OrderKey::Literal(y))
+        | (OrderKey::Iri(x), OrderKey::Iri(y))
+        | (OrderKey::Blank(x), OrderKey::Blank(y)) => Some(x.cmp(y)),
+        (OrderKey::Num(x), OrderKey::Num(y)) => x.partial_cmp(y),
+        _ => None,
+    }
+}
+
+/// A FILTER operand as an ordering value (see [`order_key`]); `None` when it
+/// has none (unbound, or a term kind that does not order).
+fn filter_order_key(term: &Term, row: &Bindings, ctx: &ExecutionContext<'_>) -> Option<OrderKey> {
+    match term {
+        Term::Variable(name) => match order_key(row.get(name).copied(), ctx) {
+            OrderKey::Unbound => None,
+            k => Some(k),
+        },
+        Term::Literal(s) => Some(OrderKey::Literal(s.clone())),
+        Term::TypedLiteral { value, .. } => Some(OrderKey::Literal(value.clone())),
+        Term::Iri(s) => Some(OrderKey::Iri(s.clone())),
+        Term::PrefixedName { prefix, local } => ctx
+            .prefixes
+            .get(prefix.as_str())
+            .map(|base| OrderKey::Iri(format!("{}{}", base, local))),
+        Term::IntegerLiteral(n) => Some(OrderKey::Num(*n as f64)),
+        _ => None,
+    }
 }
 
 /// Resolve a term for **equality** comparisons (`=`, `!=`).

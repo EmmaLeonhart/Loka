@@ -302,12 +302,12 @@ Fixes string literals, IRIs, prefixed names and typed literals in `=` / `!=` ali
 four were silently matching nothing. 8 tests in `loka-sparql/tests/filter_equality.rs`,
 including one asserting the filter and pattern paths agree. 425 workspace tests green.
 
-**Ordering (`<`, `>`, `<=`, `>=`) was deliberately left narrow.** It compares raw `TermId`s,
-which is meaningful for inline-encoded integers and meaningless for interned strings, where
-the id is insertion order. Widening it would turn `FILTER(?name < "M")` from "matches
-nothing" into "matches an arbitrary subset" — silently wrong rather than silently empty,
-which is worse. A test pins the current behaviour so a future widening has to confront the
-choice. Real string collation needs the executor to compare resolved *values*, not ids.
+**Ordering (`<`, `>`, `<=`, `>=`) — FIXED 2026-10-07.** It compared raw `TermId`s, meaningful
+only for inline integers and temporal ids, so it was kept narrow (string ordering matched
+nothing). It now compares values: strings with strings, IRIs with IRIs, numbers numerically,
+temporal ids by id; mixed kinds are a type error (no match). The same id-vs-value bug was in
+ORDER BY and is fixed there too. Tests: `ordering_on_strings_and_iris_compares_values` and
+`string_ordering_is_by_value_not_insertion_order` in `loka-sparql/tests/filter_equality.rs`.
 
 <details><summary>Original finding, for context</summary>
 
@@ -401,13 +401,9 @@ Decisions worth knowing:
 - **Arithmetic in pattern position is `Ok(None)`/`None`** in `resolve_term` and the planner's
   `term_to_constant_id` — it is a filter-operand-only term with a value but no interned id.
 
-**Still open: no operator precedence inside arithmetic.** `?a + 2 * 3` parses left-associative
-as `(?a + 2) * 3`; SPARQL binds `*` tighter. Pinned by
-`arithmetic_has_no_operator_precedence_yet` (`loka-sparql/tests/filter_numeric_ordering.rs`) on
-a case where the two readings select different rows. Fixing it is the same shape of change as
-the `&&`/`||` split above — an `AdditiveExpression` level over a `MultiplicativeExpression`
-level — and it likewise re-associates queries that already parse, so it wants to be a
-deliberate commit rather than a drive-by.
+**Operator precedence — FIXED 2026-10-07.** `*` and `/` bind tighter than `+` and `-`; unary
+minus and parenthesised arithmetic parse. Pinned by `arithmetic_respects_operator_precedence` and
+`unary_minus_negates_an_operand` in `loka-sparql/tests/filter_numeric_ordering.rs`.
 
 ### ✅ FIXED 2026-07-29: ordering comparisons were wrong whenever a negative integer was involved
 
