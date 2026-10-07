@@ -7,6 +7,15 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (late, later) — Emma: "More background research"
+
+Asked how to proceed after v15 (go to arXiv / train / keep iterating), Emma answered "More
+background research". I'm reading that as deepening the paper's background and related work so
+the contribution is placed against its closest precedents, which the current §2 lacks: truth
+maintenance, provenance theory, deletion propagation in derived data, nanopublications, machine
+unlearning. Queued as 10m.
+
+---
 ## 2026-10-07 (late) — review v15: Weak Accept (v13 and v14 were Accept)
 
 Post 2914 got **Weak Accept**. Its cons: the weak model, provenance recording selector inputs
