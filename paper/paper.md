@@ -291,7 +291,7 @@ We compare the annotation block with the two standard ways of attaching provenan
 
 Most of the difference is the cost of making a curated statement citable: RDF-star quotes it in place, while the other encodings need four extra rows per cited statement.
 
-We also asked both triple-based stores the same question for each of the 169 entities X, "which generated triples cite a statement whose object is X?" (a nested SPARQL-star pattern on one side, a five-pattern join over reification nodes on the other). Both returned identical answers for all 169 entities. Loka currently answers the reified form faster: median 1.13 ms against 5.14 ms per query over HTTP (p95 1.47 against 6.54 ms). The RDF-star encoding is three times smaller; on this query it is several times slower. Loka has no named-graph support, so (b) was counted but not queried.
+We also asked both triple-based stores the same question for each of the 169 entities X, "which generated triples cite a statement whose object is X?" (a nested SPARQL-star pattern on one side, a five-pattern join over reification nodes on the other). Both returned identical answers for all 169 entities, with the stores reloaded from disk. Median latency over HTTP was 0.92 ms for the RDF-star query and 0.79 ms for the reified join (p95 1.29 and 1.18 ms). An earlier executor took 5.14 ms on the RDF-star query, because it found quoted subjects by hashing every stored triple; it now walks the rows of the bound annotation predicate and dereferences each quoted subject through the reverse index (§2.1). The RDF-star encoding is three times smaller and answers this query within 0.13 ms of the reified one. Loka has no named-graph support, so (b) was counted but not queried.
 
 ### 6.4 Link prediction
 
@@ -334,7 +334,6 @@ Entity-valued objects are those whose label also occurs as a subject in training
 
 - The link-prediction set is small (19,686 rankable queries), skewed toward literal-valued predicates, and drawn from the triples a larger label cache newly resolved rather than sampled uniformly from Wikidata. Entities are identified by English label, so distinct entities with the same label are merged, which affects the transformer and TransE alike.
 - No model was tuned, and only one checkpoint (v13) has a held-out set that requires no retraining.
-- In Loka's current executor, the nested SPARQL-star query for provenance is about four to five times slower than the equivalent query over a reification encoding (§6.3), although the RDF-star encoding is three times smaller.
 - Retraction was evaluated on synthetic graphs on one machine. The in-memory store is the one retraction runs against in every deployment mode (the server keeps its indexes in memory and mirrors writes to the persistent store), but the commit step that deletes the computed set from the persistent store was not timed.
 - The source dataset revision was not pinned when the corpora were built (References). The released corpora are fixed, but the path from source dump to corpus cannot be replayed exactly.
 

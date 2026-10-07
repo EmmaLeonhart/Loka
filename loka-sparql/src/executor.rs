@@ -1480,6 +1480,57 @@ fn evaluate_triple_pattern(
             if is_id.is_some() && ip_id.is_some() && io_id.is_some() {
                 // Fall through to normal path below
             } else {
+                let p_id = resolve_term(predicate, row, ctx.dict, ctx.prefixes)?;
+                let o_id = resolve_term(object, row, ctx.dict, ctx.prefixes)?;
+
+                // Nothing inside the quoted subject is bound but the outer
+                // predicate is: walk that predicate's rows and dereference each
+                // quoted subject through the reverse index, instead of hashing
+                // every triple in the store (the scan below). This is the shape
+                // of every provenance query (`<< ?s ?p ?o >> prov:… …`).
+                if is_id.is_none() && ip_id.is_none() && io_id.is_none() {
+                    if let Some(p) = p_id {
+                        if is_unresolved_constant(object, o_id) {
+                            continue;
+                        }
+                        let outer_rows = match o_id {
+                            Some(o) => ctx.store.find_by_predicate_object(p, o),
+                            None => ctx.store.find_by_predicate(p),
+                        };
+                        for outer_triple in &outer_rows {
+                            let mut new_row = row.clone();
+                            if !bind_term_to_id(
+                                subject,
+                                outer_triple.subject,
+                                &mut new_row,
+                                ctx.dict,
+                                ctx.prefixes,
+                            )? {
+                                continue;
+                            }
+                            if o_id.is_none()
+                                && !bind_term_to_id(
+                                    object,
+                                    outer_triple.object,
+                                    &mut new_row,
+                                    ctx.dict,
+                                    ctx.prefixes,
+                                )?
+                            {
+                                continue;
+                            }
+                            results.push(new_row);
+                            source_indices.push(row_idx);
+                            if let Some(limit) = row_limit {
+                                if results.len() >= limit {
+                                    break 'outer;
+                                }
+                            }
+                        }
+                        continue; // Skip normal path for this row
+                    }
+                }
+
                 // Wildcard inner triple: scan for matching inner triples
                 let inner_candidates: Vec<Triple> = match (is_id, ip_id, io_id) {
                     (Some(s), Some(p), _) => ctx.store.find_by_subject_predicate(s, p),
@@ -1489,9 +1540,6 @@ fn evaluate_triple_pattern(
                     (None, None, Some(o)) => ctx.store.find_by_object(o),
                     (None, None, None) => ctx.store.iter().collect(),
                 };
-
-                let p_id = resolve_term(predicate, row, ctx.dict, ctx.prefixes)?;
-                let o_id = resolve_term(object, row, ctx.dict, ctx.prefixes)?;
 
                 // Engine-bug-#2 follow-up (pivot 2026-05-19): if the outer
                 // predicate or object is a constant IRI/literal that's not
@@ -1748,6 +1796,17 @@ fn evaluate_triple_pattern(
                             } else {
                                 new_row.insert(name.clone(), outer_triple.subject);
                             }
+                        } else if s_id.is_none()
+                            && matches!(subject, Term::QuotedTriple { .. })
+                            && !bind_term_to_id(
+                                subject,
+                                outer_triple.subject,
+                                &mut new_row,
+                                ctx.dict,
+                                ctx.prefixes,
+                            )?
+                        {
+                            continue;
                         }
                         if let Term::Variable(name) = predicate {
                             if let Some(&existing) = new_row.get(name) {
@@ -3896,6 +3955,29 @@ mod tests {
             *row.get("co").unwrap(),
             dict.lookup("http://wd/Q31").unwrap()
         );
+    }
+
+    #[test]
+    fn sparql_star_annotation_on_unasserted_quoted_triple_matches() {
+        // RDF-star lets a quoted triple be annotated without being asserted.
+        // The predicate-driven path dereferences the quoted subject instead of
+        // looking for an asserted copy, so this annotation is found.
+        let mut dict = TermDictionary::new();
+        let mut store = TripleStore::new();
+        let a = dict.intern("http://wd/A");
+        let p = dict.intern("http://wd/P");
+        let b = dict.intern("http://wd/B");
+        let said_by = dict.intern("http://wd/saidBy");
+        let c = dict.intern("http://wd/C");
+        let q = dict.register_quoted(a, p, b); // quoted, never asserted
+        store.insert(Triple::new(q, said_by, c)).unwrap();
+        let query =
+            parser::parse("SELECT ?s ?who WHERE { << ?s ?p ?o >> <http://wd/saidBy> ?who }")
+                .unwrap();
+        let result = execute(&query, &store, &dict).unwrap();
+        assert_eq!(result.rows.len(), 1);
+        assert_eq!(*result.rows[0].get("s").unwrap(), a);
+        assert_eq!(*result.rows[0].get("who").unwrap(), c);
     }
 
     #[test]

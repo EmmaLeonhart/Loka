@@ -4,13 +4,13 @@
   "disagreements": 0,
   "disagreement_examples": [],
   "rdfstar_ms": {
-    "median": 5.14,
-    "p95": 6.54,
-    "max": 31.2
+    "median": 0.92,
+    "p95": 1.29,
+    "max": 4.92
   },
   "reification_ms": {
-    "median": 1.13,
-    "p95": 1.47,
-    "max": 12.16
+    "median": 0.79,
+    "p95": 1.18,
+    "max": 20.23
   }
 }

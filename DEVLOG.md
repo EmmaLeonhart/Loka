@@ -7,6 +7,27 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 — review v11 (Weak Reject); provenance queries 5.6× faster, now near reification
+
+Review v11 (post 2908) holds at **Weak Reject**. Its new con: "SPARQL-star queries 4–5× slower
+than reified data". I fixed that one. The rest (weak model, procedural provenance, catalog noise
+well known, scale) are planned as 10d–10f or stay as stated.
+
+**Cause.** For `<< ?s ?p ?o >> P …` with nothing bound inside the quoted subject, the executor
+scanned *every* triple in the store, hashed each into a quoted id, and probed for annotations.
+**Fix** (`loka-sparql/src/executor.rs`): when the outer predicate is bound, walk that predicate's
+rows (or predicate+object) and dereference each quoted subject through the reverse index with
+`bind_term_to_id`. The object-side branch got the same dereference for a quoted subject. Side
+effect, which brings it in line with RDF-star: an annotation on a quoted triple that is *not*
+asserted is now found (new test). Workspace tests, fmt and clippy all pass.
+
+**Measured on the real stores, reloaded from disk:** identical answers for all 169 entities;
+RDF-star median 0.92 ms against reification 0.79 ms (was 5.14 against 1.13). Retraction on the
+reloaded store: 264 checks, 0 mismatches, which also confirms the restart-corruption fix on
+real data. The paper's §6.3 is updated and the "slower" limitations bullet removed. The fix is
+unreleased: v0.4.4 is planned in 10f, so the paper can cite released code.
+
+---
 ## 2026-10-07 (night) — neighbour citations bounded and added; real-data numbers rerun; resubmitted
 
 Step 10c. `tools/neighbour_evidence_stats.py` runs the candidate selector's own code over the real
