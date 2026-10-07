@@ -7,6 +7,28 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (night, engineering, last) — FILTER/BIND arithmetic gets SPARQL precedence and unary minus
+
+`parse_arith_operand` was a single left-to-right loop over `+ - * /`, so `?a + 2 * 3` meant
+`(?a + 2) * 3`. It's now three levels as in the SPARQL grammar: additive over multiplicative
+over unary. Along the way:
+- the right-hand operand used `parse_term`, so `?a + STRLEN(?x)` failed; it now goes through
+  the same expression path;
+- unary minus, `FILTER(-?t > 5)`, was a parse error and is now `0 - x`; a `-` directly before
+  a digit is still a negative literal;
+- parenthesised arithmetic, `(?t + 2) * 3`, now parses. FILTER's `(` tries a boolean group first
+  and backs off to a comparison if that fails, so `(?a = 1 || ?b = 2)` grouping is unchanged
+  (the `filter_grouping` tests still pass).
+
+This deliberately changes the meaning of existing mixed-operator queries, as the 07-29 `&&`/`||`
+fix did: they were being evaluated as something the author didn't write. The pinning test
+`arithmetic_has_no_operator_precedence_yet` is replaced by
+`arithmetic_respects_operator_precedence`. It asserts the opposite results for `?t + 2 * 3 = 21`
+and `= 26` from what the old test asserted, and the old test passed on the old code. Each case
+is chosen so the two readings select different rows. `unary_minus_negates_an_operand` is new.
+Workspace tests pass; fmt and clippy clean. The queue's engineering items are now all done.
+
+---
 ## 2026-10-07 (night, engineering, later) — computed values stage 5: GROUP BY on a computed value
 
 `GROUP BY` accepted only `?variables`. It now also takes `(expr AS ?v)`, grouping under `?v`,

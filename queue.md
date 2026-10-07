@@ -40,24 +40,6 @@ step 9 submits.
 
 ---
 
-## ACTIVE — operator precedence inside FILTER arithmetic
-
-The last piece of the SPARQL 1.1 `Expression` grammar. `parse_arith_operand` is one
-left-associative loop over `+ - * /`, so `?a + 2 * 3` is `(?a + 2) * 3` where SPARQL means
-`?a + (2 * 3)`. Pinned by `arithmetic_has_no_operator_precedence_yet`
-(`loka-sparql/tests/filter_numeric_ordering.rs`) on a case where the readings select different
-rows, so it is a known divergence rather than a silent one.
-
-Same shape as the `&&`/`||` split done 07-29: an `AdditiveExpression` loop over a
-`MultiplicativeExpression` loop. It re-associates queries that already parse, so it goes in its
-own commit with the pinning test rewritten to assert precedence — not as a drive-by.
-
-Worth doing together with **unary minus** (`FILTER(-?a > 5)`), which `parse_arith_operand` does
-not accept at all: it calls `parse_term` first, so a leading `-` is only handled when it is part
-of a numeric literal.
-
----
-
 The rest of the queue is drained. Remaining work is either GPU-gated
 (v11–v14 training, propgen tests, clean v12 retrain, donor clean-Adam v14) or
 Emma-gated (SDK first publish). The autonomous work-loop cron promotes the next

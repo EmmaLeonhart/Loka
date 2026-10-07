@@ -1706,11 +1706,20 @@ impl<'a> Parser<'a> {
         // all -- see the Cypher transpiler, which pushes NOT to the leaves and
         // splits top-level ANDs into separate FILTER clauses to work around it.
         if self.peek_char() == Some('(') {
+            // A boolean group, `(?a = 1 || ?b = 2)`, or the start of an
+            // arithmetic operand, `(?t + 2) * 3 = 21`. Try the group first; if
+            // it does not parse as one, back off and read a comparison, whose
+            // operands accept a parenthesised arithmetic expression.
+            let saved = self.pos;
             self.pos += 1;
-            let inner = self.parse_bool_expr()?;
-            self.skip_whitespace();
-            self.expect_char(')')?;
-            return Ok(inner);
+            if let Ok(inner) = self.parse_bool_expr() {
+                self.skip_whitespace();
+                if self.peek_char() == Some(')') {
+                    self.pos += 1;
+                    return Ok(inner);
+                }
+            }
+            self.pos = saved;
         }
         self.parse_comparison_expr()
     }
@@ -1797,22 +1806,25 @@ impl<'a> Parser<'a> {
     /// because both sides go through this function, `24 < ?age + 5` works too
     /// (it used to be a parse error).
     ///
-    /// Left-associative, no operator precedence: `?a + 2 * 3` is `(?a + 2) * 3`.
+    /// Operator precedence follows SPARQL: see `parse_arith_operand`.
     /// SPARQL binds `*` tighter. Not silently papered over — see
     /// `arithmetic_has_no_operator_precedence_yet` in
     /// `loka-sparql/tests/filter_numeric_ordering.rs`, which pins it, and
     /// TODO.md. Chained arithmetic in a filter is rare enough that shipping the
     /// discarded-operand fix first is the better trade; a full
     /// `AdditiveExpression`/`MultiplicativeExpression` split is the real answer.
+    /// An arithmetic expression with SPARQL precedence: `*` and `/` bind
+    /// tighter than `+` and `-`, all left-associative
+    /// (`AdditiveExpression` over `MultiplicativeExpression` over
+    /// `UnaryExpression`). Until 2026-10-07 this was one loop over all four
+    /// operators, so `?a + 2 * 3` meant `(?a + 2) * 3`.
     fn parse_arith_operand(&mut self) -> Result<Term> {
-        let mut left = self.parse_value_expr()?;
+        let mut left = self.parse_multiplicative()?;
         loop {
             self.skip_whitespace();
             let op = match self.peek_char() {
                 Some('+') => ArithOp::Add,
-                Some('*') => ArithOp::Mul,
-                Some('/') => ArithOp::Div,
-                // `->` is not arithmetic. Kept from the branch this replaces.
+                // `->` is not arithmetic.
                 Some('-') if self.input.as_bytes().get(self.pos + 1).copied() != Some(b'>') => {
                     ArithOp::Sub
                 }
@@ -1820,13 +1832,74 @@ impl<'a> Parser<'a> {
             };
             self.pos += 1;
             self.skip_whitespace();
-            let right = self.parse_term()?;
+            let right = self.parse_multiplicative()?;
             left = Term::Arith {
                 left: Box::new(left),
                 op,
                 right: Box::new(right),
             };
         }
+    }
+
+    fn parse_multiplicative(&mut self) -> Result<Term> {
+        let mut left = self.parse_unary()?;
+        loop {
+            self.skip_whitespace();
+            let op = match self.peek_char() {
+                Some('*') => ArithOp::Mul,
+                Some('/') => ArithOp::Div,
+                _ => return Ok(left),
+            };
+            self.pos += 1;
+            self.skip_whitespace();
+            let right = self.parse_unary()?;
+            left = Term::Arith {
+                left: Box::new(left),
+                op,
+                right: Box::new(right),
+            };
+        }
+    }
+
+    /// Unary `-` / `+`, then a primary: a parenthesised arithmetic expression,
+    /// a function call, or a term. A `-` directly before a digit is a negative
+    /// literal (handled by `parse_term`); before anything else it negates, as
+    /// `0 - x`. `FILTER(-?a > 5)` was a parse error before this.
+    fn parse_unary(&mut self) -> Result<Term> {
+        self.skip_whitespace();
+        let next = self.input.as_bytes().get(self.pos + 1).copied();
+        match self.peek_char() {
+            Some('-') if !next.is_some_and(|b| b.is_ascii_digit()) => {
+                self.pos += 1;
+                let operand = self.parse_unary()?;
+                return Ok(Term::Arith {
+                    left: Box::new(Term::IntegerLiteral(0)),
+                    op: ArithOp::Sub,
+                    right: Box::new(operand),
+                });
+            }
+            Some('+') => {
+                self.pos += 1;
+                return self.parse_unary();
+            }
+            Some('(') => {
+                // `(?a + 1) * 2`. If the parenthesis holds something that is
+                // not an arithmetic expression (a FILTER-level group such as
+                // `(?a > 1)`), back off and let the caller's grammar have it.
+                let saved = self.pos;
+                self.pos += 1;
+                if let Ok(inner) = self.parse_arith_operand() {
+                    self.skip_whitespace();
+                    if self.peek_char() == Some(')') {
+                        self.pos += 1;
+                        return Ok(inner);
+                    }
+                }
+                self.pos = saved;
+            }
+            _ => {}
+        }
+        self.parse_value_expr()
     }
 
     /// A value in FILTER / BIND operand position: a function call, or a plain

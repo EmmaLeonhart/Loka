@@ -112,17 +112,31 @@ fn arithmetic_composes_with_boolean_structure() {
 /// asserted-correct, the same way `&&`/`||` precedence was pinned before it was
 /// fixed — see TODO.md.
 #[test]
-fn arithmetic_has_no_operator_precedence_yet() {
-    // (t + 2) * 3 over -20,-5,0,5,20 -> -54, -9, 6, 21, 66; = 6 picks t = 0.
-    assert_eq!(rows("?t + 2 * 3 = 6"), 1);
-    // SPARQL's reading, t + 6 = 6, would also pick t = 0 — so use a case where
-    // the two differ: (t + 2) * 3 = 21 picks t = 5; t + (2 * 3) = 21 picks
-    // t = 15, which is not in the store.
-    assert_eq!(rows("?t + 2 * 3 = 21"), 1);
-    assert_eq!(rows("?t + 2 * 3 = 26"), 0);
-    // Explicit intent is expressible either way by writing the constant folded.
-    assert_eq!(rows("?t + 6 = 21"), 0);
-    assert_eq!(rows("?t + 6 = 11"), 1); // t = 5
+fn arithmetic_respects_operator_precedence() {
+    // Store values: -20, -5, 0, 5, 20. Each case is chosen so the old
+    // left-to-right reading would select a DIFFERENT row (or none).
+    // ?t + 2 * 3 = ?t + 6. = 26 picks t = 20; (t + 2) * 3 = 26 has no
+    // integer solution, so the old reading matched nothing.
+    assert_eq!(rows("?t + 2 * 3 = 26"), 1);
+    // = 21: t + 6 = 21 -> t = 15, not stored; the old (t + 2) * 3 = 21 -> t = 5.
+    assert_eq!(rows("?t + 2 * 3 = 21"), 0);
+    // Subtraction binds looser too: t - 2 * 3 = -1 -> t = 5.
+    assert_eq!(rows("?t - 2 * 3 = -1"), 1);
+    // Division binds tighter as well: t + 20 / 4 = 25 -> t = 20; the old
+    // (t + 20) / 4 = 25 would need t = 80, which is not stored.
+    assert_eq!(rows("?t + 20 / 4 = 25"), 1);
+    // Parentheses group explicitly: (t + 2) * 3 = 21 -> t = 5.
+    assert_eq!(rows("(?t + 2) * 3 = 21"), 1);
+}
+
+#[test]
+fn unary_minus_negates_an_operand() {
+    // Was a parse error: `-` was only accepted as part of a numeric literal.
+    assert_eq!(rows("-?t > 5"), 1); // t = -20
+    assert_eq!(rows("-?t = 5"), 1); // t = -5
+    assert_eq!(rows("-(?t + 5) = 0"), 1); // t = -5
+                                          // A negative literal still parses as a literal.
+    assert_eq!(rows("?t = -20"), 1);
 }
 
 #[test]
