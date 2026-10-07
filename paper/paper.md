@@ -6,7 +6,7 @@
 
 ## Abstract
 
-Once model-generated statements are written into a knowledge graph next to curated data, it is hard to tell them apart, to keep them out of the next model's training data, or to remove them when a statement they depended on turns out to be wrong. We describe Loka, an RDF-star triplestore that stores model-predicted triples alongside curated ones and annotates each with RDF-star statements in a reserved namespace: the generating model, a confidence, and quoted pointers to the stored statements the prediction procedure took as input, which we call selection provenance. The namespace is enforced at corpus extraction, candidate selection and write time, so generated triples never re-enter a training corpus. Because these dependencies are explicit graph edges, the store supports cascade retraction: removing a node also removes every generated triple that transitively depended on one of its statements, without following ordinary data edges. We exercise the loop with a series of small transformers trained from scratch on label-substituted Wikidata triples, and report a corpus-construction finding: catalog-identifier properties made up three quarters of our initial training corpus and caused identifier-shaped hallucinations, which excluding them removed. Tested against an independent reference, retraction computes a 120k-triple removal from a 504k-row store in 58 ms. Selection provenance records what the procedure used, not what the model relied on, and on held-out triples the model does not beat a predicate-frequency baseline: our claims concern the provenance machinery, not the model. Code, all checkpoints and the cleaned corpora are released.
+Once model-generated statements are written into a knowledge graph next to curated data, it is hard to tell them apart, to keep them out of the next model's training data, or to remove them when a statement they depended on turns out to be wrong. We describe Loka, an RDF-star triplestore that stores model-predicted triples alongside curated ones and annotates each with RDF-star statements in a reserved namespace: the generating model, a confidence, and quoted pointers to the stored statements the prediction procedure took as input, which we call selection provenance. The namespace is enforced at corpus extraction, candidate selection and write time, so generated triples never re-enter a training corpus. Because these dependencies are explicit graph edges, the store supports cascade retraction: removing a node also removes every generated triple that transitively depended on one of its statements, without following ordinary data edges. We exercise the loop with a series of small transformers trained from scratch on label-substituted Wikidata triples and use them to evaluate the provenance machinery on real data. Tested against an independent reference, retraction computes a 106k-triple removal from a 5M-row store in about 0.1 s. Selection provenance records what the procedure used, not what the model relied on, and on held-out triples the model does not beat a predicate-frequency baseline: our claims concern the provenance machinery, not the model. Code, all checkpoints and the cleaned corpora are released.
 
 ---
 
@@ -26,7 +26,7 @@ We are specific about what the dependency edge means. In our prediction procedur
 
 3. **Cascade retraction.** Removing a node removes its statements and every generated triple that transitively depended on them. Traversal follows only selection-provenance edges and stays inside the reserved namespace, so ordinary data edges are never treated as dependencies. We test it against an independent reference implementation and measure its cost. (§3.4, §6.1–6.2)
 
-4. **A case study on Wikidata.** A from-scratch masked-triple transformer series (v3–v14, all checkpoints and corpora released) exercises the loop end to end and yields a corpus-construction finding: Wikidata's catalog-identifier datatypes dominate a naive corpus and cause identifier-shaped hallucinations, which excluding them removes. (§5)
+4. **A case study on Wikidata.** A from-scratch masked-triple transformer series (v3–v14, all checkpoints and corpora released) exercises the loop end to end on real data. (§5)
 
 ---
 
@@ -209,7 +209,7 @@ The cumulative penalty matters: a *non*-cumulative penalty (set membership) was 
 
 ## 5. Case study: a model series on cleaned Wikidata
 
-We exercised the provenance loop with a series of from-scratch models (v3–v14) trained on progressively rebuilt Wikidata corpora. Every checkpoint and corpus is released (links at the top of the paper); Appendix A lists each version's tokenizer, corpus size, training length and perplexity. This section reports what the series taught about *corpus construction*, which is the result that transfers to other work training on Wikidata. Completion accuracy is evaluated separately, against baselines, in §6.4.
+We exercised the provenance loop with a series of from-scratch models (v3–v14) trained on progressively rebuilt Wikidata corpora. Every checkpoint and corpus is released (links at the top of the paper); Appendix A lists each version's tokenizer, corpus size, training length and perplexity. This section records how the training corpus was built and what went wrong along the way, since the models and corpora are released and reused below. Completion accuracy is evaluated separately, against baselines, in §6.4.
 
 ### 5.1 Setup
 
@@ -267,15 +267,16 @@ The comparison found a defect on its first run. When the retracted node was itse
 
 ### 6.2 Retraction cost
 
-We time `retract_set` with criterion on generated graphs of three sizes, using the same generator (curated and generated triples in equal number, entities = a quarter of that number). The root is the entity with the largest retraction set among a fixed sample of 50. Single laptop, release build. The store is the in-memory index that the engine computes retractions against in every mode, including the server, which mirrors writes to its persistent store:
+We time `retract_set` with criterion on generated graphs of four sizes, using the same generator (curated and generated triples in equal number, entities = a quarter of that number). The root is the entity with the largest retraction set among a fixed sample of 50. Single laptop, release build. The store is the in-memory index that the engine computes retractions against in every mode, including the server, which mirrors writes to its persistent store:
 
 | Generated triples | Store rows | Triples removed | Max depth | Median time |
 |---|---|---|---|---|
-| 1,000 | 5,034 | 1,439 | 14 | 0.26 ms |
-| 10,000 | 50,484 | 7,367 | 24 | 1.91 ms |
-| 100,000 | 504,389 | 120,461 | 34 | 58.3 ms |
+| 1,000 | 5,034 | 1,439 | 14 | 0.41 ms |
+| 10,000 | 50,484 | 7,367 | 24 | 2.97 ms |
+| 100,000 | 504,389 | 120,461 | 34 | 95.1 ms |
+| 1,000,000 | 5,050,435 | 106,255 | 39 | 92.1 ms |
 
-Time grows with the size of the removed set, as the algorithm's per-triple index lookups predict: about 0.5 µs per removed triple at the largest size.
+Time follows the size of the removed set, not the size of the store, as the algorithm's per-triple index lookups predict: the 5M-row store and the 0.5M-row store take the same time for removals of similar size, about 0.8 µs per removed triple. All four sizes come from one run; an earlier run of the same code on the same laptop measured the three smaller sizes about 1.6× faster, so absolute times vary with machine state by that much.
 
 On real data (the Wikidata neighbourhood and v13 predictions of §6.3), we called the server's retraction preview for each of the 169 entities and checked, for every generated triple citing a statement that touches the entity (as subject or object, so including neighbour citations), that the triple and every one of its annotation rows are in the returned set: 264 such checks, no mismatch. Over HTTP the preview took a median of 1.35 ms (p95 3.99 ms) and removed a median of 44 triples (maximum 1,244).
 
@@ -351,7 +352,7 @@ Two directions would strengthen the provenance record itself.
 
 ## 9. Conclusion
 
-We described how a triplestore can hold model-generated statements next to curated ones without losing track of them: each generated triple carries RDF-star annotations, in a reserved namespace, naming its model, its confidence and the stored statements its procedure used. The namespace keeps generated statements out of training corpora, and the dependency edges support cascade retraction, which we tested against an independent reference (finding and fixing one defect) and timed at 58 ms for a 120k-triple retraction in a 504k-row store. A case study on Wikidata showed that catalog-identifier datatypes dominate a naive training corpus and cause identifier-shaped hallucinations; the model trained on the cleaned corpus remains weak at completion, below a frequency baseline, which is why our claims rest on the provenance machinery rather than on the model. Code, checkpoints and corpora are released.
+We described how a triplestore can hold model-generated statements next to curated ones without losing track of them: each generated triple carries RDF-star annotations, in a reserved namespace, naming its model, its confidence and the stored statements its procedure used. The namespace keeps generated statements out of training corpora, and the dependency edges support cascade retraction, which we tested against an independent reference (finding and fixing one defect) and timed at about 0.1 s for a 106k-triple retraction in a 5M-row store, with cost following the size of the removal rather than of the store. The case-study model is weak at completion, below a frequency baseline, which is why our claims rest on the provenance machinery rather than on the model. Code, checkpoints and corpora are released.
 
 ---
 

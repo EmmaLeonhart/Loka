@@ -40,7 +40,7 @@ Both pass. To see the defect, remove the depth-0 annotation sweep in `loka-core/
 cargo bench -p loka-core --bench retract
 ```
 
-Prints store rows, triples removed and max depth for each size (1k, 10k, 100k generated triples), then the criterion timings. Absolute times depend on the machine; the paper's were taken on one laptop.
+Prints store rows, triples removed and max depth for each size (1k, 10k, 100k and 1M generated triples; the last builds a ~5M-row store in memory), then the criterion timings. Absolute times depend on the machine; the paper's were taken on one laptop.
 
 ## §6.2–6.3 Real-data retraction and encoding cost
 

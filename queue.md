@@ -29,10 +29,6 @@ step 9 submits.
     `paper/reviews/`; fix what is fixable by cutting or by real runs; resubmit. Stop at Accept /
     Strong Accept, or at 2026-10-24 with a written list of what the remaining cons would need.
     Review v11 (post 2908): Weak Reject. Iteration plan, no training:
-    - **10d. Retraction at larger scale.** Bench `retract_set` on a 1M-generated-triple graph
-      (about 5M rows) if it fits in memory; report it alongside 1k/10k/100k.
-    - **10e. Demote the catalog-noise finding.** The reviewer calls it well known: present it as
-      a corpus-construction note, not a contribution.
     - **10f. Release + resubmit.** Cut v0.4.4 (query speed-up), point the paper at it, resubmit.
     Weak model: Emma decided 2026-10-06 to keep it, no training.
 11. **(target 2026-10-25) arXiv package + handoff.** Build the arXiv source tarball

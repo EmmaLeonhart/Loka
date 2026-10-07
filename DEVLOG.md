@@ -7,6 +7,26 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 (later) — retraction at 5M rows; catalog noise demoted
+
+**10d.** The retraction bench gains a 1M-generated-triple size (5,050,435 rows in memory; 8 GB
+was free). Same run, all four sizes: 0.41 ms / 2.97 ms / 95.1 ms / 92.1 ms for removals of
+1,439 / 7,367 / 120,461 / 106,255 triples. The 5M-row store costs the same as the 0.5M-row one
+for a similar-sized removal, so cost follows the removal, not the store. One thing I checked
+rather than glossed over: step 7's run of *identical* retraction code measured the smaller sizes
+about 1.6× faster (100k: 58 ms against 95 ms now). I confirmed no code in that path changed
+since `d459706` (only formatting and the persistence code, which the bench doesn't touch), and
+a third run reproduced the slower numbers. So it's machine state on this laptop. The paper
+reports this run and says absolute times varied by about 1.6×. Raw output in
+`training/logs/retract_bench_2026-10-08.txt`.
+
+**10e.** The reviewer is right that "external IDs dominate Wikidata" isn't news. It's out of the
+abstract, the contributions and the conclusion. §5.3 keeps the data as a corpus-construction
+note. I didn't add a citation for "it's well known", because I haven't verified one.
+
+`Skip-Submit: true`; 10f (v0.4.4 release + resubmit) next.
+
+---
 ## 2026-10-08 — review v11 (Weak Reject); provenance queries 5.6× faster, now near reification
 
 Review v11 (post 2908) holds at **Weak Reject**. Its new con: "SPARQL-star queries 4–5× slower

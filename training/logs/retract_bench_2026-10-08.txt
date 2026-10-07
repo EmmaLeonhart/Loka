@@ -1,0 +1,8 @@
+﻿retract_set n=1000: store rows 5034, removed 1439 triples, max depth 14
+                        time:   [406.87 µs 414.68 µs 423.28 µs]
+retract_set n=10000: store rows 50484, removed 7367 triples, max depth 24
+                        time:   [2.8634 ms 2.9749 ms 3.0944 ms]
+retract_set n=100000: store rows 504389, removed 120461 triples, max depth 34
+                        time:   [92.706 ms 95.076 ms 97.527 ms]
+retract_set n=1000000: store rows 5050435, removed 106255 triples, max depth 39
+                        time:   [89.636 ms 92.115 ms 97.518 ms]

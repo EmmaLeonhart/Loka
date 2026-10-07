@@ -4,6 +4,7 @@
 //! generated triples citing 1–3 earlier triples, ~5 % back-citations). For each
 //! size, the root is the entity whose retraction set is largest among a fixed
 //! sample of 50 entities, and the set size is printed alongside the timing.
+//! Sizes: 1k, 10k, 100k and 1M generated triples (the last is ~5M rows).
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use loka_core::retract_set;
@@ -14,7 +15,10 @@ mod graphgen;
 
 fn bench_retract(c: &mut Criterion) {
     let mut group = c.benchmark_group("retract_set");
-    for n in [1_000usize, 10_000, 100_000] {
+    for n in [1_000usize, 10_000, 100_000, 1_000_000] {
+        // The 1M graph (~5M rows) makes each call take a large fraction of a
+        // second; criterion's minimum sample count keeps the run bounded.
+        group.sample_size(if n >= 1_000_000 { 10 } else { 100 });
         let g = graphgen::generate(7, n / 4, n, n);
         let root = g
             .entities
