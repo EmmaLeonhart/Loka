@@ -1,0 +1,200 @@
+{
+  "endpoint": "http://127.0.0.1:3041",
+  "retractions": 30,
+  "all_committed": true,
+  "rows_before": 196571,
+  "rows_after_in_memory": 153486,
+  "total_removed": 43085,
+  "removed": {
+    "median": 114.0,
+    "max": 10234
+  },
+  "latency_ms": {
+    "median": 139.90499999999997,
+    "p95": 10834.11,
+    "max": 30064.05
+  },
+  "ms_per_removed_triple_median": 1.2832,
+  "runs": [
+    {
+      "iri": "http://www.wikidata.org/entity/Q8071481",
+      "ms": 61.72,
+      "removed": 57,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q24902509",
+      "ms": 23.38,
+      "removed": 22,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q702",
+      "ms": 16395.19,
+      "removed": 10234,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q862579",
+      "ms": 90.86,
+      "removed": 32,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q271611",
+      "ms": 69.79,
+      "removed": 32,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q1072120",
+      "ms": 30064.05,
+      "removed": 8305,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q183231",
+      "ms": 572.41,
+      "removed": 362,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q352821",
+      "ms": 352.66,
+      "removed": 139,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q3308107",
+      "ms": 59.17,
+      "removed": 21,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q26",
+      "ms": 3613.02,
+      "removed": 552,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q921",
+      "ms": 10834.11,
+      "removed": 8477,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q734",
+      "ms": 7525.46,
+      "removed": 5841,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q7888721",
+      "ms": 105.43,
+      "removed": 93,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q20007398",
+      "ms": 15.03,
+      "removed": 12,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q32501",
+      "ms": 18.94,
+      "removed": 15,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q23112",
+      "ms": 120.24,
+      "removed": 97,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q4220920",
+      "ms": 31.22,
+      "removed": 24,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q8641",
+      "ms": 1538.95,
+      "removed": 1194,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q902",
+      "ms": 7254.49,
+      "removed": 5834,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q16641",
+      "ms": 336.63,
+      "removed": 285,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q3473891",
+      "ms": 11.15,
+      "removed": 6,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q131539",
+      "ms": 143.64,
+      "removed": 114,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q19077875",
+      "ms": 136.17,
+      "removed": 114,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q131587983",
+      "ms": 14.73,
+      "removed": 11,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q6984185",
+      "ms": 14.45,
+      "removed": 12,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q11920728",
+      "ms": 144.5,
+      "removed": 129,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q47499",
+      "ms": 119.41,
+      "removed": 111,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q757",
+      "ms": 932.1,
+      "removed": 478,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q180589",
+      "ms": 511.2,
+      "removed": 277,
+      "committed": true
+    },
+    {
+      "iri": "http://www.wikidata.org/entity/Q909128",
+      "ms": 262.01,
+      "removed": 205,
+      "committed": true
+    }
+  ]
+}

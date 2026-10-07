@@ -1614,12 +1614,10 @@ async fn tool_retract_node(ctx: &McpContext, args: &Value) -> Result<String, Str
                 lines.join("\n")
             ));
         }
-        let mut removed = 0usize;
-        for t in set.all() {
-            if ps.remove(t).unwrap_or(false) {
-                removed += 1;
-            }
-        }
+        let all: Vec<loka_core::Triple> = set.all().copied().collect();
+        let removed = ps
+            .remove_batch(&all)
+            .map_err(|e| format!("Remove error: {}", e))?;
         ps.flush().map_err(|e| format!("Flush error: {}", e))?;
         // HNSW is rebuilt from the remaining vector triples on next open,
         // so removing the vector rows from the persistent store is

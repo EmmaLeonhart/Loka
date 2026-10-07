@@ -7,6 +7,26 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (afternoon) — 10i: committing a retraction was 1.3 ms per triple; batched to 0.06
+
+Review v13's con: the commit phase on the persistent store was unmeasured.
+`tools/retract_commit_eval.py` commits retractions of 30 seeded-random entities, one after
+another, on a copy of the 153k-triple real store with its two inference passes.
+
+**Measured first, as the engine was:** 43,085 rows removed, median 140 ms per commit, max 30 s
+(8,305 triples), 1.28 ms per removed triple. The cause is the same shape as the old
+`/triples` wedge: one sled transaction per triple. **Fix:** `PersistentStore::remove_batch`
+removes the whole set from SPO/POS/OSP in one transaction. `POST /retract` and the MCP
+`retract_node` tool use it, then flush. A new test (`remove_batch_is_durable_and_exact`)
+covers the count, a missing triple, the POS and OSP entries, and a reopen. Workspace tests,
+fmt and clippy all pass.
+
+**After:** same 30 retractions and same 43,085 rows; median 8.3 ms, max 0.31 s, 0.06 ms per
+removed triple. Restarting the server reloads exactly 153,486 rows both times, so it's durable.
+Both runs' outputs are in `training/logs/` (`retract_commit_q42_large*.json`). Paper §6.2
+reports before and after. Unreleased; it'll ship with 10j.
+
+---
 ## 2026-10-07 (later) — review v13: Accept
 
 Post 2912 got **Accept**, up from Weak Accept. Remaining cons: the weak model, procedural

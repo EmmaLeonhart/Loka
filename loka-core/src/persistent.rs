@@ -330,6 +330,31 @@ impl PersistentStore {
         Ok(was_present)
     }
 
+    /// Remove many triples in ONE transaction across SPO/POS/OSP. Returns how
+    /// many were present. Used by committed cascade retraction, which used to
+    /// run one transaction per triple (about 1–4 ms each on a laptop, so a
+    /// few-thousand-triple retraction took seconds).
+    pub fn remove_batch(&self, triples: &[Triple]) -> Result<usize> {
+        let removed: std::result::Result<usize, sled::transaction::TransactionError<()>> =
+            (&self.spo, &self.pos, &self.osp).transaction(|(spo, pos, osp)| {
+                let mut n = 0usize;
+                for t in triples {
+                    if spo.remove(t.spo_key().as_ref())?.is_some() {
+                        pos.remove(t.pos_key().as_ref())?;
+                        osp.remove(t.osp_key().as_ref())?;
+                        n += 1;
+                    }
+                }
+                Ok(n)
+            });
+        removed.map_err(|e| match e {
+            sled::transaction::TransactionError::Abort(()) => {
+                CoreError::Storage(std::io::Error::other("transaction aborted"))
+            }
+            sled::transaction::TransactionError::Storage(e) => CoreError::Sled(e),
+        })
+    }
+
     /// Check whether a triple exists.
     pub fn contains(&self, triple: &Triple) -> Result<bool> {
         Ok(self.spo.contains_key(triple.spo_key())?)
@@ -1032,5 +1057,33 @@ mod tests {
             .unwrap_err();
         assert!(matches!(err, CoreError::TermIdConflict(_)), "{err:?}");
         assert!(ps.is_empty());
+    }
+
+    /// `remove_batch` removes exactly the present triples, in one
+    /// transaction, and the removal survives a reopen.
+    #[test]
+    fn remove_batch_is_durable_and_exact() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("rmb.sdb");
+        let (a, b, c, gone);
+        {
+            let ps = PersistentStore::open(&path).unwrap();
+            a = Triple::new(1, 2, 3);
+            b = Triple::new(4, 5, 6);
+            c = Triple::new(7, 8, 9);
+            gone = Triple::new(10, 11, 12); // never inserted
+            for t in [a, b, c] {
+                ps.insert(t).unwrap();
+            }
+            assert_eq!(ps.remove_batch(&[a, c, gone]).unwrap(), 2);
+            assert!(!ps.contains(&a).unwrap());
+            assert!(ps.contains(&b).unwrap());
+            assert!(ps.find_by_predicate(8).is_empty(), "POS entry removed too");
+            ps.flush().unwrap();
+        }
+        let ps = PersistentStore::open(&path).unwrap();
+        assert_eq!(ps.len(), 1);
+        assert!(ps.contains(&b).unwrap());
+        assert!(ps.find_by_object(3).is_empty(), "OSP entry removed too");
     }
 }

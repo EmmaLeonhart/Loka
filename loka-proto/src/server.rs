@@ -1353,17 +1353,16 @@ async fn retract_apply(
             if vectors.has_index(t.predicate) && vectors.delete(t.predicate, t.object) {
                 hnsw_flipped += 1;
             }
-            if let Some(ref ps_lock) = state.persistent {
-                let ps = ps_lock
-                    .write()
-                    .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?;
-                let _ = ps.remove(t);
-            }
         }
         if let Some(ref ps_lock) = state.persistent {
+            // One persistent transaction for the whole retraction set (was one
+            // per triple), then a flush so the commit is durable on return.
             let ps = ps_lock
-                .read()
+                .write()
                 .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?;
+            let all: Vec<loka_core::Triple> = set.all().copied().collect();
+            ps.remove_batch(&all)
+                .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
             ps.flush()
                 .map_err(|e| ProtoError::BadRequest(format!("flush: {}", e)))?;
         }
