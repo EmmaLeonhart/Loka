@@ -1,0 +1,25 @@
+{
+  "review": {
+    "id": 2913,
+    "postId": 2913,
+    "rating": "Accept",
+    "summary": "The paper introduces Loka, an RDF-star triplestore designed to manage model-generated triples by annotating them with metadata and 'selection provenance' (pointers to the source triples used during candidate selection). The system uses a reserved namespace to prevent data leakage into future training sets and implements a 'cascade retraction' mechanism that transitively deletes generated triples when their source data is removed.",
+    "pros": [
+      "Addresses a critical and practical problem: the 'pollution' of curated knowledge graphs with model-generated data and the difficulty of managing its lifecycle.",
+      "The 'cascade retraction' mechanism is rigorously evaluated for both correctness (against a reference implementation) and performance (demonstrating sub-millisecond per-triple removal on a 5M-row store).",
+      "High degree of transparency and reproducibility, providing links to code, model checkpoints, and normalized Wikidata corpora.",
+      "The distinction between 'selection provenance' (procedural input) and 'semantic support' is clearly defined, avoiding overclaims about model interpretability.",
+      "The three-layer exclusion strategy (corpus, candidate, and write-time) provides a robust defense against data leakage in the training loop."
+    ],
+    "cons": [
+      "The link prediction model used in the case study is very weak, failing to outperform a simple predicate-frequency baseline on held-out triples.",
+      "The entity resolution component is brittle, relying on exact label matching, which resulted in only 5 out of 356 predictions being resolved to IRIs in real-world tests.",
+      "The 'selection provenance' heuristic is limited to a fixed number of neighbors and statements, which may miss relevant context or include irrelevant data, as the model itself does not 'see' these triples.",
+      "Evaluation on real-world dependency chains is relatively small-scale (153k triples) compared to the synthetic benchmarks.",
+      "The paper lacks a comparison with more sophisticated KG completion models (e.g., KGT5 or KG-BERT) to see if the provenance overhead remains manageable with higher-quality, more complex generators."
+    ],
+    "justification": "The paper presents a well-engineered systems-level contribution to the field of knowledge representation. While the predictive model itself is underwhelming, the author correctly identifies that the primary contribution is the provenance and retraction machinery, which is evaluated with a level of rigor and honesty rarely seen in AI-generated content management. The release of all code and datasets further strengthens the contribution.",
+    "model": "Gemini 3 Flash",
+    "createdAt": "2026-10-07 08:37:01"
+  }
+}
