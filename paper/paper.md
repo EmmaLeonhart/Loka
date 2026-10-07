@@ -192,7 +192,7 @@ v3's low perplexity comes from memorising datatype-suffix tokens (§5.2). From v
 
 For each candidate subject in the corpus:
 
-1. **Candidate predicate selection.** Find graph-neighbors — subjects sharing at least one (predicate, object-key) tuple with this one — and rank predicates they have but the candidate subject lacks. Cap at *N* candidates per subject (default 5). For each candidate, record which of the subject's statements produced a matching neighbour, and one statement of each contributing neighbour (its first statement with the proposed predicate); these become its selection provenance. One statement per neighbour suffices because retraction removes whole nodes: retracting a neighbour removes the cited statement and so reaches the prediction. Citing every neighbour statement involved was measured on the data of §6.3 at a mean of 93 citations per proposal (maximum 585) against 3.8 subject-side; one per neighbour adds a mean of 3.5.
+1. **Candidate predicate selection.** Find graph-neighbors — subjects sharing at least one (predicate, object-key) tuple with this one — and rank predicates they have but the candidate subject lacks. Cap at *N* candidates per subject (default 5). For each candidate, record which of the subject's statements produced a matching neighbour, and one statement of each contributing neighbour (its first statement with the proposed predicate); these become its selection provenance. One statement per neighbour suffices because retraction removes whole nodes: retracting a neighbour removes the cited statement and so reaches the prediction. The resulting volume grows with the neighbourhood: on the 15k-triple graph of §6.3 a prediction cites a median of 2 subject-side and a few neighbour statements, but on the 153k-triple graph of §6.2 the medians are 23 subject-side and 82 neighbour-side citations (means 67 and 54), because in a larger graph almost every statement of a subject matches some neighbour. We keep the record complete rather than capping it, since a cap would make retraction silently incomplete; a cheaper complete encoding would point at neighbour nodes rather than statements (§8).
 2. **Masked decoding with cumulative repetition penalty.** Build the input as `[CLS] s_tokens [SEP_S] p_tokens [SEP_P] [MASK]^k [SEP_O]`. At each masked position, the model emits a logit distribution. We apply:
 
    - Hard skip-set: special tokens never win.
@@ -201,7 +201,8 @@ For each candidate subject in the corpus:
 
    Greedy top-1 selection, no beam search.
 3. **Confidence-thresholded emit.** Mean per-token probability is the prediction's confidence. If confidence ≥ threshold (default 0.4) and the predicted object is not a duplicate of an existing fact for this (S, P), emit the RDF-star block (§3.2).
-4. **Optional `--post`.** Write the emitted N-Triples-star to the live Loka store via `POST /triples`. Subsequent training-corpus extractions exclude these via the SPARQL-star FILTER from §3.1.
+4. **Entity resolution.** If the predicted label, normalised (BPE word-boundary markers to spaces, case folded), equals the label of exactly one entity in the store, the object is written as that entity's IRI and the raw output is kept under `propositionPredictedLabel`; otherwise the object stays a literal. On the 153k-triple graph this resolved 1 of the 371 predictions over both passes of §6.2: the model's outputs rarely equal an entity label exactly.
+5. **Optional `--post`.** Write the emitted N-Triples-star to the live Loka store via `POST /triples`. Subsequent training-corpus extractions exclude these via the SPARQL-star FILTER from §3.1.
 
 The cumulative penalty matters: a *non*-cumulative penalty (set membership) was tested first and failed to break loops on dominant common tokens because the penalty applied only once regardless of how many times the token had already won. With cumulative, three emissions of `of` at penalty 3.0 multiply its divisor by 27 and reliably drop it below the floor, breaking the cascade.
 
@@ -278,7 +279,7 @@ We time `retract_set` with criterion on generated graphs of four sizes, using th
 
 Time follows the size of the removed set, not the size of the store, as the algorithm's per-triple index lookups predict: the 5M-row store and the 0.5M-row store take the same time for removals of similar size, about 0.8 µs per removed triple. All four sizes come from one run; an earlier run of the same code on the same laptop measured the three smaller sizes about 1.6× faster, so absolute times vary with machine state by that much.
 
-On real data (the Wikidata neighbourhood and v13 predictions of §6.3), we called the server's retraction preview for each of the 169 entities and checked, for every generated triple citing a statement that touches the entity (as subject or object, so including neighbour citations), that the triple and every one of its annotation rows are in the returned set: 264 such checks, no mismatch. Over HTTP the preview took a median of 1.35 ms (p95 3.99 ms) and removed a median of 44 triples (maximum 1,244).
+On real data, we pulled a larger breadth-first Wikidata neighbourhood of `Q42` (155,324 triples, 983 entities; 153,185 imported), ran the v13 model's inference over every subject, posted its 281 predictions, and ran inference a second time with those predictions visible as context, which produced 90 more, 83 of them citing a first-pass prediction. The store then held real dependency chains of two generated hops (371 generated triples, 39,470 annotation rows). For each of the 983 entities we called the server's retraction preview and compared it with an independently computed closure: a generated triple must be removed if it touches the entity, cites a statement touching the entity, or cites a removed generated triple. Over 27,142 such required removals, every generated triple and every one of its annotation rows was in the returned set, and no generated triple outside the closure was. Over HTTP the preview took a median of 3.0 ms (p95 306 ms, maximum 1.04 s) and removed a median of 182 triples (maximum 38,122).
 
 ### 6.3 Encoding cost against reification and named graphs
 
@@ -322,29 +323,32 @@ Entity-valued objects are those whose label also occurs as a subject in training
 
 - **Weak completion accuracy.** The case-study model does not beat a predicate-frequency baseline on held-out triples (§6.4).
 - **Mode collapse on common tokens.** Even with the cumulative penalty, predictions for predicates the model knows weakly fall back to connectors (`of`, `and`) or to format placeholders (`spouse -> "1 ."`, §5.4). The corpus cleanup removed the worst of these (§5.3) but not all.
-- **Label-space output.** The model emits subword tokens of an English label, not an entity IRI, so outputs can contain BPE fragments and cannot be checked against an entity identifier directly.
+- **Label-space output.** The model emits subword tokens of an English label. Exact resolution to an entity IRI (§4.4) succeeded for 1 of 371 predictions on real data, so nearly all stored predictions are literals that can contain BPE fragments.
 - **Greedy decoding only.** No beam search or sampling.
 
 ### 7.2 Provenance
 
 - **Selection provenance is not support.** A `propositionInferredFrom` row points at a concrete stored statement, which is auditable, but the statement was chosen by the candidate-selection heuristic (§4.4 step 1), and the model does not see it: the model's input is the subject and predicate labels only. A cited statement may have played no part in the predicted value.
-- **One statement per neighbour.** A proposal depends on several statements of each contributing neighbour; only one is cited, to keep the annotation volume bounded (§4.4). Retracting the neighbour node reaches the prediction, but deleting a single other statement of that neighbour would not, if Loka supported statement-level retraction (it retracts nodes).
+- **One statement per neighbour.** A proposal depends on several statements of each contributing neighbour; only one is cited (§4.4). Retracting the neighbour node reaches the prediction, but deleting a single other statement of that neighbour would not, if Loka supported statement-level retraction (it retracts nodes).
+- **Annotation volume grows with the neighbourhood.** Complete selection provenance cost about 120 citation rows per prediction on the 153k-triple graph (§4.4).
 - **Earlier outputs used a cruder rule.** Earlier versions of the procedure cited the first ten of the subject's statements regardless of which ones matched, so it could both cite irrelevant statements and miss the one that mattered. Generated triples produced under that rule should be re-generated before relying on retraction.
 
 ### 7.3 Evaluation scope
 
 - The link-prediction set is small (19,686 rankable queries), skewed toward literal-valued predicates, and drawn from the triples a larger label cache newly resolved rather than sampled uniformly from Wikidata. Entities are identified by English label, so distinct entities with the same label are merged, which affects the transformer and TransE alike.
 - No model was tuned, and only one checkpoint (v13) has a held-out set that requires no retraining.
-- Retraction was evaluated on synthetic graphs on one machine. The in-memory store is the one retraction runs against in every deployment mode (the server keeps its indexes in memory and mirrors writes to the persistent store), but the commit step that deletes the computed set from the persistent store was not timed.
+- Retraction was evaluated on synthetic graphs of up to 5M rows and on a 153k-triple real graph with dependency chains of two generated hops, on one machine; longer real chains were not available without more inference passes. The in-memory store is the one retraction runs against in every deployment mode (the server keeps its indexes in memory and mirrors writes to the persistent store), but the commit step that deletes the computed set from the persistent store was not timed.
 - The source dataset revision was not pinned when the corpora were built (References). The released corpora are fixed, but the path from source dump to corpus cannot be replayed exactly.
 
 ---
 
 ## 8. Discussion
 
-Two directions would strengthen the provenance record itself.
+Three directions would strengthen the provenance record itself.
 
 **Ontology templates as the selector.** OWL ontologies can be stored in the engine as triples, though the engine does not reason over them. An ontology could serve as the candidate selector: a class declares the properties its instances are expected to have, the inference loop proposes the missing ones, and `propositionInferredFrom` cites the class declaration alongside the subject's statements. The citation would then name the reason a predicate was proposed, which the current neighbour heuristic only approximates.
+
+**Node-level dependencies.** Recording one `propositionDependsOn` edge per contributing node, and having retraction follow it, would keep provenance complete at a fraction of the statement-level volume of §4.4. It needs a change to `retract_set`.
 
 **An entity-space decoder.** The engine's HNSW vector index could resolve a predicted embedding to the nearest known IRI, so that predictions are entities rather than label strings. That would make completion directly comparable with entity-ranking methods and remove BPE artifacts from stored output.
 

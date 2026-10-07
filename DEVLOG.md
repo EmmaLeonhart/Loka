@@ -7,6 +7,31 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 — 10h done: real two-hop chains, 27,142 transitive checks, 0 errors; resubmitted
+
+Pass 2 (`--include-generated-context`) made 90 predictions, 83 of them citing a pass-1 prediction,
+so the store held real generated-to-generated chains: 371 generated triples, 39,470 distinct
+annotation rows. The server rejected 135 rows as already present; those were predictions emitted
+again in pass 2.
+
+`tools/retract_real_eval.py` (transitive, recall + precision) over all 983 entities: **27,142
+required removals, 0 missing, 0 unexpected**, deepest chain 2 hops. Latency median 3.0 ms, p95
+306 ms, max 1.04 s; removed sets median 182, max 38,122 triples.
+
+The first two runs reported mismatches, and both were bugs in my checker, not the engine:
+1. it counted annotation *lines*, so the 135 rows repeated across passes looked like 20 missing
+   annotations on some triples (the store keeps each row once);
+2. it compared the one IRI-resolved object with angle brackets, while the server renders IRIs
+   bare.
+After both fixes there were 0 mismatches, and no engine change was needed. Nothing was loosened:
+the check got stricter (distinct-row equality plus precision).
+
+Paper updated: §4.4 (citation volume grows with the neighbourhood: medians 23 subject-side and
+82 neighbour-side on this graph; kept complete on purpose; new step 4, entity resolution, which
+resolved 1 of 371), §6.2 (the large real-data run replaces the 169-entity one), §7 (volume and
+IRI-rate bullets), §8 (node-level dependency edges as the cheaper complete encoding). Resubmitting.
+
+---
 ## 2026-10-09 (later) — an unconfirmed "stop all crons" item in queue.md, removed on Emma's answer
 
 While pass 2 ran, another local session ("pc-manager") wrote an uncommitted item at the top of

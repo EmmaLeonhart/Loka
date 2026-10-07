@@ -28,20 +28,8 @@ step 9 submits.
 10. **(reopened 2026-10-08) Review iteration toward Strong Accept.** Emma: aim for Strong
     Accept, not Weak Accept (v12). Model stays as is, no training (Emma, 2026-10-08). Work the
     other v12 cons:
-    - **10g. Entity IRIs, not label text.** After the model emits a label, resolve it to an
-      existing entity in the store by exact (normalised) `rdfs:label` match; emit the IRI as the
-      object when found, keep the literal otherwise. Measure the resolution rate on real data
-      and report it.
-    - **10h status (2026-10-08):** a real Q42 neighbourhood was pulled (155,324 triples, 983
-      entities, `tools/wikidata_random_seed.py --max-entities 2000 --max-time 1800 --max-depth 3`)
-      into the session scratchpad. That folder is not durable (Storage Sense), so re-pull if it
-      is gone. Not yet loaded or run. Next: `loka import` → serve → inference pass 1 → pass 2
-      with `--include-generated-context` → `tools/retract_real_eval.py` (now transitive, recall
-      + precision) → update the paper's §6.2/§6.3 numbers → resubmit.
-    - **10h. Real dependency chains at scale.** Pull a much larger real Wikidata neighbourhood,
-      run inference in two passes where the second pass may cite first-pass generated triples
-      (so real multi-hop chains exist), and run the real-data retraction check and timing on it.
-    - Then rerun the affected numbers, resubmit, read review v13.
+    Resubmitted 2026-10-07 after 10g (IRI resolution) and 10h (153k-triple real graph, two-hop
+    chains, 27,142 transitive checks, 0 misses, 0 extras). Next: read review v13 and iterate.
 
 11. **(target 2026-10-25) arXiv package + handoff.** Build the arXiv source tarball
     (`paper.tex`, generated body, `neurips_2026.sty`, figures), verify it compiles from a clean

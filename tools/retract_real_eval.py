@@ -34,6 +34,14 @@ INFERRED = "<http://loka.dev/provenance/propositionInferredFrom>"
 QUOTED = re.compile(r"<< (\S+) (\S+) (.+?) >>")
 
 
+def as_row(g: tuple) -> tuple:
+    """A generated triple as the preview endpoint renders it: IRIs without
+    angle brackets, literals unchanged."""
+    def term(x: str) -> str:
+        return x[1:-1] if x.startswith("<") and not x.startswith("<<") else x
+    return (term(g[0]), term(g[1]), term(g[2]))
+
+
 def max_hops(removed: set, cites: dict, root_tok: str) -> int:
     """Longest chain of generated-cites-generated links among removed triples."""
     memo: dict = {}
@@ -64,15 +72,18 @@ def main() -> None:
 
     # generated triple (s, p, o text) -> set of cited (s, p, o text)
     cites: dict[tuple, set] = defaultdict(set)
-    n_annotations: dict[tuple, int] = defaultdict(int)
+    # Count DISTINCT annotation rows: the store keeps each row once, and a
+    # triple generated again in a later inference pass repeats its lines.
+    ann_rows: dict[tuple, set] = defaultdict(set)
     for line in open(args.generated, encoding="utf-8"):
         if not line.startswith("<<"):
             continue
         quoted = QUOTED.findall(line)
         g = quoted[0]
-        n_annotations[g] += 1
+        ann_rows[g].add(line.strip())
         if INFERRED in line and len(quoted) > 1:
             cites[g].add(quoted[1])
+    n_annotations = {g: len(rows) for g, rows in ann_rows.items()}
 
     latencies, totals, checked, mismatches, extras, deepest = [], [], 0, [], [], 0
     session = requests.Session()
@@ -99,7 +110,7 @@ def main() -> None:
         deepest = max(deepest, depth_hops)
         for g in removed:
             checked += 1
-            g_row = (g[0][1:-1], g[1][1:-1], g[2])
+            g_row = as_row(g)
             quoted_g = f"<< {g[0]} {g[1]} {g[2]} >>"
             n_ann = sum(1 for s, _, _ in rows if s == quoted_g)
             if g_row not in rows or n_ann != n_annotations[g]:
@@ -107,7 +118,7 @@ def main() -> None:
                                    "triple_present": g_row in rows,
                                    "annotations": f"{n_ann}/{n_annotations[g]}"})
         for g in n_annotations:
-            if g not in removed and (g[0][1:-1], g[1][1:-1], g[2]) in rows:
+            if g not in removed and as_row(g) in rows:
                 extras.append({"root": root, "generated": list(g)})
 
     result = {
