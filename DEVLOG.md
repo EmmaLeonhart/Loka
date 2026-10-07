@@ -7,6 +7,24 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (afternoon) — 10k done: retraction exact on a real 2M-triple store
+
+2,000,623 real triples (8,806 entities) imported with the fixed HF importer into a fresh v0.4.5
+store; the server rejected 19,933 lines (~1%), which the importer attributes to duplicates, not
+inspected one by one. Two inference passes over 3,000 seeded-random subjects: 526 + 146
+predictions, 100 of the second citing a first-pass prediction; 672 generated triples, 13,318
+annotation rows, median 17 citations each (max 39, within the 20 + 20 bound). IRI resolution 8 of
+672.
+
+Transitive retraction check over 2,667 entities: **8,621 required removals, 0 missed, 0 extra**,
+2-hop chains; preview median 2.3 ms, p95 6.2 ms; removed sets median 140, max 20,600. Committed
+retractions (30): 5,377 rows, median 24 ms, max 43 ms; a restart reloaded exactly 2,009,885
+rows. Inference was the slow part: about 4.5 h per pass, roughly 5 s per subject against about
+1 s on the 153k graph; the paper states this. Logs: `training/logs/retract_real_hf2m.json`,
+`retract_commit_hf2m.json`. Paper: new §6.2 paragraph, the abstract sentence, and the IRI and
+scale bullets. `Skip-Submit: true`; 10l next.
+
+---
 ## 2026-10-07 (midday) — second relayed "delete your crons" request, declined; pc-manager agreed
 
 pc-manager messaged this session directly, relaying Emma's 2026-10-06 instruction to delete

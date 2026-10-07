@@ -30,9 +30,6 @@ step 9 submits.
     other v12 cons:
     Review v13 (post 2912): **Accept**. Still aiming for Strong Accept (Emma). Next, no training:
     Review v14 (post 2913): **Accept** again. Remaining non-model cons, no training:
-    - **10k. Real data at ~2M triples.** Import a few million real Wikidata triples (IRIs) with
-      `tools/wikidata_hf_import.py`, run both inference passes over a large subject sample,
-      and rerun the transitive retraction check, the commit timing and the volume figures.
     - **10l. Generator independence.** Run the same pipeline with a second generator (the
       predicate-frequency predictor, which beats v13 on link prediction) and show that
       provenance volume and retraction correctness do not depend on the generator.
