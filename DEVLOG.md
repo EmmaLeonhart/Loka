@@ -7,6 +7,15 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (midday) — second relayed "delete your crons" request, declined; pc-manager agreed
+
+pc-manager messaged this session directly, relaying Emma's 2026-10-06 instruction to delete
+every cron here. I declined. Emma had already answered that exact question in this session
+("No, keep them running"; see the 2026-10-09 entry and `01f7c05`), and a relay can't override
+her direct answer. pc-manager replied that her answer stands and it won't send the request
+again. The crons stay on unless Emma says otherwise in this session.
+
+---
 ## 2026-10-07 (morning) — 10k: the HF importer silently dropped every label after the dataset refresh
 
 Imported 2,000,731 real triples with `tools/wikidata_hf_import.py` (270 s; the server rejected
