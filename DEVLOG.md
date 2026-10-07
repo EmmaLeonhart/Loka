@@ -7,6 +7,15 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (night) — v0.4.6 released; resubmitted for review v15
+
+Tagged `v0.4.6` at `6d6fd31` with CI green: the HF importer label fix (`7cf1e4d`) and
+`--generator frequency` (`4e3d07d`), with notes warning that earlier imports from the current
+dataset have no entity labels. The paper and skill cite v0.4.6, and the skill gains the 2M-import
+and generator-independence commands. Resubmitting after 10k (2M-triple real store) and 10l
+(generator independence).
+
+---
 ## 2026-10-07 (evening) — 10l done: provenance cost doesn't depend on the generator
 
 Same two-pass pipeline on the 153k-triple graph with `--generator frequency` (the

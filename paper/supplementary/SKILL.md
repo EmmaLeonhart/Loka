@@ -13,8 +13,8 @@ Loka is an RDF-star triplestore that stores model-generated triples next to cura
 ```bash
 git clone https://github.com/EmmaLeonhart/Loka.git
 cd Loka
-# The retraction fix described in §6.1 is in release v0.4.2 and later; use v0.4.5, which also fixes and speeds up SPARQL-star queries and batches the retraction commit.
-git checkout v0.4.5
+# The retraction fix described in §6.1 is in release v0.4.2 and later; use v0.4.6, which also fixes and speeds up SPARQL-star queries, batches the retraction commit and imports the current Wikidata dataset correctly.
+git checkout v0.4.6
 
 pip install torch tokenizers huggingface_hub
 ```
@@ -64,6 +64,20 @@ python tools/provenance_query_compare.py --star http://127.0.0.1:3037     --reif
 ```
 
 The Wikidata pull is live, so a rerun gets the neighbourhood as it is today, not the one in the paper. The recorded outputs are in `training/logs/` (`retract_real_q42.json`, `neighbour_evidence_q42.json`, `provenance_query_compare_q42.json`).
+
+## §6.2 at 2M triples, and §6.5 generator independence
+
+```bash
+# 2M real triples from the Hugging Face dump into a fresh store (needs `pip install datasets`).
+loka serve --data-dir big2m/db --port 3047 &
+LOKA_ENDPOINT=http://127.0.0.1:3047 python tools/wikidata_hf_import.py --max-triples 2000000 --state-path big2m/state.json
+# Then the same two inference passes as above with --endpoint http://127.0.0.1:3047 --max-subjects 3000,
+# the second with --include-generated-context, and tools/retract_real_eval.py / retract_commit_eval.py.
+
+# Generator independence: rerun the two passes on the 153k graph with
+#   --generator frequency --confidence 0
+# and compare citations per prediction and the retraction check with the model run.
+```
 
 ## §6.3 Link prediction
 

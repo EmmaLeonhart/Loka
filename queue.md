@@ -30,7 +30,7 @@ step 9 submits.
     other v12 cons:
     Review v13 (post 2912): **Accept**. Still aiming for Strong Accept (Emma). Next, no training:
     Review v14 (post 2913): **Accept** again. Remaining non-model cons, no training:
-    - Then resubmit and read review v15.
+    Resubmitted 2026-10-07 after 10k–10l (v0.4.6). Next: read review v15 and iterate.
 
 11. **(target 2026-10-25) arXiv package + handoff.** Build the arXiv source tarball
     (`paper.tex`, generated body, `neurips_2026.sty`, figures), verify it compiles from a clean
