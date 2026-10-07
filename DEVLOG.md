@@ -7,6 +7,28 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (night, engineering) — computed values stage 4; ORDER BY sorted strings by insertion
+
+With step 10 parked on Emma's decision, the work loop moved to the next actionable item,
+computed values stage 4.
+
+**Stage 4.** `SELECT (expr AS ?v)` now parses (it was a parse error), and so do `ORDER BY expr`,
+`ORDER BY ASC(expr)` and `ORDER BY DESC(expr)`. Both desugar to BINDs evaluated after the WHERE
+patterns, reusing the stage 1–3 machinery, including rendering in every result format. ORDER BY
+expression keys bind hidden `__order_N` variables that `SELECT *` leaves out.
+
+**Bug found on the way, fixed:** `apply_order_by` compared raw term ids for *every* variable.
+Ids are handed out in first-seen order, so `ORDER BY ?name` sorted strings and IRIs by
+insertion order, not alphabetically. The existing test only used inline integers, whose ids
+happen to sort numerically. ORDER BY now compares values, following SPARQL's order: unbound <
+blank < IRI < literal. Numeric literals, inline or `xsd:` typed, compare as numbers; other
+literals and computed values compare as text.
+
+Tests: `loka-sparql/tests/projection_and_order.rs`, 5 tests, each inserting data in the reverse
+of the expected order. With the old id comparator, the 4 that depend on ordering fail (checked).
+Workspace tests pass; fmt and clippy clean.
+
+---
 ## 2026-10-07 (late night) — step 11: arXiv package built and verified in CI
 
 Step 10 is waiting on Emma's call: chase Strong Accept with a better model, or submit. The loop

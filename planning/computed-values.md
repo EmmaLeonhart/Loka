@@ -161,7 +161,7 @@ than a BIND special case.
    `resolve_term_for_turtle` serves only `export_graph`, which iterates the *store*, and a computed
    id can never be stored (rejected at the boundary in stage 1). The design listed them because it
    was reasoning from format names; the code says otherwise.
-4. **NOT STARTED** — `SELECT (expr AS ?v)`, `ORDER BY expr` (parser work too).
+4. **DONE (2026-10-07)** — `SELECT (expr AS ?v)` and `ORDER BY expr` (bare, `ASC(…)`, `DESC(…)`) desugar to BINDs after the WHERE patterns; ORDER BY keys get hidden `__order_N` variables that `SELECT *` omits. ORDER BY now compares values, not ids (it compared ids for *every* variable, so strings sorted by insertion order). Tests: `loka-sparql/tests/projection_and_order.rs`.
 5. **NOT STARTED** — `GROUP BY` on a computed value.
 
 ## What this does not do

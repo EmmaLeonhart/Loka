@@ -368,7 +368,11 @@ fn execute_query_with_ctx(query: &Query, ctx: &mut ExecutionContext<'_>) -> Resu
 
     // Determine columns
     let columns = if query.projection.is_empty() {
-        let mut vars: Vec<String> = results.iter().flat_map(|row| row.keys().cloned()).collect();
+        let mut vars: Vec<String> = results
+            .iter()
+            .flat_map(|row| row.keys().cloned())
+            .filter(|v| !v.starts_with(crate::parser::ORDER_KEY_PREFIX))
+            .collect();
         vars.sort();
         vars.dedup();
         vars
@@ -1249,6 +1253,87 @@ fn evaluate_vector_similar(
 }
 
 /// Apply ORDER BY clauses to the result set.
+/// A value's place in ORDER BY, following SPARQL's order: unbound, then blank
+/// nodes, then IRIs, then literals. Numeric literals compare by value; other
+/// literals and IRIs by their text.
+#[derive(Debug)]
+enum OrderKey {
+    Unbound,
+    Blank(String),
+    Iri(String),
+    Num(f64),
+    Literal(String),
+}
+
+const NUMERIC_DATATYPES: [&str; 4] = [
+    "http://www.w3.org/2001/XMLSchema#integer",
+    "http://www.w3.org/2001/XMLSchema#decimal",
+    "http://www.w3.org/2001/XMLSchema#double",
+    "http://www.w3.org/2001/XMLSchema#float",
+];
+
+fn order_key(id: Option<TermId>, ctx: &ExecutionContext<'_>) -> OrderKey {
+    let Some(id) = id else {
+        return OrderKey::Unbound;
+    };
+    if let Some(n) = loka_core::decode_inline_integer(id) {
+        return OrderKey::Num(n as f64);
+    }
+    if loka_core::is_computed(id) {
+        return match ctx.values.get(id) {
+            Some(s) => OrderKey::Literal(s.to_string()),
+            None => OrderKey::Unbound,
+        };
+    }
+    let Some(text) = ctx.dict.render_term(id) else {
+        return OrderKey::Unbound;
+    };
+    if let Some(rest) = text.strip_prefix("_:") {
+        return OrderKey::Blank(rest.to_string());
+    }
+    if let Some(body) = text.strip_prefix('"') {
+        // "lexical"  |  "lexical"@lang  |  "lexical"^^<datatype>
+        let (lexical, tail) = match body.rfind('"') {
+            Some(end) => (&body[..end], &body[end + 1..]),
+            None => (body, ""),
+        };
+        if let Some(dt) = tail.strip_prefix("^^<").and_then(|d| d.strip_suffix('>')) {
+            if NUMERIC_DATATYPES.contains(&dt) {
+                if let Ok(v) = lexical.parse::<f64>() {
+                    return OrderKey::Num(v);
+                }
+            }
+        }
+        return OrderKey::Literal(lexical.to_string());
+    }
+    // Inline booleans and temporal ids render to their own text.
+    if loka_core::is_inline(id) {
+        return OrderKey::Literal(text);
+    }
+    OrderKey::Iri(text)
+}
+
+fn cmp_order_keys(a: &OrderKey, b: &OrderKey) -> Ordering {
+    fn rank(k: &OrderKey) -> u8 {
+        match k {
+            OrderKey::Unbound => 0,
+            OrderKey::Blank(_) => 1,
+            OrderKey::Iri(_) => 2,
+            OrderKey::Num(_) | OrderKey::Literal(_) => 3,
+        }
+    }
+    match (a, b) {
+        (OrderKey::Num(x), OrderKey::Num(y)) => x.partial_cmp(y).unwrap_or(Ordering::Equal),
+        // Numbers before other literals, so a mixed column is still a total order.
+        (OrderKey::Num(_), OrderKey::Literal(_)) => Ordering::Less,
+        (OrderKey::Literal(_), OrderKey::Num(_)) => Ordering::Greater,
+        (OrderKey::Literal(x), OrderKey::Literal(y))
+        | (OrderKey::Iri(x), OrderKey::Iri(y))
+        | (OrderKey::Blank(x), OrderKey::Blank(y)) => x.cmp(y),
+        _ => rank(a).cmp(&rank(b)),
+    }
+}
+
 fn apply_order_by(
     results: &mut Vec<Bindings>,
     scores: &mut Vec<HashMap<String, f32>>,
@@ -1318,10 +1403,13 @@ fn apply_order_by(
                     .partial_cmp(&score_b)
                     .unwrap_or(std::cmp::Ordering::Equal)
             } else {
-                // Sort by variable value
-                let val_a = results[a].get(&clause.variable).copied().unwrap_or(0);
-                let val_b = results[b].get(&clause.variable).copied().unwrap_or(0);
-                val_a.cmp(&val_b)
+                // Sort by VALUE, not by term id. Ids are assigned in first-seen
+                // order (and computed ids in first-computed order), so comparing
+                // them sorted strings and IRIs by insertion order rather than
+                // alphabetically.
+                let ka = order_key(results[a].get(&clause.variable).copied(), ctx);
+                let kb = order_key(results[b].get(&clause.variable).copied(), ctx);
+                cmp_order_keys(&ka, &kb)
             };
 
             let cmp = if clause.descending {

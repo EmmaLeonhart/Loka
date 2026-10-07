@@ -40,22 +40,13 @@ step 9 submits.
 
 ---
 
-## ACTIVE — computed values: stage 4 (projected expressions + ORDER BY)
+## ACTIVE — computed values: stage 5 (GROUP BY on a computed value)
 
-**Stages 1–3 are done.** `BIND` over a computed string binds and renders in every result format —
-JSON, CSV, TSV, XML, the CLI table, MCP and the FFI boundary — each with its own test asserting the
-value appears AND that `_:id` does not. (Turtle/N-Triples turned out not to apply: that renderer only
-serves `export_graph`, which reads the store, and a computed id can never be stored.) Design + status:
-`planning/computed-values.md`.
-
-**Stage 4:** `SELECT (expr AS ?v)` and `ORDER BY expr`. Parser work as well as executor —
-`(expr AS ?var)` in the select clause does not parse today. ORDER BY on a computed value must compare
-the STRING, never the id: ids are assigned in first-computed order, which is the same trap that made
-negative-integer ordering wrong on 07-29.
-
-**Stage 5** after it: `GROUP BY` on a computed value — nearly free, since interning is by value, so
-equal strings already share an id. That one closes Pramana's type-count query, which currently groups
-on the full IRI and folds local names client-side.
+Stages 1–4 are done (stage 4, projection and ORDER BY expressions, on 2026-10-07; see
+`planning/computed-values.md`). **Stage 5:** `GROUP BY` on a computed value, e.g.
+`GROUP BY (REPLACE(STR(?type), "^.*/", "") AS ?t)`. It should come nearly free, since interning is
+by value and equal strings already share an id. It closes Pramana's type-count query, which
+currently groups on the full IRI and folds local names client-side.
 
 ---
 

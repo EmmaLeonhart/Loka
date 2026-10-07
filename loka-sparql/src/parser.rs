@@ -75,6 +75,10 @@ pub struct Query {
     pub offset: Option<usize>,
 }
 
+/// Prefix of the hidden variables that carry ORDER BY expression keys. They are
+/// bound like any BIND but never projected by `SELECT *`.
+pub const ORDER_KEY_PREFIX: &str = "__order_";
+
 /// An ORDER BY clause entry.
 #[derive(Debug, Clone)]
 pub struct OrderClause {
@@ -397,6 +401,7 @@ impl<'a> Parser<'a> {
 
         let mut projection = Vec::new();
         let mut aggregates = Vec::new();
+        let mut projection_binds: Vec<Pattern> = Vec::new();
 
         if query_type == QueryType::Select {
             // Check for DISTINCT
@@ -406,9 +411,10 @@ impl<'a> Parser<'a> {
             }
 
             // Parse projection (may include aggregates)
-            let (proj, aggs) = self.parse_projection_with_aggregates()?;
+            let (proj, aggs, binds) = self.parse_projection_with_aggregates()?;
             projection = proj;
             aggregates = aggs;
+            projection_binds = binds;
         }
 
         // CONSTRUCT: parse template, then WHERE
@@ -463,7 +469,7 @@ impl<'a> Parser<'a> {
         }
         self.expect_char('{')?;
 
-        let patterns = self.parse_patterns()?;
+        let mut patterns = self.parse_patterns()?;
 
         self.expect_char('}')?;
 
@@ -496,8 +502,13 @@ impl<'a> Parser<'a> {
         if self.peek_keyword("ORDER") {
             self.expect_keyword("ORDER")?;
             self.expect_keyword("BY")?;
-            order_by = self.parse_order_by()?;
+            let (clauses, order_binds) = self.parse_order_by()?;
+            order_by = clauses;
+            projection_binds.extend(order_binds);
         }
+        // Projection and ORDER BY expressions are evaluated as BINDs after
+        // the WHERE patterns, so they see every variable the patterns bind.
+        patterns.extend(projection_binds);
 
         self.skip_whitespace();
         while self.pos < self.input.len() {
@@ -529,15 +540,20 @@ impl<'a> Parser<'a> {
         })
     }
 
-    fn parse_projection_with_aggregates(&mut self) -> Result<(Vec<String>, Vec<Aggregate>)> {
+    #[allow(clippy::type_complexity)]
+    fn parse_projection_with_aggregates(
+        &mut self,
+    ) -> Result<(Vec<String>, Vec<Aggregate>, Vec<Pattern>)> {
         self.skip_whitespace();
         if self.peek_char() == Some('*') {
             self.pos += 1;
-            return Ok((vec![], vec![]));
+            return Ok((vec![], vec![], vec![]));
         }
 
         let mut vars = Vec::new();
         let mut aggregates = Vec::new();
+        // `(expr AS ?v)` items: evaluated as BINDs after the WHERE patterns.
+        let mut binds = Vec::new();
 
         loop {
             self.skip_whitespace();
@@ -551,7 +567,19 @@ impl<'a> Parser<'a> {
                     aggregates.push(agg);
                 } else {
                     self.pos = saved_pos;
-                    break;
+                    match self.parse_expression_projection() {
+                        Ok((expression, variable)) => {
+                            vars.push(variable.clone());
+                            binds.push(Pattern::Bind {
+                                expression,
+                                variable,
+                            });
+                        }
+                        Err(_) => {
+                            self.pos = saved_pos;
+                            break;
+                        }
+                    }
                 }
             } else {
                 break;
@@ -562,7 +590,21 @@ impl<'a> Parser<'a> {
             return Err(self.error("expected variable, aggregate, or * in SELECT"));
         }
 
-        Ok((vars, aggregates))
+        Ok((vars, aggregates, binds))
+    }
+
+    /// `(expr AS ?var)` in a SELECT clause: the same expressions BIND accepts.
+    fn parse_expression_projection(&mut self) -> Result<(Term, String)> {
+        self.expect_char('(')?;
+        self.skip_whitespace();
+        let expression = self.parse_arith_operand()?;
+        self.skip_whitespace();
+        self.expect_keyword("AS")?;
+        self.skip_whitespace();
+        let variable = self.parse_variable_name()?;
+        self.skip_whitespace();
+        self.expect_char(')')?;
+        Ok((expression, variable))
     }
 
     fn parse_aggregate_projection(&mut self) -> Result<Aggregate> {
@@ -1129,8 +1171,12 @@ impl<'a> Parser<'a> {
             .map_err(|_| self.error("expected floating point number"))
     }
 
-    fn parse_order_by(&mut self) -> Result<Vec<OrderClause>> {
+    /// ORDER BY clauses, plus the BINDs that compute any expression keys.
+    /// `ASC(expr)`, `DESC(expr)` and a bare function call or `(expr)` sort by
+    /// a hidden `__order_N` variable bound to the expression.
+    fn parse_order_by(&mut self) -> Result<(Vec<OrderClause>, Vec<Pattern>)> {
         let mut clauses = Vec::new();
+        let mut binds = Vec::new();
         loop {
             self.skip_whitespace();
             if self.pos >= self.input.len() {
@@ -1159,6 +1205,30 @@ impl<'a> Parser<'a> {
                     vector_score: None,
                 });
                 continue;
+            } else if self.peek_char() == Some('(')
+                || self.peek_char().is_some_and(|c| c.is_ascii_alphabetic())
+            {
+                // Bare expression key, default ASC: `ORDER BY LCASE(?x)`.
+                let saved = self.pos;
+                match self.parse_arith_operand() {
+                    Ok(expression) => {
+                        let variable = format!("{}{}", ORDER_KEY_PREFIX, binds.len());
+                        binds.push(Pattern::Bind {
+                            expression,
+                            variable: variable.clone(),
+                        });
+                        clauses.push(OrderClause {
+                            variable,
+                            descending: false,
+                            vector_score: None,
+                        });
+                        continue;
+                    }
+                    Err(_) => {
+                        self.pos = saved;
+                        break;
+                    }
+                }
             } else {
                 break;
             }
@@ -1192,17 +1262,29 @@ impl<'a> Parser<'a> {
                     }),
                 });
             } else {
-                // Regular variable inside ASC/DESC
-                let var = self.parse_variable_name()?;
+                // A variable or an expression inside ASC/DESC.
+                let expression = self.parse_arith_operand()?;
+                self.skip_whitespace();
                 self.expect_char(')')?;
+                let variable = match expression {
+                    Term::Variable(name) => name,
+                    expression => {
+                        let variable = format!("{}{}", ORDER_KEY_PREFIX, binds.len());
+                        binds.push(Pattern::Bind {
+                            expression,
+                            variable: variable.clone(),
+                        });
+                        variable
+                    }
+                };
                 clauses.push(OrderClause {
-                    variable: var,
+                    variable,
                     descending,
                     vector_score: None,
                 });
             }
         }
-        Ok(clauses)
+        Ok((clauses, binds))
     }
 
     fn parse_term(&mut self) -> Result<Term> {
