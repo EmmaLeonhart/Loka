@@ -7,6 +7,16 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (night, last) — review v16: Accept
+
+Post 2915 is **Accept**, back up from v15's Weak Accept. The pros now name the independent
+reference checking, the real-data evaluation, the provenance/support distinction and the
+reproducibility package. The cons are the weak model, exact-match entity resolution, the
+heuristic selector, real data only up to 2M triples, and label-space output: the model, or
+scale beyond this laptop. Over v13–v16 the rating went Accept, Accept, Weak Accept, Accept.
+Step 10 is paused for Emma's call: Strong Accept appears to need a better model.
+
+---
 ## 2026-10-07 (night, later) — 10m: background research added; resubmitted
 
 Six references were verified at source (publisher, DOI or proceedings pages) and added: Doyle

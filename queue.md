@@ -32,7 +32,10 @@ step 9 submits.
     Review v14 (post 2913): **Accept** again. Remaining non-model cons, no training:
     Review v15 (post 2914): Weak Accept (v13/v14 Accept). Emma (2026-10-07): "More background
     research". Read as: position the contribution against the closest prior work.
-    - Then resubmit and read review v16.
+    Review v16 (post 2915): **Accept**. Remaining cons: weak model, exact-match entity
+    resolution, heuristic selector, real-data scale up to 2M (billion-triple untested),
+    label-space output: all model-bound or out of laptop reach. Waiting on Emma: push further
+    (would need the model) or move to step 11.
 
 11. **(target 2026-10-25) arXiv package + handoff.** Build the arXiv source tarball
     (`paper.tex`, generated body, `neurips_2026.sty`, figures), verify it compiles from a clean
