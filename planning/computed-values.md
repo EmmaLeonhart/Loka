@@ -139,7 +139,8 @@ Each stage is independently committable and testable.
    appears in that output format.
 4. **Projection and ORDER BY** — `SELECT (expr AS ?v)`, `ORDER BY expr`. This is where the parser
    also needs `(expr AS ?var)` in the select clause.
-5. **DONE (2026-10-07)** — `GROUP BY (expr AS ?v)` and `GROUP BY expr` (hidden `__group_N` key) desugar to BINDs; computed values intern by value, so equal strings group together. Pramana's type-count query now groups by type local name server-side. Tests: `loka-sparql/tests/group_by_computed.rs`.
+5. **`GROUP BY` on a computed value**, which needs the group key to be the value not the id — free
+   if by-value interning is in place from stage 1.
    if by-value interning is in place from stage 1.
 
 Stage 2 alone unblocks Pramana's entity page. Stages 4–5 are what make it a general facility rather
@@ -162,7 +163,7 @@ than a BIND special case.
    id can never be stored (rejected at the boundary in stage 1). The design listed them because it
    was reasoning from format names; the code says otherwise.
 4. **DONE (2026-10-07)** — `SELECT (expr AS ?v)` and `ORDER BY expr` (bare, `ASC(…)`, `DESC(…)`) desugar to BINDs after the WHERE patterns; ORDER BY keys get hidden `__order_N` variables that `SELECT *` omits. ORDER BY now compares values, not ids (it compared ids for *every* variable, so strings sorted by insertion order). Tests: `loka-sparql/tests/projection_and_order.rs`.
-5. **NOT STARTED** — `GROUP BY` on a computed value.
+5. **DONE (2026-10-07)** — `GROUP BY (expr AS ?v)` and `GROUP BY expr` (hidden `__group_N` key) desugar to BINDs; computed values intern by value, so equal strings group together. Pramana's type-count query now groups by type local name server-side. Tests: `loka-sparql/tests/group_by_computed.rs`.
 
 ## What this does not do
 
