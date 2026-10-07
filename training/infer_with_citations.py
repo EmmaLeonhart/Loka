@@ -719,24 +719,31 @@ def main() -> None:
 
     if args.post and out_lines:
         print(f"POSTing to {args.endpoint}/triples...", file=sys.stderr)
-        body = "\n".join(out_lines)
-        resp = requests.post(
-            f"{args.endpoint}/triples",
-            data=body.encode("utf-8"),
-            headers={"Content-Type": "text/plain; charset=utf-8"},
-            timeout=60,
-        )
-        if resp.status_code == 200:
-            j = resp.json()
-            print(
-                f"  inserted: {j.get('inserted', 0)}  errors: {len(j.get('errors', []))}",
-                file=sys.stderr,
+        # The server limits request bodies (about 2 MB), so post in chunks of
+        # whole lines. Every line is self-contained N-Triples-star, so any split
+        # point is safe.
+        chunk = 2000
+        inserted, errors, failed = 0, [], 0
+        for start in range(0, len(out_lines), chunk):
+            body = "\n".join(out_lines[start:start + chunk])
+            resp = requests.post(
+                f"{args.endpoint}/triples",
+                data=body.encode("utf-8"),
+                headers={"Content-Type": "text/plain; charset=utf-8"},
+                timeout=300,
             )
-            for e in j.get("errors", [])[:5]:
-                print(f"    ! {e}", file=sys.stderr)
-        else:
-            print(f"  ERROR {resp.status_code}: {resp.text[:200]}", file=sys.stderr)
-
+            if resp.status_code == 200:
+                j = resp.json()
+                inserted += j.get("inserted", 0)
+                errors += j.get("errors", [])
+            else:
+                failed += 1
+                print(f"  ERROR {resp.status_code} on lines {start}-{start + chunk}: "
+                      f"{resp.text[:200]}", file=sys.stderr)
+        print(f"  inserted: {inserted}  errors: {len(errors)}  failed chunks: {failed}",
+              file=sys.stderr)
+        for e in errors[:5]:
+            print(f"    ! {e}", file=sys.stderr)
 
 if __name__ == "__main__":
     main()

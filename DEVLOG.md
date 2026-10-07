@@ -7,6 +7,33 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-09 — 10h at scale: citation volume grows with the neighbourhood; POST chunked
+
+Loaded the bigger real graph: 153,185 triples, 983 entities; the importer rejected 2,139 lines
+(1.4%). Ran v13 inference pass 1 over every subject on v0.4.4. Three findings:
+
+1. **Citation volume is not bounded the way 10c concluded.** 281 predictions carried 35,057
+   provenance rows. Per prediction: subject-side citations median 23, mean 66.7, max 426;
+   neighbour-side median 82, mean 54.1, max 176. On the 15k-triple graph these were median 2 and
+   max 30. In a bigger neighbourhood almost every subject statement matches some neighbour, and
+   shared values like "instance of: human" link a proposal to hundreds of neighbours. 10c's
+   "one per neighbour is bounded" was measured on too small a graph, and the paper must not
+   claim it.
+   **Decision (made without asking):** keep complete dependency recording, about 120 rows per
+   prediction here, rather than cap it. A cap would make retraction silently incomplete, which
+   is the paper's central claim. The paper will report the volume and how it scales, and name
+   node-level dependency edges (one edge per neighbour *node*, followed by retraction) as the
+   cheaper complete encoding. That's future work; it needs a `retract_set` change.
+2. **The `--post` path failed with HTTP 413.** One 35k-line body exceeds the server's ~2 MB request
+   limit, so nothing was stored. `infer_with_citations.py` now posts in 2,000-line chunks.
+   Pass 1's output was then posted the same way: 35,057 inserted, 0 errors.
+3. **IRI resolution resolved 1 of 281 predictions.** The model's outputs almost never equal an
+   entity label exactly. That will be reported as is; it's a property of the model, not a
+   reason to loosen the exact match.
+
+Pass 2 (`--include-generated-context`, so predictions can cite pass-1 predictions) is running.
+
+---
 ## 2026-10-08 (late) — Emma: go for Strong Accept; step 10 reopened
 
 Emma's call after v12's Weak Accept: aim for a strong accept. Asked about the model, the main
