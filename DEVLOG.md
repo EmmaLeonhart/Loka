@@ -7,6 +7,14 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 (late) — Emma: go for Strong Accept; step 10 reopened
+
+Emma's call after v12's Weak Accept: aim for a strong accept. Asked about the model, the main
+remaining objection, she chose to keep it, with no training and no pretrained-model swap. Step 10
+is reopened with the v12 cons that can be worked without touching the model: IRI resolution for
+predicted objects (10g), and real multi-hop dependency chains at a larger scale (10h).
+
+---
 ## 2026-10-08 (night) — review v12: Weak Accept; review iteration closed
 
 Review v12 (post 2909) is **Weak Accept**, the first accept-side rating in twelve rounds

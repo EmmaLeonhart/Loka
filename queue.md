@@ -25,6 +25,18 @@ and checked; never fabricate a metric, baseline or citation. Decisions made whil
 commits carry the `Skip-Submit: true` trailer so a half-rewritten paper is never posted; only
 step 9 submits.
 
+10. **(reopened 2026-10-08) Review iteration toward Strong Accept.** Emma: aim for Strong
+    Accept, not Weak Accept (v12). Model stays as is, no training (Emma, 2026-10-08). Work the
+    other v12 cons:
+    - **10g. Entity IRIs, not label text.** After the model emits a label, resolve it to an
+      existing entity in the store by exact (normalised) `rdfs:label` match; emit the IRI as the
+      object when found, keep the literal otherwise. Measure the resolution rate on real data
+      and report it.
+    - **10h. Real dependency chains at scale.** Pull a much larger real Wikidata neighbourhood,
+      run inference in two passes where the second pass may cite first-pass generated triples
+      (so real multi-hop chains exist), and run the real-data retraction check and timing on it.
+    - Then rerun the affected numbers, resubmit, read review v13.
+
 11. **(target 2026-10-25) arXiv package + handoff.** Build the arXiv source tarball
     (`paper.tex`, generated body, `neurips_2026.sty`, figures), verify it compiles from a clean
     directory, write the metadata (title, abstract, `cs.DB` + `cs.AI`, license). Ask Emma with
