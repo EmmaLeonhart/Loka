@@ -141,7 +141,6 @@ Each stage is independently committable and testable.
    also needs `(expr AS ?var)` in the select clause.
 5. **`GROUP BY` on a computed value**, which needs the group key to be the value not the id — free
    if by-value interning is in place from stage 1.
-   if by-value interning is in place from stage 1.
 
 Stage 2 alone unblocks Pramana's entity page. Stages 4–5 are what make it a general facility rather
 than a BIND special case.
