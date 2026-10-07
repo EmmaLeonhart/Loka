@@ -7,6 +7,16 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (evening) — 10j replanned before building: node edges wouldn't reduce volume
+
+On the large graph the neighbour-side citations are already one per neighbour (median 82), so
+one `propositionDependsOn <node>` edge per neighbour would carry the same count. The volume
+comes from the selector consulting every matching neighbour and every subject statement. New
+plan: bound the selector's inputs, at most M subject statements and K neighbours per proposal,
+chosen deterministically, and keep citing everything it used. Provenance stays complete
+relative to the procedure; volume is capped at M + K by construction.
+
+---
 ## 2026-10-07 (afternoon) — 10i: committing a retraction was 1.3 ms per triple; batched to 0.06
 
 Review v13's con: the commit phase on the persistent store was unmeasured.
