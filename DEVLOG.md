@@ -7,6 +7,15 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (late) — review v15: Weak Accept (v13 and v14 were Accept)
+
+Post 2914 got **Weak Accept**. Its cons: the weak model, provenance recording selector inputs
+rather than model reasons, scale "only up to 5M triples", label output instead of IRIs. All of
+them are about the model or about Wikidata-scale data. The rating has moved Accept → Accept →
+Weak Accept over rounds that each fixed the previous non-model cons, so the reviewer varies
+between submissions and the remaining gap is the model. Asking Emma how to proceed.
+
+---
 ## 2026-10-07 (night) — v0.4.6 released; resubmitted for review v15
 
 Tagged `v0.4.6` at `6d6fd31` with CI green: the HF importer label fix (`7cf1e4d`) and
