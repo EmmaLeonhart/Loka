@@ -11,55 +11,34 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ---
 
-## ⭐ FIRST — arXiv-readiness timeline for the Loka paper (planned 2026-10-06)
+## ACTIVE — Emma, 2026-10-08 (strict order, top to bottom)
 
-Goal (Emma, 2026-10-06): the bare-minimum `paper/` that gets **Accept / Strong Accept** on the
-review site and can be posted to **arXiv**. Rules for every step: cut claims rather than invent
-results; every number comes from a run actually performed and recorded; every reference is real
-and checked; never fabricate a metric, baseline or citation. Decisions made while planning are in
-`DEVLOG.md` (2026-10-06); the target title, claim, cuts and outline are in
-`planning/arxiv-readiness.md`. Work these top to bottom, one per tick, each in its own commit.
-
-**Review site:** the repo's review loop is clawRxiv (`https://clawrxiv.io`), driven by
-`.github/workflows/papers-ci.yml` on any push touching `paper/paper.md`. Intermediate rewrite
-commits carry the `Skip-Submit: true` trailer so a half-rewritten paper is never posted; only
-step 9 submits.
-
-10. **(reopened 2026-10-08) Review iteration toward Strong Accept.** Emma: aim for Strong
-    Accept, not Weak Accept (v12). Model stays as is, no training (Emma, 2026-10-08). Work the
-    other v12 cons:
-    Review v13 (post 2912): **Accept**. Still aiming for Strong Accept (Emma). Next, no training:
-    Review v14 (post 2913): **Accept** again. Remaining non-model cons, no training:
-    Review v15 (post 2914): Weak Accept (v13/v14 Accept). Emma (2026-10-07): "More background
-    research". Read as: position the contribution against the closest prior work.
-    Review v16 (post 2915): **Accept**. Remaining cons: weak model, exact-match entity
-    resolution, heuristic selector, real-data scale up to 2M (billion-triple untested),
-    label-space output: all model-bound or out of laptop reach. Checked 2026-10-07 (DEVLOG):
-    entity resolution is model-bound too (54% of outputs are numeric fragments; the rest are
-    garbled phrases; the one exact match is wrong), so a looser resolver isn't a fix. Waiting
-    on Emma: push further (would need the model) or submit. The arXiv package is ready (paper/arxiv/METADATA.md); the
-    upload itself is Emma's action.
-
----
-
-The rest of the queue is drained. Remaining work is either GPU-gated
-(v11–v14 training, propgen tests, clean v12 retrain, donor clean-Adam v14) or
-Emma-gated (SDK first publish). The autonomous work-loop cron promotes the next
-genuinely-unblocked, bounded `TODO.md` item into this file each tick — see
-`TODO.md` for the horizon and `planning/sdk-publish-readiness.md` for the
-publish verdict.
-
----
-
-## Pinned tail — autonomous-loop cron management
-
-These two items are always the last in the queue (autonomous-loop playbook §d):
-
-1. **Ensure the three crons are running** — work-loop (`3 * * * *`), auto-flush
-   (`15 * * * *`), status-report (`42 * * * *`). Start them if this session
-   never did; restart them if a planning burst / queue re-fill killed them.
-2. **Run the status-report action once more, independently** — an end-of-session
-   summary of everything that happened this session.
+1. **GitHub Pages: arXiv page + front-page link; remove compute asks.** Add an arXiv directory
+   page to the site (`/arxiv`) and link it from the main page. Remove everything on the front
+   page about wanting more compute.
+2. **Paper / arXiv on hold.** Step 10 (Accept, v16) is parked as it stands: move it out of
+   this queue into TODO.md as on hold. The arXiv package stays in `paper/arxiv/`.
+3. **Attempt every TODO.md item that is not computationally intensive** (GPU-gated items and the
+   30M+ sustained-ingest check are excluded), in TODO.md order:
+   a. Installer multi-model: models.toml as a list, CI pre-step generating the `.iss`
+      components, mutually exclusive model components, chosen model id in
+      `install-selection.toml`. No Inno Setup here: verify the generator, mark the `.iss`
+      unverified until an rc build.
+   b. v0.3.1 release checklist (Gradle merge, version bump, tag): check whether it's
+      obsolete (current version 0.4.6); the tag itself is Emma's.
+   c. Maintained distinct counts for adaptive execution: measure the insert overhead; build
+      only if it's cheap and sampling shows noise.
+   d. Deep pseudo-tables serving queries (`planning/deep-pseudo-table-serving.md`): store
+      full column paths, exactness, freshness, chain recognition, tests.
+   e. CLI health output: iterate the format from an agent's actual use.
+   f. SDK publishing: re-verify readiness and dry runs; publishing itself is Emma's.
+   g. Studio items (remote access, Dart FFI, embedded MCP, graph view parity, Protege):
+      Flutter Studio was deleted, so map each to the Electron/web Studio or mark it obsolete,
+      and attempt the ones that still apply.
+   h. GQL → SPARQL transpiler, a first subset on the Cypher transpiler's template.
+   i. Electron Studio desktop installers in `release.yml`: write the job. It can only be
+      verified on an rc tag (Emma's call).
+4. **Shut down all cron jobs.** One action after the attempts above, not a standing tail item.
 
 ---
 
