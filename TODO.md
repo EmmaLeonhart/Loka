@@ -142,14 +142,15 @@ optional inference model (Qwen 2.5 1.5B Instruct, declared in
 `installer/models.toml`). Extend so the user can choose between several
 models at install time. Loose plan:
 
-- [ ] Generalise `installer/models.toml` to a list (schema already shaped for it).
-- [ ] Pre-process `models.toml` in CI into one `[Components]` entry per model
-      (Inno Setup can't read TOML at runtime; CI emits a generated `.iss`
-      include from a Python or PowerShell pre-step).
-- [ ] Make the components mutually exclusive (`Flags: exclusive`) so the user
-      picks at most one model, or "no model" via component deselect.
-- [ ] Update `install-selection.toml` to record the chosen model id so
-      `loka.exe` knows what to fetch on first run.
+- [x] `installer/models.toml` is a list: Qwen 2.5 1.5B (default) and 0.5B (2026-10-08)
+- [x] `installer/gen_models.py` generates the `[Types]`/`[Components]` and a `SelectedModel`
+      Pascal function; `release.yml` runs it before ISCC; CI tests it (`installer-models` job)
+- [x] Model components are `exclusive` children of one "model" checkbox (pick one, or none)
+- [x] `install-selection.toml` records the chosen model's id and repo
+- [ ] **Unverified until a release build:** `loka.iss` itself only compiles under ISCC on a
+      `v*` tag (no Inno Setup here). Check the first rc/tag build.
+- [ ] Nothing reads `install-selection.toml` yet: `loka.exe` has no first-run model fetch.
+      That's the step that makes the model choice do anything.
 
 Future candidates: a smaller-footprint Qwen / Phi / Llama option for users
 without 3 GB to spare, and a "bring your own GGUF" file picker.

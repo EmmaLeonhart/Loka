@@ -1,10 +1,12 @@
 ; Loka — Windows installer
 ;
-; Builds loka-setup-x64.exe with Inno Setup 6. Drives two choices: install
-; the database alone, or the database plus the inference model it ships
-; with (currently Qwen 2.5 1.5B Instruct — see installer/models.toml).
+; Builds loka-setup-x64.exe with Inno Setup 6. Install the database alone,
+; or the database plus one inference model chosen from installer/models.toml.
+; The model choices are generated: run installer/gen_models.py first (it
+; writes models.components.iss and models.code.iss next to this file).
 ;
 ; Build locally:
+;     python installer\gen_models.py
 ;     ISCC.exe installer\loka.iss /DLokaVersion=0.4.0 ^
 ;         /DLokaBinary=target\release\loka.exe
 ;
@@ -24,22 +26,6 @@
 
 #ifndef SourceRoot
   #define SourceRoot ".."
-#endif
-
-#ifndef ModelId
-  #define ModelId "qwen-2.5-1.5b-instruct"
-#endif
-
-#ifndef ModelDisplay
-  #define ModelDisplay "Qwen 2.5 1.5B Instruct"
-#endif
-
-#ifndef ModelRepo
-  #define ModelRepo "Qwen/Qwen2.5-1.5B-Instruct"
-#endif
-
-#ifndef ModelSize
-  #define ModelSize "3.0 GB"
 #endif
 
 [Setup]
@@ -69,13 +55,8 @@ UninstallDisplayName=Loka {#LokaVersion}
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
-[Types]
-Name: "engine_only";   Description: "Database only (just Loka, no inference model)"
-Name: "engine_model";  Description: "Database + inference model ({#ModelDisplay}, {#ModelSize} on first launch)"; Flags: iscustom
-
-[Components]
-Name: "engine"; Description: "Loka engine (loka.exe, required)"; Types: engine_only engine_model; Flags: fixed
-Name: "model";  Description: "Inference model: {#ModelDisplay} ({#ModelSize}, downloaded on first launch from Hugging Face)"; Types: engine_model
+; [Types] and [Components]: one exclusive component per model in models.toml.
+#include "models.components.iss"
 
 [Tasks]
 Name: "addtopath"; Description: "Add Loka to the system PATH"; GroupDescription: "Shell integration:"
@@ -140,12 +121,15 @@ begin
   end;
 end;
 
+#include "models.code.iss"
+
 procedure WriteInstallManifest(const Dir: string);
 var
   Lines: TArrayOfString;
   WantModel: Boolean;
+  ModelId, ModelRepo: String;
 begin
-  WantModel := IsComponentSelected('model');
+  WantModel := SelectedModel(ModelId, ModelRepo);
   SetArrayLength(Lines, 6);
   Lines[0] := '# Written by the Loka installer. Read by loka.exe on first launch';
   Lines[1] := '# to decide whether to pull an inference model from Hugging Face.';
@@ -153,8 +137,8 @@ begin
   if WantModel then
   begin
     Lines[3] := 'install_model = true';
-    Lines[4] := 'model_id      = "{#ModelId}"';
-    Lines[5] := 'model_repo    = "{#ModelRepo}"';
+    Lines[4] := 'model_id      = "' + ModelId + '"';
+    Lines[5] := 'model_repo    = "' + ModelRepo + '"';
   end
   else
   begin

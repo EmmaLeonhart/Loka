@@ -7,6 +7,31 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 — Installer: choose one of several models, generated from models.toml
+
+Queue item 3a (TODO "Windows installer — multi-model support"):
+- `installer/models.toml` is a real list now: Qwen 2.5 1.5B Instruct (default; size corrected to
+  3.1 GB from the HF API) and Qwen 2.5 0.5B Instruct (1.0 GB, Apache-2.0, checked on HF). The
+  smaller option is the one TODO.md named as a future candidate. Adding it is my call; drop the
+  entry to go back to one model.
+- `installer/gen_models.py` writes `models.components.iss`: `[Types]`, plus `[Components]` with
+  one `exclusive` child per model under a "model" checkbox, so the user picks one model or none.
+  It also writes `models.code.iss`, a `SelectedModel(Id, Repo)` function. It validates the
+  TOML: required keys, unique ids, no quotes or newlines that would break the generated
+  Pascal or Inno strings.
+- `loka.iss` includes both instead of hard-coding one model, and `WriteInstallManifest` writes
+  the chosen id and repo to `install-selection.toml`. `release.yml` runs the generator before
+  ISCC. The generated files are gitignored.
+- Tests: `installer/test_gen_models.py` (8): exclusive components, the first is the default,
+  the id/repo mapping, the real `models.toml` is valid, bad files are rejected. A new CI job
+  (`installer-models`) runs them on every push.
+
+Not verified: `loka.iss` itself. There's no Inno Setup here, and ISCC only runs in `release.yml`
+on a `v*` tag, so its first compile is the next release build. Also found: nothing reads
+`install-selection.toml`; `loka.exe` has no first-run model fetch, so the choice is recorded but
+not yet acted on. Both are in TODO.md.
+
+---
 ## 2026-10-08 — Paper / arXiv put on hold (Emma)
 
 Emma: "the arXiv thing is on hold now with whatever we have right now." Step 10 (the review loop

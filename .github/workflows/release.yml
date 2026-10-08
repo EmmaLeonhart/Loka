@@ -79,6 +79,8 @@ jobs:
           if (-not (Test-Path $iscc)) {
             choco install innosetup -y --no-progress
           }
+          python installer\gen_models.py
+          if ($LASTEXITCODE -ne 0) { throw "gen_models.py failed with exit code $LASTEXITCODE" }
           & $iscc "installer\loka.iss" "/DLokaVersion=$version" "/DLokaBinary=$binary" "/DLokaStudio=$studio"
           if ($LASTEXITCODE -ne 0) { throw "ISCC failed with exit code $LASTEXITCODE" }
           Copy-Item "dist\installer\loka-setup-x64.exe" "loka-setup-x64.exe" -Force

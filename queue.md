@@ -15,10 +15,6 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 3. **Attempt every TODO.md item that is not computationally intensive** (GPU-gated items and the
    30M+ sustained-ingest check are excluded), in TODO.md order:
-   a. Installer multi-model: models.toml as a list, CI pre-step generating the `.iss`
-      components, mutually exclusive model components, chosen model id in
-      `install-selection.toml`. No Inno Setup here: verify the generator, mark the `.iss`
-      unverified until an rc build.
    b. v0.3.1 release checklist (Gradle merge, version bump, tag): check whether it's
       obsolete (current version 0.4.6); the tag itself is Emma's.
    c. Maintained distinct counts for adaptive execution: measure the insert overhead; build

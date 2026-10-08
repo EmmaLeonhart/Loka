@@ -88,6 +88,20 @@ jobs:
       - run: pip install pytest
       - run: pytest tests/ -v
 
+  # ── Installer model list (gen_models.py) ─────────────────────────────
+
+  installer-models:
+    name: Installer models
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install pytest
+      - run: pytest installer/ -v
+      - run: python installer/gen_models.py
+
   # ── TypeScript SDK ────────────────────────────────────────────────────
 
   sdk-typescript:

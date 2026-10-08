@@ -1,16 +1,15 @@
 # Models offered by the Windows installer.
 #
-# The installer reads this file at build time to populate its optional
-# "Inference model" component. Only one entry is supported today — the
-# installer hardcodes the first table under `[[model]]`. Adding a second
-# entry now will be ignored until multi-model support lands (see TODO.md
-# "Multi-model installer support").
+# installer/gen_models.py turns this list into the installer's "Inference
+# model" choices at build time (release.yml runs it before ISCC). Each entry
+# becomes one option; the user picks at most one. The first entry is the
+# default. Required keys: id, display_name, hf_repo, approx_size.
 
 [[model]]
 id            = "qwen-2.5-1.5b-instruct"
 display_name  = "Qwen 2.5 1.5B Instruct"
 hf_repo       = "Qwen/Qwen2.5-1.5B-Instruct"
-approx_size   = "3.0 GB"
+approx_size   = "3.1 GB"
 # How the installer fetches it. "first-run" defers the download to the
 # first time `loka chat` / the inference sidecar is invoked, so the
 # installer itself stays small. "bundle" would inline the weights into
@@ -21,4 +20,15 @@ Base Qwen 2.5 1.5B Instruct. Combined with Loka's BFS+embedding
 retrieval over the local triplestore, this is the inference path the
 project actually ships (no fine-tune). ~3 GB on disk, downloaded from
 Hugging Face on first invocation.
+"""
+
+[[model]]
+id            = "qwen-2.5-0.5b-instruct"
+display_name  = "Qwen 2.5 0.5B Instruct"
+hf_repo       = "Qwen/Qwen2.5-0.5B-Instruct"
+approx_size   = "1.0 GB"
+fetch_mode    = "first-run"
+description   = """
+The smaller Qwen 2.5 for machines without 3 GB to spare (~1.0 GB on disk,
+Apache-2.0). Same retrieval path, weaker generation.
 """
