@@ -56,6 +56,9 @@ pub struct AppState {
     /// scans while their columns are exact and current. `None` until the
     /// first discovery (`planning/pseudo-table-serving.md`).
     pub pseudo_tables: RwLock<Option<crate::maintenance::DiscoveredTables>>,
+    /// Query and per-pattern performance, served at `GET /health/queries`
+    /// (`planning/query-metrics.md`).
+    pub query_metrics: loka_sparql::QueryMetrics,
 }
 
 /// Build the axum router with all endpoints.
@@ -71,6 +74,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/vectors/declare", post(declare_vector_predicate))
         .route("/vectors", post(insert_vector))
         .route("/health", get(health))
+        .route("/health/queries", get(health_queries))
         .route("/graph-store", get(gsp_get).put(gsp_put).delete(gsp_delete))
         .route("/vectors/health", get(vectors_health))
         .route("/vectors/rebuild", post(rebuild_hnsw))
@@ -91,14 +95,15 @@ pub fn router(state: Arc<AppState>) -> Router {
         .with_state(state)
 }
 
-/// Counts every request except `/health` as activity, so background
-/// maintenance waits for the server to be idle; a health probe doesn't count.
+/// Counts every request except `/health*` as activity, so background
+/// maintenance waits for the server to be idle; a health probe or a dashboard
+/// polling `/health/queries` doesn't count.
 async fn activity_middleware(
     State(state): State<Arc<AppState>>,
     req: axum::extract::Request,
     next: Next,
 ) -> Response {
-    if req.uri().path() != "/health" {
+    if !req.uri().path().starts_with("/health") {
         state.activity.touch();
     }
     next.run(req).await
@@ -1694,6 +1699,14 @@ async fn health() -> (StatusCode, &'static str) {
     (StatusCode::OK, "ok")
 }
 
+/// GET /health/queries — query latency (overall and per pattern shape) and
+/// planner estimate accuracy, over the last samples of each series.
+async fn health_queries(
+    State(state): State<Arc<AppState>>,
+) -> Json<loka_sparql::QueryMetricsReport> {
+    Json(state.query_metrics.report())
+}
+
 /// GET /vectors/health — HNSW index health diagnostics.
 async fn vectors_health(
     State(state): State<Arc<AppState>>,
@@ -1820,6 +1833,7 @@ mod tests {
             rate_counter: std::sync::atomic::AtomicU64::new(0),
             activity: Default::default(),
             pseudo_tables: Default::default(),
+            query_metrics: Default::default(),
         })
     }
 
@@ -2017,6 +2031,76 @@ mod tests {
 
         let (_, health) = send(&state, "GET", "/vectors/health", "", String::new()).await;
         assert_eq!(health["maintenance"]["pseudo_table_refreshes"], 2);
+    }
+
+    /// Phase 7: the metrics reflect a known workload
+    /// (`planning/query-metrics.md`).
+    #[tokio::test]
+    async fn query_metrics_reflect_a_known_workload() {
+        let state = test_state();
+        // ex:s has ten triples (p0..p9 -> o0..o9); five more subjects have p0.
+        let mut nt = String::new();
+        for k in 0..10 {
+            nt.push_str(&format!(
+                "<http://example.org/s> <http://example.org/p{k}> <http://example.org/o{k}> .
+"
+            ));
+        }
+        for k in 0..5 {
+            nt.push_str(&format!(
+                "<http://example.org/t{k}> <http://example.org/p0> <http://example.org/o0> .
+"
+            ));
+        }
+        let (s, _) = send(&state, "POST", "/triples", "text/plain", nt).await;
+        assert_eq!(s, StatusCode::OK);
+
+        let exact = "SELECT ?x ?y WHERE { ?x ex:p0 ?y }"; // estimate 6, actual 6
+        let join = "SELECT ?x WHERE { ?x ex:p0 ?y . ?x ex:p1 ?z }"; // p1 first (1 row)
+        let misest = "SELECT ?p WHERE { ex:s ?p ex:o3 }"; // estimate 10 (all of s), actual 1
+        for (q, times, rows) in [(exact, 4, 6), (join, 2, 1), (misest, 3, 1)] {
+            for _ in 0..times {
+                assert_eq!(star_rows(&state, q).await.len(), rows, "{q}");
+            }
+        }
+
+        let (s, m) = send(&state, "GET", "/health/queries", "", String::new()).await;
+        assert_eq!(s, StatusCode::OK);
+        assert_eq!(m["queries"], 9);
+        let lat = &m["latency_ms"];
+        assert!(lat["p50"].as_f64().unwrap() <= lat["p90"].as_f64().unwrap());
+        assert!(lat["p90"].as_f64().unwrap() <= lat["p99"].as_f64().unwrap());
+
+        let shape = |name: &str| {
+            m["patterns"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|p| p["shape"] == name)
+                .unwrap_or_else(|| panic!("no shape {name}: {m}"))
+                .clone()
+        };
+        // exact's pattern x4 and the join's first (p1) pattern x2.
+        assert_eq!(shape("triple(?,C,?)")["count"], 6);
+        assert_eq!(shape("triple(?,C,?)")["rows_p50"], 6.0);
+        // the join's second pattern, ?x bound by the first.
+        assert_eq!(shape("triple(B,C,?)")["count"], 2);
+        assert_eq!(shape("triple(B,C,?)")["rows_p50"], 1.0);
+        assert_eq!(shape("triple(C,?,C)")["count"], 3);
+
+        // Scored: the 6 unbound triple(?,C,?) evaluations (q = 1) and the 3
+        // mis-estimates (q = 10); the join's bound pattern is not scored.
+        let e = &m["estimates"];
+        assert_eq!(e["scored"], 9);
+        assert_eq!(e["q_error"]["p50"], 1.0);
+        assert_eq!(e["q_error"]["p90"], 10.0);
+        assert!((e["within_2x"].as_f64().unwrap() - 6.0 / 9.0).abs() < 1e-9);
+
+        assert_eq!(
+            state.activity.requests(),
+            10,
+            "insert + 9 queries; /health/* not counted"
+        );
     }
 
     /// A computed BIND value must render as its string over HTTP.
@@ -2659,6 +2743,7 @@ mod tests {
             rate_counter: std::sync::atomic::AtomicU64::new(0),
             activity: Default::default(),
             pseudo_tables: Default::default(),
+            query_metrics: Default::default(),
         })
     }
 

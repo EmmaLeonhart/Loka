@@ -112,7 +112,9 @@ loka serve --maintenance-idle-secs 300     # rebuild tombstoned HNSW indexes aft
 | `--memory-only` | off | Run in-memory only (no persistence) |
 | `--passcode` | none | Simple passcode auth; all requests except `/health` require `Authorization: Bearer <passcode>` |
 | `--backup-interval` | `0` (disabled) | Periodic backup interval in minutes |
-| `--maintenance-idle-secs` | `0` (disabled) | Rebuild HNSW indexes with ≥10% tombstones, and rediscover pseudo-tables if the store changed, once no request has arrived for this many seconds. HNSW rebuilds are built off the lock and swapped in atomically, so queries keep answering; pseudo-table columns serve star queries only while exact and current. `/health` probes don't count as requests. Counts in `GET /vectors/health` → `maintenance` |
+| `--maintenance-idle-secs` | `0` (disabled) | Rebuild HNSW indexes with ≥10% tombstones, and rediscover pseudo-tables if the store changed, once no request has arrived for this many seconds. HNSW rebuilds are built off the lock and swapped in atomically, so queries keep answering; pseudo-table columns serve star queries only while exact and current. `/health*` requests don't count. Counts in `GET /vectors/health` → `maintenance` |
+
+`loka serve` also reports query performance at `GET /health/queries`: query latency p50/p90/p99, per pattern shape (`triple(?,C,?)` = free subject, constant predicate, free object; `B` = bound by an earlier pattern) count/latency/rows, and planner estimate accuracy (q-error of the row estimate for patterns evaluated with no variables bound). Over the last 1024 samples of each series. `/health` itself stays a plain `ok` for probes.
 
 ---
 

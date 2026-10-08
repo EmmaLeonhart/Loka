@@ -10,9 +10,13 @@ pub mod planner;
 pub use cypher::{transpile, transpile_with_base, CypherError};
 pub use error::{Result, SparqlError};
 pub use executor::{
-    execute, execute_with_config, execute_with_pseudo_tables, execute_with_timeout,
-    execute_with_vectors, Bindings, QueryResult,
+    execute, execute_instrumented, execute_with_config, execute_with_pseudo_tables,
+    execute_with_timeout, execute_with_vectors, Bindings, QueryResult,
 };
-pub use health::{generate_health_report, HealthReport, HealthStatus};
+pub use health::{
+    generate_health_report, HealthReport, HealthStatus, QueryMetrics, QueryMetricsReport,
+};
 pub use parser::{parse, Aggregate, AggregateArg, AggregateFunction, Query, QueryType};
-pub use planner::{optimize, optimize_full, optimize_with_store, optimize_with_vectors};
+pub use planner::{
+    estimate_pattern_rows, optimize, optimize_full, optimize_with_store, optimize_with_vectors,
+};

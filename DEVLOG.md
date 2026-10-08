@@ -7,6 +7,39 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (late night) — Phase 7: query latency and planner-estimate accuracy at /health/queries
+
+`loka serve` now records:
+- query latency;
+- per-pattern latency and rows, grouped by shape (`triple(?,C,?)`, `triple(B,C,?)`,
+  `vector(?)`, `path(C,+,?)`, `fused(3)`, ...; `C` constant, `B` bound earlier, `?` free);
+- how accurate the planner's row estimates are.
+
+Series keep their last 1024 samples (nearest-rank percentiles), so memory stays flat. Only
+the outermost query records, so subqueries aren't counted twice.
+
+Decisions:
+- **What "planner-decision accuracy" measures.** The q-error of the planner's own row estimate
+  (`estimate_pattern_rows`, the number it orders by), scored only for patterns evaluated with
+  none of their variables bound. Only there does the estimate predict the observed count;
+  after a join it ignores runtime bindings, so a comparison would measure nothing.
+- **Where it is served.** `GET /health/queries`, not `loka health --json`, which is an
+  offline process that runs no queries. `/health` stays a plain `ok` because probes rely on
+  it, and `/health*` requests don't count as activity, so a polling dashboard doesn't
+  stall maintenance.
+
+Tests:
+- A known workload through the HTTP server: 9 queries of 3 shapes, with per-shape counts and
+  rows-out medians checked. Scoring covers 9 patterns: six exact (q = 1) and three known
+  mis-estimates (`<s> ?p <o>` estimated as all 10 of `s`'s triples, actual 1, q = 10). The
+  join's bound pattern is not scored, so the p50/p90 q-error is 1/10 and within-2× is 6/9.
+- Unit tests: nearest-rank percentiles, ring bounds, q-error. The q-error test caught
+  `q_error(0, 0)` returning 0 instead of 1; fixed.
+- 32 suites pass; clippy is clean.
+
+That completes the large-feature plan (`planning/large-features.md`, phases 1–7).
+
+---
 ## 2026-10-07 (night) — Phase 6: pseudo-tables serve queries, correctly; and joins were quadratic
 
 The executor had a pseudo-table scan and a fused multi-pattern version, but nothing that ran

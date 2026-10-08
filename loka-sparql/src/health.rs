@@ -925,3 +925,234 @@ mod tests {
         );
     }
 }
+
+// ---------------------------------------------------------------------------
+// Query performance metrics (planning/query-metrics.md)
+// ---------------------------------------------------------------------------
+
+/// Samples kept per series. Older samples are overwritten, so memory stays
+/// flat however long a server runs.
+pub const METRICS_RING: usize = 1024;
+
+/// The last [`METRICS_RING`] samples of one series, plus a total count.
+#[derive(Debug, Default)]
+struct Ring {
+    samples: Vec<f64>,
+    next: usize,
+    total: u64,
+}
+
+impl Ring {
+    fn push(&mut self, value: f64) {
+        if self.samples.len() < METRICS_RING {
+            self.samples.push(value);
+        } else {
+            self.samples[self.next] = value;
+        }
+        self.next = (self.next + 1) % METRICS_RING;
+        self.total += 1;
+    }
+
+    fn sorted(&self) -> Vec<f64> {
+        let mut s = self.samples.clone();
+        s.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        s
+    }
+}
+
+/// Nearest-rank percentile of sorted samples; `None` if there are none.
+fn percentile(sorted: &[f64], p: f64) -> Option<f64> {
+    if sorted.is_empty() {
+        return None;
+    }
+    let rank = ((p / 100.0) * sorted.len() as f64).ceil() as usize;
+    Some(sorted[rank.clamp(1, sorted.len()) - 1])
+}
+
+/// p50 / p90 / p99 of a series (`None` while it is empty).
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct Percentiles {
+    pub p50: Option<f64>,
+    pub p90: Option<f64>,
+    pub p99: Option<f64>,
+}
+
+impl Percentiles {
+    fn of(ring: &Ring) -> Self {
+        let s = ring.sorted();
+        Self {
+            p50: percentile(&s, 50.0),
+            p90: percentile(&s, 90.0),
+            p99: percentile(&s, 99.0),
+        }
+    }
+}
+
+/// Latency and output size for one pattern shape.
+#[derive(Debug, Clone, Serialize)]
+pub struct PatternMetrics {
+    /// Kind plus constant (`C`) / bound (`B`) / free (`?`) positions,
+    /// e.g. `triple(?,C,C)`.
+    pub shape: String,
+    /// Evaluations recorded (all time).
+    pub count: u64,
+    /// Wall time per evaluation, milliseconds.
+    pub latency_ms: Percentiles,
+    /// Median rows produced.
+    pub rows_p50: Option<f64>,
+    /// Samples currently held (at most [`METRICS_RING`]).
+    pub samples: usize,
+}
+
+/// How well the planner's row estimates match what patterns return, scored
+/// only where the estimate predicts the observed count: patterns evaluated
+/// with none of their variables already bound.
+#[derive(Debug, Clone, Serialize)]
+pub struct EstimateAccuracy {
+    /// Patterns scored (all time).
+    pub scored: u64,
+    /// q-error = max(1, est, actual) / max(1, min(est, actual)); 1 is exact.
+    pub q_error: Percentiles,
+    /// Fraction of held samples with q-error ≤ 2.
+    pub within_2x: Option<f64>,
+}
+
+/// Snapshot of [`QueryMetrics`], as served at `GET /health/queries`.
+#[derive(Debug, Clone, Serialize)]
+pub struct QueryMetricsReport {
+    /// Queries recorded (all time).
+    pub queries: u64,
+    /// Wall time per query, milliseconds.
+    pub latency_ms: Percentiles,
+    /// Per pattern shape, sorted by shape.
+    pub patterns: Vec<PatternMetrics>,
+    /// Planner estimate accuracy.
+    pub estimates: EstimateAccuracy,
+}
+
+#[derive(Debug, Default)]
+struct MetricsInner {
+    queries: Ring,
+    patterns: std::collections::BTreeMap<String, (Ring, Ring)>,
+    q_error: Ring,
+}
+
+/// Thread-safe recorder of query and per-pattern performance. Shared by a
+/// server across requests; the executor records into it when given one.
+#[derive(Debug, Default)]
+pub struct QueryMetrics {
+    inner: std::sync::Mutex<MetricsInner>,
+}
+
+impl QueryMetrics {
+    /// An empty recorder.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Record one query's wall time.
+    pub fn record_query(&self, elapsed: std::time::Duration) {
+        if let Ok(mut m) = self.inner.lock() {
+            m.queries.push(elapsed.as_secs_f64() * 1000.0);
+        }
+    }
+
+    /// Record one pattern evaluation, and score the planner's estimate if
+    /// one applies.
+    pub fn record_pattern(
+        &self,
+        shape: &str,
+        elapsed: std::time::Duration,
+        rows: usize,
+        estimate: Option<usize>,
+    ) {
+        if let Ok(mut m) = self.inner.lock() {
+            let (lat, out) = m.patterns.entry(shape.to_string()).or_default();
+            lat.push(elapsed.as_secs_f64() * 1000.0);
+            out.push(rows as f64);
+            if let Some(est) = estimate {
+                m.q_error.push(q_error(est, rows));
+            }
+        }
+    }
+
+    /// A snapshot of everything recorded so far.
+    pub fn report(&self) -> QueryMetricsReport {
+        let m = match self.inner.lock() {
+            Ok(m) => m,
+            Err(poisoned) => poisoned.into_inner(),
+        };
+        let held = m.q_error.samples.len();
+        QueryMetricsReport {
+            queries: m.queries.total,
+            latency_ms: Percentiles::of(&m.queries),
+            patterns: m
+                .patterns
+                .iter()
+                .map(|(shape, (lat, out))| PatternMetrics {
+                    shape: shape.clone(),
+                    count: lat.total,
+                    latency_ms: Percentiles::of(lat),
+                    rows_p50: percentile(&out.sorted(), 50.0),
+                    samples: lat.samples.len(),
+                })
+                .collect(),
+            estimates: EstimateAccuracy {
+                scored: m.q_error.total,
+                q_error: Percentiles::of(&m.q_error),
+                within_2x: (held > 0).then(|| {
+                    m.q_error.samples.iter().filter(|q| **q <= 2.0).count() as f64 / held as f64
+                }),
+            },
+        }
+    }
+}
+
+/// q-error of an estimate against the observed count (≥ 1; 1 is exact).
+pub fn q_error(estimate: usize, actual: usize) -> f64 {
+    let (hi, lo) = if estimate >= actual {
+        (estimate, actual)
+    } else {
+        (actual, estimate)
+    };
+    hi.max(1) as f64 / lo.max(1) as f64
+}
+
+#[cfg(test)]
+mod metrics_tests {
+    use super::*;
+    use std::time::Duration;
+
+    #[test]
+    fn percentiles_are_nearest_rank() {
+        let mut r = Ring::default();
+        for v in 1..=100 {
+            r.push(v as f64);
+        }
+        let p = Percentiles::of(&r);
+        assert_eq!((p.p50, p.p90, p.p99), (Some(50.0), Some(90.0), Some(99.0)));
+        assert_eq!(Percentiles::of(&Ring::default()).p50, None);
+    }
+
+    #[test]
+    fn rings_stay_bounded() {
+        let m = QueryMetrics::new();
+        for _ in 0..(METRICS_RING + 500) {
+            m.record_query(Duration::from_millis(1));
+            m.record_pattern("triple(?,C,?)", Duration::from_millis(1), 3, Some(3));
+        }
+        let r = m.report();
+        assert_eq!(r.queries, (METRICS_RING + 500) as u64);
+        assert_eq!(r.patterns[0].samples, METRICS_RING);
+        assert_eq!(r.patterns[0].count, (METRICS_RING + 500) as u64);
+    }
+
+    #[test]
+    fn q_error_is_symmetric_and_at_least_one() {
+        assert_eq!(q_error(10, 1), 10.0);
+        assert_eq!(q_error(1, 10), 10.0);
+        assert_eq!(q_error(5, 5), 1.0);
+        assert_eq!(q_error(0, 0), 1.0);
+        assert_eq!(q_error(4, 0), 4.0);
+    }
+}

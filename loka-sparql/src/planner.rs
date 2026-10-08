@@ -329,6 +329,44 @@ fn pattern_weight(pattern: &Pattern, bound: &HashSet<String>) -> u32 {
     }
 }
 
+/// The planner's row estimate for `pattern` evaluated with none of its
+/// variables bound: the number it orders patterns by. `None` for patterns it
+/// doesn't estimate (paths, filters, groups, ...). Used to score estimate
+/// accuracy against observed row counts (`planning/query-metrics.md`).
+pub fn estimate_pattern_rows(
+    pattern: &Pattern,
+    store: &TripleStore,
+    dict: &TermDictionary,
+    vectors: Option<&VectorRegistry>,
+    prefixes: &HashMap<String, String>,
+) -> Option<usize> {
+    match pattern {
+        Pattern::Triple {
+            subject,
+            predicate,
+            object,
+        } if !matches!(predicate, Term::Path { .. }) => Some(estimate_triple_cardinality(
+            subject,
+            predicate,
+            object,
+            store,
+            Some(dict),
+            prefixes,
+        )),
+        Pattern::VectorSimilar {
+            predicate, top_k, ..
+        }
+        | Pattern::MetricSearch {
+            predicate, top_k, ..
+        } => {
+            let id = term_to_constant_id(predicate, Some(dict), prefixes)?;
+            let index = vectors?.get(id)?;
+            Some(top_k.unwrap_or(DEFAULT_VECTOR_K).min(index.len()))
+        }
+        _ => None,
+    }
+}
+
 /// Estimate how many triples match a pattern using the store's indexes.
 ///
 /// This is the data-dependent component of the cost model. It uses the

@@ -80,6 +80,10 @@ pub struct ExecutionContext<'a> {
     pub values: QueryValues,
     /// Pseudo-table columns used in place of the triple indexes this query.
     pub pseudo_table_hits: std::cell::Cell<usize>,
+    /// Performance recorder for the top-level patterns of this query
+    /// (`planning/query-metrics.md`); taken by the outermost evaluation so
+    /// subqueries don't record their inner patterns again.
+    pub metrics: Option<&'a crate::health::QueryMetrics>,
 }
 
 /// Execute a parsed query against an in-memory store with vector support.
@@ -101,7 +105,7 @@ pub fn execute_with_config(
     vectors: &VectorRegistry,
     config: &DatabaseConfig,
 ) -> Result<QueryResult> {
-    execute_with_deadline(query, store, dict, vectors, config, None, None).map(|(r, _)| r)
+    execute_with_deadline(query, store, dict, vectors, config, None, None, None).map(|(r, _)| r)
 }
 
 /// [`execute_with_config`] with pseudo-tables available for columnar scans.
@@ -116,7 +120,39 @@ pub fn execute_with_pseudo_tables(
     config: &DatabaseConfig,
     pseudo_tables: Option<&PseudoTableRegistry>,
 ) -> Result<(QueryResult, usize)> {
-    execute_with_deadline(query, store, dict, vectors, config, None, pseudo_tables)
+    execute_with_deadline(
+        query,
+        store,
+        dict,
+        vectors,
+        config,
+        None,
+        pseudo_tables,
+        None,
+    )
+}
+
+/// [`execute_with_pseudo_tables`] that also records query and per-pattern
+/// performance into `metrics` (served at `GET /health/queries`).
+pub fn execute_instrumented(
+    query: &Query,
+    store: &TripleStore,
+    dict: &TermDictionary,
+    vectors: &VectorRegistry,
+    config: &DatabaseConfig,
+    pseudo_tables: Option<&PseudoTableRegistry>,
+    metrics: Option<&crate::health::QueryMetrics>,
+) -> Result<(QueryResult, usize)> {
+    execute_with_deadline(
+        query,
+        store,
+        dict,
+        vectors,
+        config,
+        None,
+        pseudo_tables,
+        metrics,
+    )
 }
 
 /// Core query execution logic.
@@ -147,6 +183,8 @@ fn execute_query_with_ctx(query: &Query, ctx: &mut ExecutionContext<'_>) -> Resu
     // single vectorized multi-column scan (SIMD bitset AND). This avoids
     // intermediate materialization and join overhead.
     let patterns = &query.patterns;
+    // Only the outermost evaluation records; nested subqueries see `None`.
+    let metrics = ctx.metrics.take();
     let mut i = 0;
     while i < patterns.len() {
         // Try to detect a run of fuseable triple patterns.
@@ -155,9 +193,14 @@ fn execute_query_with_ctx(query: &Query, ctx: &mut ExecutionContext<'_>) -> Resu
             if run_end > i + 1 {
                 // We found 2+ consecutive patterns that can be fused.
                 let fuseable: Vec<&Pattern> = patterns[i..run_end].iter().collect();
+                let fuse_started = Instant::now();
                 if let Some((fused_results, sources)) =
                     try_fused_pseudo_table_scan(&fuseable, &results, ctx, registry, pushable_limit)?
                 {
+                    if let Some(m) = metrics {
+                        let shape = format!("fused({})", fuseable.len());
+                        m.record_pattern(&shape, fuse_started.elapsed(), fused_results.len(), None);
+                    }
                     ctx.pseudo_table_hits
                         .set(ctx.pseudo_table_hits.get() + fuseable.len());
                     let new_scores = sources.iter().map(|&j| scores[j].clone()).collect();
@@ -177,8 +220,32 @@ fn execute_query_with_ctx(query: &Query, ctx: &mut ExecutionContext<'_>) -> Resu
         }
 
         // Normal single-pattern evaluation.
+        let pattern_started = Instant::now();
+        let bound_before = results.first().cloned();
         let (new_results, new_scores) =
             evaluate_pattern(&patterns[i], &results, &scores, ctx, pushable_limit)?;
+        if let Some(m) = metrics {
+            let shape = pattern_shape(&patterns[i], bound_before.as_ref());
+            // The planner's estimate predicts the row count only when none of
+            // the pattern's variables were bound going in (one empty row).
+            let estimate = (results.len() == 1 && results[0].is_empty())
+                .then(|| {
+                    crate::planner::estimate_pattern_rows(
+                        &patterns[i],
+                        ctx.store,
+                        ctx.dict,
+                        Some(ctx.vectors),
+                        ctx.prefixes,
+                    )
+                })
+                .flatten();
+            m.record_pattern(
+                &shape,
+                pattern_started.elapsed(),
+                new_results.len(),
+                estimate,
+            );
+        }
         results = new_results;
         scores = new_scores;
         i += 1;
@@ -418,11 +485,13 @@ pub fn execute_with_timeout(
         &default_config,
         Some(Instant::now() + Duration::from_secs(timeout_secs)),
         None,
+        None,
     )
     .map(|(r, _)| r)
 }
 
 /// Internal executor that accepts an optional deadline.
+#[allow(clippy::too_many_arguments)]
 fn execute_with_deadline(
     query: &Query,
     store: &TripleStore,
@@ -431,7 +500,9 @@ fn execute_with_deadline(
     config: &DatabaseConfig,
     deadline: Option<Instant>,
     pseudo_tables: Option<&PseudoTableRegistry>,
+    metrics: Option<&crate::health::QueryMetrics>,
 ) -> Result<(QueryResult, usize)> {
+    let started = Instant::now();
     let mut ctx = ExecutionContext {
         store,
         dict,
@@ -443,8 +514,12 @@ fn execute_with_deadline(
         temporal_filter: None,
         values: QueryValues::new(),
         pseudo_table_hits: std::cell::Cell::new(0),
+        metrics,
     };
     let result = execute_query_with_ctx(query, &mut ctx)?;
+    if let Some(m) = metrics {
+        m.record_query(started.elapsed());
+    }
     Ok((result, ctx.pseudo_table_hits.get()))
 }
 
@@ -3860,6 +3935,66 @@ fn entity_similarity(entity: TermId, query: &[f32], ctx: &ExecutionContext<'_>) 
         }
     }
     best
+}
+
+/// A pattern's shape for metrics: its kind, and each position as constant
+/// (`C`), bound by an earlier pattern (`B`) or free (`?`).
+fn pattern_shape(pattern: &Pattern, bound: Option<&Bindings>) -> String {
+    let pos = |t: &Term| match t {
+        Term::Variable(name) if bound.is_some_and(|b| b.contains_key(name)) => "B",
+        Term::Variable(_) => "?",
+        _ => "C",
+    };
+    match pattern {
+        Pattern::Triple {
+            subject,
+            predicate: Term::Path { base, modifier },
+            object,
+        } => {
+            let m = match modifier {
+                PathModifier::OneOrMore => "+",
+                PathModifier::ZeroOrMore => "*",
+                PathModifier::ZeroOrOne => "?",
+                PathModifier::Sequence(_) => "/",
+            };
+            format!("path({},{}{},{})", pos(subject), pos(base), m, pos(object))
+        }
+        Pattern::Triple {
+            subject,
+            predicate,
+            object,
+        } => format!(
+            "triple({},{},{})",
+            pos(subject),
+            pos(predicate),
+            pos(object)
+        ),
+        Pattern::PathUntil {
+            subject,
+            object,
+            exit,
+            ..
+        } => {
+            let kind = match exit {
+                PathExit::Until(_) => "until",
+                PathExit::Greedy(_) => "greedy",
+            };
+            format!("path_{kind}({},{})", pos(subject), pos(object))
+        }
+        Pattern::VectorSimilar { subject, .. } | Pattern::MetricSearch { subject, .. } => {
+            format!("vector({})", pos(subject))
+        }
+        Pattern::Filter(_) => "filter".into(),
+        Pattern::Bind { .. } => "bind".into(),
+        Pattern::Values { .. } => "values".into(),
+        Pattern::Optional(_) => "optional".into(),
+        Pattern::Union(_) => "union".into(),
+        Pattern::Subquery(_) => "subquery".into(),
+        Pattern::AtTime { .. }
+        | Pattern::During { .. }
+        | Pattern::WorldState { .. }
+        | Pattern::TemporalDiff { .. } => "temporal".into(),
+    }
 }
 
 /// Prefix of the hidden intermediate variables of a path sequence.

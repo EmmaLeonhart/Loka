@@ -249,7 +249,8 @@ sustained GPU run or a large risky ingest; they wait for cloud GPU or a donor.
 - [ ] Deep (multi-hop) pseudo-tables never serve queries: their columns are paths, not predicates; serving them needs path-level exactness
 
 ### Database Health Dashboard (remaining)
-- [ ] Query performance metrics: per-pattern latency percentiles, planner decision accuracy
+- [x] Query performance metrics: per-pattern latency percentiles, planner estimate accuracy (`GET /health/queries`, `planning/query-metrics.md`; 2026-10-07)
+- [ ] Studio page reading `/health/queries`
 - [ ] Iterate CLI health output format based on real agent usage
 - [ ] Loka Studio health dashboard as Flutter landing page: overall status, per-index cards, action buttons
 

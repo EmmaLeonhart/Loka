@@ -73,6 +73,8 @@ from the pseudo-table with identical results to the pattern path.
 
 ## Phase 7 — health: query performance metrics
 
+**DONE 2026-10-07** (`planning/query-metrics.md`; see DEVLOG). Served at `GET /health/queries`, not `loka health --json`: an offline CLI process runs no queries to measure.
+
 **Build:** per-pattern latency percentiles and planner-decision accuracy, recorded in
 `loka-sparql/src/health.rs`, exposed via `loka health --json` and `/health`. (The
 Flutter-dashboard item is obsolete: Flutter Studio was removed and Studio is Electron now; the

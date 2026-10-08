@@ -87,7 +87,8 @@ pub struct DiscoveredTables {
     pub registry: PseudoTableRegistry,
 }
 
-/// Run a query with the server's pseudo-tables, counting columnar hits.
+/// Run a query with the server's pseudo-tables, counting columnar hits and
+/// recording its performance in `state.query_metrics`.
 /// Columns are used only while exact and current, so results equal the
 /// triple-index path's.
 pub fn execute_served(
@@ -98,13 +99,14 @@ pub fn execute_served(
     vectors: &loka_hnsw::VectorRegistry,
 ) -> Result<loka_sparql::QueryResult, ProtoError> {
     let tables = state.pseudo_tables.read().map_err(lock_err)?;
-    let (result, hits) = loka_sparql::execute_with_pseudo_tables(
+    let (result, hits) = loka_sparql::execute_instrumented(
         query,
         store,
         dict,
         vectors,
         &loka_core::DatabaseConfig::default(),
         tables.as_ref().map(|t| &t.registry),
+        Some(&state.query_metrics),
     )?;
     state
         .activity
