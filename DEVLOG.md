@@ -7,6 +7,19 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 — Maintained distinct counts: +56% insert time, not built
+
+Queue item 3c. Adaptive execution's open question was whether to maintain per-predicate
+distinct subject/object counts instead of sampling. I measured the insert cost with a
+throwaway probe (not committed): 1M triples of a 2M-store-like shape, the store alone vs the
+store plus the bookkeeping. Medians of 5: **1,496 ms → 2,332 ms (+56%)**, plus a map entry
+per (predicate, term).
+
+Not built: that's a large tax on every ingest, and sampling has shown no noise to justify it.
+The cheaper route, should it ever be needed, is recorded in `planning/adaptive-execution.md`:
+compute on demand and cache by predicate generation, which costs nothing on insert.
+
+---
 ## 2026-10-08 — The v0.3.1 release checklist was already obsolete
 
 Queue item 3b. TODO.md still listed "merge Gradle migration, bump all SDK configs to 0.3.1, tag

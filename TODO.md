@@ -223,7 +223,7 @@ sustained GPU run or a large risky ingest; they wait for cloud GPU or a donor.
 - [x] HNSW as access path: planner chooses "HNSW index scan" vs "SPO triple scan" based on cost (`planning/cost-based-hnsw.md`; 2026-10-07)
 - [x] Adaptive execution v1 (sampling only): reorder commuting joins mid-query from sampled row counts (`planning/adaptive-execution.md`, 2026-10-08)
 - [x] Adaptive execution v2: reorders cross EXISTS-free FILTERs when the moved pattern binds none of the filter's variables (2026-10-08)
-- [ ] Maintained distinct counts for adaptive execution, only if sampling proves too noisy on real data
+- [x] ~~Maintained distinct counts for adaptive execution~~: measured +56% insert time (1M triples: 1,496 → 2,332 ms) plus a map entry per (predicate, term). Not built; sampling stays. If it is ever needed, compute on demand and cache by predicate generation, which costs nothing on insert (2026-10-08)
 
 ### Background Maintenance Cycle
 - [x] Low-usage detection, background HNSW rebuild off the lock, atomic swap: `loka serve --maintenance-idle-secs` (`planning/background-maintenance.md`; 2026-10-07)

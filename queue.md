@@ -15,8 +15,6 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 3. **Attempt every TODO.md item that is not computationally intensive** (GPU-gated items and the
    30M+ sustained-ingest check are excluded), in TODO.md order:
-   c. Maintained distinct counts for adaptive execution: measure the insert overhead; build
-      only if it's cheap and sampling shows noise.
    d. Deep pseudo-tables serving queries (`planning/deep-pseudo-table-serving.md`): store
       full column paths, exactness, freshness, chain recognition, tests.
    e. CLI health output: iterate the format from an agent's actual use.

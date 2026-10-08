@@ -161,6 +161,15 @@ Tests:
 
 Mutation check: dropping the variable rule fails the hazard test.
 
+## Distinct counts: measured, not built (2026-10-08)
+
+Maintaining per-predicate distinct subject/object counts on insert (a counter per
+(predicate, subject) and (predicate, object), plus distinct tallies) cost **+56% insert time**:
+1M triples, 1,496 → 2,332 ms, median of 5. That's on top of a map entry per pair. Sampling has
+shown no noise that would justify it. If counts are ever needed, compute them on demand and
+cache them by the per-predicate generation: nothing on insert, recomputed only after that
+predicate changes.
+
 ## Open questions (to settle before building)
 
 - Maintained or on-demand distinct counts: measure the insert overhead on the 2M store.
