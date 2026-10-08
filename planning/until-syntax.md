@@ -56,6 +56,22 @@ checked independently), and on a well-connected small graph it equals `index.sea
 The second check is stated only for the dataset used, since greedy search on a graph is not
 guaranteed to find the global nearest in general.
 
+## BEAM (beam search, ef = k)
+
+`?entry loka:hnswNeighbor+ ?n BEAM(vector, k)`: HNSW's layer search as a path, with beam
+width k. Keep a candidate queue (best first) and the k best nodes found so far. Repeatedly
+expand the best unexpanded candidate; stop when it is worse than the worst of the k best (no
+candidate can improve the result). Emit up to k nodes, most similar first (ties by term id).
+Nodes without a vector of matching dimension are skipped. Like GREEDY, it applies only to an
+HNSW edge predicate.
+
+**Tests:**
+- `BEAM(v, 1)` reaches the same node as `GREEDY(v)`: with width 1 the beam is greedy
+  descent.
+- On the fixed 8-node index, `BEAM(v, k)` from doc0 equals the brute-force top k. As with
+  GREEDY, this is stated for this dataset only.
+- Results come out in similarity order, at most k of them.
+
 ## Implementation sketch
 
 - Parser: after the object term of a path pattern, accept `UNTIL(` *bool expr* `)` or
