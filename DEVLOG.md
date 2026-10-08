@@ -7,6 +7,32 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (late) — Phase 1: property paths over virtual HNSW edges, plus four bugs found on the way
+
+`?s loka:hnswNeighbor+ ?x` now traverses the live HNSW graph. The `+`/`*` BFS used to walk only
+stored triples, and the HNSW edge predicates are virtual (answered from the index), so it
+reached nothing. For the three HNSW predicates each BFS step now asks `evaluate_triple_pattern`
+for the node's neighbours, getting the same edges a single-hop query returns; other predicates
+keep the stored-triple walk and its temporal gate.
+
+Writing the tests surfaced four more bugs, all fixed with tests:
+1. **A bound-source HNSW hop returned nothing.** `<doc1> hnswNeighbor ?n` passed the entity id
+   to an index keyed by vector ids. Entities are now mapped to their vectors first
+   (`entity_to_vectors`). The existing "bound source" test never bound the source, so it hadn't
+   caught this.
+2. **`+`/`*` paths repeated nodes**, once per incoming edge. SPARQL yields each reachable node
+   once. Diamond test.
+3. **`a*/b+` didn't parse.** The path grammar took one modifier OR a single plain `a/b`, so the
+   executor's own documented example `hnswLayerDescend*/hnswHorizontalNeighbor+` was a parse
+   error. It now parses `elt ('/' elt)*` with optional `+`/`*` per element.
+4. **Nested sequences could reuse an intermediate variable.** It was named from the row count,
+   which repeats across steps of `a/b/c`. It's now a unique counter, and the variables are hidden
+   from `SELECT *`.
+
+Tests: `loka-sparql/tests/hnsw_paths.rs`, 5 tests. The path test's reference is a client-side
+BFS using single-hop queries only. Workspace tests pass; fmt and clippy clean.
+
+---
 ## 2026-10-07 (late) — Emma: "Do the large feature work"; seven-phase plan
 
 The `TODO.md` "Future Versions" features are planned into `planning/large-features.md` and

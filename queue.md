@@ -52,7 +52,6 @@ publish verdict.
 ## ACTIVE — large feature work (Emma, 2026-10-07: "Do the large feature work")
 
 Plan, scope and tests per phase: `planning/large-features.md`. In order:
-1. **Phase 1 — property paths traverse virtual HNSW edges** (`hnswNeighbor+` reaches nothing today).
 2. **Phase 3 — UNTIL** (design doc first: `planning/until-syntax.md`), then per-step evaluation,
    per-branch exit, ordered traversal.
 3. **Phase 2 — greedy descent** (needs Phase 3's ordering and exits); test against `search(k=1)`.

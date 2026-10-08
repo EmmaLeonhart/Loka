@@ -885,34 +885,11 @@ impl<'a> Parser<'a> {
                 // Triple pattern (possibly with property path)
                 let subject = self.parse_term()?;
                 self.skip_whitespace();
-                let mut predicate = self.parse_term()?;
-                // Check for property path modifiers: +, *, ?, /
-                match self.peek_char() {
-                    Some('+') => {
-                        self.pos += 1;
-                        predicate = Term::Path {
-                            base: Box::new(predicate),
-                            modifier: PathModifier::OneOrMore,
-                        };
-                    }
-                    Some('*') => {
-                        self.pos += 1;
-                        predicate = Term::Path {
-                            base: Box::new(predicate),
-                            modifier: PathModifier::ZeroOrMore,
-                        };
-                    }
-                    Some('/') => {
-                        self.pos += 1;
-                        self.skip_whitespace();
-                        let next_pred = self.parse_term()?;
-                        predicate = Term::Path {
-                            base: Box::new(predicate),
-                            modifier: PathModifier::Sequence(Box::new(next_pred)),
-                        };
-                    }
-                    _ => {}
-                }
+                // Property path: `elt ( '/' elt )*`, each element a predicate
+                // with an optional `+` or `*`. This used to accept a single
+                // modifier OR one plain `a/b`, so `a*/b+` (the documented HNSW
+                // descent path) did not parse.
+                let predicate = self.parse_path_sequence()?;
                 self.skip_whitespace();
                 // Check for ? modifier (after whitespace skip since ? could be a variable)
                 // Only apply ? if immediately after predicate (no space)
@@ -1330,6 +1307,38 @@ impl<'a> Parser<'a> {
             }
         }
         Ok((clauses, binds))
+    }
+
+    /// One path element: a predicate, optionally followed (with no space) by
+    /// `+` or `*`.
+    fn parse_path_element(&mut self) -> Result<Term> {
+        let base = self.parse_term()?;
+        let modifier = match self.peek_char() {
+            Some('+') => PathModifier::OneOrMore,
+            Some('*') => PathModifier::ZeroOrMore,
+            _ => return Ok(base),
+        };
+        self.pos += 1;
+        Ok(Term::Path {
+            base: Box::new(base),
+            modifier,
+        })
+    }
+
+    /// `elt ( '/' elt )*`, right-nested as `elt / (elt / ...)`, which means
+    /// the same sequence.
+    fn parse_path_sequence(&mut self) -> Result<Term> {
+        let first = self.parse_path_element()?;
+        if self.peek_char() != Some('/') {
+            return Ok(first);
+        }
+        self.pos += 1;
+        self.skip_whitespace();
+        let rest = self.parse_path_sequence()?;
+        Ok(Term::Path {
+            base: Box::new(first),
+            modifier: PathModifier::Sequence(Box::new(rest)),
+        })
     }
 
     fn parse_term(&mut self) -> Result<Term> {

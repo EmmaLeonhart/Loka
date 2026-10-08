@@ -6,6 +6,8 @@ understood well enough to build is written up as a spec first, not guessed.
 
 ## Phase 1 — property paths traverse virtual HNSW edges
 
+**DONE 2026-10-07** (see DEVLOG). Also fixed on the way: bound-source HNSW hops returned nothing; `+`/`*` paths repeated nodes; `a*/b+` did not parse; nested sequences could reuse an intermediate variable.
+
 **Now:** `?s :p+ ?o` / `:p*` BFS walks `store.find_by_subject_predicate` only. The HNSW edge
 predicates (`loka:hnswNeighbor`, `hnswHorizontalNeighbor`, `hnswLayerDescend`) are *virtual*:
 answered by `try_evaluate_hnsw_edge_pattern` from the live index, never stored. So

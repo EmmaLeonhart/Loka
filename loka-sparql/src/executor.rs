@@ -374,6 +374,7 @@ fn execute_query_with_ctx(query: &Query, ctx: &mut ExecutionContext<'_>) -> Resu
             .filter(|v| {
                 !v.starts_with(crate::parser::ORDER_KEY_PREFIX)
                     && !v.starts_with(crate::parser::GROUP_KEY_PREFIX)
+                    && !v.starts_with(PATH_MID_PREFIX)
             })
             .collect();
         vars.sort();
@@ -2788,15 +2789,19 @@ fn try_evaluate_hnsw_edge_pattern(
         let o_id = resolve_term(object, row, ctx.dict, ctx.prefixes)?;
 
         // Generate edge triples based on what's bound
+        // The index is keyed by VECTOR object ids, but a bound subject/object
+        // is an ENTITY id (`<doc1> hnswNeighbor ?n`). Map it to its vectors
+        // first; querying the index with the entity id found nothing, so a
+        // bound-source HNSW hop returned no rows (found 2026-10-07).
         let edges: Vec<(loka_core::TermId, loka_hnsw::HnswEdgeTriple)> = match (s_id, o_id) {
-            (Some(source_id), _) => {
-                // Source bound: get edges from this source
-                ctx.vectors.edge_triples_for_source(source_id)
-            }
-            (None, Some(target_id)) => {
-                // Object bound: get edges to this target
-                ctx.vectors.edge_triples_for_target(target_id)
-            }
+            (Some(source_id), _) => entity_to_vectors(source_id, ctx)
+                .into_iter()
+                .flat_map(|v| ctx.vectors.edge_triples_for_source(v))
+                .collect(),
+            (None, Some(target_id)) => entity_to_vectors(target_id, ctx)
+                .into_iter()
+                .flat_map(|v| ctx.vectors.edge_triples_for_target(v))
+                .collect(),
             (None, None) => {
                 // Both unbound: get all edges (expensive!)
                 ctx.vectors.all_edge_triples()
@@ -2928,6 +2933,23 @@ fn resolve_predicate_iri(
 /// Scans all vector predicates in the registry, then uses the triple store's
 /// POS index to find triples where the object is this vector literal.
 /// Returns the subject IRIs of those triples.
+/// The vector object ids an entity carries under any declared vector
+/// predicate (the inverse of [`resolve_vector_to_entities`]). Falls back to the
+/// id itself, so a query that binds a vector object id directly still works.
+fn entity_to_vectors(entity: TermId, ctx: &ExecutionContext<'_>) -> Vec<TermId> {
+    let mut vectors: Vec<TermId> = ctx
+        .vectors
+        .predicates()
+        .into_iter()
+        .flat_map(|p| ctx.store.find_by_subject_predicate(entity, p))
+        .map(|t| t.object)
+        .collect();
+    if vectors.is_empty() {
+        vectors.push(entity);
+    }
+    vectors
+}
+
 fn resolve_vector_to_entities(vector_object_id: TermId, ctx: &ExecutionContext<'_>) -> Vec<TermId> {
     let mut entities = Vec::new();
     for pred_id in ctx.vectors.predicates() {
@@ -3382,7 +3404,17 @@ fn evaluate_property_path(
     match modifier {
         PathModifier::Sequence(next_pred) => {
             // pred1/pred2: ?s pred1 ?mid . ?mid pred2 ?o
-            let mid_var = format!("__path_mid_{}", current.len());
+            // A fresh name per sequence step. It was `current.len()` (the row
+            // count), which repeats across nested steps (`a/b/c`) whenever the
+            // counts match, making an inner step join on an outer step's
+            // intermediate binding.
+            static PATH_MID: std::sync::atomic::AtomicUsize =
+                std::sync::atomic::AtomicUsize::new(0);
+            let mid_var = format!(
+                "{}{}",
+                PATH_MID_PREFIX,
+                PATH_MID.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+            );
             let step1 = Pattern::Triple {
                 subject: subject.clone(),
                 predicate: base_pred.clone(),
@@ -3404,11 +3436,28 @@ fn evaluate_property_path(
             let mut all_results = Vec::new();
             let mut all_scores = Vec::new();
 
+            // The three HNSW edge predicates are virtual: their edges come from
+            // the live index, not the store. Until 2026-10-07 the traversal
+            // below only walked stored triples, so `loka:hnswNeighbor+` reached
+            // nothing.
+            let hnsw_path = ctx.config.hnsw_edge_mode == HnswEdgeMode::Virtual
+                && matches!(
+                    resolve_predicate_iri(base_pred, current, ctx).as_deref(),
+                    Some(iri) if iri == loka_hnsw::HNSW_NEIGHBOR_IRI
+                        || iri == loka_hnsw::HNSW_HORIZONTAL_NEIGHBOR_IRI
+                        || iri == loka_hnsw::HNSW_LAYER_DESCEND_IRI
+                );
+
             for (row_idx, row) in current.iter().enumerate() {
                 let s_id = resolve_term(subject, row, ctx.dict, ctx.prefixes)?;
                 let o_id = resolve_term(object, row, ctx.dict, ctx.prefixes)?;
-                let pred_id = resolve_term(base_pred, row, ctx.dict, ctx.prefixes)?
-                    .ok_or_else(|| SparqlError::Execution("path predicate not resolved".into()))?;
+                let pred_id = if hnsw_path {
+                    0 // unused: neighbours come from the index
+                } else {
+                    resolve_term(base_pred, row, ctx.dict, ctx.prefixes)?.ok_or_else(|| {
+                        SparqlError::Execution("path predicate not resolved".into())
+                    })?
+                };
 
                 // Zero-length path: subject = object
                 if include_zero {
@@ -3425,15 +3474,17 @@ fn evaluate_property_path(
                     }
                 }
 
-                // BFS from subject
-                let start_nodes: Vec<TermId> = if let Some(sid) = s_id {
-                    vec![sid]
-                } else {
+                let Some(start) = s_id else {
                     continue;
                 };
-
-                let mut frontier = start_nodes;
+                let mut frontier = vec![start];
                 let mut visited = std::collections::HashSet::new();
+                // SPARQL `+`/`*` yield each reachable node once per start, not
+                // once per edge into it.
+                let mut emitted = std::collections::HashSet::new();
+                if include_zero {
+                    emitted.insert(start);
+                }
 
                 for _depth in 0..max_depth {
                     if frontier.is_empty() {
@@ -3446,30 +3497,37 @@ fn evaluate_property_path(
                         if !visited.insert(node) {
                             continue;
                         }
-                        // Find all objects reachable via one step of pred_id from node.
-                        // If a temporal filter is active, only follow edges that are
-                        // temporally valid.
-                        for triple in ctx.store.find_by_subject_predicate(node, pred_id) {
-                            // Temporal gate: check if this edge passes the filter
-                            if !is_edge_temporally_valid(
-                                triple.subject,
-                                triple.predicate,
-                                triple.object,
-                                &ctx.temporal_filter,
-                                ctx.store,
-                            ) {
-                                continue;
-                            }
-                            let target = triple.object;
-                            // Add to results
-                            if let Term::Variable(o_var) = object {
-                                let mut new_row = row.clone();
-                                new_row.insert(o_var.clone(), target);
-                                all_results.push(new_row);
-                                all_scores.push(current_scores[row_idx].clone());
-                            } else if o_id == Some(target) {
-                                all_results.push(row.clone());
-                                all_scores.push(current_scores[row_idx].clone());
+                        let targets = if hnsw_path {
+                            hnsw_path_step(node, base_pred, ctx)?
+                        } else {
+                            // One step of pred_id from node; with a temporal
+                            // filter active, only temporally valid edges.
+                            ctx.store
+                                .find_by_subject_predicate(node, pred_id)
+                                .into_iter()
+                                .filter(|t| {
+                                    is_edge_temporally_valid(
+                                        t.subject,
+                                        t.predicate,
+                                        t.object,
+                                        &ctx.temporal_filter,
+                                        ctx.store,
+                                    )
+                                })
+                                .map(|t| t.object)
+                                .collect()
+                        };
+                        for target in targets {
+                            if emitted.insert(target) {
+                                if let Term::Variable(o_var) = object {
+                                    let mut new_row = row.clone();
+                                    new_row.insert(o_var.clone(), target);
+                                    all_results.push(new_row);
+                                    all_scores.push(current_scores[row_idx].clone());
+                                } else if o_id == Some(target) {
+                                    all_results.push(row.clone());
+                                    all_scores.push(current_scores[row_idx].clone());
+                                }
                             }
                             if !visited.contains(&target) {
                                 next_frontier.push(target);
@@ -3512,6 +3570,27 @@ fn evaluate_property_path(
             Ok((results, scores))
         }
     }
+}
+
+/// Prefix of the hidden intermediate variables of a path sequence.
+const PATH_MID_PREFIX: &str = "__path_mid_";
+
+/// One step along a virtual HNSW edge predicate from `node`: the same
+/// neighbours a single `<node> <pred> ?x` pattern returns.
+fn hnsw_path_step(node: TermId, pred: &Term, ctx: &ExecutionContext<'_>) -> Result<Vec<TermId>> {
+    const FROM: &str = "__hnsw_path_from";
+    const TO: &str = "__hnsw_path_to";
+    let mut row = Bindings::new();
+    row.insert(FROM.to_string(), node);
+    let (rows, _) = evaluate_triple_pattern(
+        &Term::Variable(FROM.to_string()),
+        pred,
+        &Term::Variable(TO.to_string()),
+        &[row],
+        ctx,
+        None,
+    )?;
+    Ok(rows.iter().filter_map(|r| r.get(TO).copied()).collect())
 }
 
 /// Check if the query has timed out.
