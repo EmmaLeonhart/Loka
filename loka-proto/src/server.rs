@@ -2202,8 +2202,11 @@ mod tests {
 
         let exact = "SELECT ?x ?y WHERE { ?x ex:p0 ?y }"; // estimate 6, actual 6
         let join = "SELECT ?x WHERE { ?x ex:p0 ?y . ?x ex:p1 ?z }"; // p1 first (1 row)
-        let misest = "SELECT ?p WHERE { ex:s ?p ex:o3 }"; // estimate 10 (all of s), actual 1
-        for (q, times, rows) in [(exact, 4, 6), (join, 2, 1), (misest, 3, 1)] {
+                                                                    // An absent literal: only IRIs count as definitely absent, so this is
+                                                                    // estimated as all 6 p0 triples; actual 0, q-error 6. (It was
+                                                                    // `ex:s ?p ex:o3`, until the estimator counted (s, o) exactly.)
+        let misest = "SELECT ?x WHERE { ?x ex:p0 \"nope\" }";
+        for (q, times, rows) in [(exact, 4, 6), (join, 2, 1), (misest, 3, 0)] {
             for _ in 0..times {
                 assert_eq!(star_rows(&state, q).await.len(), rows, "{q}");
             }
@@ -2231,14 +2234,14 @@ mod tests {
         // the join's second pattern, ?x bound by the first.
         assert_eq!(shape("triple(B,C,?)")["count"], 2);
         assert_eq!(shape("triple(B,C,?)")["rows_p50"], 1.0);
-        assert_eq!(shape("triple(C,?,C)")["count"], 3);
+        assert_eq!(shape("triple(?,C,C)")["count"], 3);
 
         // Scored: the 6 unbound triple(?,C,?) evaluations (q = 1) and the 3
-        // mis-estimates (q = 10); the join's bound pattern is not scored.
+        // mis-estimates (q = 6); the join's bound pattern is not scored.
         let e = &m["estimates"];
         assert_eq!(e["scored"], 9);
         assert_eq!(e["q_error"]["p50"], 1.0);
-        assert_eq!(e["q_error"]["p90"], 10.0);
+        assert_eq!(e["q_error"]["p90"], 6.0);
         assert!((e["within_2x"].as_f64().unwrap() - 6.0 / 9.0).abs() < 1e-9);
 
         assert_eq!(

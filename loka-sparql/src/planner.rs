@@ -466,8 +466,11 @@ fn term_to_constant_id(
             let base = prefixes.get(prefix)?;
             dict.and_then(|d| d.lookup(&format!("{base}{local}")))
         }
-        // String literals
-        Term::Literal(s) => dict.and_then(|d| d.lookup(s)),
+        // String literals are interned with their quotes, as the executor
+        // resolves them. Looking up the bare text never matched, so every
+        // literal-object lookup was estimated as the whole predicate
+        // (q-error 26,000 in /health/queries on a 156k-triple store).
+        Term::Literal(s) => dict.and_then(|d| d.lookup(&format!("\"{s}\""))),
         // Typed literals: "value"^^<datatype>
         Term::TypedLiteral { value, datatype } => {
             let typed = format!("\"{}\"^^<{}>", value, datatype);

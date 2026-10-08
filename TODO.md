@@ -107,6 +107,11 @@ Two additions from continued dogfooding:
 2. **Query latency ~2s for even single-pattern lookups at 157k triples** (e.g.
    `SELECT ?t WHERE { ?t <...EntityLabel> "X" }`). Pramana's page renders need dozens-to-hundreds of
    such lookups → unusable. POS/SPO prefix scans should make these ~ms; something is scanning.
+   **Found and fixed 2026-10-08:** the *planner* was scanning. `estimate_cardinality` collected
+   every match into a Vec to count it, and literal constants never resolved in the planner, so
+   each literal lookup was planned as a full-predicate collect. On a Pramana-shaped 156k-triple
+   store: pattern evaluation 0.7 ms → 2 µs, HTTP request 2.2 → 0.7 ms (label lookup) and
+   3.9 → 0.8 ms (uuid join). See DEVLOG.
 
 ## Pramana dogfooding bugs (2026-07-20): not reproducible on main as of 2026-10-08
 

@@ -241,6 +241,8 @@ fn execute_query_with_ctx(query: &Query, ctx: &mut ExecutionContext<'_>) -> Resu
         let bound_before = results.first().cloned();
         let (new_results, new_scores) =
             evaluate_pattern(&patterns[i], &results, &scores, ctx, pushable_limit)?;
+        // Timed before the estimate below, which isn't part of the pattern.
+        let pattern_elapsed = pattern_started.elapsed();
         if let Some(m) = metrics {
             let shape = pattern_shape(&patterns[i], bound_before.as_ref());
             // The planner's estimate predicts the row count only when none of
@@ -258,12 +260,7 @@ fn execute_query_with_ctx(query: &Query, ctx: &mut ExecutionContext<'_>) -> Resu
                         )
                     })
                     .flatten();
-            m.record_pattern(
-                &shape,
-                pattern_started.elapsed(),
-                new_results.len(),
-                estimate,
-            );
+            m.record_pattern(&shape, pattern_elapsed, new_results.len(), estimate);
         }
         results = new_results;
         scores = new_scores;

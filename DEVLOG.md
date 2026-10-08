@@ -7,6 +7,50 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 — Pramana's "~2 s per lookup": the planner was scanning (fixed)
+
+TODO.md's 2026-07-20 addendum reported ~2 s for single-pattern lookups at 157k triples, which
+made Pramana's pages unusable. It had never been chased.
+
+Reproduced at that scale with a release `loka serve` and a Pramana-shaped 156k-triple store. The
+`/health/queries` metrics pointed the way:
+- a literal lookup's pattern took ~0.7 ms server-side, against 2.3 µs for the same query
+  in-process;
+- the planner's estimate for it had q-error 26,000.
+
+Bisected in one process on the same store: direct `execute` took 0.94 µs, `optimize_full` alone
+209 µs. Three bugs:
+1. **`TripleStore::estimate_cardinality` materialised matches to count them**
+   (`find_by_predicate(p).len()` builds a Vec of every triple with that predicate). That's
+   O(predicate size) per pattern per query, before the query runs. On the slower July build and
+   bigger stores, that is the 2 s. Now: a per-predicate count kept by insert/remove makes the
+   predicate-only case O(1). Every other case counts a BTreeSet key range without allocating.
+   The (subject, object) case is now exact via the OSP prefix; it used to be "rough".
+2. **The planner never resolved literal constants:** it looked up `label-1` where the
+   dictionary holds `"label-1"` with its quotes, as the executor resolves it. So every literal
+   lookup was estimated as the whole predicate, and paid for the expensive count in (1).
+3. **My Phase 7 metrics timed the planner estimate as part of the pattern.** The timer now
+   stops before the estimate.
+
+Measured on the same store, old binary and then new (restarted on the reopened store), 200 HTTP
+requests each, all rows correct:
+
+| | old | new |
+|---|---|---|
+| label lookup, median per request | 2.19 ms | 0.68 ms |
+| uuid join, median per request | 3.89 ms | 0.76 ms |
+| pattern evaluation, server-side p50 | ~0.7 ms | 2 µs |
+| q-error | 26,000 | 1.0 |
+
+What remains per request is HTTP plus the Python client.
+
+One test expectation changed because the estimator improved. `query_metrics_reflect_a_known_workload`
+used `ex:s ?p ex:o3` as its "known mis-estimate" (q = 10), and that case is now exact. It now uses
+an absent literal (estimated as the whole predicate; only IRIs are treated as definitely absent):
+q = 6. The test still checks that mis-estimates are scored. 34 suites pass; clippy is clean on
+all targets.
+
+---
 ## 2026-10-08 — CI flake: reopening a sled store raced its own flusher for the file lock
 
 CI's Rust Test job failed on `2302b3c` in `loka-core`

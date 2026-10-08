@@ -54,6 +54,9 @@ pub struct TripleStore {
     predicate_generations: std::collections::HashMap<TermId, u64>,
     /// Sum of all predicate generations: any change at all.
     generation: u64,
+    /// Triples per predicate, kept by insert/remove, so the planner's
+    /// per-predicate estimate is O(1) instead of a full POS range scan.
+    predicate_counts: std::collections::HashMap<TermId, usize>,
 }
 
 impl TripleStore {
@@ -68,6 +71,7 @@ impl TripleStore {
             count: 0,
             predicate_generations: std::collections::HashMap::new(),
             generation: 0,
+            predicate_counts: std::collections::HashMap::new(),
         }
     }
 
@@ -107,6 +111,7 @@ impl TripleStore {
             .or_default()
             .push((triple.predicate, triple.object));
         self.count += 1;
+        *self.predicate_counts.entry(triple.predicate).or_insert(0) += 1;
         self.bump_generation(triple.predicate);
         Ok(())
     }
@@ -121,6 +126,9 @@ impl TripleStore {
                 adj.retain(|&(p, o)| p != triple.predicate || o != triple.object);
             }
             self.count -= 1;
+            if let Some(n) = self.predicate_counts.get_mut(&triple.predicate) {
+                *n = n.saturating_sub(1);
+            }
             self.bump_generation(triple.predicate);
         }
         removed
@@ -372,7 +380,12 @@ impl TripleStore {
     }
 
     /// Estimate the cardinality (number of matches) for a partial pattern.
-    /// Used by the query planner for cost-based optimization.
+    /// Used by the query planner for cost-based optimization, once per
+    /// pattern per query, so it must not materialise the matches: it used
+    /// to `collect()` every match into a Vec just to take its length, which
+    /// made planning a lookup on a big predicate cost O(predicate size).
+    /// Now it's O(1) for a predicate alone, otherwise a range count with no
+    /// allocation. Exact in every case.
     pub fn estimate_cardinality(
         &self,
         subject: Option<TermId>,
@@ -380,19 +393,28 @@ impl TripleStore {
         object: Option<TermId>,
     ) -> usize {
         match (subject, predicate, object) {
-            (Some(s), Some(p), Some(_)) => {
-                // Fully bound: 0 or 1
-                self.find_by_subject_predicate(s, p).len().min(1)
-            }
-            (Some(s), Some(p), None) => self.find_by_subject_predicate(s, p).len(),
-            (Some(s), None, None) => self.find_by_subject(s).len(),
-            (None, Some(p), Some(o)) => self.find_by_predicate_object(p, o).len(),
-            (None, Some(p), None) => self.find_by_predicate(p).len(),
-            (None, None, Some(o)) => self.find_by_object(o).len(),
+            (Some(s), Some(p), Some(o)) => usize::from(self.contains(&Triple::new(s, p, o))),
+            (Some(s), Some(p), None) => range_count(&self.spo, &[s, p]),
+            (Some(s), None, None) => range_count(&self.spo, &[s]),
+            (Some(s), None, Some(o)) => range_count(&self.osp, &[o, s]),
+            (None, Some(p), Some(o)) => range_count(&self.pos, &[p, o]),
+            (None, Some(p), None) => self.predicate_counts.get(&p).copied().unwrap_or(0),
+            (None, None, Some(o)) => range_count(&self.osp, &[o]),
             (None, None, None) => self.count,
-            (Some(s), None, Some(_)) => self.find_by_subject(s).len(), // rough estimate
         }
     }
+}
+
+/// Number of 24-byte index keys starting with `prefix` (one to three ids),
+/// counted without allocating.
+fn range_count(index: &BTreeSet<[u8; 24]>, prefix: &[TermId]) -> usize {
+    let mut lo = [0u8; 24];
+    let mut hi = [0xFFu8; 24];
+    for (k, id) in prefix.iter().enumerate() {
+        lo[k * 8..k * 8 + 8].copy_from_slice(&id.to_be_bytes());
+        hi[k * 8..k * 8 + 8].copy_from_slice(&id.to_be_bytes());
+    }
+    index.range(lo..=hi).count()
 }
 
 impl Default for TripleStore {
