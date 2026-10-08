@@ -7,6 +7,22 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 — Deep pseudo-tables: serving spec written (not built)
+
+The open items needing nobody's decision are now only large ones. Deep (multi-hop) pseudo-tables
+got the treatment adaptive execution got: a spec first. In `planning/deep-pseudo-table-serving.md`:
+- **Exactness:** the depth-1 rule generalises. A path column is exact when its cells equal the
+  number of solutions of the equivalent chain query over the store, counted as a bag. That
+  rules out non-member roots, roots with two leaves, and leaves reached through two middles.
+- **Freshness:** every hop's predicate generation, not just one.
+- **Recognition:** a chain run whose intermediate variables appear nowhere else in the query,
+  since the table doesn't store them.
+- **Gate:** a "worth building?" bench comes first; a chain's second hop is a point lookup, so
+  the gain may be smaller than the 6× on stars.
+
+The spec also lists the tests it must pass. TODO.md points at it.
+
+---
 ## 2026-10-08 — README brought up to date
 
 CLAUDE.md asks for README.md to reflect the current state, and it mentioned none of the last two
