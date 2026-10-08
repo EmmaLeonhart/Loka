@@ -144,6 +144,23 @@ also 32 × 64 rows: hitting it proves a fanout of at least 64, which is enough f
   Distinct counts would only be worth their insert cost if sampling turns out noisy on real
   data.
 
+## v2: crossing filters (2026-10-08)
+
+A run now continues through FILTERs without EXISTS / NOT EXISTS. A pattern may move ahead of
+such a filter only if it binds none of the filter's variables (the planner's own collector,
+which also covers arithmetic and function operands). Filters are row-local, so the filter
+then sees exactly the same values. The hazard is a pattern that binds a variable the filter
+reads: `FILTER(!BOUND(?w))` is true before `?x :s ?w` runs and false after. EXISTS filters stay
+barriers: their inner patterns, including nested filters, can mention variables the collector
+doesn't report.
+
+Tests:
+- the gap query with a `?z` filter in the middle is now reordered (once), with the same rows;
+- filters on `?w` (`!BOUND(?w)`, `?w != :w0`) block the move, with the same, non-empty rows;
+- EXISTS, OPTIONAL and VALUES still block it.
+
+Mutation check: dropping the variable rule fails the hazard test.
+
 ## Open questions (to settle before building)
 
 - Maintained or on-demand distinct counts: measure the insert overhead on the 2M store.

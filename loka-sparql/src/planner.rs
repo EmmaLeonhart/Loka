@@ -578,6 +578,14 @@ fn collect_filter_variables(pattern: &Pattern) -> HashSet<String> {
     vars
 }
 
+/// Variables a filter expression reads (for adaptive execution's
+/// filter-crossing rule).
+pub(crate) fn filter_expr_variables(expr: &FilterExpr) -> HashSet<String> {
+    let mut vars = HashSet::new();
+    collect_filter_expr_variables(expr, &mut vars);
+    vars
+}
+
 /// Recursively extract variable names from a filter expression tree.
 ///
 /// Handles all filter expression types: comparisons, boolean connectives,

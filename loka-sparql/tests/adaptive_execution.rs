@@ -105,29 +105,58 @@ fn already_good_order_is_left_alone() {
 }
 
 #[test]
-fn barriers_are_never_crossed() {
+fn a_filter_is_crossed_only_by_patterns_it_does_not_read() {
+    let (store, dict) = correlated();
+    // The filter reads only ?z; `?x ex:s ?w` binds ?x, ?w: it may move ahead.
+    let disjoint =
+        "SELECT ?x ?z WHERE { ?x ex:p ?y . ?y ex:q ?z . FILTER(?z != ex:z0_1) ?x ex:s ?w }";
+    let (fixed, _) = run(disjoint, &store, &dict, false);
+    let (adaptive, n) = run(disjoint, &store, &dict, true);
+    assert_eq!(n, 1, "moved past a filter it doesn't affect");
+    assert_eq!(adaptive, fixed);
+    assert!(!fixed.is_empty());
+
+    // The filter reads ?w, which `?x ex:s ?w` would bind: moving it ahead
+    // could change the filter's value, so it must not move. Same rows
+    // either way: here, rows survive only because ?w is still unbound.
+    for q in [
+        "SELECT ?x ?z WHERE { ?x ex:p ?y . ?y ex:q ?z . FILTER(!BOUND(?w)) ?x ex:s ?w }",
+        "SELECT ?x ?z WHERE { ?x ex:p ?y . ?y ex:q ?z . FILTER(?w != ex:w0) ?x ex:s ?w }",
+    ] {
+        let (fixed, _) = run(q, &store, &dict, false);
+        let (adaptive, n) = run(q, &store, &dict, true);
+        assert_eq!(n, 0, "{q}");
+        assert_eq!(adaptive, fixed, "{q}");
+    }
+    let (rows, _) = run(
+        "SELECT ?x ?z WHERE { ?x ex:p ?y . ?y ex:q ?z . FILTER(!BOUND(?w)) ?x ex:s ?w }",
+        &store,
+        &dict,
+        true,
+    );
+    assert!(!rows.is_empty(), "jumping ?w ahead would have emptied this");
+}
+
+#[test]
+fn other_barriers_are_never_crossed() {
     let (store, dict) = correlated();
     for q in [
-        // A FILTER between the expensive and the selective pattern ends the run.
-        "SELECT ?x ?z WHERE { ?x ex:p ?y . ?y ex:q ?z . FILTER(?z != ex:z0_1) ?x ex:s ?w }",
-        // So does an OPTIONAL.
+        // EXISTS filters stay barriers: their inner patterns can mention anything.
+        "SELECT ?x ?z WHERE { ?x ex:p ?y . ?y ex:q ?z . FILTER EXISTS { ?x ex:p ?y } ?x ex:s ?w }",
         "SELECT ?x ?z ?w WHERE { ?x ex:p ?y . OPTIONAL { ?x ex:s ?w } ?y ex:q ?z }",
-        // And VALUES.
         "SELECT ?x ?z WHERE { ?x ex:p ?y . VALUES ?y { ex:hub3 } ?y ex:q ?z . ?x ex:s ?w }",
     ] {
         let (fixed, _) = run(q, &store, &dict, false);
         let (adaptive, _) = run(q, &store, &dict, true);
         assert_eq!(adaptive, fixed, "{q}");
     }
-    // In the first two, nothing reorderable follows the barrier's run, so no
-    // reorder can happen at all.
-    let (_, n) = run(
-        "SELECT ?x ?z WHERE { ?x ex:p ?y . ?y ex:q ?z . FILTER(?z != ex:z0_1) ?x ex:s ?w }",
-        &store,
-        &dict,
-        true,
-    );
-    assert_eq!(n, 0);
+    for q in [
+        "SELECT ?x ?z WHERE { ?x ex:p ?y . ?y ex:q ?z . FILTER EXISTS { ?x ex:p ?y } ?x ex:s ?w }",
+        "SELECT ?x ?z ?w WHERE { ?x ex:p ?y . OPTIONAL { ?x ex:s ?w } ?y ex:q ?z }",
+    ] {
+        let (_, n) = run(q, &store, &dict, true);
+        assert_eq!(n, 0, "{q}");
+    }
 }
 
 #[test]

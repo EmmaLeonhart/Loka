@@ -7,6 +7,29 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 — Adaptive execution v2: reorders may cross filters they can't affect
+
+The planner pushes each FILTER down to just after its variables are bound, so filters sit in
+the middle of join runs, and v1 stopped every run at a filter. v2 lets a pattern move ahead of
+an EXISTS-free filter when it binds none of that filter's variables. Filters are row-local, so
+the filter then reads the same values whether the pattern ran before or after it. The case it
+must not allow: a pattern binding a variable the filter reads. `FILTER(!BOUND(?w))` is true
+until `?x :s ?w` runs. EXISTS filters stay barriers, because the variable collector doesn't see
+variables inside nested filters of EXISTS blocks.
+
+Tests (`adaptive_execution.rs`, 6):
+- the `?z`-filtered gap query now reorders once, with the same rows;
+- `!BOUND(?w)` and `?w != :w0` filters block the move, with the same rows; with `!BOUND(?w)`
+  the rows are non-empty, and jumping `?w` ahead would have emptied them;
+- EXISTS, OPTIONAL and VALUES still block it.
+
+The v1 test that asserted "no reorder" for the `?z` case was replaced by these. The policy
+changed on purpose, and the new tests check both the allowed and the forbidden crossings. A
+mutation that drops the variable rule fails them.
+
+33 suites pass; clippy is clean on all targets.
+
+---
 ## 2026-10-08 — Clippy clean on all targets, now enforced in CI; a TEMPORAL_DIFF test made exact
 
 Status reports had carried "two old test-code warnings" for days. `cargo clippy --workspace

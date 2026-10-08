@@ -237,7 +237,8 @@ sustained GPU run or a large risky ingest; they wait for cloud GPU or a donor.
 ### Cost-Based Query Planning (remaining)
 - [x] HNSW as access path: planner chooses "HNSW index scan" vs "SPO triple scan" based on cost (`planning/cost-based-hnsw.md`; 2026-10-07)
 - [x] Adaptive execution v1 (sampling only): reorder commuting joins mid-query from sampled row counts (`planning/adaptive-execution.md`, 2026-10-08)
-- [ ] Adaptive execution v2: move FILTERs with a reorder (v1 treats them as barriers); maintained distinct counts only if sampling proves too noisy
+- [x] Adaptive execution v2: reorders cross EXISTS-free FILTERs when the moved pattern binds none of the filter's variables (2026-10-08)
+- [ ] Maintained distinct counts for adaptive execution, only if sampling proves too noisy on real data
 
 ### Background Maintenance Cycle
 - [x] Low-usage detection, background HNSW rebuild off the lock, atomic swap: `loka serve --maintenance-idle-secs` (`planning/background-maintenance.md`; 2026-10-07)

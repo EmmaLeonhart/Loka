@@ -4045,6 +4045,26 @@ fn is_reorderable(pattern: &Pattern) -> bool {
     )
 }
 
+/// A FILTER that adaptive execution may move a pattern past: anything
+/// without EXISTS / NOT EXISTS, whose inner patterns can mention variables
+/// (including in nested filters) that the variable collector doesn't see.
+fn crossable_filter(pattern: &Pattern) -> Option<std::collections::HashSet<String>> {
+    fn has_exists(e: &FilterExpr) -> bool {
+        match e {
+            FilterExpr::Exists(_) | FilterExpr::NotExists(_) => true,
+            FilterExpr::And(a, b) | FilterExpr::Or(a, b) => has_exists(a) || has_exists(b),
+            FilterExpr::Not(inner) => has_exists(inner),
+            _ => false,
+        }
+    }
+    match pattern {
+        Pattern::Filter(expr) if !has_exists(expr) => {
+            Some(crate::planner::filter_expr_variables(expr))
+        }
+        _ => None,
+    }
+}
+
 /// Variables a reorderable pattern mentions.
 fn pattern_vars(pattern: &Pattern) -> Vec<&str> {
     let terms: Vec<&Term> = match pattern {
@@ -4115,9 +4135,14 @@ fn sampled_estimate(
 }
 
 /// The pattern to run next in place of `patterns[i]`, if adaptive execution
-/// should switch: within the run of reorderable patterns starting at `i`, the
-/// cheapest by sampled estimate, when the planner's choice is estimated at
-/// ≥4× as many rows and ≥1,000 more.
+/// should switch: within the run starting at `i` (reorderable patterns and
+/// EXISTS-free filters), the cheapest by sampled estimate, when the planner's
+/// choice is estimated at ≥4× as many rows and ≥1,000 more.
+///
+/// A pattern may move ahead of a filter only if it binds none of the
+/// filter's variables. Filters are row-local, so the filter then sees the
+/// same values. Otherwise an earlier binding could change it, e.g.
+/// `BOUND(?w)`.
 fn choose_adaptive(
     patterns: &[Pattern],
     i: usize,
@@ -4126,9 +4151,20 @@ fn choose_adaptive(
 ) -> Result<Option<usize>> {
     let end = patterns[i..]
         .iter()
-        .position(|p| !is_reorderable(p))
+        .position(|p| !is_reorderable(p) && crossable_filter(p).is_none())
         .map_or(patterns.len(), |k| i + k);
-    if end - i < 2 {
+    // Candidates: reorderable patterns that share no variable with any
+    // filter between `i` and them.
+    let mut candidates: Vec<usize> = Vec::new();
+    let mut passed: std::collections::HashSet<String> = std::collections::HashSet::new();
+    for (k, p) in patterns.iter().enumerate().take(end).skip(i + 1) {
+        if let Some(vars) = crossable_filter(p) {
+            passed.extend(vars);
+        } else if pattern_vars(p).iter().all(|v| !passed.contains(*v)) {
+            candidates.push(k);
+        }
+    }
+    if candidates.is_empty() {
         return Ok(None);
     }
     // The planner's choice first: if it is already cheap, no switch could
@@ -4137,25 +4173,19 @@ fn choose_adaptive(
     if planned < ADAPTIVE_MIN_SAVING {
         return Ok(None);
     }
-    let mut estimates = Vec::with_capacity(end - i);
-    estimates.push(planned);
-    for p in &patterns[i + 1..end] {
+    let mut best: Option<(usize, f64)> = None;
+    for &k in &candidates {
         check_deadline(ctx)?;
-        estimates.push(sampled_estimate(p, rows, ctx)?);
+        let est = sampled_estimate(&patterns[k], rows, ctx)?;
+        if best.is_none_or(|(_, b)| est < b) {
+            best = Some((k, est));
+        }
     }
-    let (best, best_est) =
-        estimates
-            .iter()
-            .copied()
-            .enumerate()
-            .fold(
-                (0, f64::INFINITY),
-                |acc, (k, e)| if e < acc.1 { (k, e) } else { acc },
-            );
-    if best != 0 && planned >= 4.0 * best_est && planned - best_est >= ADAPTIVE_MIN_SAVING {
-        Ok(Some(i + best))
-    } else {
-        Ok(None)
+    match best {
+        Some((k, est)) if planned >= 4.0 * est && planned - est >= ADAPTIVE_MIN_SAVING => {
+            Ok(Some(k))
+        }
+        _ => Ok(None),
     }
 }
 
