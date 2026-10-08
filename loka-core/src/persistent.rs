@@ -62,6 +62,38 @@ pub struct PersistentStore {
 
 const NEXT_ID_KEY: &[u8] = b"next_term_id";
 
+/// Open the sled database, retrying briefly while its file lock is still
+/// held by this process's previous handle.
+///
+/// sled's background flusher thread can keep the lock for a moment after
+/// the last handle is dropped, so an immediate reopen in the same process
+/// (a test, or the FFI's close-then-open) fails with "could not acquire
+/// lock" (WouldBlock). Seen in CI on Linux, 2026-10-08. A lock held by
+/// another process still fails, after about 2 s.
+fn open_sled_retrying(path: &Path) -> std::result::Result<sled::Db, sled::Error> {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+    let mut wait = std::time::Duration::from_millis(10);
+    loop {
+        let result = sled::Config::new()
+            .path(path)
+            .cache_capacity(256 * 1024 * 1024)
+            .flush_every_ms(Some(2000))
+            .mode(sled::Mode::HighThroughput)
+            .open();
+        match result {
+            Err(sled::Error::Io(ref e))
+                if e.kind() == std::io::ErrorKind::Other
+                    && e.to_string().starts_with("could not acquire lock")
+                    && std::time::Instant::now() < deadline =>
+            {
+                std::thread::sleep(wait);
+                wait = (wait * 2).min(std::time::Duration::from_millis(200));
+            }
+            other => return other,
+        }
+    }
+}
+
 impl PersistentStore {
     /// Open or create a persistent store at the given path.
     ///
@@ -84,12 +116,7 @@ impl PersistentStore {
     ///   committing" mode. Trades some space-amplification for far less
     ///   per-fsync work.
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
-        let db = sled::Config::new()
-            .path(path.as_ref())
-            .cache_capacity(256 * 1024 * 1024)
-            .flush_every_ms(Some(2000))
-            .mode(sled::Mode::HighThroughput)
-            .open()?;
+        let db = open_sled_retrying(path.as_ref())?;
         let spo = db.open_tree("spo")?;
         let pos = db.open_tree("pos")?;
         let osp = db.open_tree("osp")?;
@@ -1061,6 +1088,23 @@ mod tests {
 
     /// `remove_batch` removes exactly the present triples, in one
     /// transaction, and the removal survives a reopen.
+    #[test]
+    fn back_to_back_reopen_finds_the_data() {
+        // Close and reopen at once, many times: the reopen used to race
+        // sled's flusher for the file lock (WouldBlock in CI on Linux).
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("reopen.sdb");
+        for round in 0..50u64 {
+            {
+                let ps = PersistentStore::open(&path).unwrap();
+                ps.insert(Triple::new(100 + round, 2, 3)).unwrap();
+                ps.flush().unwrap();
+            }
+            let ps = PersistentStore::open(&path).unwrap();
+            assert_eq!(ps.len(), round as usize + 1, "round {round}");
+        }
+    }
+
     #[test]
     fn remove_batch_is_durable_and_exact() {
         let dir = tempfile::tempdir().unwrap();

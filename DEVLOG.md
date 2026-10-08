@@ -7,6 +7,29 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 — CI flake: reopening a sled store raced its own flusher for the file lock
+
+CI's Rust Test job failed on `2302b3c` in `loka-core`
+`persistent::tests::remove_batch_is_durable_and_exact`. The failure was in reopening the
+store: `could not acquire lock on ".../rmb.sdb/db": WouldBlock`. That commit didn't touch
+loka-core, and the test had passed in every earlier run, so it is intermittent.
+
+Cause: `PersistentStore::open` configures sled with a background flusher (`flush_every_ms`).
+After the last handle drops, that thread can still hold the database's file lock for a moment,
+so an immediate reopen in the same process fails. Linux enforces this lock strictly; these
+Windows runs never hit it.
+
+It's not only a test problem: the FFI's close-then-open has the same race. So the fix is in
+`open` (`open_sled_retrying`), not in the test. On exactly that error (sled's `io::Error` of kind
+`Other` starting "could not acquire lock") it retries, with backoff from 10 ms to 200 ms, for up
+to 2 s. A store held by another process still fails, about 2 s later.
+
+New test: `back_to_back_reopen_finds_the_data`, 50 immediate close/reopen cycles, each checking
+the data. It passes here, but this Windows machine can't reproduce the race (no Rust under WSL),
+so the evidence that the fix works is CI on Linux, checked after this push. 34 suites pass
+locally; clippy is clean on all targets.
+
+---
 ## 2026-10-08 — The two Pramana dogfooding bugs: not reproducible on main; regression tests added
 
 Looking for the next TODO item, I found two bugs from Emma's 2026-07-20 Pramana-on-Loka
