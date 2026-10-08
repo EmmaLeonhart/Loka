@@ -7,6 +7,27 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 — Clippy clean on all targets, now enforced in CI; a TEMPORAL_DIFF test made exact
+
+Status reports had carried "two old test-code warnings" for days. `cargo clippy --workspace
+--all-targets` actually showed 18, across tests, benches and examples. CI only linted library
+code, so they accumulated. All are fixed:
+- clippy's mechanical fixes, each diff read and all equivalent: `clone` on `Copy`, `!is_empty()`,
+  `.values()`, `RangeInclusive::contains`, needless `&mut` and borrows, a useless `.into()`;
+- an unnecessary `unsafe` around the safe `extern "C" fn loka_string_free` in an FFI test;
+- the test RNG's `next` renamed `next_u64`, so it isn't confused with `Iterator::next`;
+- the stress test's grid fill rewritten with `iter_mut` instead of index loops.
+
+The unused `added_id` was a symptom. `temporal_diff_detects_removed` checked rows in an
+`if/else if` loop that accepted a row for anyone other than Alice or Bob, and its
+`len() == 2` would have passed with Alice twice. It now compares the exact set
+`{(Alice, removed), (Bob, unchanged)}`, which also rules out any "added" row. This is a
+stronger test, not a looser one, and it passes.
+
+CI's clippy job now runs `--all-targets -- -D warnings`, so this can't creep back.
+Verified locally with exactly that command: no output. 33 suites pass.
+
+---
 ## 2026-10-08 — Adaptive execution v1 (sampling): 923 ms → 3.8 ms on the gap query, no measurable overhead
 
 What it does: with at least 1,000 rows in hand, the executor estimates each remaining commuting

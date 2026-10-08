@@ -565,7 +565,7 @@ mod tests {
             // Cosine similarity via pre-normalized dot product
             let score = dot_product(&a_norm, &b_norm);
             assert!(
-                score >= -1.0 && score <= 1.0,
+                (-1.0..=1.0).contains(&score),
                 "cosine out of range at dim {dim}: {score}"
             );
 

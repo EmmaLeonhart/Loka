@@ -815,7 +815,7 @@ mod tests {
             .unwrap()
             .to_string();
         assert_eq!(rendered, "Entity");
-        unsafe { loka_string_free(value) };
+        loka_string_free(value);
 
         loka_result_free(result);
         loka_db_close(db);

@@ -96,10 +96,10 @@ fn grid_graph(width: usize, height: usize) -> (TripleStore, TermDictionary) {
     let grid_node = dict.intern("http://example.org/GridNode");
 
     let mut nodes = vec![vec![0u64; width]; height];
-    for y in 0..height {
-        for x in 0..width {
+    for (y, row) in nodes.iter_mut().enumerate() {
+        for (x, cell) in row.iter_mut().enumerate() {
             let node = dict.intern(&format!("http://example.org/grid/{}/{}", x, y));
-            nodes[y][x] = node;
+            *cell = node;
             store
                 .insert(Triple::new(node, rdf_type, grid_node))
                 .unwrap();

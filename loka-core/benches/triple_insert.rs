@@ -114,7 +114,7 @@ fn bench_contains(c: &mut Criterion) {
         let s = dict.intern(&format!("http://example.org/person/{}", i));
         let o = dict.intern(&format!("http://example.org/person/{}", (i + 1) % 10_000));
         let t = Triple::new(s, p, o);
-        store.insert(t.clone()).unwrap();
+        store.insert(t).unwrap();
         triples.push(t);
     }
 
@@ -137,10 +137,10 @@ fn bench_remove(c: &mut Criterion) {
                     let s = dict.intern(&format!("http://example.org/person/{}", i));
                     let o = dict.intern(&format!("http://example.org/person/{}", (i + 1) % 1_000));
                     let t = Triple::new(s, p, o);
-                    store.insert(t.clone()).unwrap();
+                    store.insert(t).unwrap();
                     triples.push(t);
                 }
-                (store, triples[500].clone())
+                (store, triples[500])
             },
             |(mut store, triple)| {
                 store.remove(black_box(&triple));

@@ -224,7 +224,7 @@ fn vector_similar_with_type_constraint() {
     let result = execute_with_vectors(&q, &store, &dict, &vectors).unwrap();
 
     // Should find cooking paper (similar vector) that is also a Paper
-    assert!(result.rows.len() >= 1);
+    assert!(!result.rows.is_empty());
     let paper_ids: Vec<TermId> = result
         .rows
         .iter()
@@ -251,7 +251,7 @@ fn vector_similar_scores_are_populated() {
     // Every matching row should have a score
     for score_row in &result.scores {
         assert!(!score_row.is_empty(), "score should be populated");
-        for (_, &score) in score_row {
+        for &score in score_row.values() {
             assert!(score >= 0.5, "score should meet threshold");
         }
     }

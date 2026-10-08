@@ -5029,7 +5029,7 @@ mod tests {
         )
         .unwrap();
 
-        let result = execute_with_vectors(&q, &store, &dict, &mut vectors).unwrap();
+        let result = execute_with_vectors(&q, &store, &dict, &vectors).unwrap();
 
         // doc1 (cosine ~1.0) and doc2 (cosine ~0.99) should match; doc3 (cosine ~0.0) should not
         assert!(result.rows.len() >= 2);
@@ -5112,7 +5112,7 @@ mod tests {
         )
         .unwrap();
 
-        let result = execute_with_vectors(&q, &store, &dict, &mut vectors).unwrap();
+        let result = execute_with_vectors(&q, &store, &dict, &vectors).unwrap();
 
         // All 3 docs are similar (>0.5), but only doc1 and doc2 are Papers
         assert_eq!(result.rows.len(), 2);
@@ -5518,19 +5518,22 @@ mod tests {
 
         let alice_id = dict.lookup("http://example.org/Alice").unwrap();
         let bob_id = dict.lookup("http://example.org/Bob").unwrap();
-        let added_id = dict.lookup("\"added\"");
         let removed_id = dict.lookup("\"removed\"").unwrap();
         let unchanged_id = dict.lookup("\"unchanged\"").unwrap();
 
-        for row in &result.rows {
-            let person = *row.get("person").unwrap();
-            let change = *row.get("change_type").unwrap();
-            if person == alice_id {
-                assert_eq!(change, removed_id);
-            } else if person == bob_id {
-                assert_eq!(change, unchanged_id);
-            }
-        }
+        // Exactly these two rows: Alice removed, Bob unchanged. Nothing
+        // "added", no third person, no duplicate. The loop this replaced
+        // accepted any row for anyone else, and `len() == 2` alone would
+        // pass with Alice twice.
+        let got: std::collections::BTreeSet<(TermId, TermId)> = result
+            .rows
+            .iter()
+            .map(|r| (*r.get("person").unwrap(), *r.get("change_type").unwrap()))
+            .collect();
+        assert_eq!(
+            got,
+            std::collections::BTreeSet::from([(alice_id, removed_id), (bob_id, unchanged_id)])
+        );
     }
 
     #[test]
