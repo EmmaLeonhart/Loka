@@ -147,6 +147,17 @@ pub enum Pattern {
     Values { variable: String, values: Vec<Term> },
     /// Subquery: { SELECT ... WHERE { ... } }
     Subquery(Box<Query>),
+    /// A `+`/`*` path pattern with an exit condition
+    /// (`planning/until-syntax.md`): `?s :p+ ?o UNTIL(expr)` emits the first
+    /// node on each branch where `expr` holds and stops there;
+    /// `?s hnswNeighbor+ ?o GREEDY(vector)` descends to the neighbour closest
+    /// to `vector` until none is closer.
+    PathUntil {
+        subject: Term,
+        predicate: Term,
+        object: Term,
+        exit: PathExit,
+    },
     /// AT_TIME("timestamp"^^type) { patterns }
     /// Scope inner patterns to a specific moment — only triples valid at T.
     AtTime {
@@ -295,6 +306,15 @@ pub enum PathModifier {
     ZeroOrOne,
     /// / (sequence of two predicates)
     Sequence(Box<Term>),
+}
+
+/// How a `PathUntil` traversal ends.
+#[derive(Debug, Clone)]
+pub enum PathExit {
+    /// Emit and stop at the first node on each branch where this holds.
+    Until(FilterExpr),
+    /// Greedy descent towards this vector, ending at a local optimum.
+    Greedy(Vec<f32>),
 }
 
 /// A filter expression (simplified).
@@ -896,16 +916,58 @@ impl<'a> Parser<'a> {
                 let object = self.parse_term()?;
                 self.skip_whitespace();
 
+                // Optional exit clause on a `+`/`*` path.
+                let exit = if self.peek_keyword("UNTIL") {
+                    self.expect_keyword("UNTIL")?;
+                    Some(PathExit::Until(self.parse_filter()?))
+                } else if self.peek_keyword("GREEDY") {
+                    self.expect_keyword("GREEDY")?;
+                    self.expect_char('(')?;
+                    self.skip_whitespace();
+                    let vector = self.parse_vector_literal_value()?;
+                    self.skip_whitespace();
+                    self.expect_char(')')?;
+                    Some(PathExit::Greedy(vector))
+                } else {
+                    None
+                };
+                self.skip_whitespace();
+
                 // Consume the period if present
                 if self.peek_char() == Some('.') {
                     self.pos += 1;
                 }
 
-                patterns.push(Pattern::Triple {
-                    subject,
-                    predicate,
-                    object,
-                });
+                match exit {
+                    None => patterns.push(Pattern::Triple {
+                        subject,
+                        predicate,
+                        object,
+                    }),
+                    Some(exit) => {
+                        let closure_path = matches!(
+                            &predicate,
+                            Term::Path {
+                                modifier: PathModifier::OneOrMore | PathModifier::ZeroOrMore,
+                                ..
+                            }
+                        );
+                        if !closure_path {
+                            return Err(
+                                self.error("UNTIL / GREEDY needs a `+` or `*` path predicate")
+                            );
+                        }
+                        if !matches!(object, Term::Variable(_)) {
+                            return Err(self.error("UNTIL / GREEDY needs a variable path object"));
+                        }
+                        patterns.push(Pattern::PathUntil {
+                            subject,
+                            predicate,
+                            object,
+                            exit,
+                        });
+                    }
+                }
             }
         }
 

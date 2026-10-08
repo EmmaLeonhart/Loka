@@ -9,15 +9,16 @@ A triple pattern whose predicate is a `+` or `*` path may carry one trailing cla
 pattern's terminating `.`:
 
 ```sparql
-?start :broader+ ?cat UNTIL(?cat a :TopCategory) .
+?start :broader+ ?cat UNTIL(EXISTS { ?cat a :TopCategory }) .
 ?start :broader+ ?cat UNTIL(STRSTARTS(STR(?cat), "http://ex.org/root")) .
 ?entry loka:hnswNeighbor+ ?doc GREEDY("0.1 0.2 0.3"^^loka:f32vec) .
 ```
 
 - `UNTIL(expr)`: `expr` is a FILTER expression. It may use the path's object variable (bound to
-  the node being visited) and any variable bound before the pattern. A triple pattern inside
-  `UNTIL(...)` (`?cat a :TopCategory`) is an existence test on the visited node, evaluated
-  against the store; it binds nothing outside the clause.
+  the node being visited) and any variable bound before the pattern. An existence test on the
+  visited node is written as standard SPARQL, `UNTIL(EXISTS { ?cat a :TopCategory })`; it binds
+  nothing outside the clause. (Decided while building: a bare triple pattern inside `UNTIL(...)`
+  would need a second expression grammar, while `EXISTS` reuses FILTER's.)
 - `GREEDY(vector)`: greedy descent towards `vector` (Phase 2, below). It applies only to an
   HNSW edge predicate.
 

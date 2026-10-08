@@ -7,6 +7,37 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (later) — Phases 3 and 2: UNTIL and GREEDY exit conditions on path traversal
+
+SPARQL+ path patterns can now stop. `?s :p+ ?o UNTIL(expr)` checks `expr` at each node as it is
+reached: a match is returned and not expanded, a non-match is expanded and not returned. So
+`ex:a ex:broader+ ?n UNTIL(EXISTS { ?n a ex:Top })` gives the nearest `:Top` on each branch,
+where `+` plus a `FILTER` also returns the `:Top` nodes beyond them. Traversal is breadth-first,
+nodes within one depth in ORDER BY value order, so "first" doesn't depend on storage order. One
+visited set per start node; `*` checks the start node first.
+
+`?entry loka:hnswNeighbor+ ?n GREEDY(vector)` is HNSW's own search as a path. It moves to the
+most similar neighbour while that neighbour is strictly more similar than the current node, then
+returns the local optimum (one row per start). On a predicate that isn't an HNSW edge it is an
+error, not an empty result.
+
+Decision made while building: the design doc allowed a bare triple pattern inside
+`UNTIL(...)` as an existence test. I used standard `UNTIL(EXISTS { ... })` instead, because it
+reuses the FILTER grammar and evaluator instead of adding a second expression language. The
+doc is updated.
+
+Tests (`loka-sparql/tests/path_until.rs`, 11): first match per branch; the difference from a
+post-filter; a plain FILTER expression; no match; `*` vs `+` from a matching start; a diamond
+yields its join node once; value order within a depth (inserted in reverse); parse errors off a
+path. For GREEDY: from every start node the end node has no closer neighbour (checked with
+independent single-hop queries and a cosine in the test), and from doc0 it reaches the same
+node as `index.search(k=1)`. That last check is stated for this 8-node index only, since greedy
+search is not guaranteed to find the global nearest in general. Mutation check: removing the
+within-depth sort or expanding past a match fails 3 tests. Workspace: clippy clean, 28 suites
+pass. Also marked HNSW paths and UNTIL implemented in `docs/vectorSPARQL.md` and
+`docs/query-examples.md` (Phase 1 had left them at "Not yet").
+
+---
 ## 2026-10-07 (late) — Phase 1: property paths over virtual HNSW edges, plus four bugs found on the way
 
 `?s loka:hnswNeighbor+ ?x` now traverses the live HNSW graph. The `+`/`*` BFS used to walk only

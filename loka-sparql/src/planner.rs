@@ -213,10 +213,17 @@ fn pattern_cost(
 /// enable index lookups while unbound positions force scans.
 fn pattern_weight(pattern: &Pattern, bound: &HashSet<String>) -> u32 {
     match pattern {
+        // A path with an exit condition costs like the same path without one.
         Pattern::Triple {
             subject,
             predicate,
             object,
+        }
+        | Pattern::PathUntil {
+            subject,
+            predicate,
+            object,
+            ..
         } => {
             // Each unbound position adds weight. A fully bound triple
             // (weight 0) is a point lookup in SPO — the cheapest operation.
@@ -579,6 +586,15 @@ fn collect_variables(pattern: &Pattern, vars: &mut HashSet<String>) {
         Pattern::Optional(inner) => {
             for p in inner {
                 collect_variables(p, vars);
+            }
+        }
+        Pattern::PathUntil {
+            subject, object, ..
+        } => {
+            for term in [subject, object] {
+                if let Term::Variable(name) = term {
+                    vars.insert(name.clone());
+                }
             }
         }
         Pattern::Union(branches) => {

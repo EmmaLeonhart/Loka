@@ -225,16 +225,14 @@ sustained GPU run or a large risky ingest; they wait for cloud GPU or a donor.
 - [x] End-to-end test: fresh install → insert → query → verify (`loka-cli/tests/install_agent_e2e.rs`, adds a restart-and-query persistence check; 2026-10-07)
 
 ### HNSW Traversal via SPARQL Property Paths
-- [ ] Greedy descent + beam search semantics from graph structure and property path evaluation
-- [ ] Test: `loka:hnswNeighbor+` produces correct ANN results
+- [x] `+`/`*` paths walk the virtual HNSW edges (`loka-sparql/tests/hnsw_paths.rs`; 2026-10-07)
+- [x] Greedy descent: `?s loka:hnswNeighbor+ ?n GREEDY(vector)` (`loka-sparql/tests/path_until.rs`; 2026-10-07)
+- [ ] Beam search semantics (ef > 1) as a path mode
 
 ### Predicate-Based Exit Conditions (UNTIL)
-- [ ] Design UNTIL syntax for exit conditions on property path traversal
-- [ ] Per-step predicate evaluation during traversal (not post-filter)
-- [ ] Backtracking interaction (exit on one branch doesn't kill others)
-- [ ] Ordered traversal (exit conditions require defined traversal order)
-- [ ] HNSW-specific exit: "no closer neighbor found" (local optimality termination)
-- [ ] Test: ordered traversal with UNTIL produces correct early termination
+- [x] All of it, 2026-10-07: syntax in `planning/until-syntax.md`; per-step evaluation,
+  per-branch exit, BFS-then-value order, GREEDY local-optimality exit; tests in
+  `loka-sparql/tests/path_until.rs`.
 
 ### Cost-Based Query Planning (remaining)
 - [ ] HNSW as access path: planner chooses "HNSW index scan" vs "SPO triple scan" based on cost

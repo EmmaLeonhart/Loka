@@ -21,6 +21,8 @@ in the executor's doc comment) parses and runs.
 
 ## Phase 2 — greedy descent semantics
 
+**DONE 2026-10-07** with Phase 3: `GREEDY(vector)` (see DEVLOG).
+
 **Build:** a traversal mode where each step moves to the neighbour closest to a query vector
 and stops at a local optimum. That is HNSW's own search expressed as a path. It depends on
 Phase 3's ordered traversal and exit conditions, so Phase 2's test lands with Phase 3:
@@ -28,6 +30,8 @@ greedy descent from the entry point reaches the same nearest neighbour as `index
 on a fixed dataset.
 
 ## Phase 3 — UNTIL: predicate-based exit conditions on path traversal
+
+**DONE 2026-10-07** (see DEVLOG; tests in `loka-sparql/tests/path_until.rs`).
 
 **Design first** (`planning/until-syntax.md`): syntax, likely `?s :p+ ?o UNTIL(<filter expr
 over ?o>)`; semantics: per-step evaluation (not a post-filter), per-branch exit (one branch

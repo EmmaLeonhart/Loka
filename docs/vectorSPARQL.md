@@ -270,13 +270,13 @@ SELECT ?shrine ?label WHERE {
 | ef_search hint | Implemented |
 | Top-K mode | Implemented |
 | HNSW virtual edge triples (generation) | Implemented |
-| HNSW virtual edges queryable in SPARQL | Not yet |
-| HNSW traversal via property paths | Not yet |
-| Predicate-based exit conditions (UNTIL) | Not yet |
+| HNSW virtual edges queryable in SPARQL | Implemented |
+| HNSW traversal via property paths | Implemented |
+| Predicate-based exit conditions (UNTIL, GREEDY) | Implemented |
 | Cost-based query planning | Not yet |
 | Pseudo-tables (auto-discovered columnar indexes) | Not yet |
 
-The core SPARQL+ vector operators are fully functional. The next phase focuses on HNSW property path traversal, exit conditions, and pseudo-table columnar acceleration.
+The core SPARQL+ vector operators are fully functional. HNSW property path traversal and exit conditions are in; the next phase is cost-based planning and pseudo-table columnar acceleration.
 
 ---
 

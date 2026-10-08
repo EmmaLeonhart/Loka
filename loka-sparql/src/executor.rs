@@ -22,8 +22,8 @@ use loka_hnsw::VectorRegistry;
 
 use crate::error::{Result, SparqlError};
 use crate::parser::{
-    Aggregate, AggregateArg, AggregateFunction, ArithOp, FilterExpr, PathModifier, Pattern, Query,
-    QueryType, SearchMetric, Term, ValueFunc,
+    Aggregate, AggregateArg, AggregateFunction, ArithOp, FilterExpr, PathExit, PathModifier,
+    Pattern, Query, QueryType, SearchMetric, Term, ValueFunc,
 };
 
 /// A single row of variable bindings.
@@ -605,6 +605,20 @@ fn evaluate_pattern(
             }
             Ok((result, result_scores))
         }
+        Pattern::PathUntil {
+            subject,
+            predicate,
+            object,
+            exit,
+        } => evaluate_path_until(
+            subject,
+            predicate,
+            object,
+            exit,
+            current,
+            current_scores,
+            ctx,
+        ),
         Pattern::Subquery(inner_query) => {
             // Execute the subquery independently, then join results
             let sub_result = execute_query_with_ctx(inner_query, ctx)?;
@@ -3440,13 +3454,7 @@ fn evaluate_property_path(
             // the live index, not the store. Until 2026-10-07 the traversal
             // below only walked stored triples, so `loka:hnswNeighbor+` reached
             // nothing.
-            let hnsw_path = ctx.config.hnsw_edge_mode == HnswEdgeMode::Virtual
-                && matches!(
-                    resolve_predicate_iri(base_pred, current, ctx).as_deref(),
-                    Some(iri) if iri == loka_hnsw::HNSW_NEIGHBOR_IRI
-                        || iri == loka_hnsw::HNSW_HORIZONTAL_NEIGHBOR_IRI
-                        || iri == loka_hnsw::HNSW_LAYER_DESCEND_IRI
-                );
+            let hnsw_path = is_hnsw_edge_predicate(base_pred, current, ctx);
 
             for (row_idx, row) in current.iter().enumerate() {
                 let s_id = resolve_term(subject, row, ctx.dict, ctx.prefixes)?;
@@ -3497,26 +3505,7 @@ fn evaluate_property_path(
                         if !visited.insert(node) {
                             continue;
                         }
-                        let targets = if hnsw_path {
-                            hnsw_path_step(node, base_pred, ctx)?
-                        } else {
-                            // One step of pred_id from node; with a temporal
-                            // filter active, only temporally valid edges.
-                            ctx.store
-                                .find_by_subject_predicate(node, pred_id)
-                                .into_iter()
-                                .filter(|t| {
-                                    is_edge_temporally_valid(
-                                        t.subject,
-                                        t.predicate,
-                                        t.object,
-                                        &ctx.temporal_filter,
-                                        ctx.store,
-                                    )
-                                })
-                                .map(|t| t.object)
-                                .collect()
-                        };
+                        let targets = path_step_targets(node, base_pred, pred_id, hnsw_path, ctx)?;
                         for target in targets {
                             if emitted.insert(target) {
                                 if let Term::Variable(o_var) = object {
@@ -3570,6 +3559,197 @@ fn evaluate_property_path(
             Ok((results, scores))
         }
     }
+}
+
+/// Whether `pred` is one of the three virtual HNSW edge predicates, whose
+/// edges come from the live index rather than the store.
+fn is_hnsw_edge_predicate(pred: &Term, current: &[Bindings], ctx: &ExecutionContext<'_>) -> bool {
+    ctx.config.hnsw_edge_mode == HnswEdgeMode::Virtual
+        && matches!(
+            resolve_predicate_iri(pred, current, ctx).as_deref(),
+            Some(iri) if iri == loka_hnsw::HNSW_NEIGHBOR_IRI
+                || iri == loka_hnsw::HNSW_HORIZONTAL_NEIGHBOR_IRI
+                || iri == loka_hnsw::HNSW_LAYER_DESCEND_IRI
+        )
+}
+
+/// One step of a `+`/`*` path from `node`: over the live index for an HNSW
+/// edge predicate, otherwise over stored triples (with a temporal filter
+/// active, only temporally valid edges).
+fn path_step_targets(
+    node: TermId,
+    base_pred: &Term,
+    pred_id: TermId,
+    hnsw_path: bool,
+    ctx: &ExecutionContext<'_>,
+) -> Result<Vec<TermId>> {
+    if hnsw_path {
+        return hnsw_path_step(node, base_pred, ctx);
+    }
+    Ok(ctx
+        .store
+        .find_by_subject_predicate(node, pred_id)
+        .into_iter()
+        .filter(|t| {
+            is_edge_temporally_valid(
+                t.subject,
+                t.predicate,
+                t.object,
+                &ctx.temporal_filter,
+                ctx.store,
+            )
+        })
+        .map(|t| t.object)
+        .collect())
+}
+
+/// A `+`/`*` path with an exit condition (`planning/until-syntax.md`).
+///
+/// UNTIL: breadth-first, nodes within one depth taken in ORDER BY value order.
+/// A node where the condition holds is emitted and not expanded; any other
+/// node is expanded and not emitted. One visited set per start node, so a
+/// node reached by two branches is judged once.
+///
+/// GREEDY: from the start, move to the neighbour most similar to the query
+/// vector while it is strictly more similar than the current node; emit the
+/// local optimum. One result per start node.
+fn evaluate_path_until(
+    subject: &Term,
+    predicate: &Term,
+    object: &Term,
+    exit: &PathExit,
+    current: &[Bindings],
+    current_scores: &[HashMap<String, f32>],
+    ctx: &mut ExecutionContext<'_>,
+) -> Result<(Vec<Bindings>, Vec<HashMap<String, f32>>)> {
+    let (Term::Path { base, modifier }, Term::Variable(o_var)) = (predicate, object) else {
+        return Err(SparqlError::Execution(
+            "UNTIL/GREEDY needs a path predicate and a variable object".into(),
+        ));
+    };
+    let include_zero = matches!(modifier, PathModifier::ZeroOrMore);
+    let hnsw_path = is_hnsw_edge_predicate(base, current, ctx);
+    if matches!(exit, PathExit::Greedy(_)) && !hnsw_path {
+        return Err(SparqlError::Execution(
+            "GREEDY needs an HNSW edge predicate in virtual edge mode".into(),
+        ));
+    }
+    let max_depth = 50;
+
+    let mut out = Vec::new();
+    let mut out_scores = Vec::new();
+    for (row_idx, row) in current.iter().enumerate() {
+        let Some(start) = resolve_term(subject, row, ctx.dict, ctx.prefixes)? else {
+            continue;
+        };
+        let pred_id = if hnsw_path {
+            0 // unused: neighbours come from the index
+        } else {
+            match resolve_term(base, row, ctx.dict, ctx.prefixes)? {
+                Some(p) => p,
+                None => continue, // predicate never stored: no edges
+            }
+        };
+        let bind = |node: TermId| {
+            let mut r = row.clone();
+            r.insert(o_var.clone(), node);
+            r
+        };
+
+        match exit {
+            PathExit::Until(cond) => {
+                // `*`: the zero-length path is checked first.
+                if include_zero && evaluate_filter(cond, &bind(start), ctx) {
+                    out.push(bind(start));
+                    out_scores.push(current_scores[row_idx].clone());
+                    continue;
+                }
+                let mut visited = std::collections::HashSet::from([start]);
+                let mut frontier = vec![start];
+                for _depth in 0..max_depth {
+                    if frontier.is_empty() {
+                        break;
+                    }
+                    check_deadline(ctx)?;
+                    let mut level = Vec::new();
+                    for &node in &frontier {
+                        for target in path_step_targets(node, base, pred_id, hnsw_path, ctx)? {
+                            if visited.insert(target) {
+                                level.push(target);
+                            }
+                        }
+                    }
+                    // A defined order within a depth, independent of storage.
+                    let mut keyed: Vec<(OrderKey, TermId)> = level
+                        .into_iter()
+                        .map(|n| (order_key(Some(n), ctx), n))
+                        .collect();
+                    keyed.sort_by(|a, b| cmp_order_keys(&a.0, &b.0));
+                    let mut next = Vec::new();
+                    for (_, node) in keyed {
+                        let candidate = bind(node);
+                        if evaluate_filter(cond, &candidate, ctx) {
+                            out.push(candidate);
+                            out_scores.push(current_scores[row_idx].clone());
+                        } else {
+                            next.push(node);
+                        }
+                    }
+                    frontier = next;
+                }
+            }
+            PathExit::Greedy(query) => {
+                let Some(mut best) = entity_similarity(start, query, ctx) else {
+                    continue; // the start node carries no comparable vector
+                };
+                let mut at = start;
+                for _step in 0..max_depth {
+                    check_deadline(ctx)?;
+                    let mut moved = None;
+                    for n in path_step_targets(at, base, pred_id, true, ctx)? {
+                        if let Some(s) = entity_similarity(n, query, ctx) {
+                            if s > best {
+                                best = s;
+                                moved = Some(n);
+                            }
+                        }
+                    }
+                    match moved {
+                        Some(n) => at = n,
+                        None => break, // local optimum
+                    }
+                }
+                out.push(bind(at));
+                out_scores.push(current_scores[row_idx].clone());
+            }
+        }
+    }
+    Ok((out, out_scores))
+}
+
+/// The highest similarity (per the index's metric; higher is closer) between
+/// `query` and any vector `entity` carries in an index of matching dimension.
+fn entity_similarity(entity: TermId, query: &[f32], ctx: &ExecutionContext<'_>) -> Option<f32> {
+    let vector_ids = entity_to_vectors(entity, ctx);
+    let mut best: Option<f32> = None;
+    for pred in ctx.vectors.predicates() {
+        let Some(index) = ctx.vectors.get(pred) else {
+            continue;
+        };
+        if index.dimensions() != query.len() {
+            continue;
+        }
+        let mut q = query.to_vec();
+        index.metric().preprocess(&mut q);
+        for node in index.nodes() {
+            if node.deleted || !vector_ids.contains(&node.triple_id) {
+                continue;
+            }
+            let s = index.metric().score(&q, &node.vector);
+            best = Some(best.map_or(s, |b| b.max(s)));
+        }
+    }
+    best
 }
 
 /// Prefix of the hidden intermediate variables of a path sequence.

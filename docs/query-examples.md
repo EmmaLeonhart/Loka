@@ -732,4 +732,5 @@ SELECT ?person1 ?person2 ?location WHERE {
 | Temporal-aware property paths | Implemented |
 | ef_search hint | Not yet |
 | Top-K mode | Not yet |
-| UNTIL (predicate-based exit conditions) | Not yet |
+| UNTIL (predicate-based exit conditions) | Implemented |
+| GREEDY (HNSW local-optimum descent as a path) | Implemented |

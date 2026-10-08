@@ -339,14 +339,16 @@ SPARQL+ adds **exit conditions** to property path traversal: a predicate evaluat
 # Find the first president in succession who died in office
 SELECT ?president WHERE {
   :GeorgeWashington :succeededBy+ ?president
-  UNTIL { ?president :diedInOffice true }
+      UNTIL(EXISTS { ?president :diedInOffice true })
 }
 ```
 
 **Design considerations:**
 - Exit on one branch does not kill other branches (scoping is per-path)
 - Only meaningful when traversal order is defined (directed labeled edges provide this naturally)
-- HNSW-specific exit condition: "no closer neighbor found" — local optimality termination that maps to the HNSW algorithm's natural stopping criterion
+- HNSW-specific exit condition: "no closer neighbor found" — local optimality termination that maps to the HNSW algorithm's natural stopping criterion: `?entry loka:hnswNeighbor+ ?n GREEDY("..."^^loka:f32vec)`
+
+Implemented (2026-10-07). `UNTIL(expr)` takes any FILTER expression over the path's object variable; traversal is breadth-first, nodes within a depth in ORDER BY value order; a matching node is returned and not expanded. Full semantics: `planning/until-syntax.md`.
 
 ### 5.4 Temporal Scope Operators
 
