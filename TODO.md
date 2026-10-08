@@ -194,7 +194,7 @@ The SDK is functionally complete (3 classes, ~400 LOC). Build migrated from Mave
 - [x] Switch to Gradle `maven-publish`
 - [x] In-memory GPG signing (no GPG binary needed in CI)
 - [x] GroupId: `io.github.emmaleonhart`, artifact: `loka`
-- [ ] Integration test: start Loka, insert triples, query, verify round-trip
+- [x] Integration test: start Loka, insert triples, query, verify round-trip (`LokaIntegrationTest`, run in CI's sdk-java job against a live server, 2026-10-07)
 
 ---
 

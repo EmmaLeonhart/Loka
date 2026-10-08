@@ -7,6 +7,20 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (night, engineering) — Java SDK integration test runs against a real Loka in CI
+
+Promoted from `TODO.md`. There's no Java toolchain on this laptop, so verification is in CI. The
+`sdk-java` job now builds `loka-cli` (rust-cache), starts `loka serve` in the background, waits
+on `/health`, and runs `./gradlew build` with `LOKA_ENDPOINT` set. `LokaIntegrationTest` covers:
+- health;
+- insert and query round-trip of IRIs, literals and non-ASCII (`Zoë`);
+- an RDF-star annotation round-trip;
+- ORDER BY on data inserted out of order.
+It's skipped when `LOKA_ENDPOINT` is unset, and Gradle now logs each test's outcome. CI run on
+`cea19b3`: all four `LokaIntegrationTest` cases show **PASSED** (not skipped) in the SDK Java log,
+next to the 24 existing mock-server tests.
+
+---
 ## 2026-10-07 (night, engineering, TODO promotion) — FILTER ordering compares values
 
 With the queue's engineering items done and step 10 parked on Emma, the work loop promoted the

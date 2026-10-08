@@ -49,15 +49,6 @@ publish verdict.
 
 ---
 
-## ACTIVE — Java SDK integration test against a real Loka (promoted from TODO.md 2026-10-07)
-
-`TODO.md` (Java/Kotlin SDK): "Integration test: start Loka, insert triples, query, verify
-round-trip." No Java toolchain on this laptop, so it's verified in CI: the `sdk-java` job
-builds the Loka binary, starts `loka serve`, and runs an integration test that is skipped unless
-`LOKA_ENDPOINT` is set. Done when CI shows the test ran (not skipped) and passed.
-
----
-
 ## Pinned tail — autonomous-loop cron management
 
 These two items are always the last in the queue (autonomous-loop playbook §d):
