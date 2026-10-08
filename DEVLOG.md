@@ -7,6 +7,22 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 — README brought up to date
+
+CLAUDE.md asks for README.md to reflect the current state, and it mentioned none of the last two
+days' engine work. Added:
+- a "What's New — query engine (2026-10-07/08)" section: path exits, cost-based planning,
+  adaptive execution, the lookup and join fixes, background maintenance with pseudo-tables,
+  `/health/queries`, and vector literals in INSERT/DELETE DATA. Every figure is copied from a
+  measurement in this log;
+- `UNTIL` and `BEAM` examples in the SPARQL+ section, and the features list extended;
+- `--maintenance-idle-secs` and `/health/queries` in the CLI section;
+- `loka-ffi` corrected from "Planned" to "Implemented": it ships `loka_db_open`, `loka_query`
+  and the rest, with passing tests.
+
+Docs only.
+
+---
 ## 2026-10-08 — "Join results vary between server processes": tested across 10 processes; identical
 
 The other half of the July addendum: the same multi-pattern query on the same `.sdb` returned

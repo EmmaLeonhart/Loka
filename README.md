@@ -144,6 +144,21 @@ The script pulls the v14-1M corpus from `EmmaLeonhart/normalized-wikidata` and t
 
 Wall-time estimate at batch 16: ~4 h/epoch on an RTX 4090, ~8 h/epoch on an RTX 4070 Laptop. The command above is the whole procedure — this section is the full instructions.
 
+## What's New — query engine (2026-10-07/08)
+
+- **Path traversal with exits.** Property paths walk the live HNSW graph (`loka:hnswNeighbor+`). They can also stop:
+  - `UNTIL(expr)` returns the first node on each branch where the condition holds;
+  - `GREEDY(vector)` is HNSW's greedy descent as a path;
+  - `BEAM(vector, k)` is HNSW's beam search, returning the k best.
+- **Cost-based planning with the vector index as an access path.** A selective graph pattern runs before a vector search, and bound subjects are scored exactly. Bound subjects above the threshold used to be dropped when they fell outside the ANN top 500. On a 5,000-vector rare-type query: 1.52 ms → 6.7 µs.
+- **Adaptive execution.** Mid-query, a far cheaper commuting join is run first, judged from sampled row counts. It moves ahead of a FILTER only when it can't affect it.
+  - Correlated-data benchmark: 923 ms → 3.8 ms.
+  - No measurable cost when it doesn't switch (`DatabaseConfig::adaptive_execution`, default on).
+- **Faster lookups.** The planner used to copy every matching triple into a list just to estimate a count, and literal constants never resolved in it. On a 156k-triple store, a literal lookup over HTTP went from 2.2 ms to 0.7 ms. Joins also no longer rebuild score bookkeeping quadratically (216 ms → 8.6 ms on a 4,000-subject star).
+- **`loka serve --maintenance-idle-secs N`** (opt-in). Once the server is idle, it rebuilds tombstoned HNSW indexes off the lock and swaps them in atomically, so queries keep answering. It also rediscovers **pseudo-tables**. Their columnar scans answer star queries only while a column is provably exact and current: 3-pattern star at 20k subjects, 94 ms → 15 ms.
+- **`GET /health/queries`.** Reports query latency (p50/p90/p99), latency and rows per pattern shape, and how accurate the planner's row estimates are. Loka Studio's Health tab shows it.
+- **SPARQL `INSERT DATA` / `DELETE DATA` accept vector literals.** Deletes match by value and remove the vector from search.
+
 ## What's New — RDF-star hardening + cascade-retraction (2026-05-16)
 
 - **Cascade-retraction.** Remove a node — real data or model-generated — and every generated inference that transitively cited it disappears with it. Propagation follows **only** `propositionInferredFrom` provenance back-edges, bounded to the reserved `http://loka.dev/provenance/` namespace: an ordinary data edge is never mistaken for a derivation (real→real is not a dependency) and the traversal is cycle-safe. Ships end-to-end — a pure engine function (`retract_set`), a read-only `POST /retract/preview`, a commit-gated `POST /retract`, a `retract_node` MCP tool (the **13th**), and a Loka Studio "Retract (cascade)" confirm action. **Destructive path is opt-in: dry-run preview is the default at every surface.**
@@ -190,6 +205,14 @@ SELECT ?doc ?entity WHERE {
   VECTOR_SIMILAR(?doc :hasEmbedding "..."^^loka:f32vec, 0.85)
 }
 
+# Path exits: the nearest :TopCategory on each branch (not every one beyond it)
+SELECT ?cat WHERE {
+  :start :broader+ ?cat UNTIL(EXISTS { ?cat a :TopCategory })
+}
+
+# HNSW search as a path: greedy descent, or a beam of width 5
+SELECT ?doc WHERE { :entry loka:hnswNeighbor+ ?doc BEAM("..."^^loka:f32vec, 5) }
+
 # Temporal: query the world state at a specific time
 SELECT ?person ?location WHERE {
   AT_TIME("1810-06-15"^^xsd:dateTime) {
@@ -207,7 +230,7 @@ SELECT ?change_type ?s ?p ?o WHERE {
 
 ### Supported SPARQL Features
 
-SELECT, ASK, CONSTRUCT, DESCRIBE | INSERT DATA, DELETE DATA | FILTER (=, !=, <, >, <=, >=, &&, ||, !) | FILTER NOT EXISTS / EXISTS | OPTIONAL, UNION | BIND, VALUES | GROUP BY + COUNT/SUM/AVG/MIN/MAX | ORDER BY, LIMIT, OFFSET, DISTINCT | VECTOR_SIMILAR, VECTOR_SCORE | AT_TIME, DURING, WORLD_STATE, TEMPORAL_DIFF | String functions (CONTAINS, STRSTARTS, STRENDS, REGEX) | LANG(), LANGMATCHES(), isIRI(), isLiteral() | PREFIX declarations
+SELECT, ASK, CONSTRUCT, DESCRIBE | INSERT DATA, DELETE DATA (incl. vector literals) | Property paths `+`, `*`, `?`, `/` (including over HNSW edges) with `UNTIL`, `GREEDY`, `BEAM` exits | FILTER (=, !=, <, >, <=, >=, &&, ||, !) | FILTER NOT EXISTS / EXISTS | OPTIONAL, UNION | BIND, VALUES | GROUP BY + COUNT/SUM/AVG/MIN/MAX | ORDER BY, LIMIT, OFFSET, DISTINCT | VECTOR_SIMILAR, VECTOR_SCORE | AT_TIME, DURING, WORLD_STATE, TEMPORAL_DIFF | String functions (CONTAINS, STRSTARTS, STRENDS, REGEX) | LANG(), LANGMATCHES(), isIRI(), isLiteral() | PREFIX declarations
 
 ## Architecture
 
@@ -218,7 +241,7 @@ SELECT, ASK, CONSTRUCT, DESCRIBE | INSERT DATA, DELETE DATA | FILTER (=, !=, <, 
 | `loka-sparql` | SPARQL 1.1 parser, query planner, executor, hybrid extension | Implemented |
 | `loka-proto` | HTTP server, SPARQL protocol, Graph Store Protocol | Implemented |
 | `loka-cli` | CLI: serve, query, import, export, health, MCP server | Implemented |
-| `loka-ffi` | C FFI shared library for embedding in non-Rust apps | Planned |
+| `loka-ffi` | C FFI shared library for embedding in non-Rust apps | Implemented |
 
 ## CLI
 
@@ -235,6 +258,8 @@ loka mcp --data-dir ./mydb        # MCP server (serverless mode)
 # Server mode (when you need HTTP/multi-client access)
 loka serve                        # Start HTTP server (port 3030)
 loka serve --memory-only          # In-memory only
+loka serve --maintenance-idle-secs 300  # Rebuild HNSW + rediscover pseudo-tables when idle
+# GET /health/queries             # Query latency and planner-estimate accuracy
 loka mcp --url http://host:3030   # MCP server (server mode)
 
 # Maintenance
