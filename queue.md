@@ -52,7 +52,11 @@ publish verdict.
 ## ACTIVE — large feature work (Emma, 2026-10-07: "Do the large feature work")
 
 Plan, scope and tests per phase: `planning/large-features.md`. In order:
-5. **Phase 5 — background maintenance: low-usage detection, HNSW rebuild + atomic swap.**
+5. **Phase 5 — background maintenance** (`planning/background-maintenance.md`):
+   a. loka-hnsw: snapshot / build / catch-up / replace_index (rebuild off the lock).
+   b. loka-proto: Activity middleware, rebuild_indexes (also behind /vectors/rebuild),
+      maintenance_loop, counts in /vectors/health; `loka serve --maintenance-idle-secs`.
+   c. Tests: old index serves during build, concurrent no-gap, idle detection, threshold.
 6. **Phase 6 — pseudo-table invalidation + planner recognition.**
 7. **Phase 7 — query-latency metrics in health.**
 
