@@ -56,6 +56,11 @@ enum Commands {
         /// Enable periodic backups (interval in minutes, 0 = disabled).
         #[arg(long, default_value = "0")]
         backup_interval: u64,
+
+        /// Rebuild HNSW indexes with tombstones in the background once the
+        /// server has had no requests for this many seconds (0 = disabled).
+        #[arg(long, default_value = "0")]
+        maintenance_idle_secs: u64,
     },
     /// Execute a SPARQL query from the command line.
     Query {
@@ -284,6 +289,7 @@ async fn main() -> anyhow::Result<()> {
             memory_only,
             passcode,
             backup_interval,
+            maintenance_idle_secs,
         } => {
             // Background version check (non-blocking, best-effort)
             tokio::spawn(async {
@@ -308,6 +314,7 @@ async fn main() -> anyhow::Result<()> {
                     passcode: passcode.clone(),
                     rate_limit_per_min: 0,
                     rate_counter: std::sync::atomic::AtomicU64::new(0),
+                    activity: Default::default(),
                 })
             } else {
                 tracing::info!("Opening persistent store at {}", data_dir);
@@ -369,8 +376,23 @@ async fn main() -> anyhow::Result<()> {
                     passcode: passcode.clone(),
                     rate_limit_per_min: 0,
                     rate_counter: std::sync::atomic::AtomicU64::new(0),
+                    activity: Default::default(),
                 })
             };
+
+            if maintenance_idle_secs > 0 {
+                let config = loka_proto::maintenance::MaintenanceConfig::with_idle(
+                    std::time::Duration::from_secs(maintenance_idle_secs),
+                );
+                tokio::spawn(loka_proto::maintenance::maintenance_loop(
+                    state.clone(),
+                    config,
+                ));
+                tracing::info!(
+                    "Background maintenance enabled: HNSW rebuild after {}s idle",
+                    maintenance_idle_secs
+                );
+            }
 
             // Start periodic backup task if configured
             if backup_interval > 0 && !memory_only {
@@ -967,6 +989,7 @@ Loka Agent Installer v0.1.0
                     passcode,
                     rate_limit_per_min: 0,
                     rate_counter: std::sync::atomic::AtomicU64::new(0),
+                    activity: Default::default(),
                 });
 
                 let app = loka_proto::router(state);

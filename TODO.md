@@ -239,10 +239,9 @@ sustained GPU run or a large risky ingest; they wait for cloud GPU or a donor.
 - [ ] Adaptive execution: observe intermediate result sizes at runtime, reorder mid-query
 
 ### Background Maintenance Cycle
-- [ ] Low-usage detection heuristic (query rate below threshold for N seconds)
-- [ ] Background HNSW rebuild: fresh graph from current vectors, old graph serves queries until swap
-- [ ] Atomic swap: replace old HNSW with rebuilt one
-- [ ] Background pseudo-table rediscovery and rebuild
+- [x] Low-usage detection, background HNSW rebuild off the lock, atomic swap: `loka serve --maintenance-idle-secs` (`planning/background-maintenance.md`; 2026-10-07)
+- [ ] Background pseudo-table rediscovery and rebuild (with Phase 6's invalidation tracking)
+- [ ] `INSERT DATA` / `DELETE DATA` reject `f32vec` literals with a misleading "variables not allowed" error (the parser makes them `Term::VectorLiteral`, and the original text needed to find the stored literal is gone). Vectors are deleted via `/retract` today.
 
 ### Pseudo-Tables (remaining)
 - [ ] Invalidation tracking: flag stale rows when interior nodes change, rebuild during maintenance cycle

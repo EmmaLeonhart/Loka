@@ -54,6 +54,8 @@ one, measured.
 
 ## Phase 5 — background maintenance cycle
 
+**DONE 2026-10-07** (`planning/background-maintenance.md`; see DEVLOG). Pseudo-table rediscovery moves to Phase 6.
+
 **Build:** in `loka serve`, a background task that detects low usage (query rate below a
 threshold for N seconds), rebuilds HNSW from current vectors into a fresh index while the old
 one keeps serving, then swaps atomically. Pseudo-table rediscovery uses the same cycle.

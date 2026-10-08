@@ -15,7 +15,7 @@ pub use edges::{
     HNSW_LAYER_IRI, HNSW_NEIGHBOR_IRI, HNSW_PREDICATE_IRI, HNSW_SIMILARITY_IRI,
 };
 pub use error::{HnswError, Result};
-pub use index::{HnswConfig, HnswIndex, SearchResult};
+pub use index::{HnswConfig, HnswIndex, IndexSnapshot, SearchResult};
 pub use rebuild::{rebuild_from_store, RebuildDefaults};
 pub use registry::{VectorPredicateConfig, VectorRegistry};
 pub use vector::{

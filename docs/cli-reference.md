@@ -102,6 +102,7 @@ loka serve -p 8080 -d /data/mydb          # custom port and data directory
 loka serve --memory-only                   # in-memory only, no persistence
 loka serve --passcode mysecret             # require Bearer token on all requests
 loka serve --backup-interval 60            # auto-backup every 60 minutes
+loka serve --maintenance-idle-secs 300     # rebuild tombstoned HNSW indexes after 5 min idle
 ```
 
 | Flag | Default | Description |
@@ -111,6 +112,7 @@ loka serve --backup-interval 60            # auto-backup every 60 minutes
 | `--memory-only` | off | Run in-memory only (no persistence) |
 | `--passcode` | none | Simple passcode auth; all requests except `/health` require `Authorization: Bearer <passcode>` |
 | `--backup-interval` | `0` (disabled) | Periodic backup interval in minutes |
+| `--maintenance-idle-secs` | `0` (disabled) | Rebuild HNSW indexes with ≥10% tombstones once no request has arrived for this many seconds. Built off the lock and swapped in atomically, so queries keep answering. `/health` probes don't count as requests. Counts in `GET /vectors/health` → `maintenance` |
 
 ---
 

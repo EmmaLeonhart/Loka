@@ -29,6 +29,26 @@ pub struct SearchResult {
     pub triple_id: TermId,
 }
 
+/// The active contents of an index, copied out for a rebuild off the lock
+/// (see [`HnswIndex::active_snapshot`]).
+pub struct IndexSnapshot {
+    config: HnswConfig,
+    seed: u64,
+    vectors: Vec<(Vec<f32>, TermId)>,
+}
+
+impl IndexSnapshot {
+    /// Number of vectors in the snapshot.
+    pub fn len(&self) -> usize {
+        self.vectors.len()
+    }
+
+    /// Whether the snapshot is empty.
+    pub fn is_empty(&self) -> bool {
+        self.vectors.is_empty()
+    }
+}
+
 /// Configuration for an HNSW index.
 #[derive(Debug, Clone)]
 pub struct HnswConfig {
@@ -549,6 +569,56 @@ impl HnswIndex {
         }
 
         removed
+    }
+
+    /// Step 1 of a rebuild off the lock: the active `(vector, triple_id)`
+    /// pairs, copied, with the config and RNG state to rebuild with. Meant to
+    /// be taken under a read lock; building from it needs no lock.
+    pub fn active_snapshot(&self) -> IndexSnapshot {
+        IndexSnapshot {
+            config: self.config.clone(),
+            seed: self.rng_state,
+            vectors: self
+                .nodes
+                .iter()
+                .filter(|n| !n.deleted)
+                .map(|n| (n.vector.clone(), n.triple_id))
+                .collect(),
+        }
+    }
+
+    /// Step 2: a fresh index (no tombstones) from a snapshot.
+    pub fn from_snapshot(snapshot: IndexSnapshot) -> Self {
+        let mut index = Self::with_seed(snapshot.config, snapshot.seed);
+        for (vector, triple_id) in snapshot.vectors {
+            // Same dimensions as the index it came from, so this can't fail.
+            let _ = index.insert(vector, triple_id);
+        }
+        index
+    }
+
+    /// Step 3, under the write lock before the swap: apply what changed in
+    /// `old` since the snapshot. Vectors active in `old` but not here are
+    /// inserted; vectors active here but deleted from (or absent in) `old`
+    /// are deleted. Afterwards this index holds exactly `old`'s active set.
+    /// Returns (inserted, deleted).
+    pub fn catch_up(&mut self, old: &HnswIndex) -> (usize, usize) {
+        let mut inserted = 0;
+        for node in old.nodes.iter().filter(|n| !n.deleted) {
+            if self.vector_of(node.triple_id).is_none()
+                && self.insert(node.vector.clone(), node.triple_id).is_ok()
+            {
+                inserted += 1;
+            }
+        }
+        let stale: Vec<TermId> = self
+            .nodes
+            .iter()
+            .filter(|n| !n.deleted && old.vector_of(n.triple_id).is_none())
+            .map(|n| n.triple_id)
+            .collect();
+        let deleted = stale.iter().filter(|&&id| self.delete(id)).count();
+        (inserted, deleted)
     }
 
     // --- Internal helpers ---

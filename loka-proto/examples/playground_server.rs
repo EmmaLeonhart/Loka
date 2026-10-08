@@ -347,6 +347,7 @@ async fn main() {
         passcode: None,
         rate_limit_per_min: 0,
         rate_counter: AtomicU64::new(0),
+        activity: Default::default(),
     });
 
     // SPARQL/API surface only — no HTML page at `/` (same as `loka serve`).

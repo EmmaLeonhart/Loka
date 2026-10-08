@@ -7,6 +7,44 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (evening) — Phase 5: idle-triggered HNSW rebuild off the lock
+
+Deleted vectors are tombstoned and stay in the HNSW graph until a rebuild, and the only
+rebuild was `POST /vectors/rebuild`, which compacted in place under the registry's write lock,
+so every query waited for the whole rebuild. Nothing triggered it.
+
+Now a rebuild is three steps (`loka-proto::maintenance`):
+1. snapshot the active vectors under the read lock;
+2. build a fresh index with no lock held, while queries keep using the old one;
+3. under the write lock, apply whatever changed during the build (`HnswIndex::catch_up`), then
+   swap the index in with one `mem::replace`.
+
+`/vectors/rebuild` uses it. `loka serve --maintenance-idle-secs N` (off by default) runs it on
+a blocking thread once no request has arrived for N seconds and an index is at least 10%
+tombstones. An activity middleware counts every request except `/health`, so health probes
+don't hold the server awake. Counts are in `GET /vectors/health` → `maintenance`. On this
+laptop the rebuild only runs when the server is idle, which keeps it out of the way of ingest
+and queries.
+
+Tests:
+- `loka-proto/tests/maintenance.rs` (4):
+  - the old index answers between build and commit;
+  - an insert and a delete made during the build carry over;
+  - 20 swaps under a concurrent query loop, with no query failing or coming back empty;
+  - below the threshold, nothing is rebuilt;
+  - the loop doesn't rebuild while requests arrive, and does once they stop.
+- Server tests: `/vectors/rebuild` after a `/retract` drops the tombstone and reports it;
+  `/health` doesn't count as activity.
+- `loka-cli/tests/maintenance_e2e.rs`: the real binary with the flag rebuilds after going idle.
+- 31 suites pass; clippy is clean.
+
+A wrong turn on the way: I took `DELETE DATA` of an embedding triple for a second bug (the
+store triple removed, the HNSW node left searchable) and wrote a fix. The test showed
+`DELETE DATA` can't name a vector triple at all: an `f32vec` literal parses to
+`Term::VectorLiteral`, which the server rejects as "variables not allowed". So that bug doesn't
+exist. I reverted the fix. The misleading error is in TODO.md.
+
+---
 ## 2026-10-07 (later still) — Phase 4: the vector index as a costed access path, and a recall bug
 
 Two problems, one fix. The planner put an unbound `VECTOR_SIMILAR` first whatever the data

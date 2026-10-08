@@ -71,6 +71,13 @@ impl VectorRegistry {
         self.indexes.get(&predicate_id)
     }
 
+    /// Swap in a rebuilt index for a declared predicate, returning the old
+    /// one. `None` (and `index` dropped) if the predicate isn't declared.
+    pub fn replace_index(&mut self, predicate_id: TermId, index: HnswIndex) -> Option<HnswIndex> {
+        let slot = self.indexes.get_mut(&predicate_id)?;
+        Some(std::mem::replace(slot, index))
+    }
+
     /// Check if a predicate has a vector index declared.
     pub fn has_index(&self, predicate_id: TermId) -> bool {
         self.indexes.contains_key(&predicate_id)

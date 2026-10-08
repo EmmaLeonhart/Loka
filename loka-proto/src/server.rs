@@ -50,6 +50,8 @@ pub struct AppState {
     pub rate_limit_per_min: u32,
     /// Rate limit counter (atomically incremented).
     pub rate_counter: AtomicU64,
+    /// Request activity (for idle detection) and maintenance counters.
+    pub activity: crate::maintenance::Activity,
 }
 
 /// Build the axum router with all endpoints.
@@ -76,9 +78,26 @@ pub fn router(state: Arc<AppState>) -> Router {
             state.clone(),
             auth_middleware,
         ))
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            activity_middleware,
+        ))
         .layer(CorsLayer::permissive())
         .layer(TraceLayer::new_for_http())
         .with_state(state)
+}
+
+/// Counts every request except `/health` as activity, so background
+/// maintenance waits for the server to be idle; a health probe doesn't count.
+async fn activity_middleware(
+    State(state): State<Arc<AppState>>,
+    req: axum::extract::Request,
+    next: Next,
+) -> Response {
+    if req.uri().path() != "/health" {
+        state.activity.touch();
+    }
+    next.run(req).await
 }
 
 /// Simple passcode authentication middleware.
@@ -618,7 +637,6 @@ fn execute_delete_data(
         None => None,
     };
     let ps_opt = ps_guard.as_deref();
-
     let mut deleted = 0i64;
     for pattern in &query.patterns {
         if let Pattern::Triple {
@@ -1706,6 +1724,11 @@ async fn vectors_health(
         "index_count": indexes.len(),
         "total_edge_count": vectors.total_edge_count(),
         "indexes": indexes,
+        "maintenance": {
+            "rebuild_cycles": state.activity.cycles(),
+            "tombstones_removed": state.activity.tombstones_removed(),
+            "requests": state.activity.requests(),
+        },
     })))
 }
 
@@ -1715,30 +1738,16 @@ async fn vectors_health(
 async fn rebuild_hnsw(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<serde_json::Value>, ProtoError> {
-    let mut vectors = state
-        .vectors
-        .write()
-        .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?;
-
-    let mut results = Vec::new();
-    for pred_id in vectors.predicates() {
-        if let Some(index) = vectors.get_mut(pred_id) {
-            let before = index.len();
-            let removed = index.compact();
-            let after = index.active_count();
-            results.push(serde_json::json!({
-                "predicate_id": pred_id,
-                "tombstones_removed": removed,
-                "nodes_before": before,
-                "active_after": after,
-            }));
-        }
-    }
-
+    // Built off the lock and swapped in, so queries keep answering from the
+    // old index meanwhile (planning/background-maintenance.md).
+    let s = state.clone();
+    let reports = tokio::task::spawn_blocking(move || crate::maintenance::rebuild_indexes(&s, 0.0))
+        .await
+        .map_err(|e| ProtoError::BadRequest(format!("rebuild task: {e}")))??;
     Ok(Json(serde_json::json!({
         "status": "ok",
-        "indexes_rebuilt": results.len(),
-        "details": results,
+        "indexes_rebuilt": reports.len(),
+        "details": reports,
     })))
 }
 
@@ -1798,7 +1807,117 @@ mod tests {
             passcode: None,
             rate_limit_per_min: 0,
             rate_counter: std::sync::atomic::AtomicU64::new(0),
+            activity: Default::default(),
         })
+    }
+
+    async fn send(
+        state: &Arc<AppState>,
+        method: &str,
+        uri: &str,
+        ctype: &str,
+        body: String,
+    ) -> (StatusCode, serde_json::Value) {
+        let req = Request::builder()
+            .method(method)
+            .uri(uri)
+            .header("content-type", ctype)
+            .body(Body::from(body))
+            .unwrap();
+        let resp = router(state.clone()).oneshot(req).await.unwrap();
+        let status = resp.status();
+        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        (
+            status,
+            serde_json::from_slice(&bytes).unwrap_or(serde_json::Value::Null),
+        )
+    }
+
+    const EMB: &str = "http://example.org/emb";
+
+    /// Two 4-d vectors, `ex:a` = [1,0,0,0] and `ex:b` = [0,1,0,0], over HTTP.
+    async fn with_two_vectors() -> Arc<AppState> {
+        let state = test_state();
+        let (s, _) = send(
+            &state,
+            "POST",
+            "/vectors/declare",
+            "application/json",
+            format!(r#"{{"predicate":"{EMB}","dimensions":4}}"#),
+        )
+        .await;
+        assert_eq!(s, StatusCode::OK);
+        for (subject, v) in [("a", "[1,0,0,0]"), ("b", "[0,1,0,0]")] {
+            let (s, _) = send(
+                &state,
+                "POST",
+                "/vectors",
+                "application/json",
+                format!(
+                    r#"{{"predicate":"{EMB}","subject":"http://example.org/{subject}","vector":{v}}}"#
+                ),
+            )
+            .await;
+            assert_eq!(s, StatusCode::OK);
+        }
+        state
+    }
+
+    async fn similar_to_a(state: &Arc<AppState>) -> Vec<serde_json::Value> {
+        let q = format!(
+            "SELECT ?s WHERE {{ VECTOR_SIMILAR(?s <{EMB}> \"1 0 0 0\"^^<http://loka.dev/f32vec>, 0.9) }}"
+        );
+        let (s, json) = send(state, "POST", "/sparql", "application/sparql-query", q).await;
+        assert_eq!(s, StatusCode::OK, "{json}");
+        json["results"]["bindings"].as_array().unwrap().clone()
+    }
+
+    #[tokio::test]
+    async fn rebuild_endpoint_drops_tombstones_and_reports_them() {
+        let state = with_two_vectors().await;
+        assert_eq!(similar_to_a(&state).await.len(), 1);
+        // Retracting ex:a removes its embedding triple and tombstones the node.
+        let (s, json) = send(
+            &state,
+            "POST",
+            "/retract",
+            "application/json",
+            r#"{"iri":"http://example.org/a","commit":true}"#.to_string(),
+        )
+        .await;
+        assert_eq!(s, StatusCode::OK, "{json}");
+        let (_, health) = send(&state, "GET", "/vectors/health", "", String::new()).await;
+        assert_eq!(health["indexes"][0]["active_nodes"], 1, "{health}");
+        assert_eq!(health["indexes"][0]["total_nodes"], 2, "{health}");
+
+        let (s, json) = send(&state, "POST", "/vectors/rebuild", "", String::new()).await;
+        assert_eq!(s, StatusCode::OK, "{json}");
+        assert_eq!(json["indexes_rebuilt"], 1);
+        assert_eq!(json["details"][0]["tombstones_removed"], 1);
+        let (_, health) = send(&state, "GET", "/vectors/health", "", String::new()).await;
+        assert_eq!(health["indexes"][0]["total_nodes"], 1);
+        assert_eq!(health["maintenance"]["rebuild_cycles"], 1);
+        assert_eq!(health["maintenance"]["tombstones_removed"], 1);
+        assert!(similar_to_a(&state).await.is_empty());
+    }
+
+    #[tokio::test]
+    async fn health_probes_do_not_count_as_activity() {
+        let state = test_state();
+        send(&state, "GET", "/health", "", String::new()).await;
+        send(&state, "GET", "/health", "", String::new()).await;
+        assert_eq!(state.activity.requests(), 0);
+        send(
+            &state,
+            "POST",
+            "/sparql",
+            "application/sparql-query",
+            "SELECT ?s WHERE { ?s ?p ?o }".to_string(),
+        )
+        .await;
+        assert_eq!(state.activity.requests(), 1);
     }
 
     /// A computed BIND value must render as its string over HTTP.
@@ -2439,6 +2558,7 @@ mod tests {
             passcode: None,
             rate_limit_per_min: 0,
             rate_counter: std::sync::atomic::AtomicU64::new(0),
+            activity: Default::default(),
         })
     }
 
