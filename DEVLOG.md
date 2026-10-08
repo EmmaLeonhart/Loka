@@ -7,6 +7,32 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (late night) — Step 10: the "primitive entity resolution" con is model-bound; no resolver change
+
+Review v16 (Accept) lists exact-label entity resolution (8 of 672 resolved) as a con. Of the
+remaining cons, it was the one that looked like engine work, which fits Emma's "keep the model,
+fix the rest". I checked it before building anything, on the predictions still on disk from the
+Oct 6 run in the session scratchpad: `gen_pass1.nt` + `gen_pass2.nt`, 281 + 90 = 371
+predictions. **Not** the paper's 672-prediction run, whose files aren't retained.
+
+- 201 of 370 literal outputs (54%) are digits and punctuation only: `2 .` (77), `2 . - .`
+  (58), `1 . 5 .` (20), ...
+- Most of the rest are garbled or truncated phrases: `people 's republic of china of +`,
+  `c ensus - design ated place in the`, `vo ic ed al ve`.
+- The one exact match is wrong: `Q1065 P463 Q1065`, the UN "member of" the UN. The label
+  matched the subject itself.
+
+Decision: keep exact resolution, and don't change the paper. A looser matcher (alias, prefix,
+fuzzy) could only raise the rate by mapping garbled fragments to IRIs, with no ground truth here
+to check whether they're right. Writing wrong IRIs into a provenance-tracked store would undercut
+the integrity point the reviewer praised. So the con is model-bound like the others, and step 10
+still waits on Emma: submit at Accept, or train a better model.
+
+Not done, noted: rejecting a resolution to the subject itself (the self-loop above) would be a
+real precision guard. But it changes the pipeline the paper describes, and the counts in §4.4
+can't be recomputed without the 672-run files, so it isn't made now.
+
+---
 ## 2026-10-07 (late night) — Phase 7: query latency and planner-estimate accuracy at /health/queries
 
 `loka serve` now records:

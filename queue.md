@@ -34,8 +34,10 @@ step 9 submits.
     research". Read as: position the contribution against the closest prior work.
     Review v16 (post 2915): **Accept**. Remaining cons: weak model, exact-match entity
     resolution, heuristic selector, real-data scale up to 2M (billion-triple untested),
-    label-space output: all model-bound or out of laptop reach. Waiting on Emma: push further
-    (would need the model) or submit. The arXiv package is ready (paper/arxiv/METADATA.md); the
+    label-space output: all model-bound or out of laptop reach. Checked 2026-10-07 (DEVLOG):
+    entity resolution is model-bound too (54% of outputs are numeric fragments; the rest are
+    garbled phrases; the one exact match is wrong), so a looser resolver isn't a fix. Waiting
+    on Emma: push further (would need the model) or submit. The arXiv package is ready (paper/arxiv/METADATA.md); the
     upload itself is Emma's action.
 
 ---
@@ -49,11 +51,6 @@ publish verdict.
 
 ---
 
-## ACTIVE — large feature work (Emma, 2026-10-07: "Do the large feature work")
-
-Plan, scope and tests per phase: `planning/large-features.md`. In order:
-
----
 
 ## Pinned tail — autonomous-loop cron management
 
