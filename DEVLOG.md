@@ -7,6 +7,21 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (night, engineering, installer) — end-to-end test through the agent installer
+
+Promoted from `TODO.md`. `loka-cli/tests/install_agent_e2e.rs` drives the built binary as an
+agent would:
+1. `install-agent e2e --json` in an empty temp directory, checking the JSON report (name,
+   `served: false`, port, data dir), that the data dir exists, and that the notes file names
+   the database;
+2. `loka serve` on the installed data dir, a `POST /triples`, then a SPARQL query returning the
+   value;
+3. stop the server (after the 2 s flush interval), restart it on the same data dir, and query
+   again, so the test covers persistence too.
+Plain HTTP over `TcpStream`, no mocks, a free port per run. It passes locally (Windows, 5 s) and
+in CI (Linux: `fresh_install_insert_query_restart_query ... ok`, on `4003ed8`).
+
+---
 ## 2026-10-07 (night, engineering) — Java SDK integration test runs against a real Loka in CI
 
 Promoted from `TODO.md`. There's no Java toolchain on this laptop, so verification is in CI. The

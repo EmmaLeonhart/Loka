@@ -49,16 +49,6 @@ publish verdict.
 
 ---
 
-## ACTIVE — agent-installer end-to-end test (promoted from TODO.md 2026-10-07)
-
-`TODO.md` (AI Agent Installer): "End-to-end test: fresh install → insert → query → verify."
-A `loka-cli` integration test drives the built binary: `install-agent <name> --json` in a temp
-directory (checks the JSON report, the data dir and the notes file); then `loka serve` on that
-data dir; then insert over HTTP, query back, restart the server, and query again to check the
-data persisted. Done when it passes locally and in CI.
-
----
-
 ## Pinned tail — autonomous-loop cron management
 
 These two items are always the last in the queue (autonomous-loop playbook §d):

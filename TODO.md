@@ -222,7 +222,7 @@ sustained GPU run or a large risky ingest; they wait for cloud GPU or a donor.
 ## Future Versions
 
 ### AI Agent Installer (remaining)
-- [ ] End-to-end test: fresh install → insert → query → verify
+- [x] End-to-end test: fresh install → insert → query → verify (`loka-cli/tests/install_agent_e2e.rs`, adds a restart-and-query persistence check; 2026-10-07)
 
 ### HNSW Traversal via SPARQL Property Paths
 - [ ] Greedy descent + beam search semantics from graph structure and property path evaluation
