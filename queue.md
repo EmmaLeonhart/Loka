@@ -52,7 +52,12 @@ publish verdict.
 ## ACTIVE — large feature work (Emma, 2026-10-07: "Do the large feature work")
 
 Plan, scope and tests per phase: `planning/large-features.md`. In order:
-4. **Phase 4 — cost-based choice of HNSW vs triple scan.**
+4. **Phase 4 — cost-based choice of HNSW vs triple scan** (`planning/cost-based-hnsw.md`):
+   a. `HnswIndex::vector_of`; executor exact-vs-index access path for bound subjects (fixes
+      the recall bug: bound subjects above threshold outside ANN top-500 were dropped).
+   b. Planner: `optimize_with_vectors` (vector cost = min(k, active)), prefixed-name
+      cardinality; server switches to it.
+   c. Tests (recall, explicit k, planner order, prefixed cardinality) + bench numbers.
 5. **Phase 5 — background maintenance: low-usage detection, HNSW rebuild + atomic swap.**
 6. **Phase 6 — pseudo-table invalidation + planner recognition.**
 7. **Phase 7 — query-latency metrics in health.**
