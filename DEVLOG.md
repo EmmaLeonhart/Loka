@@ -7,6 +7,27 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 — "Join results vary between server processes": tested across 10 processes; identical
+
+The other half of the July addendum: the same multi-pattern query on the same `.sdb` returned
+rows in one `loka serve` process and `[]` in another. It suspected hash-seeded planner order.
+Reading the code says the planner is deterministic (patterns in a Vec, first minimum wins);
+`HashMap` iteration only changes row order inside hash joins, never which rows. That still
+needed a test across processes, since each process gets its own hash seed.
+
+Test:
+- loaded a 48k-triple Pramana-shaped store once into a persistent directory and recorded
+  reference results for 12 join queries (subject→uuid in both orders, prefixed, plus a label
+  leg), all 3 rows as built;
+- started 10 fresh release `loka serve` processes on that store in turn;
+- each returned results byte-identical to the reference (10 / 10).
+
+`the_planner_picks_the_same_order_every_time` guards it in CI: 50 plans, each on a freshly built
+store and dictionary (new seeds), must produce one pattern order and the right rows. TODO.md's
+addendum section is closed: nondeterminism not reproducible and guarded; the 2 s latency was
+fixed in the previous entry. 34 suites pass; clippy is clean.
+
+---
 ## 2026-10-08 — Pramana's "~2 s per lookup": the planner was scanning (fixed)
 
 TODO.md's 2026-07-20 addendum reported ~2 s for single-pattern lookups at 157k triples, which

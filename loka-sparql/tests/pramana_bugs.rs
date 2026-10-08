@@ -63,3 +63,29 @@ fn object_variable_joins_into_a_literal_bound_pattern() {
     ));
     assert_eq!(reversed, 5);
 }
+
+#[test]
+fn the_planner_picks_the_same_order_every_time() {
+    // The July addendum suspected hash-seeded planner order made the join
+    // nondeterministic across processes. Each fresh store and dictionary
+    // gets new HashMap seeds; the plan must not change with them. (Ten
+    // fresh `loka serve` processes on one store also returned identical
+    // rows, 2026-10-08.)
+    let q = format!(
+        "PREFIX wdt: <{P}> SELECT ?p ?l WHERE {{ ?p wdt:subject ?s . \
+         ?s wdt:uuid \"3946bf48-aaaa\" . ?s wdt:EntityLabel ?l }}"
+    );
+    let mut orders = std::collections::BTreeSet::new();
+    for _ in 0..50 {
+        let (store, dict) = store();
+        let mut parsed = parse(&q).unwrap();
+        loka_sparql::optimize_full(&mut parsed, Some(&store), Some(&dict));
+        orders.insert(format!("{:?}", parsed.patterns));
+        assert_eq!(execute(&parsed, &store, &dict).unwrap().rows.len(), 5);
+    }
+    assert_eq!(
+        orders.len(),
+        1,
+        "one plan across 50 differently seeded runs"
+    );
+}

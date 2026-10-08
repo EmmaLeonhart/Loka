@@ -95,24 +95,6 @@ be corrected, and BUG-2 workarounds (constructing entity URIs to avoid joins) ca
 **Left below unchanged, as filed.** A non-reproducing bug is not a fixed bug: the addendum itself
 says the failure was intermittent, so three clean processes is evidence, not proof.
 
-## 🐛 BUG 2 addendum + PERF (2026-07-20): join failures are NONDETERMINISTIC per process; ~2s/query at 157k triples
-
-Two additions from continued dogfooding:
-1. **The BUG-2 join failure is nondeterministic across server processes**: the same multi-pattern
-   query on the same `.sdb` returns the correct rows in one `loka serve` process and `[]` in another.
-   Suspect hash-seeded planner join-order (Rust `HashMap` RandomState) selecting the broken
-   object-var⋈literal join path only sometimes. This masked/confused diagnosis badly (looked like
-   whitespace/state effects). A deterministic planner order (or fixing the join path) would make it
-   reproducible.
-2. **Query latency ~2s for even single-pattern lookups at 157k triples** (e.g.
-   `SELECT ?t WHERE { ?t <...EntityLabel> "X" }`). Pramana's page renders need dozens-to-hundreds of
-   such lookups → unusable. POS/SPO prefix scans should make these ~ms; something is scanning.
-   **Found and fixed 2026-10-08:** the *planner* was scanning. `estimate_cardinality` collected
-   every match into a Vec to count it, and literal constants never resolved in the planner, so
-   each literal lookup was planned as a full-predicate collect. On a Pramana-shaped 156k-triple
-   store: pattern evaluation 0.7 ms → 2 µs, HTTP request 2.2 → 0.7 ms (label lookup) and
-   3.9 → 0.8 ms (uuid join). See DEVLOG.
-
 ## Pramana dogfooding bugs (2026-07-20): not reproducible on main as of 2026-10-08
 
 The two bugs logged here (prefixed predicate + literal object matching nothing; an object-variable
@@ -122,6 +104,14 @@ and after a restart; full and prefixed IRIs; both join orders. Regression tests:
 `loka-sparql/tests/pramana_bugs.rs`, `loka-proto` `pramana_label_and_uuid_join_shapes_match`.
 If Pramana hits either again, reopen with that store's data: the original report said the
 behaviour varied between stores.
+
+The 2026-07-20 addendum is closed too:
+- **"Nondeterministic across processes":** ten fresh `loka serve` processes on one
+  persistent 48k-triple store returned identical rows for 12 join queries. The planner's
+  order is deterministic (Vec order, first minimum), guarded by
+  `the_planner_picks_the_same_order_every_time`.
+- **"~2 s per lookup":** found and fixed: the planner materialised matches to count them
+  (DEVLOG, 2026-10-08).
 
 # DO THE STUFF IN THE QUEUE.MD
 
