@@ -155,23 +155,12 @@ fn execute_query_with_ctx(query: &Query, ctx: &mut ExecutionContext<'_>) -> Resu
             if run_end > i + 1 {
                 // We found 2+ consecutive patterns that can be fused.
                 let fuseable: Vec<&Pattern> = patterns[i..run_end].iter().collect();
-                if let Some(fused_results) =
+                if let Some((fused_results, sources)) =
                     try_fused_pseudo_table_scan(&fuseable, &results, ctx, registry, pushable_limit)?
                 {
                     ctx.pseudo_table_hits
                         .set(ctx.pseudo_table_hits.get() + fuseable.len());
-                    let new_scores = fused_results
-                        .iter()
-                        .map(|new_row| {
-                            // Find source row to carry forward scores.
-                            for (j, old_row) in results.iter().enumerate() {
-                                if old_row.iter().all(|(k, v)| new_row.get(k) == Some(v)) {
-                                    return scores[j].clone();
-                                }
-                            }
-                            HashMap::new()
-                        })
-                        .collect();
+                    let new_scores = sources.iter().map(|&j| scores[j].clone()).collect();
                     results = fused_results;
                     scores = new_scores;
                     i = run_end;
@@ -497,10 +486,17 @@ fn evaluate_pattern(
             predicate,
             object,
         } => {
-            let (rows, _) =
+            let (rows, sources) =
                 evaluate_triple_pattern(subject, predicate, object, current, ctx, row_limit)?;
-            // Carry forward scores from current rows (expand for each new match)
-            let new_scores = expand_scores(current, current_scores, &rows);
+            // Carry forward each new row's source-row scores. By index: the
+            // subset search in `expand_scores` is O(new × current), which made
+            // every join quadratic (a 3-pattern star over 4000 subjects took
+            // 216 ms; 20k, about 5 s).
+            let new_scores = if sources.len() == rows.len() {
+                sources.iter().map(|&i| current_scores[i].clone()).collect()
+            } else {
+                expand_scores(current, current_scores, &rows)
+            };
             Ok((rows, new_scores))
         }
         Pattern::Optional(inner_patterns) => {
@@ -2473,7 +2469,7 @@ fn try_fused_pseudo_table_scan(
     ctx: &ExecutionContext<'_>,
     registry: &PseudoTableRegistry,
     row_limit: Option<usize>,
-) -> Result<Option<Vec<Bindings>>> {
+) -> Result<Option<(Vec<Bindings>, Vec<usize>)>> {
     if patterns.len() < 2 {
         return Ok(None);
     }
@@ -2553,8 +2549,9 @@ fn try_fused_pseudo_table_scan(
     };
 
     let mut results = Vec::new();
+    let mut sources = Vec::new();
 
-    for row in current {
+    for (row_idx, row) in current.iter().enumerate() {
         // Check if subject is already bound in this row.
         let s_bound = row.get(subj_var).copied();
 
@@ -2626,17 +2623,18 @@ fn try_fused_pseudo_table_scan(
                 }
 
                 results.push(new_row);
+                sources.push(row_idx);
 
                 if let Some(limit) = row_limit {
                     if results.len() >= limit {
-                        return Ok(Some(results));
+                        return Ok(Some((results, sources)));
                     }
                 }
             }
         }
     }
 
-    Ok(Some(results))
+    Ok(Some((results, sources)))
 }
 
 /// Find the longest run of consecutive triple patterns starting at `start`
