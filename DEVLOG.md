@@ -7,6 +7,16 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (late) — Emma: "Do the large feature work"; seven-phase plan
+
+The `TODO.md` "Future Versions" features are planned into `planning/large-features.md` and
+queued in dependency order. Phase 1 comes first because the code shows property paths (`+`,
+`*`) walk only stored triples, so `loka:hnswNeighbor+` over the *virtual* HNSW edges reaches
+nothing, and every HNSW-traversal item depends on that. UNTIL gets a design doc before code.
+The Flutter health-dashboard item is noted as obsolete, since Flutter Studio was removed;
+it becomes a Studio page over the same JSON.
+
+---
 ## 2026-10-07 (night, engineering, installer) — end-to-end test through the agent installer
 
 Promoted from `TODO.md`. `loka-cli/tests/install_agent_e2e.rs` drives the built binary as an

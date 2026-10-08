@@ -49,6 +49,20 @@ publish verdict.
 
 ---
 
+## ACTIVE — large feature work (Emma, 2026-10-07: "Do the large feature work")
+
+Plan, scope and tests per phase: `planning/large-features.md`. In order:
+1. **Phase 1 — property paths traverse virtual HNSW edges** (`hnswNeighbor+` reaches nothing today).
+2. **Phase 3 — UNTIL** (design doc first: `planning/until-syntax.md`), then per-step evaluation,
+   per-branch exit, ordered traversal.
+3. **Phase 2 — greedy descent** (needs Phase 3's ordering and exits); test against `search(k=1)`.
+4. **Phase 4 — cost-based choice of HNSW vs triple scan.**
+5. **Phase 5 — background maintenance: low-usage detection, HNSW rebuild + atomic swap.**
+6. **Phase 6 — pseudo-table invalidation + planner recognition.**
+7. **Phase 7 — query-latency metrics in health.**
+
+---
+
 ## Pinned tail — autonomous-loop cron management
 
 These two items are always the last in the queue (autonomous-loop playbook §d):
