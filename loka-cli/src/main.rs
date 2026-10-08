@@ -431,7 +431,12 @@ async fn main() -> anyhow::Result<()> {
             let vectors = loka_hnsw::VectorRegistry::new();
 
             let mut parsed = loka_sparql::parse(&query)?;
-            loka_sparql::optimize(&mut parsed);
+            loka_sparql::optimize_with_vectors(
+                &mut parsed,
+                Some(&store),
+                Some(&dict),
+                Some(&vectors),
+            );
             let result = loka_sparql::execute_with_vectors(&parsed, &store, &dict, &vectors)?;
 
             // Print results as a simple table

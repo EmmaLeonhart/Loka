@@ -411,7 +411,12 @@ pub extern "C" fn loka_query(db: *const LokaDb, query: *const c_char) -> *mut Lo
         }
     };
 
-    loka_sparql::optimize(&mut parsed);
+    loka_sparql::optimize_with_vectors(
+        &mut parsed,
+        Some(&inner.store),
+        Some(&inner.dict),
+        Some(&inner.vectors),
+    );
 
     let result =
         match loka_sparql::execute_with_vectors(&parsed, &inner.store, &inner.dict, &inner.vectors)

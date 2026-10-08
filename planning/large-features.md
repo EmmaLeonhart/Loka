@@ -43,6 +43,8 @@ expanded).
 
 ## Phase 4 — cost-based planning: HNSW as an access path
 
+**DONE 2026-10-07** (`planning/cost-based-hnsw.md`; see DEVLOG). Adaptive execution still to spec.
+
 **Now:** the planner's VECTOR_SIMILAR heuristic is "subject bound → graph first, else vector
 first". **Build:** estimate both plans' cost (pattern cardinality from the store's
 `estimate_cardinality`; HNSW cost from k and ef) and choose. Adaptive execution (reordering

@@ -26,9 +26,10 @@
 //! `?age > 25` that runs after 10,000 intermediate rows is much cheaper
 //! when pushed down to run after the 50 rows that bind `?age`.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use loka_core::{TermDictionary, TripleStore};
+use loka_hnsw::VectorRegistry;
 
 use crate::parser::{FilterExpr, Pattern, Query, Term};
 
@@ -78,6 +79,10 @@ const WEIGHT_OPTIONAL: u32 = 20;
 /// Cardinality estimate used when the store is not available (plan-only mode).
 /// Set to 1 so that heuristic weight alone drives ordering.
 const DEFAULT_CARDINALITY: usize = 1;
+
+/// Rows an unbound VECTOR_SIMILAR returns when no `k:=` is given (the
+/// executor's default top-k).
+const DEFAULT_VECTOR_K: usize = 500;
 
 /// Maximum cardinality estimate to prevent overflow in cost multiplication.
 /// Any estimate above this is clamped. This prevents a single high-cardinality
@@ -140,6 +145,30 @@ pub fn optimize_full(
     store: Option<&TripleStore>,
     dict: Option<&TermDictionary>,
 ) {
+    optimize_with_vectors(query, store, dict, None);
+}
+
+/// [`optimize_full`] that also costs the vector index as an access path
+/// (`planning/cost-based-hnsw.md`).
+///
+/// An unbound VECTOR_SIMILAR / `*_SEARCH` costs the rows it can return,
+/// `min(k, indexed vectors)`, on the same scale as a triple pattern's
+/// weight × cardinality. A more selective graph pattern then runs first and
+/// the vector pattern becomes a filter over bound subjects, which the
+/// executor scores exactly when that is cheaper than a beam search. Without
+/// `vectors`, vector patterns cost as before (the structural weight alone).
+pub fn optimize_with_vectors(
+    query: &mut Query,
+    store: Option<&TripleStore>,
+    dict: Option<&TermDictionary>,
+    vectors: Option<&VectorRegistry>,
+) {
+    let env = CostEnv {
+        store,
+        dict,
+        vectors,
+        prefixes: &query.prefixes,
+    };
     let mut bound_vars: HashSet<String> = HashSet::new();
     let mut reordered: Vec<Pattern> = Vec::new();
     let mut remaining: Vec<Pattern> = std::mem::take(&mut query.patterns);
@@ -148,7 +177,7 @@ pub fn optimize_full(
         let best_idx = remaining
             .iter()
             .enumerate()
-            .min_by_key(|(_, p)| pattern_cost(p, &bound_vars, store, dict))
+            .min_by_key(|(_, p)| pattern_cost(p, &bound_vars, &env))
             .map(|(i, _)| i)
             .unwrap();
 
@@ -169,13 +198,17 @@ pub fn optimize_full(
 /// selectivity and data-dependent cardinality.
 ///
 /// Returns a u64 cost where lower = cheaper = should be evaluated first.
-fn pattern_cost(
-    pattern: &Pattern,
-    bound: &HashSet<String>,
-    store: Option<&TripleStore>,
-    dict: Option<&TermDictionary>,
-) -> u64 {
+/// What the cost model can consult.
+struct CostEnv<'a> {
+    store: Option<&'a TripleStore>,
+    dict: Option<&'a TermDictionary>,
+    vectors: Option<&'a VectorRegistry>,
+    prefixes: &'a HashMap<String, String>,
+}
+
+fn pattern_cost(pattern: &Pattern, bound: &HashSet<String>, env: &CostEnv<'_>) -> u64 {
     let weight = pattern_weight(pattern, bound);
+    let (store, dict) = (env.store, env.dict);
 
     // For non-triple patterns, cardinality estimation doesn't apply —
     // they're ordered purely by structural weight.
@@ -189,9 +222,32 @@ fn pattern_cost(
             // (property paths have complex cardinality that we can't estimate
             // from a single index scan).
             if let Some(store) = store {
-                estimate_triple_cardinality(subject, predicate, object, bound, store, dict)
+                estimate_triple_cardinality(subject, predicate, object, store, dict, env.prefixes)
             } else {
                 DEFAULT_CARDINALITY
+            }
+        }
+        // Unbound vector search: the HNSW index is the access path and
+        // returns at most min(k, indexed vectors) rows.
+        Pattern::VectorSimilar {
+            subject,
+            predicate,
+            top_k,
+            ..
+        }
+        | Pattern::MetricSearch {
+            subject,
+            predicate,
+            top_k,
+            ..
+        } if !is_bound(subject, bound) => {
+            let index = env.vectors.and_then(|v| {
+                let id = term_to_constant_id(predicate, dict, env.prefixes)?;
+                v.get(id)
+            });
+            match index {
+                Some(index) => top_k.unwrap_or(DEFAULT_VECTOR_K).min(index.len()),
+                None => DEFAULT_CARDINALITY,
             }
         }
         _ => DEFAULT_CARDINALITY,
@@ -287,17 +343,17 @@ fn estimate_triple_cardinality(
     subject: &Term,
     predicate: &Term,
     object: &Term,
-    _bound: &HashSet<String>,
     store: &TripleStore,
     dict: Option<&TermDictionary>,
+    prefixes: &HashMap<String, String>,
 ) -> usize {
     // Resolve each position to a TermId if it's a constant (IRI, literal).
     // Variables that are bound by previous patterns are treated as None
     // because we don't know their runtime value at plan time.
     // Only truly constant terms (IRIs, literals) contribute to the estimate.
-    let s = term_to_constant_id(subject, dict);
-    let p = term_to_constant_id(predicate, dict);
-    let o = term_to_constant_id(object, dict);
+    let s = term_to_constant_id(subject, dict, prefixes);
+    let p = term_to_constant_id(predicate, dict, prefixes);
+    let o = term_to_constant_id(object, dict, prefixes);
 
     // Use the store's cardinality estimator, which does efficient
     // range scans on SPO/POS/OSP indexes.
@@ -319,7 +375,11 @@ fn estimate_triple_cardinality(
 /// resolved to their interned IDs, enabling much tighter cardinality
 /// estimates. Without the dictionary, only integer literals (which carry
 /// inline IDs) contribute to the estimate.
-fn term_to_constant_id(term: &Term, dict: Option<&TermDictionary>) -> Option<loka_core::TermId> {
+fn term_to_constant_id(
+    term: &Term,
+    dict: Option<&TermDictionary>,
+    prefixes: &HashMap<String, String>,
+) -> Option<loka_core::TermId> {
     match term {
         // Variables are always unbound from the estimator's perspective.
         Term::Variable(_) => None,
@@ -329,9 +389,13 @@ fn term_to_constant_id(term: &Term, dict: Option<&TermDictionary>) -> Option<lok
         Term::Iri(iri) => dict.and_then(|d| d.lookup(iri)),
         // rdf:type shorthand
         Term::A => dict.and_then(|d| d.lookup("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")),
-        // Prefixed names would need prefix expansion which we don't have
-        // at the planner level. Return None (conservative).
-        Term::PrefixedName { .. } => None,
+        // Prefixed names expand with the query's PREFIX declarations. They
+        // used to return None, so `?s a ex:Rare` was estimated as every
+        // rdf:type triple.
+        Term::PrefixedName { prefix, local } => {
+            let base = prefixes.get(prefix)?;
+            dict.and_then(|d| d.lookup(&format!("{base}{local}")))
+        }
         // String literals
         Term::Literal(s) => dict.and_then(|d| d.lookup(s)),
         // Typed literals: "value"^^<datatype>

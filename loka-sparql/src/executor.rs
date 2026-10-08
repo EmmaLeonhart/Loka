@@ -1190,6 +1190,55 @@ fn evaluate_vector_similar(
         _ => None,
     };
 
+    // Bound subjects: score their own vectors exactly when that is cheaper
+    // than a beam search (planning/cost-based-hnsw.md). The index path keeps
+    // a subject only if it is in the ANN top k, so it also misses subjects
+    // above the threshold that ANN doesn't return; an explicit `k:=` asks for
+    // exactly that top-k membership, so it always takes the index path.
+    if top_k.is_none() {
+        let bound: Option<Vec<TermId>> = current
+            .iter()
+            .map(|row| {
+                subject_var
+                    .and_then(|name| row.get(name).copied())
+                    .or_else(|| {
+                        resolve_term(subject, row, ctx.dict, ctx.prefixes)
+                            .ok()
+                            .flatten()
+                    })
+            })
+            .collect();
+        if let (Some(bound), Some(index)) = (bound, ctx.vectors.get(pred_id)) {
+            let candidates: usize = bound
+                .iter()
+                .map(|&s| ctx.store.find_by_subject_predicate(s, pred_id).len())
+                .sum();
+            if candidates <= index_search_cost(index.len(), ef, index.m_parameter()) {
+                let metric = metric_override.unwrap_or_else(|| index.metric());
+                let mut q = query_vector.to_vec();
+                metric.preprocess(&mut q);
+                for (i, (row, &s)) in current.iter().zip(&bound).enumerate() {
+                    let best = ctx
+                        .store
+                        .find_by_subject_predicate(s, pred_id)
+                        .iter()
+                        .filter_map(|t| index.vector_of(t.object))
+                        .map(|v| metric.score(&q, v))
+                        .fold(None, |acc: Option<f32>, s| {
+                            Some(acc.map_or(s, |a| a.max(s)))
+                        });
+                    if let Some(score) = best.filter(|s| *s >= threshold) {
+                        let mut new_score = current_scores[i].clone();
+                        new_score.insert(score_key.clone(), score);
+                        results.push(row.clone());
+                        result_scores.push(new_score);
+                    }
+                }
+                return Ok((results, result_scores));
+            }
+        }
+    }
+
     // Run HNSW search — use metric override if specified, otherwise native metric.
     let search_results = if let Some(metric) = metric_override {
         ctx.vectors
@@ -1268,6 +1317,14 @@ fn evaluate_vector_similar(
     }
 
     Ok((results, result_scores))
+}
+
+/// Estimated distance computations for one HNSW search over `n` nodes:
+/// `ef * M` per layer-0 expansion step, times a log-depth factor, never more
+/// than `n` (each node is scored at most once).
+fn index_search_cost(n: usize, ef: usize, m: usize) -> usize {
+    let depth = (usize::BITS - n.leading_zeros()) as usize + 1; // ceil(log2 n) + 1
+    ef.saturating_mul(m).saturating_mul(depth).min(n)
 }
 
 /// Apply ORDER BY clauses to the result set.

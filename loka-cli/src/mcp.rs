@@ -1483,7 +1483,7 @@ async fn tool_sparql_query(ctx: &McpContext, args: &Value) -> Result<String, Str
 
         let mut parsed =
             loka_sparql::parse(query).map_err(|e| format!("SPARQL parse error: {}", e))?;
-        loka_sparql::optimize(&mut parsed);
+        loka_sparql::optimize_with_vectors(&mut parsed, Some(&store), Some(&dict), Some(&vectors));
         let result = loka_sparql::execute_with_vectors(&parsed, &store, &dict, &vectors)
             .map_err(|e| format!("SPARQL execution error: {}", e))?;
 

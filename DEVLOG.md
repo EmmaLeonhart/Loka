@@ -7,6 +7,38 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (later still) — Phase 4: the vector index as a costed access path, and a recall bug
+
+Two problems, one fix. The planner put an unbound `VECTOR_SIMILAR` first whatever the data
+(it never saw the vector index, and it estimated every prefixed name as unbound, so
+`?s a ex:Rare` looked like all `rdf:type` triples). And a **bound** subject was checked by
+running the full HNSW search (k = 500) and testing membership, so a subject above the
+threshold but outside the ANN top 500 was dropped: a wrong answer, not just a slow one.
+
+Now:
+- `optimize_with_vectors` costs an unbound vector search as `min(k, indexed vectors)` rows
+  and expands prefixed names for cardinality. The server, CLI `query`, MCP and FFI all use it.
+- For a bound subject the executor scores the subject's own vectors exactly
+  (`HnswIndex::vector_of`) when that is fewer distance computations than a beam search,
+  `min(N, ef·M·(⌈log2 N⌉+1))`. An explicit `k:=` keeps the index path, since top-k
+  membership is then what was asked.
+
+Found while testing: the two plans don't return the same rows once more than k vectors pass
+the threshold. With 1005 vectors all above 0.5, vector-first returned 2 of the 5 `ex:Rare`
+subjects and the cost-planned order returned all 5, matching brute force. The test first
+asserted equality and failed; it now asserts planned = ground truth and vector-first ⊆ it.
+Recorded in `planning/cost-based-hnsw.md`.
+
+Tests (`loka-sparql/tests/vector_access_path.rs`, 8): a bound subject at cosine 0.9 behind
+600 closer vectors is found (and with `k:=500` it isn't, which is what every bound query used
+to do); exact scores; a far subject excluded; rare type moves first, common type stays after;
+no vector index → old order; the ground-truth test above; prefixed-name cardinality. Clippy
+clean, 29 suites pass.
+
+Measured (`rare_type_plan` bench, 5000 64-d vectors, 5 rare subjects, criterion on this
+laptop): vector-first **1.52 ms**, cost-planned **6.67 µs**.
+
+---
 ## 2026-10-07 (later) — Phases 3 and 2: UNTIL and GREEDY exit conditions on path traversal
 
 SPARQL+ path patterns can now stop. `?s :p+ ?o UNTIL(expr)` checks `expr` at each node as it is

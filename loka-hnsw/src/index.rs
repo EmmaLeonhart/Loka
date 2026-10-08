@@ -136,6 +136,13 @@ impl HnswIndex {
         self.nodes.iter().filter(|n| !n.deleted).count()
     }
 
+    /// The stored (metric-preprocessed) vector for `triple_id`, or `None` if
+    /// it isn't in the index or is deleted.
+    pub fn vector_of(&self, triple_id: TermId) -> Option<&[f32]> {
+        let node = &self.nodes[*self.triple_to_node.get(&triple_id)? as usize];
+        (!node.deleted).then_some(node.vector.as_slice())
+    }
+
     /// The distance metric used by this index.
     pub fn metric(&self) -> DistanceMetric {
         self.config.metric

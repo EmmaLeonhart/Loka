@@ -50,6 +50,16 @@ Phase 4 of `planning/large-features.md`. Written before the code.
    gets a spec when it is picked up; the decision in (2) is made at run time per pattern
    already, which covers the case that matters most.
 
+## Found while building
+
+The plan said both orders return the same rows. They don't when more than k vectors pass the
+threshold: the vector-first plan only sees the ANN top k (500 by default), while the
+graph-first plan scores the bound subjects exactly. With 1005 vectors all above a 0.5 threshold,
+vector-first returned 2 of the 5 `ex:Rare` subjects and graph-first returned all 5, matching a
+brute-force check. So without `k:=`, results can depend on the plan, and the plan the cost
+model picks is the exact one. The test asserts that (planned = ground truth, vector-first ⊆
+it). An explicit `k:=` keeps every plan on index semantics.
+
 ## Tests
 
 - **Recall:** 600 vectors closer to the query than the target, the target above the

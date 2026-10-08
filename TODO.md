@@ -235,7 +235,7 @@ sustained GPU run or a large risky ingest; they wait for cloud GPU or a donor.
   `loka-sparql/tests/path_until.rs`.
 
 ### Cost-Based Query Planning (remaining)
-- [ ] HNSW as access path: planner chooses "HNSW index scan" vs "SPO triple scan" based on cost
+- [x] HNSW as access path: planner chooses "HNSW index scan" vs "SPO triple scan" based on cost (`planning/cost-based-hnsw.md`; 2026-10-07)
 - [ ] Adaptive execution: observe intermediate result sizes at runtime, reorder mid-query
 
 ### Background Maintenance Cycle

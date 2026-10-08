@@ -14,4 +14,4 @@ pub use executor::{
 };
 pub use health::{generate_health_report, HealthReport, HealthStatus};
 pub use parser::{parse, Aggregate, AggregateArg, AggregateFunction, Query, QueryType};
-pub use planner::{optimize, optimize_full, optimize_with_store};
+pub use planner::{optimize, optimize_full, optimize_with_store, optimize_with_vectors};

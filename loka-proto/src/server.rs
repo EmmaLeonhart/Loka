@@ -261,7 +261,7 @@ fn sparql_delimited(
         .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?;
 
     // Optimize with full cost model: store cardinality + dictionary IRI resolution
-    loka_sparql::optimize_full(&mut query, Some(&store), Some(&dict));
+    loka_sparql::optimize_with_vectors(&mut query, Some(&store), Some(&dict), Some(&*vectors));
 
     let result = loka_sparql::execute_with_vectors(&query, &store, &dict, &vectors)?;
 
@@ -344,7 +344,7 @@ fn sparql_xml(query_str: &str, state: &AppState) -> Result<impl IntoResponse, Pr
         .read()
         .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?;
 
-    loka_sparql::optimize_full(&mut query, Some(&store), Some(&dict));
+    loka_sparql::optimize_with_vectors(&mut query, Some(&store), Some(&dict), Some(&*vectors));
 
     let result = loka_sparql::execute_with_vectors(&query, &store, &dict, &vectors)?;
 
@@ -420,7 +420,7 @@ fn execute_sparql(query_str: &str, state: &AppState) -> Result<Json<SparqlResult
         .map_err(|e| ProtoError::BadRequest(format!("lock poisoned: {}", e)))?;
 
     // Optimize with full cost model: store cardinality + dictionary IRI resolution
-    loka_sparql::optimize_full(&mut query, Some(&store), Some(&dict));
+    loka_sparql::optimize_with_vectors(&mut query, Some(&store), Some(&dict), Some(&*vectors));
 
     let result = loka_sparql::execute_with_vectors(&query, &store, &dict, &vectors)?;
 

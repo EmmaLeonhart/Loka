@@ -1,7 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use loka_core::{TermDictionary, Triple, TripleStore};
 use loka_hnsw::{DistanceMetric, VectorPredicateConfig, VectorRegistry};
-use loka_sparql::{execute_with_vectors, parse};
+use loka_sparql::{execute_with_vectors, optimize_with_vectors, parse};
 
 /// Build a chain graph: node_0 -> node_1 -> ... -> node_{n-1}
 fn chain_graph(length: usize) -> (TripleStore, TermDictionary) {
@@ -299,6 +299,63 @@ fn bench_graph_then_vector(c: &mut Criterion) {
     group.finish();
 }
 
+/// A rare type plus VECTOR_SIMILAR (planning/cost-based-hnsw.md): the
+/// vector-first order the old heuristic always chose, against the order the
+/// cost model picks (graph first, then exact scoring of the bound subjects).
+fn bench_rare_type_plan(c: &mut Criterion) {
+    let mut group = c.benchmark_group("rare_type_plan");
+    let (n, dims) = (5000, 64);
+    let mut dict = TermDictionary::new();
+    let mut store = TripleStore::new();
+    let rdf_type = dict.intern("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+    let emb = dict.intern("http://example.org/emb");
+    let rare = dict.intern("http://example.org/Rare");
+    let common = dict.intern("http://example.org/Common");
+    let mut vectors = VectorRegistry::new();
+    vectors
+        .declare(VectorPredicateConfig {
+            predicate_id: emb,
+            dimensions: dims,
+            m: 16,
+            ef_construction: 100,
+            metric: DistanceMetric::Cosine,
+        })
+        .unwrap();
+    let mut seed: u64 = 0x2545f4914f6cdd1d;
+    for i in 0..n {
+        let s = dict.intern(&format!("http://example.org/e{}", i));
+        let vid = dict.intern(&format!("\"e{}\"^^<http://loka.dev/f32vec>", i));
+        let class = if i < 5 { rare } else { common };
+        store.insert(Triple::new(s, rdf_type, class)).unwrap();
+        store.insert(Triple::new(s, emb, vid)).unwrap();
+        let v: Vec<f32> = (0..dims)
+            .map(|_| {
+                seed ^= seed << 13;
+                seed ^= seed >> 7;
+                seed ^= seed << 17;
+                (seed % 1000) as f32 / 1000.0
+            })
+            .collect();
+        vectors.insert(emb, v, vid).unwrap();
+    }
+    let query_vec = vec!["0.5"; dims].join(" ");
+    let sparql = format!(
+        "PREFIX ex: <http://example.org/> SELECT ?s WHERE {{          VECTOR_SIMILAR(?s ex:emb \"{query_vec}\"^^<http://loka.dev/f32vec>, 0.5) .          ?s a ex:Rare }}"
+    );
+    let as_written = parse(&sparql).unwrap();
+    let mut planned = as_written.clone();
+    optimize_with_vectors(&mut planned, Some(&store), Some(&dict), Some(&vectors));
+    for (name, q) in [("vector_first", &as_written), ("cost_planned", &planned)] {
+        group.bench_function(name, |b| {
+            b.iter(|| {
+                let result = execute_with_vectors(black_box(q), &store, &dict, &vectors).unwrap();
+                black_box(result);
+            });
+        });
+    }
+    group.finish();
+}
+
 /// OPTIONAL pattern: left outer join semantics.
 /// Common in SPARQL for getting optional properties.
 fn bench_optional(c: &mut Criterion) {
@@ -381,6 +438,7 @@ criterion_group!(
     bench_star_join,
     bench_vector_search,
     bench_graph_then_vector,
+    bench_rare_type_plan,
     bench_optional,
     bench_filter,
 );

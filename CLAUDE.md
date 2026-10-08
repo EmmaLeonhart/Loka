@@ -299,9 +299,10 @@ VECTOR_SIMILAR(?doc :hasEmbedding "..."^^loka:f32vec, 0.85, ef:=200)
 ORDER BY DESC(VECTOR_SCORE(?doc :hasEmbedding "..."^^loka:f32vec))
 ```
 
-### Query planner heuristic (v0.1)
-- Subject **bound** before VECTOR_SIMILAR: execute graph first, filter by vector
-- Subject **unbound**: execute vector search first (top-k), then evaluate graph patterns over candidates
+### Query planner: HNSW as a costed access path
+- The planner costs an unbound VECTOR_SIMILAR as the rows it can return, `min(k, indexed vectors)`, on the same scale as a triple pattern's weight × cardinality, so a more selective graph pattern (e.g. a rare `rdf:type`) runs first (`optimize_with_vectors`)
+- For a **bound** subject the executor picks the access path at run time: exact scoring of the subjects' own vectors when that costs fewer distance computations than a beam search (`min(N, ef·M·(⌈log2 N⌉+1))`), else the HNSW search. An explicit `k:=` always takes the index path
+- Without `k:=`, the graph-first (exact) plan can return bound subjects the k-capped index path misses, so results are a superset of the index path's. Design: `planning/cost-based-hnsw.md`
 - Adaptive execution (runtime reordering) is future work
 
 ---

@@ -266,14 +266,14 @@ SELECT ?shrine ?label WHERE {
 | VECTOR_SIMILAR in SPARQL parser | Implemented |
 | VECTOR_SIMILAR in query executor | Implemented |
 | VECTOR_SCORE in ORDER BY | Implemented |
-| Query planner vector integration | Implemented (static heuristic) |
+| Query planner vector integration | Implemented (cost-based) |
 | ef_search hint | Implemented |
 | Top-K mode | Implemented |
 | HNSW virtual edge triples (generation) | Implemented |
 | HNSW virtual edges queryable in SPARQL | Implemented |
 | HNSW traversal via property paths | Implemented |
 | Predicate-based exit conditions (UNTIL, GREEDY) | Implemented |
-| Cost-based query planning | Not yet |
+| Cost-based query planning | Implemented (HNSW vs graph-first; adaptive execution not yet) |
 | Pseudo-tables (auto-discovered columnar indexes) | Not yet |
 
 The core SPARQL+ vector operators are fully functional. HNSW property path traversal and exit conditions are in; the next phase is cost-based planning and pseudo-table columnar acceleration.
