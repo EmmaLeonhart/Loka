@@ -15,7 +15,6 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 3. **Attempt every TODO.md item that is not computationally intensive** (GPU-gated items and the
    30M+ sustained-ingest check are excluded), in TODO.md order:
-   f. SDK publishing: re-verify readiness and dry runs; publishing itself is Emma's.
    g. Studio items (remote access, Dart FFI, embedded MCP, graph view parity, Protege):
       Flutter Studio was deleted, so map each to the Electron/web Studio or mark it obsolete,
       and attempt the ones that still apply.

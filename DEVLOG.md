@@ -7,6 +7,28 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 — SDK publish readiness re-verified; the site still said Apache 2.0
+
+Queue item 3f. Publishing is Emma's call, so the attempt was to re-run the packaging dry runs
+and check the result. Nothing was published.
+- **Python:** `python -m build` + `twine check`, wheel and sdist PASSED.
+- **TypeScript:** built as `publish-sdks.yml` does (`npx tsc`), `npm pack` gives 15 files with
+  the compiled `dist/`. An unbuilt checkout packs 2, which is expected and not a bug.
+- **Rust:** `cargo publish --dry-run` packaged 10 files.
+- **.NET:** `dotnet pack` produced `Loka.Client.0.1.0.nupkg`.
+- **Go:** builds and vets.
+
+Two findings, both fixed:
+1. **No SDK package carried its licence text.** The TypeScript manifest even lists `LICENSE` in
+   `files`. Each publish job now copies the root `LICENSE` into its SDK dir before packaging.
+   Verified locally: npm (15 files incl. LICENSE) and the wheel (`dist-info/licenses/LICENSE`).
+2. **The website still said Apache 2.0.** Emma relicensed to AGPL-3.0-or-later on 2026-05-27
+   (`ad167c3`), and LICENSE, Cargo.toml, every SDK manifest and the README already say so. But
+   the front page (badge, schema.org `license`, text), the benchmarks and creation footers, and
+   CLAUDE.md's "Resolved: Apache 2.0" were stale. All corrected. The history page's day-one
+   "Apache 2.0 license" stays, with the relicense noted.
+
+---
 ## 2026-10-08 — `loka health` output, iterated from an agent's actual use
 
 Queue item 3e. I ran `loka health` and `loka health --json` on a freshly imported database, as an

@@ -253,6 +253,10 @@ publish is the irreversible step and needs Emma's explicit go + these setups:
   `EmmaLeonhart`, repo `Loka`, workflow `publish-sdks.yml`, no environment). No
   token secret — it uses OIDC. `loka` is **available on PyPI**.
 - Publish fires on a `v*` git tag.
+- **Re-verified 2026-10-08:** dry runs are clean for all five. Python wheel and sdist pass
+  `twine check`; TypeScript built as the workflow does (`npx tsc`) packs 15 files; Rust
+  `cargo publish --dry-run`; .NET `dotnet pack`; Go builds and vets. The packages now ship the
+  AGPL text (the publish workflow copies the root `LICENSE` into each SDK dir; none had one).
 
 - [ ] Python SDK → PyPI (name available; needs trusted-publisher registration)
 - [ ] TypeScript SDK → npm (needs account + `NPM_TOKEN` + a non-`loka` name)

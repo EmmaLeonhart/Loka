@@ -377,7 +377,7 @@ Loka's differentiator: unifying both into one system where vectors are triples a
 - **IRI encoding**: Sequential interning (current) vs. hash-based (Oxigraph's SipHash approach)?
 - **HNSW compaction**: what threshold triggers a background pass to clean deleted nodes?
 - **SPARQL property paths** (`+`, `*`, `?`): traversal strategy for cycles on large graphs?
-- ~~**License**: Apache 2.0 (patent grant) vs MIT (simplicity)?~~ **Resolved: Apache 2.0.**
+- ~~**License**: Apache 2.0 (patent grant) vs MIT (simplicity)?~~ **Resolved: AGPL-3.0-or-later** (Emma relicensed from Apache 2.0 on 2026-05-27, `ad167c3`; LICENSE, Cargo.toml and every SDK manifest match).
 
 ---
 
