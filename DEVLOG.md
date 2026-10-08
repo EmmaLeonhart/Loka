@@ -7,6 +7,32 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 — Studio shows query performance; its Health tab was broken; two metric flaws
+
+Promoted from TODO.md: a Studio page reading `/health/queries`. This became a "Query
+performance" section of the web-studio Health tab: query count, latency p50/p90/p99, planner
+estimates within 2×, q-error p50/p90, and a per-shape table. `LokaClient.queryMetrics()` was
+added to `app.js`.
+
+Found on the way:
+1. **The Health tab didn't load at all.** A stray quote made `types.map(...)` an unterminated
+   string in `screens/health.js`, a SyntaxError since `909e6c3`. `node --check` passed it; a
+   real ES-module import didn't. Fixed.
+2. Verifying the page against a live `loka serve` with the test data showed q-error **400** on
+   every scored pattern. Two flaws, both fixed with a server test:
+   - **Planner:** a constant IRI that isn't in the dictionary is in no triple, but it was
+     estimated as unbound (here, the whole store). It now estimates 0, which also gives the
+     pattern cost 0, so a query that can't match ends at once. Only IRIs are treated this
+     way; a literal's interned spelling can differ.
+   - **Scoring:** a pattern run under a pushed-down LIMIT returns fewer rows because of the
+     limit, not the estimate. It is no longer scored.
+
+After the fixes, a realistic workload (200 items, 5 query shapes, 56 queries) scored 43 patterns,
+all at q-error 1.0. The page rendered in Chrome against that server; the screenshot is saved
+at `Documents/claude-screenshots/Loka_2026-10-08/studio-health-query-performance.jpg`. The
+throwaway server and static server were stopped afterwards. 32 suites pass; clippy is clean.
+
+---
 ## 2026-10-07 (late night) — BEAM(vector, k): HNSW beam search as a path mode
 
 Promoted from TODO.md while step 10 waits on Emma, and the natural next step after GREEDY.

@@ -2248,6 +2248,40 @@ mod tests {
         );
     }
 
+    /// Found by verifying the Studio page on a real workload: an IRI that is
+    /// in no triple was estimated as the whole store (q-error 400), and a
+    /// LIMIT-truncated pattern was scored against its full estimate.
+    #[tokio::test]
+    async fn absent_iris_estimate_zero_and_limited_patterns_are_not_scored() {
+        let state = test_state(); // one triple: Alice knows Bob
+        let nt: String = (0..20)
+            .map(|i| {
+                format!(
+                    "<http://example.org/n{i}> <http://example.org/p> <http://example.org/o{i}> .
+"
+                )
+            })
+            .collect();
+        send(&state, "POST", "/triples", "text/plain", nt).await;
+
+        // Predicate never interned: estimate 0, actual 0, q-error 1.
+        assert!(star_rows(&state, "SELECT ?s WHERE { ?s ex:nowhere ?o }")
+            .await
+            .is_empty());
+        // A pushed-down LIMIT: 5 of an estimated 20 rows, not scored.
+        assert_eq!(
+            star_rows(&state, "SELECT ?s WHERE { ?s ex:p ?o } LIMIT 5")
+                .await
+                .len(),
+            5
+        );
+
+        let (_, m) = send(&state, "GET", "/health/queries", "", String::new()).await;
+        assert_eq!(m["queries"], 2);
+        assert_eq!(m["estimates"]["scored"], 1, "{m}");
+        assert_eq!(m["estimates"]["q_error"]["p50"], 1.0, "{m}");
+    }
+
     /// A computed BIND value must render as its string over HTTP.
     ///
     /// This is the end of the chain that starts in loka-core: the value table is

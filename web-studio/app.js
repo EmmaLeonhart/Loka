@@ -64,6 +64,15 @@ export class LokaClient {
     } catch { return {}; }
   }
 
+  // Query latency and planner-estimate accuracy (`GET /health/queries`,
+  // planning/query-metrics.md). `null` when the endpoint has none.
+  async queryMetrics() {
+    try {
+      const r = await fetch(this._base + '/health/queries');
+      return r.ok ? await r.json() : null;
+    } catch { return null; }
+  }
+
   async exportGraph(format = 'turtle') {
     const u = this._base + '/graph' + (format === 'ntriples' ? '?format=ntriples' : '');
     const r = await fetch(u);

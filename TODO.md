@@ -250,7 +250,7 @@ sustained GPU run or a large risky ingest; they wait for cloud GPU or a donor.
 
 ### Database Health Dashboard (remaining)
 - [x] Query performance metrics: per-pattern latency percentiles, planner estimate accuracy (`GET /health/queries`, `planning/query-metrics.md`; 2026-10-07)
-- [ ] Studio page reading `/health/queries`
+- [x] Studio page reading `/health/queries`: Query performance section of the web-studio Health tab (2026-10-08)
 - [ ] Iterate CLI health output format based on real agent usage
 - [ ] Loka Studio health dashboard as Flutter landing page: overall status, per-index cards, action buttons
 

@@ -389,6 +389,16 @@ fn estimate_triple_cardinality(
     // Variables that are bound by previous patterns are treated as None
     // because we don't know their runtime value at plan time.
     // Only truly constant terms (IRIs, literals) contribute to the estimate.
+    // An IRI that isn't in the dictionary is in no triple, so the pattern
+    // matches nothing. It used to be estimated as unbound (e.g. the whole
+    // store), found by the /health/queries q-error on a real workload.
+    // Literals are left out: their interned spelling can differ.
+    if [subject, predicate, object]
+        .iter()
+        .any(|t| iri_known_absent(t, dict, prefixes))
+    {
+        return 0;
+    }
     let s = term_to_constant_id(subject, dict, prefixes);
     let p = term_to_constant_id(predicate, dict, prefixes);
     let o = term_to_constant_id(object, dict, prefixes);
@@ -401,6 +411,28 @@ fn estimate_triple_cardinality(
     // dominating the cost function (e.g., a predicate with 1M triples
     // shouldn't always be evaluated last if it has good index support).
     estimate.min(MAX_CARDINALITY)
+}
+
+/// Whether `term` is an IRI that the dictionary has never seen (so no triple
+/// can contain it). False without a dictionary or for anything but an IRI.
+fn iri_known_absent(
+    term: &Term,
+    dict: Option<&TermDictionary>,
+    prefixes: &HashMap<String, String>,
+) -> bool {
+    let Some(dict) = dict else {
+        return false;
+    };
+    match term {
+        Term::Iri(iri) => dict.lookup(iri).is_none(),
+        Term::A => dict
+            .lookup("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
+            .is_none(),
+        Term::PrefixedName { prefix, local } => prefixes
+            .get(prefix)
+            .is_some_and(|base| dict.lookup(&format!("{base}{local}")).is_none()),
+        _ => false,
+    }
 }
 
 /// Extract a constant TermId from a term, if it's not a variable.

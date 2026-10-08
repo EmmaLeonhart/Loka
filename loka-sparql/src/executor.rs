@@ -227,18 +227,20 @@ fn execute_query_with_ctx(query: &Query, ctx: &mut ExecutionContext<'_>) -> Resu
         if let Some(m) = metrics {
             let shape = pattern_shape(&patterns[i], bound_before.as_ref());
             // The planner's estimate predicts the row count only when none of
-            // the pattern's variables were bound going in (one empty row).
-            let estimate = (results.len() == 1 && results[0].is_empty())
-                .then(|| {
-                    crate::planner::estimate_pattern_rows(
-                        &patterns[i],
-                        ctx.store,
-                        ctx.dict,
-                        Some(ctx.vectors),
-                        ctx.prefixes,
-                    )
-                })
-                .flatten();
+            // the pattern's variables were bound going in (one empty row), and
+            // no LIMIT was pushed into it (that truncates the count).
+            let estimate =
+                (results.len() == 1 && results[0].is_empty() && pushable_limit.is_none())
+                    .then(|| {
+                        crate::planner::estimate_pattern_rows(
+                            &patterns[i],
+                            ctx.store,
+                            ctx.dict,
+                            Some(ctx.vectors),
+                            ctx.prefixes,
+                        )
+                    })
+                    .flatten();
             m.record_pattern(
                 &shape,
                 pattern_started.elapsed(),

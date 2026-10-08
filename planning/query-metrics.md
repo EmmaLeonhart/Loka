@@ -14,7 +14,8 @@ Phase 7 of `planning/large-features.md`. Written before the code.
   **none of its variables already bound** (normally the first one). There the actual row
   count is directly comparable. For those patterns, record the q-error
   `max(1, est, actual) / max(1, min(est, actual))` (≥ 1; 1 = exact), and report the count, the
-  p50 / p90 q-error, and the fraction within 2×. Patterns after a join aren't scored:
+  p50 / p90 q-error, and the fraction within 2×. Patterns run under a pushed-down LIMIT are
+  not scored either: the limit, not the estimate, sets their row count. Patterns after a join aren't scored:
   the planner's estimate ignores runtime bindings, so a comparison there measures nothing.
 - **Samples** are kept in bounded rings (the last 1024 per series), so memory stays flat
   however long the server runs. Percentiles are nearest-rank over the ring.

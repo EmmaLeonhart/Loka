@@ -15,7 +15,7 @@ is best"*) — a **left side rail**, not a top nav:
 | **Knowledge Graph** | `<iframe>` → the engine's `/browse` (the vis-network viewer). Click a node = expand real neighbours; **double-click = the world model generates triples for it** (see below) |
 | **SPARQL** | JS editor + examples + type-coloured results (`LokaClient.query`) |
 | **Triples** | Paged `SELECT ?s ?p ?o` table |
-| **Health** | Reachability, triple count, type distribution, HNSW `/vectors/health` |
+| **Health** | Reachability, triple count, type distribution, query performance (`/health/queries`: latency, per pattern shape, planner estimate accuracy), HNSW `/vectors/health` |
 | **Ontology** | Full graph as Turtle / N-Triples (`GET /graph`) + download |
 
 There is **no Playground tab**: the engine's old `:3030/` SPARQL IDE
