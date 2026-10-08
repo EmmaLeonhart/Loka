@@ -7,6 +7,31 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 — Adaptive execution: spec written (not built)
+
+Promoted from TODO.md while step 10 waits on Emma. Phase 4 deferred adaptive execution with
+"it gets a spec, not a guess"; this is that spec, `planning/adaptive-execution.md`.
+
+In brief:
+- Reorder only commuting inner-join patterns, within segments between order-sensitive
+  barriers (OPTIONAL, UNION, BIND, VALUES, subqueries, temporal scopes; filters re-placed after
+  their variables are bound).
+- At each step, estimate each remaining pattern's output as current rows × fanout given the
+  bound positions. Fanout comes from per-predicate distinct subject/object counts, which the
+  store doesn't keep yet, or from sampling the first rows.
+- Switch only when the saving is at least 4× and at least 1,000 rows, so small queries and
+  stable plans are unaffected.
+- Record each adaptive choice in `/health/queries`, which also gives q-errors for later
+  patterns.
+
+The tests it must pass are listed: same results, barriers hold, it picks the better plan on a
+correlated dataset (benched), no bench regression.
+
+It isn't built, because the spec leaves one question open that needs a measurement first:
+sampling alone versus maintained distinct counts (insert overhead on the 2M store). The TODO
+item stays open and points at the spec.
+
+---
 ## 2026-10-08 — Studio shows query performance; its Health tab was broken; two metric flaws
 
 Promoted from TODO.md: a Studio page reading `/health/queries`. This became a "Query
