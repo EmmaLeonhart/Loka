@@ -52,7 +52,9 @@ publish verdict.
 ## ACTIVE — large feature work (Emma, 2026-10-07: "Do the large feature work")
 
 Plan, scope and tests per phase: `planning/large-features.md`. In order:
-7. **Phase 7 — query-latency metrics in health.**
+7. **Phase 7 — query metrics in health** (`planning/query-metrics.md`): QueryMetrics recorder
+   (latency per query and per pattern shape, planner q-error on unbound patterns), executor
+   instrumentation, `GET /health/queries`, known-workload tests.
 
 ---
 
