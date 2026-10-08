@@ -269,11 +269,15 @@ publish is the irreversible step and needs Emma's explicit go + these setups:
 - [x] MCP download_studio + launch_studio tools
 - [x] LOKA_ENDPOINT env var for launch-time connection
 - [x] `loka mcp --studio` flag to launch MCP + Studio together
-- [ ] Remote Studio access: connect Studio to a remote Loka over the network
-- [ ] Dart FFI bindings: replace HTTP client with direct loka_ffi.dll calls
-- [ ] Studio-embedded MCP server: start MCP on background thread from within Studio
-- [ ] Flutter graph view: remaining browse.html parity
-- [ ] Long-term: absorb core Protege functionality
+Re-checked 2026-10-08 against today's Studio (web-studio + Electron; Flutter deleted 2026-05-30):
+- [x] Remote Studio access: `loka serve --host <addr>` (default 127.0.0.1) plus a passcode field in
+      Studio that sends `Authorization: Bearer`. Verified in Chrome against a passcode-protected
+      server. Known limit: the Knowledge Graph tab iframes `/browse`, which can't send the header,
+      so that one tab doesn't load against a passcode-protected server.
+- [x] ~~Dart FFI bindings~~: obsolete, there's no Dart left. Studio talks HTTP.
+- [x] ~~Studio-embedded MCP server~~: covered by `loka mcp --studio` (MCP + Studio together).
+- [x] ~~Flutter graph view parity with browse.html~~: obsolete; the Knowledge Graph tab *is* `browse.html`.
+- [ ] Long-term: absorb core Protege functionality (not attempted: too large for an attempt)
 
 ### Query Language Wrappers
 - [ ] GQL (ISO 39075) → SPARQL transpiler: ISO standard graph query language mapped to SPARQL.

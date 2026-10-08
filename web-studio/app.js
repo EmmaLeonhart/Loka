@@ -10,18 +10,25 @@ const DEFAULT_ENDPOINT = 'http://localhost:3030';
 
 /* ── LokaClient: 1:1 port of loka-studio/lib/services/loka_client.dart ── */
 export class LokaClient {
-  constructor(endpoint) { this.endpoint = endpoint; }
+  // `passcode`: a `loka serve --passcode` server's passcode, sent as
+  // `Authorization: Bearer` on every request (empty = none).
+  constructor(endpoint, passcode = '') { this.endpoint = endpoint; this.passcode = passcode; }
   get _base() { return this.endpoint.replace(/\/+$/, ''); }
+  _fetch(path, opts = {}) {
+    const headers = { ...(opts.headers || {}) };
+    if (this.passcode) headers['Authorization'] = 'Bearer ' + this.passcode;
+    return fetch(this._base + path, { ...opts, headers });
+  }
 
   async health() {
     try {
-      const r = await fetch(this._base + '/health');
+      const r = await this._fetch('/health');
       return r.ok;
     } catch { return false; }
   }
 
   async query(sparql) {
-    const r = await fetch(this._base + '/sparql', {
+    const r = await this._fetch('/sparql', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/sparql-query',
@@ -59,7 +66,7 @@ export class LokaClient {
 
   async vectorsHealth() {
     try {
-      const r = await fetch(this._base + '/vectors/health');
+      const r = await this._fetch('/vectors/health');
       return r.ok ? await r.json() : {};
     } catch { return {}; }
   }
@@ -68,14 +75,13 @@ export class LokaClient {
   // planning/query-metrics.md). `null` when the endpoint has none.
   async queryMetrics() {
     try {
-      const r = await fetch(this._base + '/health/queries');
+      const r = await this._fetch('/health/queries');
       return r.ok ? await r.json() : null;
     } catch { return null; }
   }
 
   async exportGraph(format = 'turtle') {
-    const u = this._base + '/graph' + (format === 'ntriples' ? '?format=ntriples' : '');
-    const r = await fetch(u);
+    const r = await this._fetch('/graph' + (format === 'ntriples' ? '?format=ntriples' : ''));
     if (!r.ok) throw new Error(`Export failed: ${r.status}`);
     return r.text();
   }
@@ -100,9 +106,15 @@ const store = {
     catch { return DEFAULT_ENDPOINT; }
   },
   set endpoint(v) { try { localStorage.setItem('loka-studio-endpoint', v); } catch {} },
+  // Session-only: a passcode is a credential, so it isn't kept after the
+  // window closes.
+  get passcode() {
+    try { return sessionStorage.getItem('loka-studio-passcode') || ''; } catch { return ''; }
+  },
+  set passcode(v) { try { sessionStorage.setItem('loka-studio-passcode', v); } catch {} },
 };
 
-let client = new LokaClient(store.endpoint);
+let client = new LokaClient(store.endpoint, store.passcode);
 
 /* ── Boot ── */
 const view = document.getElementById('view');
@@ -118,11 +130,19 @@ for (const t of TABS) {
   tabsEl.appendChild(b);
 }
 
+const pcInput = document.getElementById('passcode');
 epInput.value = store.endpoint;
+pcInput.value = store.passcode;
+pcInput.addEventListener('change', () => {
+  store.passcode = pcInput.value;
+  client = new LokaClient(client.endpoint, pcInput.value);
+  pingConn();
+  render();
+});
 epInput.addEventListener('change', () => {
   const v = epInput.value.trim().replace(/\/+$/, '') || DEFAULT_ENDPOINT;
   store.endpoint = v;
-  client = new LokaClient(v);
+  client = new LokaClient(v, store.passcode);
   pingConn();
   render(); // re-render current tab against the new endpoint
 });
@@ -157,7 +177,7 @@ loadBtn.onclick = async () => {
   loadBtn.textContent = 'Loading…';
   try {
     const nt = await (await fetch('./testdata.nt')).text();
-    const r = await fetch(client._base + '/triples', {
+    const r = await client._fetch('/triples', {
       method: 'POST',
       headers: { 'Content-Type': 'application/n-triples' },
       body: nt,

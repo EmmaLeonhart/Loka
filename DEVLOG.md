@@ -7,6 +7,25 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 — Studio items: remote access built; the Flutter-era items mapped or retired
+
+Queue item 3g. TODO.md's Studio list was written for the Flutter Studio, deleted 2026-05-30.
+- **Remote access** is built:
+  - `loka serve --host <addr>`, default `127.0.0.1`. The July firewall fix made loopback the
+    default and said to add `--host` "when Remote Studio lands". It warns when listening off
+    loopback without `--passcode`.
+  - Studio has a passcode field (session storage only) and sends `Authorization: Bearer` on
+    every request.
+  - Verified with a release server on 127.0.0.1 with a passcode: `/health` 200 without auth,
+    `/sparql` 401 without and 200 with. In Chrome, Studio showed Triples "—" without the
+    passcode and read the store plus `/health/queries` with it. Screenshot:
+    `Documents/claude-screenshots/Loka_2026-10-08/studio-passcode-remote-access.jpg`.
+  - I didn't bind `0.0.0.0` on this machine: that's what raised the firewall prompts in July.
+  - Known limit: the Knowledge Graph tab iframes `/browse`, which can't carry the header.
+- **Dart FFI:** obsolete. **Embedded MCP:** covered by `loka mcp --studio`. **Graph-view parity:**
+  obsolete; that tab is `browse.html`. **Protégé:** left long-term.
+
+---
 ## 2026-10-08 — SDK publish readiness re-verified; the site still said Apache 2.0
 
 Queue item 3f. Publishing is Emma's call, so the attempt was to re-run the packaging dry runs

@@ -61,6 +61,13 @@ enum Commands {
         /// server has had no requests for this many seconds (0 = disabled).
         #[arg(long, default_value = "0")]
         maintenance_idle_secs: u64,
+
+        /// Address to listen on. Defaults to loopback, so nothing outside this
+        /// machine can connect (and no firewall prompt). Use e.g. 0.0.0.0 to
+        /// allow remote clients such as Loka Studio on another machine, and
+        /// set --passcode when you do.
+        #[arg(long, default_value = "127.0.0.1")]
+        host: String,
     },
     /// Execute a SPARQL query from the command line.
     Query {
@@ -290,6 +297,7 @@ async fn main() -> anyhow::Result<()> {
             passcode,
             backup_interval,
             maintenance_idle_secs,
+            host,
         } => {
             // Background version check (non-blocking, best-effort)
             tokio::spawn(async {
@@ -432,8 +440,18 @@ async fn main() -> anyhow::Result<()> {
                 );
             }
 
+            let loopback = host
+                .parse::<std::net::IpAddr>()
+                .map(|ip| ip.is_loopback())
+                .unwrap_or(host == "localhost");
+            if !loopback && passcode.is_none() {
+                tracing::warn!(
+                    "Listening on {} without --passcode: anyone who can reach this address can read and write the database",
+                    host
+                );
+            }
             let app = loka_proto::router(state);
-            let addr = format!("127.0.0.1:{}", port);
+            let addr = format!("{}:{}", host, port);
             // Announce the BUILD, not just the version. A server whose log says
             // only "0.4.1" cannot tell you it predates the fix you are testing —
             // which is exactly how a stale binary wasted three investigations.
