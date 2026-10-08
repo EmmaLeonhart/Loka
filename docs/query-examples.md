@@ -734,3 +734,4 @@ SELECT ?person1 ?person2 ?location WHERE {
 | Top-K mode | Not yet |
 | UNTIL (predicate-based exit conditions) | Implemented |
 | GREEDY (HNSW local-optimum descent as a path) | Implemented |
+| BEAM (HNSW beam search, width k, as a path) | Implemented |

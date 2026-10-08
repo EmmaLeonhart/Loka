@@ -7,6 +7,29 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (late night) — BEAM(vector, k): HNSW beam search as a path mode
+
+Promoted from TODO.md while step 10 waits on Emma, and the natural next step after GREEDY.
+`?entry loka:hnswNeighbor+ ?n BEAM(vector, k)` runs HNSW's layer search over the live graph
+with beam width k:
+- expand the most similar unexpanded candidate;
+- keep the k best found;
+- stop when the next candidate is worse than the worst of them;
+- emit up to k nodes, most similar first (ties by term id).
+
+Width must be at least 1 (a parse error otherwise), and the predicate must be an HNSW edge
+predicate, as for GREEDY.
+
+Tests (`loka-sparql/tests/path_until.rs`, +3):
+- `BEAM(v, 1)` equals `GREEDY(v)` from all 8 start nodes;
+- on the fixed 8-node index, `BEAM(v, k)` from doc0 equals the brute-force top k for
+  k = 1, 3, 5, in order (stated for this dataset only: beam search isn't exact in general);
+- k = 20 returns all 8 nodes;
+- width 0 doesn't parse.
+
+32 suites pass; clippy is clean.
+
+---
 ## 2026-10-07 (late night) — SPARQL INSERT/DELETE DATA handle vector literals
 
 Promoted from TODO.md, since step 10 waits on Emma. A `"…"^^loka:f32vec` object in

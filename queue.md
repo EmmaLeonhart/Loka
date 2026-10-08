@@ -51,12 +51,6 @@ publish verdict.
 
 ---
 
-11. **BEAM(vector, k) path mode** (TODO "Beam search semantics (ef > 1) as a path mode";
-    design in `planning/until-syntax.md` § BEAM): parser, executor, tests vs GREEDY and
-    brute-force top-k.
-
----
-
 ## Pinned tail — autonomous-loop cron management
 
 These two items are always the last in the queue (autonomous-loop playbook §d):

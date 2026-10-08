@@ -3814,9 +3814,9 @@ fn evaluate_path_until(
     };
     let include_zero = matches!(modifier, PathModifier::ZeroOrMore);
     let hnsw_path = is_hnsw_edge_predicate(base, current, ctx);
-    if matches!(exit, PathExit::Greedy(_)) && !hnsw_path {
+    if matches!(exit, PathExit::Greedy(_) | PathExit::Beam(..)) && !hnsw_path {
         return Err(SparqlError::Execution(
-            "GREEDY needs an HNSW edge predicate in virtual edge mode".into(),
+            "GREEDY / BEAM needs an HNSW edge predicate in virtual edge mode".into(),
         ));
     }
     let max_depth = 50;
@@ -3907,9 +3907,75 @@ fn evaluate_path_until(
                 out.push(bind(at));
                 out_scores.push(current_scores[row_idx].clone());
             }
+            PathExit::Beam(query, k) => {
+                for node in beam_search(start, query, *k, base, ctx)? {
+                    out.push(bind(node));
+                    out_scores.push(current_scores[row_idx].clone());
+                }
+            }
         }
     }
     Ok((out, out_scores))
+}
+
+/// HNSW's layer search over the virtual edge predicate `base`, beam width
+/// `k`, from `start` towards `query` (`planning/until-syntax.md` § BEAM).
+/// Returns up to `k` nodes, most similar first (ties by term id). Nodes with
+/// no comparable vector are skipped.
+fn beam_search(
+    start: TermId,
+    query: &[f32],
+    k: usize,
+    base: &Term,
+    ctx: &ExecutionContext<'_>,
+) -> Result<Vec<TermId>> {
+    // (similarity, node), ordered by similarity then id.
+    let key = |a: &(f32, TermId), b: &(f32, TermId)| a.0.total_cmp(&b.0).then(b.1.cmp(&a.1));
+    let Some(s0) = entity_similarity(start, query, ctx) else {
+        return Ok(Vec::new());
+    };
+    let mut visited = std::collections::HashSet::from([start]);
+    let mut candidates: Vec<(f32, TermId)> = vec![(s0, start)];
+    let mut best: Vec<(f32, TermId)> = vec![(s0, start)];
+    while !candidates.is_empty() {
+        check_deadline(ctx)?;
+        // Expand the most similar unexpanded candidate.
+        let (i, _) = candidates
+            .iter()
+            .enumerate()
+            .max_by(|a, b| key(a.1, b.1))
+            .ok_or_else(|| SparqlError::Execution("empty beam".into()))?;
+        let current = candidates.swap_remove(i);
+        let worst = best
+            .iter()
+            .min_by(|a, b| key(a, b))
+            .copied()
+            .ok_or_else(|| SparqlError::Execution("empty beam".into()))?;
+        if best.len() >= k && key(&current, &worst) == Ordering::Less {
+            break; // nothing left can improve the k best
+        }
+        for n in path_step_targets(current.1, base, 0, true, ctx)? {
+            if !visited.insert(n) {
+                continue;
+            }
+            let Some(s) = entity_similarity(n, query, ctx) else {
+                continue;
+            };
+            let cand = (s, n);
+            let worst = best.iter().min_by(|a, b| key(a, b)).copied();
+            if best.len() < k || worst.is_some_and(|w| key(&cand, &w) == Ordering::Greater) {
+                candidates.push(cand);
+                best.push(cand);
+                if best.len() > k {
+                    if let Some((wi, _)) = best.iter().enumerate().min_by(|a, b| key(a.1, b.1)) {
+                        best.swap_remove(wi);
+                    }
+                }
+            }
+        }
+    }
+    best.sort_by(|a, b| key(b, a));
+    Ok(best.into_iter().map(|(_, n)| n).collect())
 }
 
 /// The highest similarity (per the index's metric; higher is closer) between
@@ -3978,6 +4044,7 @@ fn pattern_shape(pattern: &Pattern, bound: Option<&Bindings>) -> String {
             let kind = match exit {
                 PathExit::Until(_) => "until",
                 PathExit::Greedy(_) => "greedy",
+                PathExit::Beam(..) => "beam",
             };
             format!("path_{kind}({},{})", pos(subject), pos(object))
         }

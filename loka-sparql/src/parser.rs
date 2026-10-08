@@ -315,6 +315,9 @@ pub enum PathExit {
     Until(FilterExpr),
     /// Greedy descent towards this vector, ending at a local optimum.
     Greedy(Vec<f32>),
+    /// Beam search towards this vector with beam width k; up to k nodes,
+    /// most similar first.
+    Beam(Vec<f32>, usize),
 }
 
 /// A filter expression (simplified).
@@ -928,6 +931,21 @@ impl<'a> Parser<'a> {
                     self.skip_whitespace();
                     self.expect_char(')')?;
                     Some(PathExit::Greedy(vector))
+                } else if self.peek_keyword("BEAM") {
+                    self.expect_keyword("BEAM")?;
+                    self.expect_char('(')?;
+                    self.skip_whitespace();
+                    let vector = self.parse_vector_literal_value()?;
+                    self.skip_whitespace();
+                    self.expect_char(',')?;
+                    self.skip_whitespace();
+                    let k = self.parse_integer()?;
+                    if k < 1 {
+                        return Err(self.error("BEAM width must be at least 1"));
+                    }
+                    self.skip_whitespace();
+                    self.expect_char(')')?;
+                    Some(PathExit::Beam(vector, k as usize))
                 } else {
                     None
                 };
@@ -953,12 +971,13 @@ impl<'a> Parser<'a> {
                             }
                         );
                         if !closure_path {
-                            return Err(
-                                self.error("UNTIL / GREEDY needs a `+` or `*` path predicate")
-                            );
+                            return Err(self
+                                .error("UNTIL / GREEDY / BEAM needs a `+` or `*` path predicate"));
                         }
                         if !matches!(object, Term::Variable(_)) {
-                            return Err(self.error("UNTIL / GREEDY needs a variable path object"));
+                            return Err(
+                                self.error("UNTIL / GREEDY / BEAM needs a variable path object")
+                            );
                         }
                         patterns.push(Pattern::PathUntil {
                             subject,

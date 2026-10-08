@@ -342,3 +342,69 @@ fn greedy_on_a_stored_predicate_is_an_error() {
     .unwrap();
     assert!(execute(&q, &store, &dict).is_err());
 }
+
+// ── BEAM ────────────────────────────────────────────────────────────────
+
+fn beam_from(
+    start: usize,
+    k: usize,
+    store: &TripleStore,
+    dict: &TermDictionary,
+    vectors: &VectorRegistry,
+    docs: &[TermId],
+) -> Vec<TermId> {
+    run(
+        &format!(
+            "SELECT ?n WHERE {{ <{}> <{}>+ ?n BEAM(\"{} {} {}\"^^<http://loka.dev/f32vec>, {k}) }}",
+            dict.resolve(docs[start]).unwrap(),
+            loka_hnsw::HNSW_NEIGHBOR_IRI,
+            QUERY[0],
+            QUERY[1],
+            QUERY[2]
+        ),
+        store,
+        dict,
+        vectors,
+    )
+}
+
+#[test]
+fn beam_of_width_one_is_greedy_descent() {
+    let (store, dict, vectors, docs, _) = indexed();
+    for start in 0..docs.len() {
+        assert_eq!(
+            beam_from(start, 1, &store, &dict, &vectors, &docs),
+            greedy_from(start, &store, &dict, &vectors, &docs),
+            "start doc{start}"
+        );
+    }
+}
+
+#[test]
+fn beam_returns_the_brute_force_top_k_on_this_dataset() {
+    // Stated for this small, well-connected index only: beam search on a
+    // graph is not guaranteed to find the exact top k in general.
+    let (store, dict, vectors, docs, _) = indexed();
+    let mut truth: Vec<(f32, TermId)> = POINTS
+        .iter()
+        .zip(&docs)
+        .map(|(p, d)| (cosine(p, &QUERY), *d))
+        .collect();
+    truth.sort_by(|a, b| b.0.total_cmp(&a.0));
+    for k in [1, 3, 5] {
+        let got = beam_from(0, k, &store, &dict, &vectors, &docs);
+        let want: Vec<TermId> = truth.iter().take(k).map(|(_, d)| *d).collect();
+        assert_eq!(got, want, "k = {k}: most similar first");
+    }
+    // More than there are nodes: every node, still in order.
+    let all = beam_from(0, 20, &store, &dict, &vectors, &docs);
+    assert_eq!(all.len(), docs.len());
+}
+
+#[test]
+fn beam_width_zero_is_a_parse_error() {
+    assert!(parse(
+        "SELECT ?n WHERE { <http://e/a> <http://e/p>+ ?n BEAM(\"1 0 0\"^^<http://loka.dev/f32vec>, 0) }"
+    )
+    .is_err());
+}

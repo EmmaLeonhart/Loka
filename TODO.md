@@ -227,7 +227,7 @@ sustained GPU run or a large risky ingest; they wait for cloud GPU or a donor.
 ### HNSW Traversal via SPARQL Property Paths
 - [x] `+`/`*` paths walk the virtual HNSW edges (`loka-sparql/tests/hnsw_paths.rs`; 2026-10-07)
 - [x] Greedy descent: `?s loka:hnswNeighbor+ ?n GREEDY(vector)` (`loka-sparql/tests/path_until.rs`; 2026-10-07)
-- [ ] Beam search semantics (ef > 1) as a path mode
+- [x] Beam search as a path mode: `?entry loka:hnswNeighbor+ ?n BEAM(vector, k)` (2026-10-07)
 
 ### Predicate-Based Exit Conditions (UNTIL)
 - [x] All of it, 2026-10-07: syntax in `planning/until-syntax.md`; per-step evaluation,
