@@ -104,15 +104,15 @@ jobs:
           name: loka-setup-x64.exe
           path: loka-setup-x64.exe
 
-  # NOTE: the Flutter `build-studio` job was removed 2026-05-30 when the Flutter
-  # Studio was deleted (Loka Studio is now the JS app in web-studio/, shelled by
-  # loka-studio/electron/). A replacement job that packages the Electron Studio
-  # into per-platform desktop installers is tracked in TODO.md and must be
-  # verified on a test tag before re-adding it to the release assets below.
+  # Electron Loka Studio for Windows / Linux / macOS. The same workflow runs
+  # by hand (workflow_dispatch), which is how it was verified on all three
+  # runners without a tag (2026-10-08).
+  studio:
+    uses: ./.github/workflows/studio-desktop.yml
 
   release:
     name: Create Release
-    needs: [build]
+    needs: [build, studio]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -128,4 +128,7 @@ jobs:
             loka-linux-x64.tar.gz
             loka-macos-arm64.tar.gz
             loka-macos-x64.tar.gz
+            loka-studio-windows-x64.exe
+            loka-studio-linux-x64.AppImage
+            loka-studio-macos-arm64.dmg
           generate_release_notes: true

@@ -701,16 +701,13 @@ Benchmark results are tracked automatically by CI. See:
 | Point lookup p50 | 0.61ms |
 | Point lookup p99 | 1.25ms |
 
-## Electron Loka Studio — desktop installers (added 2026-05-30)
+## Electron Loka Studio — desktop installers (added 2026-05-30; built 2026-10-08)
 
-The Flutter Studio was deleted 2026-05-30; Loka Studio is now `web-studio/` (JS) shelled
-by `loka-studio/electron/`. The release pipeline (`.github/workflows/release.yml`) no
-longer ships a built desktop Studio — its Flutter `build-studio` job was removed.
-
-Replace it with a job that packages the Electron Studio into per-platform desktop
-installers (electron-builder or electron-forge): bundle `loka-studio/electron/` +
-`web-studio/`, produce Windows (NSIS `.exe`), Linux (AppImage/`.tar.gz`), macOS
-(`.dmg`/`.app`). Re-add the resulting assets to the `release` job's `files:` list.
-**Must be verified on a throwaway `v*-rc` tag before trusting it** — release.yml is
-tag-triggered, so it cannot be validated by a normal push. Until then releases are
-engine-only. Pairs with the website's "forthcoming .exe installer" line.
+- [x] `.github/workflows/studio-desktop.yml` (manual + called by `release.yml`) packages the Electron
+      Studio: Windows portable `.exe`, Linux AppImage, macOS `.dmg` (unsigned). Verified by a manual
+      run on all three runners (run 37844608776: 70 / 102 / 93 MB). `release.yml` attaches them.
+- [x] Fixed on the way: the packaged Studio had no UI. `web-studio/` was never inside the package,
+      so its server looked for a path that only exists in a source checkout. It now ships as
+      `resources/web-studio`, and the workflow fails if it's ever missing.
+- [ ] The attach step itself runs only on a `v*` tag: check the assets on the next release.
+- [ ] macOS build is unsigned (Gatekeeper will warn); signing needs an Apple Developer ID (Emma's).

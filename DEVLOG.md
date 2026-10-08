@@ -7,6 +7,31 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 — Studio desktop packages for all three platforms; the packaged Studio had no UI
+
+Queue item 3i. Before writing a new job I built the existing Windows Studio package locally, and
+found it broken. electron-builder ignores `files` patterns outside the app folder, so
+`../../web-studio/**` never went in (the `app.asar` held only `main.js` and `server.js`).
+Packaged, `server.js` then served from two levels above `app.asar`, a path that exists only in a
+source checkout. So the Studio bundled in the Windows installer (since `7ad0fad`) would have
+served 404s. I established this from the code path and the package listing; I didn't run the
+old build.
+
+Fix:
+- `web-studio/` ships as an `extraResources` entry (`resources/web-studio`), and `main.js`
+  points `server.js` at it when packaged.
+- Dropped the non-existent `pages/favicon.ico` icon reference.
+- Verified locally: the unpacked `Loka Studio.exe` served `index.html` ("Loka Studio") and
+  `app.js` with 200. The window was closed afterwards. The final portable `.exe` step can't
+  finish on this machine (code-sign tooling needs symlink privilege), which is a local limit.
+
+New `studio-desktop.yml`, runnable by hand and callable: Windows portable, Linux AppImage, macOS
+`.dmg` (unsigned). Each job fails if `web-studio/index.html` isn't in the package. Verified
+without a tag by a manual run on all three runners: success, artifacts 70 / 102 / 93 MB.
+`release.yml` now calls it and attaches the three files. Only that attach step waits for the
+next real tag. macOS signing needs Emma's Apple Developer ID.
+
+---
 ## 2026-10-08 — GQL → SPARQL, first subset
 
 Queue item 3h. GQL's read core is the Cypher subset with different surface forms, so
