@@ -13,7 +13,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use loka_core::TermId;
+use loka_core::{
+    discover_pseudo_tables, extract_node_properties, PseudoTableRegistry, TermId, TripleStore,
+};
 use loka_hnsw::{HnswIndex, IndexSnapshot};
 
 use crate::error::ProtoError;
@@ -27,6 +29,8 @@ pub struct Activity {
     requests: AtomicU64,
     cycles: AtomicU64,
     tombstones_removed: AtomicU64,
+    pseudo_table_refreshes: AtomicU64,
+    pseudo_table_hits: AtomicU64,
 }
 
 fn now_ms() -> u64 {
@@ -63,6 +67,78 @@ impl Activity {
     pub fn tombstones_removed(&self) -> u64 {
         self.tombstones_removed.load(Ordering::Relaxed)
     }
+
+    /// Pseudo-table discoveries run by maintenance so far.
+    pub fn pseudo_table_refreshes(&self) -> u64 {
+        self.pseudo_table_refreshes.load(Ordering::Relaxed)
+    }
+
+    /// Triple patterns answered from pseudo-table columns so far.
+    pub fn pseudo_table_hits(&self) -> u64 {
+        self.pseudo_table_hits.load(Ordering::Relaxed)
+    }
+}
+
+/// Pseudo-tables and the store generation they were discovered at.
+pub struct DiscoveredTables {
+    /// The store's [`TripleStore::generation`] at discovery.
+    pub generation: u64,
+    /// The tables.
+    pub registry: PseudoTableRegistry,
+}
+
+/// Run a query with the server's pseudo-tables, counting columnar hits.
+/// Columns are used only while exact and current, so results equal the
+/// triple-index path's.
+pub fn execute_served(
+    state: &AppState,
+    query: &loka_sparql::Query,
+    store: &TripleStore,
+    dict: &loka_core::TermDictionary,
+    vectors: &loka_hnsw::VectorRegistry,
+) -> Result<loka_sparql::QueryResult, ProtoError> {
+    let tables = state.pseudo_tables.read().map_err(lock_err)?;
+    let (result, hits) = loka_sparql::execute_with_pseudo_tables(
+        query,
+        store,
+        dict,
+        vectors,
+        &loka_core::DatabaseConfig::default(),
+        tables.as_ref().map(|t| &t.registry),
+    )?;
+    state
+        .activity
+        .pseudo_table_hits
+        .fetch_add(hits as u64, Ordering::Relaxed);
+    Ok(result)
+}
+
+/// Rediscover pseudo-tables if there are none yet or the store has changed
+/// since the last discovery. Holds the store's read lock for the discovery
+/// (queries go on; writes wait), so it runs only from the idle cycle.
+/// Returns the number of tables if it ran.
+pub fn refresh_pseudo_tables(state: &AppState) -> Result<Option<usize>, ProtoError> {
+    let store = state.store.read().map_err(lock_err)?;
+    let current = store.generation();
+    let due = match state.pseudo_tables.read().map_err(lock_err)?.as_ref() {
+        None => true,
+        Some(t) => t.generation != current,
+    };
+    if !due {
+        return Ok(None);
+    }
+    let registry = discover_pseudo_tables(&extract_node_properties(&store), &store);
+    let count = registry.len();
+    *state.pseudo_tables.write().map_err(lock_err)? = Some(DiscoveredTables {
+        generation: current,
+        registry,
+    });
+    drop(store);
+    state
+        .activity
+        .pseudo_table_refreshes
+        .fetch_add(1, Ordering::Relaxed);
+    Ok(Some(count))
 }
 
 /// When background maintenance runs.
@@ -206,6 +282,13 @@ pub async fn maintenance_loop(state: Arc<AppState>, config: MaintenanceConfig) {
             Ok(Ok(_)) => {}
             Ok(Err(e)) => tracing::warn!("maintenance: rebuild failed: {e}"),
             Err(e) => tracing::warn!("maintenance: rebuild task failed: {e}"),
+        }
+        let s = state.clone();
+        match tokio::task::spawn_blocking(move || refresh_pseudo_tables(&s)).await {
+            Ok(Ok(Some(n))) => tracing::info!("maintenance: {n} pseudo-table(s) discovered"),
+            Ok(Ok(None)) => {}
+            Ok(Err(e)) => tracing::warn!("maintenance: pseudo-table discovery failed: {e}"),
+            Err(e) => tracing::warn!("maintenance: pseudo-table task failed: {e}"),
         }
     }
 }

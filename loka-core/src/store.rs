@@ -52,6 +52,8 @@ pub struct TripleStore {
     /// table columns) tell whether their source triples changed since they
     /// were built.
     predicate_generations: std::collections::HashMap<TermId, u64>,
+    /// Sum of all predicate generations: any change at all.
+    generation: u64,
 }
 
 impl TripleStore {
@@ -65,6 +67,7 @@ impl TripleStore {
             adjacency: std::collections::HashMap::new(),
             count: 0,
             predicate_generations: std::collections::HashMap::new(),
+            generation: 0,
         }
     }
 
@@ -76,8 +79,15 @@ impl TripleStore {
             .unwrap_or(0)
     }
 
+    /// How many changes the store has seen in total (every insert or remove
+    /// that changed it).
+    pub fn generation(&self) -> u64 {
+        self.generation
+    }
+
     fn bump_generation(&mut self, predicate: TermId) {
         *self.predicate_generations.entry(predicate).or_insert(0) += 1;
+        self.generation += 1;
     }
 
     /// Insert a triple. Returns `Err(DuplicateTriple)` if already present.

@@ -64,6 +64,8 @@ one keeps serving, then swaps atomically. Pseudo-table rediscovery uses the same
 
 ## Phase 6 — pseudo-tables
 
+**DONE 2026-10-07** (`planning/pseudo-table-serving.md`; see DEVLOG). Also fixed: quadratic score carry-forward in every join.
+
 **Build:** invalidation tracking (rows whose interior nodes changed are flagged stale, then
 rebuilt in the maintenance cycle), and planner recognition of multi-pattern queries that match
 a subgraph pseudo-table. **Test:** a stale row is never served; a matching query is answered

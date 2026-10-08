@@ -52,10 +52,6 @@ publish verdict.
 ## ACTIVE — large feature work (Emma, 2026-10-07: "Do the large feature work")
 
 Plan, scope and tests per phase: `planning/large-features.md`. In order:
-6. **Phase 6 — pseudo-tables serve queries, correctly** (`planning/pseudo-table-serving.md`):
-   a. Exact columns + per-predicate store generations; executor serves only exact+current.
-   b. Tests: identical results, members-only, multi-valued, stale never served, served-when-valid.
-   c. Bench; wire into server + maintenance discovery only if the columnar path is faster.
 7. **Phase 7 — query-latency metrics in health.**
 
 ---

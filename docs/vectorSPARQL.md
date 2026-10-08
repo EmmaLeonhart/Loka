@@ -274,7 +274,7 @@ SELECT ?shrine ?label WHERE {
 | HNSW traversal via property paths | Implemented |
 | Predicate-based exit conditions (UNTIL, GREEDY) | Implemented |
 | Cost-based query planning | Implemented (HNSW vs graph-first; adaptive execution not yet) |
-| Pseudo-tables (auto-discovered columnar indexes) | Not yet |
+| Pseudo-tables (auto-discovered columnar indexes) | Implemented (served from exact, current columns; discovered by `loka serve --maintenance-idle-secs`) |
 
 The core SPARQL+ vector operators are fully functional. HNSW property path traversal and exit conditions are in; the next phase is cost-based planning and pseudo-table columnar acceleration.
 

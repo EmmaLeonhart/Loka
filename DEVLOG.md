@@ -7,6 +7,59 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (night) — Phase 6: pseudo-tables serve queries, correctly; and joins were quadratic
+
+The executor had a pseudo-table scan and a fused multi-pattern version, but nothing that ran
+queries ever passed it a registry. Had it been wired in, it would have returned wrong answers:
+`?s :p ?o` came from one table's rows, so non-member nodes with `:p` and second values of
+multi-valued properties went missing, and nothing noticed writes made after discovery.
+
+Now:
+- At discovery, a subject-position column is recorded as **exact** when its non-null cells
+  equal the store's count of triples with its predicate (each cell is one stored triple, so
+  equal counts mean it holds all of them).
+- `TripleStore` keeps per-predicate generations (and a total), bumped by `insert`/`remove`,
+  its only mutators. A column serves only while exact and its predicate unchanged.
+- Constants missing from the dictionary and temporal scopes fall back to the triple indexes.
+  Before, an unknown constant object read as unbound and matched every row.
+- `loka serve` keeps the registry in `AppState`. The idle maintenance cycle (Phase 5's
+  `--maintenance-idle-secs`) rediscovers it when the store's generation has moved. The SPARQL
+  handlers pass it to the executor (`execute_with_pseudo_tables`), and `/vectors/health`
+  reports refreshes and hits.
+
+The plan made wiring conditional on a bench. **The bench first never finished**: 1000+
+CPU-seconds on one query. A probe showed the triple-index path itself was quadratic. Every triple
+pattern discarded the source indices `evaluate_triple_pattern` returns and rebuilt them by
+searching all current rows for a binding subset. Fixed (`7d09efa`): a 3-pattern star over 4000
+subjects went from 216 ms to 8.6 ms. This affected every multi-pattern query, not just
+pseudo-tables.
+
+Then, at 20k people:
+
+| query | triple indexes | pseudo-table |
+|---|---|---|
+| star3 | 94.2 ms | 15.4 ms |
+| city_eq_star | 630 µs | 187 µs |
+| name_scan | 7.8 ms | 6.7 ms |
+
+Since the columnar path is faster, it is wired in.
+
+Tests:
+- `loka-sparql/tests/pseudo_table_serving.rs` (6): same rows with and without the registry,
+  with hit counts so a pass can't come from silent fallback; a non-member keeps the column
+  from serving; a second value does too; a write invalidates only that predicate's column;
+  unknown constants match nothing.
+- Mutation check: ignoring exactness fails 3 of them.
+- Server test: discovery, same rows, hits counted, a write falls back and triggers
+  rediscovery.
+- 32 suites pass; clippy is clean.
+
+Decision: invalidation is per column, not per row as the plan's first wording said. A column's
+contents depend only on triples with its predicate, so column level is exact for correctness.
+Row level would only narrow the rebuild, and the rebuild is whole-registry anyway. Deep
+(multi-hop) tables still never serve; that's in TODO.md.
+
+---
 ## 2026-10-07 (evening) — Phase 5: idle-triggered HNSW rebuild off the lock
 
 Deleted vectors are tombstoned and stay in the HNSW graph until a rebuild, and the only

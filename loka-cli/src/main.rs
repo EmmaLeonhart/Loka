@@ -315,6 +315,7 @@ async fn main() -> anyhow::Result<()> {
                     rate_limit_per_min: 0,
                     rate_counter: std::sync::atomic::AtomicU64::new(0),
                     activity: Default::default(),
+                    pseudo_tables: Default::default(),
                 })
             } else {
                 tracing::info!("Opening persistent store at {}", data_dir);
@@ -377,6 +378,7 @@ async fn main() -> anyhow::Result<()> {
                     rate_limit_per_min: 0,
                     rate_counter: std::sync::atomic::AtomicU64::new(0),
                     activity: Default::default(),
+                    pseudo_tables: Default::default(),
                 })
             };
 
@@ -990,6 +992,7 @@ Loka Agent Installer v0.1.0
                     rate_limit_per_min: 0,
                     rate_counter: std::sync::atomic::AtomicU64::new(0),
                     activity: Default::default(),
+                    pseudo_tables: Default::default(),
                 });
 
                 let app = loka_proto::router(state);

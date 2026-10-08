@@ -46,6 +46,22 @@ Phase 6 of `planning/large-features.md`. Written before the code.
    triple-index path on the same data. If the columnar path isn't faster, it doesn't get
    wired into serving, and that result goes in DEVLOG.
 
+## Result (2026-10-07)
+
+The bench at first never finished. The triple-index path was quadratic in every join: each
+pattern rebuilt source rows by searching all current rows, O(new × current). Fixed
+(`7d09efa`): 216 ms → 8.6 ms for a 3-pattern star over 4000 subjects.
+
+After the fix, at 20k people:
+
+| query | triple indexes | pseudo-table |
+|---|---|---|
+| star3 | 94.2 ms | 15.4 ms |
+| city_eq_star | 630 µs | 187 µs |
+| name_scan | 7.8 ms | 6.7 ms |
+
+So it is wired in. Store-wide `generation()` decides when the idle cycle rediscovers.
+
 ## Tests
 
 - **Identical results:** for star queries over a discovered table (single pattern and fused

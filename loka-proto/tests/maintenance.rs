@@ -54,6 +54,7 @@ fn state(n: u64, deleted: u64) -> AppState {
         rate_limit_per_min: 0,
         rate_counter: AtomicU64::new(0),
         activity: Default::default(),
+        pseudo_tables: Default::default(),
     }
 }
 

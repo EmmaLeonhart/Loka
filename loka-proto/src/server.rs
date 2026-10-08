@@ -52,6 +52,10 @@ pub struct AppState {
     pub rate_counter: AtomicU64,
     /// Request activity (for idle detection) and maintenance counters.
     pub activity: crate::maintenance::Activity,
+    /// Pseudo-tables discovered by the maintenance cycle, used for columnar
+    /// scans while their columns are exact and current. `None` until the
+    /// first discovery (`planning/pseudo-table-serving.md`).
+    pub pseudo_tables: RwLock<Option<crate::maintenance::DiscoveredTables>>,
 }
 
 /// Build the axum router with all endpoints.
@@ -282,7 +286,7 @@ fn sparql_delimited(
     // Optimize with full cost model: store cardinality + dictionary IRI resolution
     loka_sparql::optimize_with_vectors(&mut query, Some(&store), Some(&dict), Some(&*vectors));
 
-    let result = loka_sparql::execute_with_vectors(&query, &store, &dict, &vectors)?;
+    let result = crate::maintenance::execute_served(state, &query, &store, &dict, &vectors)?;
 
     let mut output = String::new();
 
@@ -365,7 +369,7 @@ fn sparql_xml(query_str: &str, state: &AppState) -> Result<impl IntoResponse, Pr
 
     loka_sparql::optimize_with_vectors(&mut query, Some(&store), Some(&dict), Some(&*vectors));
 
-    let result = loka_sparql::execute_with_vectors(&query, &store, &dict, &vectors)?;
+    let result = crate::maintenance::execute_served(state, &query, &store, &dict, &vectors)?;
 
     let mut xml = String::from(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
@@ -441,7 +445,7 @@ fn execute_sparql(query_str: &str, state: &AppState) -> Result<Json<SparqlResult
     // Optimize with full cost model: store cardinality + dictionary IRI resolution
     loka_sparql::optimize_with_vectors(&mut query, Some(&store), Some(&dict), Some(&*vectors));
 
-    let result = loka_sparql::execute_with_vectors(&query, &store, &dict, &vectors)?;
+    let result = crate::maintenance::execute_served(state, &query, &store, &dict, &vectors)?;
 
     let bindings: Vec<serde_json::Value> = result
         .rows
@@ -1728,6 +1732,13 @@ async fn vectors_health(
             "rebuild_cycles": state.activity.cycles(),
             "tombstones_removed": state.activity.tombstones_removed(),
             "requests": state.activity.requests(),
+            "pseudo_table_refreshes": state.activity.pseudo_table_refreshes(),
+            "pseudo_table_hits": state.activity.pseudo_table_hits(),
+            "pseudo_tables": state
+                .pseudo_tables
+                .read()
+                .ok()
+                .and_then(|p| p.as_ref().map(|d| d.registry.len())),
         },
     })))
 }
@@ -1808,6 +1819,7 @@ mod tests {
             rate_limit_per_min: 0,
             rate_counter: std::sync::atomic::AtomicU64::new(0),
             activity: Default::default(),
+            pseudo_tables: Default::default(),
         })
     }
 
@@ -1918,6 +1930,93 @@ mod tests {
         )
         .await;
         assert_eq!(state.activity.requests(), 1);
+    }
+
+    async fn star_rows(state: &Arc<AppState>, q: &str) -> std::collections::BTreeSet<String> {
+        let (s, json) = send(
+            state,
+            "POST",
+            "/sparql",
+            "application/sparql-query",
+            format!("PREFIX ex: <http://example.org/> {q}"),
+        )
+        .await;
+        assert_eq!(s, StatusCode::OK, "{json}");
+        json["results"]["bindings"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|b| b.to_string())
+            .collect()
+    }
+
+    #[tokio::test]
+    async fn discovered_pseudo_tables_serve_queries_with_the_same_rows() {
+        let state = test_state();
+        let mut nt = String::new();
+        for i in 0..40 {
+            for (p, o) in [
+                ("type", "Person".to_string()),
+                ("name", format!("name{i}")),
+                ("age", format!("age{}", 20 + i % 30)),
+                ("city", format!("city{}", i % 4)),
+                ("knows", format!("p{}", (i + 1) % 40)),
+                ("email", format!("mail{i}")),
+            ] {
+                nt.push_str(&format!(
+                    "<http://example.org/p{i}> <http://example.org/{p}> <http://example.org/{o}> .
+"
+                ));
+            }
+        }
+        let (s, _) = send(&state, "POST", "/triples", "text/plain", nt).await;
+        assert_eq!(s, StatusCode::OK);
+
+        let star = "SELECT ?s ?n ?c WHERE { ?s ex:name ?n . ?s ex:city ?c }";
+        let names = "SELECT ?s ?n WHERE { ?s ex:name ?n }";
+        let before = star_rows(&state, star).await;
+        assert_eq!(before.len(), 40);
+        assert_eq!(state.activity.pseudo_table_hits(), 0, "no tables yet");
+
+        let n = crate::maintenance::refresh_pseudo_tables(&state).unwrap();
+        assert!(n.unwrap_or(0) > 0, "the people form a pseudo-table");
+        assert_eq!(
+            crate::maintenance::refresh_pseudo_tables(&state).unwrap(),
+            None,
+            "not due"
+        );
+
+        assert_eq!(star_rows(&state, star).await, before);
+        let hits = state.activity.pseudo_table_hits();
+        assert!(hits > 0, "served from the pseudo-table");
+
+        // A write to `name` after discovery: that column stops serving, the
+        // new triple is visible, and the next idle cycle rediscovers.
+        let (s, _) = send(
+            &state,
+            "POST",
+            "/triples",
+            "text/plain",
+            "<http://example.org/p40> <http://example.org/name> <http://example.org/name40> .
+"
+            .to_string(),
+        )
+        .await;
+        assert_eq!(s, StatusCode::OK);
+        let rows = star_rows(&state, names).await;
+        assert_eq!(rows.len(), 41);
+        assert!(rows.iter().any(|r| r.contains("name40")));
+        assert_eq!(
+            state.activity.pseudo_table_hits(),
+            hits,
+            "stale column not used"
+        );
+        assert!(crate::maintenance::refresh_pseudo_tables(&state)
+            .unwrap()
+            .is_some());
+
+        let (_, health) = send(&state, "GET", "/vectors/health", "", String::new()).await;
+        assert_eq!(health["maintenance"]["pseudo_table_refreshes"], 2);
     }
 
     /// A computed BIND value must render as its string over HTTP.
@@ -2559,6 +2658,7 @@ mod tests {
             rate_limit_per_min: 0,
             rate_counter: std::sync::atomic::AtomicU64::new(0),
             activity: Default::default(),
+            pseudo_tables: Default::default(),
         })
     }
 

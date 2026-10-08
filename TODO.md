@@ -240,12 +240,13 @@ sustained GPU run or a large risky ingest; they wait for cloud GPU or a donor.
 
 ### Background Maintenance Cycle
 - [x] Low-usage detection, background HNSW rebuild off the lock, atomic swap: `loka serve --maintenance-idle-secs` (`planning/background-maintenance.md`; 2026-10-07)
-- [ ] Background pseudo-table rediscovery and rebuild (with Phase 6's invalidation tracking)
+- [x] Background pseudo-table rediscovery: the idle maintenance cycle rediscovers once the store has changed (2026-10-07)
 - [ ] `INSERT DATA` / `DELETE DATA` reject `f32vec` literals with a misleading "variables not allowed" error (the parser makes them `Term::VectorLiteral`, and the original text needed to find the stored literal is gone). Vectors are deleted via `/retract` today.
 
 ### Pseudo-Tables (remaining)
-- [ ] Invalidation tracking: flag stale rows when interior nodes change, rebuild during maintenance cycle
-- [ ] Update query planner to recognize multi-pattern SPARQL queries that match a subgraph pseudo-table
+- [x] Invalidation tracking (column-level, per-predicate store generations) and serving from exact columns, rediscovered in the idle maintenance cycle (`planning/pseudo-table-serving.md`; 2026-10-07)
+- [x] Multi-pattern star queries over one subject are fused into one columnar scan (existing fused scan, now only over exact, current columns)
+- [ ] Deep (multi-hop) pseudo-tables never serve queries: their columns are paths, not predicates; serving them needs path-level exactness
 
 ### Database Health Dashboard (remaining)
 - [ ] Query performance metrics: per-pattern latency percentiles, planner decision accuracy
