@@ -1161,6 +1161,15 @@ pub struct PseudoTable {
     /// - `cliff_steepness 1.0-3.0`: Messy schema, many optional fields
     /// - `cliff_steepness < 1.0`: No clear schema — pseudo-table may not be useful
     pub cliff_steepness: f64,
+
+    /// Per column: `Some(generation)` if, when the table was built, the
+    /// column held **every** triple with its predicate (a subject-position
+    /// column whose non-null cells equal the store's count for the predicate:
+    /// no non-member has it, no member has two values), with the predicate's
+    /// store generation at that time. `None` if it didn't. Only an exact
+    /// column whose predicate is unchanged since may answer a triple pattern
+    /// in place of the store's indexes (`planning/pseudo-table-serving.md`).
+    pub column_generations: Vec<Option<u64>>,
 }
 
 impl PseudoTable {
@@ -1191,6 +1200,17 @@ impl PseudoTable {
     /// Find the column index for a given property, if it exists.
     pub fn column_index(&self, property: &Property) -> Option<usize> {
         self.columns.iter().position(|p| p == property)
+    }
+
+    /// Whether column `col_idx` may answer a pattern on its predicate now:
+    /// it was exact when built and its predicate hasn't changed since.
+    pub fn servable_column(&self, col_idx: usize, store: &TripleStore) -> bool {
+        match (self.columns.get(col_idx), self.column_generations.get(col_idx)) {
+            (Some(property), Some(Some(generation))) => {
+                store.predicate_generation(property.predicate) == *generation
+            }
+            _ => false,
+        }
     }
 
     /// Check if a node (by TermId) is in this pseudo-table.
@@ -1524,6 +1544,7 @@ pub fn discover_pseudo_tables(
             segments.push(current_segment);
         }
 
+        let column_generations = exact_column_generations(&columns, &segments, store);
         tables.push(PseudoTable {
             label: format!("pseudo_table_{}", tables.len()),
             columns,
@@ -1532,10 +1553,36 @@ pub fn discover_pseudo_tables(
             core_properties: core,
             cliff_steepness,
             segments,
+            column_generations,
         });
     }
 
     PseudoTableRegistry { tables }
+}
+
+/// [`PseudoTable::column_generations`] for freshly built segments. Each
+/// non-null cell is one stored `(node, predicate, value)` triple, so equal
+/// counts mean the column holds all of them.
+fn exact_column_generations(
+    columns: &[Property],
+    segments: &[Segment],
+    store: &TripleStore,
+) -> Vec<Option<u64>> {
+    columns
+        .iter()
+        .enumerate()
+        .map(|(c, property)| {
+            if property.position != PropertyPosition::Subject {
+                return None;
+            }
+            let cells: usize = segments
+                .iter()
+                .map(|s| s.columns[c].iter().filter(|v| v.is_some()).count())
+                .sum();
+            (cells == store.find_by_predicate(property.predicate).len())
+                .then(|| store.predicate_generation(property.predicate))
+        })
+        .collect()
 }
 
 /// Get the value of a property for a specific node.
@@ -2040,6 +2087,9 @@ fn materialize_subgraph_table(
     };
     let cliff_steepness = avg_included / avg_excluded.max(0.01);
 
+    // Deep columns follow multi-hop paths, not single predicates; they never
+    // stand in for a triple pattern.
+    let column_generations = vec![None; columns.len()];
     PseudoTable {
         label: format!("deep_pseudo_table_{}", table_index),
         columns,
@@ -2048,6 +2098,7 @@ fn materialize_subgraph_table(
         core_properties,
         cliff_steepness,
         segments,
+        column_generations,
     }
 }
 

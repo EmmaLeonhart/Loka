@@ -47,6 +47,11 @@ pub struct TripleStore {
     adjacency: std::collections::HashMap<TermId, Vec<(TermId, TermId)>>,
     /// Total number of triples stored.
     count: usize,
+    /// Per-predicate change counter, bumped by every insert or remove that
+    /// changes a triple with that predicate. Lets derived structures (pseudo-
+    /// table columns) tell whether their source triples changed since they
+    /// were built.
+    predicate_generations: std::collections::HashMap<TermId, u64>,
 }
 
 impl TripleStore {
@@ -59,7 +64,20 @@ impl TripleStore {
             tspo: BTreeSet::new(),
             adjacency: std::collections::HashMap::new(),
             count: 0,
+            predicate_generations: std::collections::HashMap::new(),
         }
+    }
+
+    /// How many changes triples with `predicate` have seen (0 if none).
+    pub fn predicate_generation(&self, predicate: TermId) -> u64 {
+        self.predicate_generations
+            .get(&predicate)
+            .copied()
+            .unwrap_or(0)
+    }
+
+    fn bump_generation(&mut self, predicate: TermId) {
+        *self.predicate_generations.entry(predicate).or_insert(0) += 1;
     }
 
     /// Insert a triple. Returns `Err(DuplicateTriple)` if already present.
@@ -79,6 +97,7 @@ impl TripleStore {
             .or_default()
             .push((triple.predicate, triple.object));
         self.count += 1;
+        self.bump_generation(triple.predicate);
         Ok(())
     }
 
@@ -92,6 +111,7 @@ impl TripleStore {
                 adj.retain(|&(p, o)| p != triple.predicate || o != triple.object);
             }
             self.count -= 1;
+            self.bump_generation(triple.predicate);
         }
         removed
     }

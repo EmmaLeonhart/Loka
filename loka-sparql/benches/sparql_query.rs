@@ -1,7 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use loka_core::{TermDictionary, Triple, TripleStore};
 use loka_hnsw::{DistanceMetric, VectorPredicateConfig, VectorRegistry};
-use loka_sparql::{execute_with_vectors, optimize_with_vectors, parse};
+use loka_sparql::{execute_with_pseudo_tables, execute_with_vectors, optimize_with_vectors, parse};
 
 /// Build a chain graph: node_0 -> node_1 -> ... -> node_{n-1}
 fn chain_graph(length: usize) -> (TripleStore, TermDictionary) {
@@ -356,6 +356,70 @@ fn bench_rare_type_plan(c: &mut Criterion) {
     group.finish();
 }
 
+/// Star queries answered from exact pseudo-table columns vs the triple
+/// indexes (planning/pseudo-table-serving.md): 20k people, six properties.
+fn bench_pseudo_table_star(c: &mut Criterion) {
+    let mut group = c.benchmark_group("pseudo_table_star");
+    let mut dict = TermDictionary::new();
+    let mut store = TripleStore::new();
+    let ex = |d: &mut TermDictionary, s: &str| d.intern(&format!("http://example.org/{}", s));
+    let preds: Vec<u64> = ["type", "name", "age", "city", "knows", "email"]
+        .iter()
+        .map(|p| ex(&mut dict, p))
+        .collect();
+    let person = ex(&mut dict, "Person");
+    let n = 20_000;
+    for i in 0..n {
+        let s = ex(&mut dict, &format!("p{}", i));
+        let values = [
+            person,
+            ex(&mut dict, &format!("name{}", i)),
+            ex(&mut dict, &format!("age{}", 20 + i % 60)),
+            ex(&mut dict, &format!("city{}", i % 50)),
+            ex(&mut dict, &format!("p{}", (i + 1) % n)),
+            ex(&mut dict, &format!("mail{}", i)),
+        ];
+        for (p, o) in preds.iter().zip(values) {
+            store.insert(Triple::new(s, *p, o)).unwrap();
+        }
+    }
+    let registry = loka_core::discover_pseudo_tables(
+        &loka_core::extract_node_properties(&store),
+        &store,
+    );
+    let vectors = VectorRegistry::new();
+    let config = loka_core::DatabaseConfig::default();
+    let queries = [
+        ("name_scan", "SELECT ?s ?n WHERE { ?s ex:name ?n }"),
+        ("star3", "SELECT ?s ?n ?a ?c WHERE { ?s ex:name ?n . ?s ex:age ?a . ?s ex:city ?c }"),
+        ("city_eq_star", "SELECT ?s ?n WHERE { ?s ex:city ex:city7 . ?s ex:name ?n }"),
+    ];
+    for (name, body) in queries {
+        let q = parse(&format!("PREFIX ex: <http://example.org/> {}", body)).unwrap();
+        let (_, hits) =
+            execute_with_pseudo_tables(&q, &store, &dict, &vectors, &config, Some(&registry))
+                .unwrap();
+        assert!(hits > 0, "{} must be served from the pseudo-table", name);
+        for (label, reg) in [("triples", None), ("pseudo", Some(&registry))] {
+            group.bench_function(format!("{}/{}", name, label), |b| {
+                b.iter(|| {
+                    let r = execute_with_pseudo_tables(
+                        black_box(&q),
+                        &store,
+                        &dict,
+                        &vectors,
+                        &config,
+                        reg,
+                    )
+                    .unwrap();
+                    black_box(r);
+                });
+            });
+        }
+    }
+    group.finish();
+}
+
 /// OPTIONAL pattern: left outer join semantics.
 /// Common in SPARQL for getting optional properties.
 fn bench_optional(c: &mut Criterion) {
@@ -439,6 +503,7 @@ criterion_group!(
     bench_vector_search,
     bench_graph_then_vector,
     bench_rare_type_plan,
+    bench_pseudo_table_star,
     bench_optional,
     bench_filter,
 );

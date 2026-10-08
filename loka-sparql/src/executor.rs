@@ -78,6 +78,8 @@ pub struct ExecutionContext<'a> {
     /// Values computed during this query, moved into the `QueryResult` at the
     /// end. Owned rather than borrowed so the lifetime is exactly the query's.
     pub values: QueryValues,
+    /// Pseudo-table columns used in place of the triple indexes this query.
+    pub pseudo_table_hits: std::cell::Cell<usize>,
 }
 
 /// Execute a parsed query against an in-memory store with vector support.
@@ -99,7 +101,22 @@ pub fn execute_with_config(
     vectors: &VectorRegistry,
     config: &DatabaseConfig,
 ) -> Result<QueryResult> {
-    execute_with_deadline(query, store, dict, vectors, config, None)
+    execute_with_deadline(query, store, dict, vectors, config, None, None).map(|(r, _)| r)
+}
+
+/// [`execute_with_config`] with pseudo-tables available for columnar scans.
+/// A column is used only while it is exact and current
+/// (`planning/pseudo-table-serving.md`), so results are the same as without
+/// the registry. Also returns how many pseudo-table columns were used.
+pub fn execute_with_pseudo_tables(
+    query: &Query,
+    store: &TripleStore,
+    dict: &TermDictionary,
+    vectors: &VectorRegistry,
+    config: &DatabaseConfig,
+    pseudo_tables: Option<&PseudoTableRegistry>,
+) -> Result<(QueryResult, usize)> {
+    execute_with_deadline(query, store, dict, vectors, config, None, pseudo_tables)
 }
 
 /// Core query execution logic.
@@ -141,6 +158,8 @@ fn execute_query_with_ctx(query: &Query, ctx: &mut ExecutionContext<'_>) -> Resu
                 if let Some(fused_results) =
                     try_fused_pseudo_table_scan(&fuseable, &results, ctx, registry, pushable_limit)?
                 {
+                    ctx.pseudo_table_hits
+                        .set(ctx.pseudo_table_hits.get() + fuseable.len());
                     let new_scores = fused_results
                         .iter()
                         .map(|new_row| {
@@ -409,7 +428,9 @@ pub fn execute_with_timeout(
         vectors,
         &default_config,
         Some(Instant::now() + Duration::from_secs(timeout_secs)),
+        None,
     )
+    .map(|(r, _)| r)
 }
 
 /// Internal executor that accepts an optional deadline.
@@ -420,7 +441,8 @@ fn execute_with_deadline(
     vectors: &VectorRegistry,
     config: &DatabaseConfig,
     deadline: Option<Instant>,
-) -> Result<QueryResult> {
+    pseudo_tables: Option<&PseudoTableRegistry>,
+) -> Result<(QueryResult, usize)> {
     let mut ctx = ExecutionContext {
         store,
         dict,
@@ -428,11 +450,13 @@ fn execute_with_deadline(
         prefixes: &query.prefixes,
         config,
         deadline,
-        pseudo_tables: None,
+        pseudo_tables,
         temporal_filter: None,
         values: QueryValues::new(),
+        pseudo_table_hits: std::cell::Cell::new(0),
     };
-    execute_query_with_ctx(query, &mut ctx)
+    let result = execute_query_with_ctx(query, &mut ctx)?;
+    Ok((result, ctx.pseudo_table_hits.get()))
 }
 
 /// Execute a parsed query without vector support (backward compatible).
@@ -1573,6 +1597,7 @@ fn evaluate_triple_pattern(
         if let Some(result) = try_pseudo_table_scan(
             subject, predicate, object, current, ctx, registry, row_limit,
         )? {
+            ctx.pseudo_table_hits.set(ctx.pseudo_table_hits.get() + 1);
             return Ok(result);
         }
     }
@@ -2303,18 +2328,23 @@ fn try_pseudo_table_scan(
         position: PropertyPosition::Subject,
     };
 
-    // Find pseudo-tables with this property as a column.
-    let table_matches = registry.find_tables_for_property(&property);
-    if table_matches.is_empty() {
-        // No pseudo-table has this column — fall through to triple store.
+    // The first table whose column for this property may stand in for the
+    // store (exact and current); otherwise fall through to the triple store.
+    let Some((table_idx, col_idx)) = servable_column(registry, &property, ctx) else {
+        return Ok(None);
+    };
+    // A constant that isn't in the dictionary matches nothing; leave that to
+    // the triple path rather than reading it as unbound (which would match
+    // every row).
+    if [subject, object].iter().any(|t| {
+        !matches!(t, Term::Variable(_))
+            && !matches!(resolve_term(t, &HashMap::new(), ctx.dict, ctx.prefixes), Ok(Some(_)))
+    }) {
         return Ok(None);
     }
 
     let mut results = Vec::new();
     let mut source_indices = Vec::new();
-
-    // Use the first matching pseudo-table (largest coverage wins in discovery order).
-    let (table_idx, col_idx) = table_matches[0];
     let table = &registry.tables[table_idx];
 
     for (row_idx, row) in current.iter().enumerate() {
@@ -2396,6 +2426,24 @@ fn try_pseudo_table_scan(
     Ok(Some((results, source_indices)))
 }
 
+/// The first `(table, column)` for `property` whose column may answer a
+/// triple pattern in place of the store: exact when built, predicate unchanged
+/// since (`planning/pseudo-table-serving.md`). Never under a temporal scope,
+/// which the columnar scan doesn't apply.
+fn servable_column(
+    registry: &PseudoTableRegistry,
+    property: &Property,
+    ctx: &ExecutionContext<'_>,
+) -> Option<(usize, usize)> {
+    if ctx.temporal_filter.is_some() {
+        return None;
+    }
+    registry
+        .find_tables_for_property(property)
+        .into_iter()
+        .find(|&(t, c)| registry.tables[t].servable_column(c, ctx.store))
+}
+
 /// Attempt to evaluate multiple consecutive triple patterns as a single fused
 /// vectorized scan over a pseudo-table.
 ///
@@ -2470,12 +2518,17 @@ fn try_fused_pseudo_table_scan(
             predicate: pred_id,
             position: PropertyPosition::Subject,
         };
-        let table_matches = registry.find_tables_for_property(&property);
-        if table_matches.is_empty() {
+        let Some((table_idx, col_idx)) = servable_column(registry, &property, ctx) else {
             return Ok(None);
+        };
+        if !matches!(object, Term::Variable(_))
+            && !matches!(
+                resolve_term(object, &HashMap::new(), ctx.dict, ctx.prefixes),
+                Ok(Some(_))
+            )
+        {
+            return Ok(None); // unresolvable constant: the triple path returns nothing
         }
-
-        let (table_idx, col_idx) = table_matches[0];
 
         // All patterns must hit the same pseudo-table.
         match common_table {
@@ -2492,7 +2545,9 @@ fn try_fused_pseudo_table_scan(
         None => return Ok(None),
     };
     let table = &registry.tables[table_idx];
-    let subj_var = subject_var.unwrap();
+    let Some(subj_var) = subject_var else {
+        return Ok(None);
+    };
 
     let mut results = Vec::new();
 
@@ -2634,12 +2689,9 @@ fn find_fuseable_pattern_run(
             predicate: pred_id,
             position: PropertyPosition::Subject,
         };
-        let matches = registry.find_tables_for_property(&property);
-        if matches.is_empty() {
+        let Some((t_idx, _)) = servable_column(registry, &property, ctx) else {
             break;
-        }
-
-        let (t_idx, _) = matches[0];
+        };
         match table_idx {
             Some(t) if t != t_idx => break,
             None => table_idx = Some(t_idx),
