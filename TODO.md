@@ -280,9 +280,12 @@ Re-checked 2026-10-08 against today's Studio (web-studio + Electron; Flutter del
 - [ ] Long-term: absorb core Protege functionality (not attempted: too large for an attempt)
 
 ### Query Language Wrappers
-- [ ] GQL (ISO 39075) → SPARQL transpiler: ISO standard graph query language mapped to SPARQL.
-      The Cypher transpiler (`loka-sparql/src/cypher.rs`) is the template — same
-      text-in/SPARQL-text-out shape, same rejection discipline. Reuse its tokenizer.
+- [x] GQL (ISO 39075) → SPARQL, first subset (`loka-sparql/src/gql.rs`, 2026-10-08): GQL's
+      read-core surface forms (`IS Label`, `&` conjunction, `FILTER`, `OFFSET`) normalised onto
+      the Cypher subset, so both share one RDF mapping and one rejection discipline. Rejected
+      with reasons: label `|` `!` `%`, quantified paths, `USE`, `INSERT` and other statements.
+- [ ] GQL next: quantified paths onto SPARQL+ property paths; `IS NULL` (needs Cypher-side
+      support first); a CLI/HTTP entry point (Cypher has none either yet).
 
 ### ✅ FIXED 2026-07-29: string / IRI equality in FILTER now matches
 

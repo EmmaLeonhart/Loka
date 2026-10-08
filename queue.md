@@ -15,7 +15,6 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 3. **Attempt every TODO.md item that is not computationally intensive** (GPU-gated items and the
    30M+ sustained-ingest check are excluded), in TODO.md order:
-   h. GQL → SPARQL transpiler, a first subset on the Cypher transpiler's template.
    i. Electron Studio desktop installers in `release.yml`: write the job. It can only be
       verified on an rc tag (Emma's call).
 4. **Shut down all cron jobs.** One action after the attempts above, not a standing tail item.

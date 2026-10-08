@@ -7,6 +7,30 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 — GQL → SPARQL, first subset
+
+Queue item 3h. GQL's read core is the Cypher subset with different surface forms, so
+`loka-sparql/src/gql.rs` rewrites those forms onto Cypher and calls the existing transpiler. That
+gives one property-graph → RDF mapping and one rejection discipline for both:
+- `(a IS Person)` → `(a:Person)`
+- `IS A & B` and `:A & B` → `:A:B`
+- `FILTER` → `WHERE`
+- `OFFSET` → `SKIP`
+
+The rewrite is string-literal aware. `IS NULL`, `IS NOT` and the other `IS` predicates stay
+predicates.
+
+Rejected with reasons, not approximated: label disjunction `|`, negation `!`, wildcard `%`,
+quantified path patterns `->{m,n}`, `USE`, and `INSERT` / `LET` / `FOR` / `NEXT` / `CALL` /
+`YIELD` / `FINISH` / `SELECT`.
+
+Tests (5): each GQL form transpiles to exactly what the equivalent Cypher does, and the Cypher
+side must succeed. That check caught one of my own tests passing vacuously: the Cypher subset
+doesn't support `IS NULL`, so both sides failed equally. That case now tests the normaliser
+directly. Also: rejections, string literals untouched, and a transpiled query executed against
+a store with the right rows. Next steps are in TODO.md. 35 suites pass; clippy is clean.
+
+---
 ## 2026-10-08 — Studio items: remote access built; the Flutter-era items mapped or retired
 
 Queue item 3g. TODO.md's Studio list was written for the Flutter Studio, deleted 2026-05-30.

@@ -3,6 +3,7 @@
 pub mod cypher;
 pub mod error;
 pub mod executor;
+pub mod gql;
 pub mod health;
 pub mod parser;
 pub mod planner;
@@ -13,6 +14,7 @@ pub use executor::{
     execute, execute_instrumented, execute_with_config, execute_with_pseudo_tables,
     execute_with_timeout, execute_with_vectors, Bindings, QueryResult,
 };
+pub use gql::{transpile_gql, transpile_gql_with_base};
 pub use health::{
     generate_health_report, HealthReport, HealthStatus, QueryMetrics, QueryMetricsReport,
 };
