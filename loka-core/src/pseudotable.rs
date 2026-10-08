@@ -1170,6 +1170,20 @@ pub struct PseudoTable {
     /// column whose predicate is unchanged since may answer a triple pattern
     /// in place of the store's indexes (`planning/pseudo-table-serving.md`).
     pub column_generations: Vec<Option<u64>>,
+
+    /// Deep tables only: the full rooted path behind each column. A deep
+    /// column's `Property` label is only its FIRST step, while its cells
+    /// hold the path's LAST node, so a deep column must be matched on
+    /// this, never on `columns` (`planning/deep-pseudo-table-serving.md`).
+    /// `None` for depth-1 tables.
+    pub column_paths: Option<Vec<SubgraphPath>>,
+
+    /// Deep tables only, per column: `Some((predicate, generation) per hop)`
+    /// if, when built, the column's cells equalled the bag of solutions of
+    /// its chain query over the store (no non-member root, no second leaf,
+    /// no leaf reached twice), with each hop predicate's store generation at
+    /// that time. `None` if not exact or not a multi-hop path.
+    pub path_generations: Vec<Option<Vec<(TermId, u64)>>>,
 }
 
 impl PseudoTable {
@@ -1216,6 +1230,17 @@ impl PseudoTable {
         }
     }
 
+    /// Whether deep column `col_idx` may answer its chain query now: exact
+    /// when built, and no hop's predicate has changed since.
+    pub fn servable_path_column(&self, col_idx: usize, store: &TripleStore) -> bool {
+        match self.path_generations.get(col_idx) {
+            Some(Some(hops)) => hops
+                .iter()
+                .all(|&(p, g)| store.predicate_generation(p) == g),
+            _ => false,
+        }
+    }
+
     /// Check if a node (by TermId) is in this pseudo-table.
     pub fn contains_node(&self, node_id: TermId) -> bool {
         self.segments.iter().any(|seg| seg.nodes.contains(&node_id))
@@ -1235,12 +1260,18 @@ impl PseudoTable {
 pub struct PseudoTableRegistry {
     /// All discovered pseudo-tables, in discovery order.
     pub tables: Vec<PseudoTable>,
+    /// Deep (multi-hop) tables, from `discover_deep_pseudo_tables`. Kept
+    /// apart: their column labels must never be matched like `tables`'.
+    pub deep: Vec<PseudoTable>,
 }
 
 impl PseudoTableRegistry {
     /// Create an empty registry with no discovered tables.
     pub fn new() -> Self {
-        Self { tables: Vec::new() }
+        Self {
+            tables: Vec::new(),
+            deep: Vec::new(),
+        }
     }
 
     /// Number of discovered pseudo-tables.
@@ -1557,10 +1588,15 @@ pub fn discover_pseudo_tables(
             cliff_steepness,
             segments,
             column_generations,
+            column_paths: None,
+            path_generations: Vec::new(),
         });
     }
 
-    PseudoTableRegistry { tables }
+    PseudoTableRegistry {
+        tables,
+        deep: Vec::new(),
+    }
 }
 
 /// [`PseudoTable::column_generations`] for freshly built segments. Each
@@ -1970,6 +2006,75 @@ fn resolve_path(root: TermId, path: &SubgraphPath, store: &TripleStore) -> Optio
     Some(current)
 }
 
+/// Number of solutions of a path's chain query over the whole store, as a
+/// bag: `?r p1 ?m1 . ?m1 p2 ?m2 ...` (Reverse steps swap subject and object),
+/// counting every distinct binding of the intermediates. One pass per hop,
+/// carrying a multiplicity per node, so no join is materialised.
+fn chain_solution_count(path: &SubgraphPath, store: &TripleStore) -> usize {
+    let Some(first) = path.steps.first() else {
+        return 0;
+    };
+    let mut frontier: HashMap<TermId, usize> = HashMap::new();
+    for t in store.find_by_predicate(first.predicate) {
+        let next = match first.direction {
+            PathDirection::Forward => t.object,
+            PathDirection::Reverse => t.subject,
+        };
+        *frontier.entry(next).or_insert(0) += 1;
+    }
+    for step in &path.steps[1..] {
+        let mut next_frontier: HashMap<TermId, usize> = HashMap::new();
+        for (&node, &count) in &frontier {
+            let successors: Vec<TermId> = match step.direction {
+                PathDirection::Forward => store
+                    .find_by_subject_predicate(node, step.predicate)
+                    .iter()
+                    .map(|t| t.object)
+                    .collect(),
+                PathDirection::Reverse => store
+                    .find_by_predicate_object(step.predicate, node)
+                    .iter()
+                    .map(|t| t.subject)
+                    .collect(),
+            };
+            for s in successors {
+                *next_frontier.entry(s).or_insert(0) += count;
+            }
+        }
+        frontier = next_frontier;
+    }
+    frontier.values().sum()
+}
+
+/// [`PseudoTable::path_generations`] for a deep table's freshly built
+/// segments. Each non-null cell is one real path, so a cell count equal to
+/// the chain's bag of solutions means the column holds exactly those.
+fn exact_path_generations(
+    paths: &[SubgraphPath],
+    segments: &[Segment],
+    store: &TripleStore,
+) -> Vec<Option<Vec<(TermId, u64)>>> {
+    paths
+        .iter()
+        .enumerate()
+        .map(|(c, path)| {
+            if path.steps.len() < 2 {
+                return None; // one hop: a depth-1 column's job
+            }
+            let cells: usize = segments
+                .iter()
+                .map(|s| s.columns[c].iter().filter(|v| v.is_some()).count())
+                .sum();
+            (cells == chain_solution_count(path, store)).then(|| {
+                path.steps
+                    .iter()
+                    .map(|s| (s.predicate, store.predicate_generation(s.predicate)))
+                    .collect()
+            })
+        })
+        .collect()
+}
+
 /// Materialize a subgraph pattern into a deep pseudo-table.
 ///
 /// Each path in the pattern becomes a column. Each root node becomes a row.
@@ -2093,6 +2198,7 @@ fn materialize_subgraph_table(
     // Deep columns follow multi-hop paths, not single predicates; they never
     // stand in for a triple pattern.
     let column_generations = vec![None; columns.len()];
+    let path_generations = exact_path_generations(&included_paths, &segments, store);
     PseudoTable {
         label: format!("deep_pseudo_table_{}", table_index),
         columns,
@@ -2102,6 +2208,8 @@ fn materialize_subgraph_table(
         cliff_steepness,
         segments,
         column_generations,
+        column_paths: Some(included_paths),
+        path_generations,
     }
 }
 

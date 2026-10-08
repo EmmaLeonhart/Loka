@@ -204,6 +204,27 @@ fn execute_query_with_ctx(query: &Query, ctx: &mut ExecutionContext<'_>) -> Resu
             }
         }
 
+        // A chain of patterns one exact deep column answers
+        // (planning/deep-pseudo-table-serving.md).
+        if let Some(registry) = ctx.pseudo_tables {
+            if !registry.deep.is_empty() && results.len() == 1 {
+                let chain_started = Instant::now();
+                if let Some((k, rows)) =
+                    try_deep_chain(&patterns, i, &results[0], query, ctx, registry)?
+                {
+                    if let Some(m) = metrics {
+                        let shape = format!("deep_chain({k})");
+                        m.record_pattern(&shape, chain_started.elapsed(), rows.len(), None);
+                    }
+                    ctx.pseudo_table_hits.set(ctx.pseudo_table_hits.get() + k);
+                    scores = vec![scores[0].clone(); rows.len()];
+                    results = rows;
+                    i += k;
+                    continue;
+                }
+            }
+        }
+
         // Try to detect a run of fuseable triple patterns.
         if let Some(registry) = ctx.pseudo_tables {
             let run_end = find_fuseable_pattern_run(&patterns, i, ctx, registry);
@@ -2532,6 +2553,167 @@ fn servable_column(
         .find_tables_for_property(property)
         .into_iter()
         .find(|&(t, c)| registry.tables[t].servable_column(c, ctx.store))
+}
+
+/// Answer `patterns[i..i + k]` from one deep pseudo-table column when they
+/// form exactly its chain: `?r :p1 ?m1 . ?m1 :p2 ?leaf` (Reverse hops swap
+/// subject and object), the column is exact and current, and the
+/// intermediate variables appear nowhere else in the query. The table
+/// doesn't store intermediates, so a query that reads one can't be
+/// answered from it. Returns the chain length and the new rows, built from
+/// the single current `row`.
+fn try_deep_chain(
+    patterns: &[Pattern],
+    i: usize,
+    row: &Bindings,
+    query: &Query,
+    ctx: &ExecutionContext<'_>,
+    registry: &PseudoTableRegistry,
+) -> Result<Option<(usize, Vec<Bindings>)>> {
+    if ctx.temporal_filter.is_some() || query.projection.is_empty() {
+        return Ok(None); // SELECT * would project the intermediates
+    }
+    for table in &registry.deep {
+        let Some(paths) = &table.column_paths else {
+            continue;
+        };
+        for (col, path) in paths.iter().enumerate() {
+            let k = path.steps.len();
+            if k < 2 || i + k > patterns.len() || !table.servable_path_column(col, ctx.store) {
+                continue;
+            }
+            let Some(m) = match_chain(&patterns[i..i + k], path, ctx)? else {
+                continue;
+            };
+            // Intermediates: distinct fresh variables, unbound, and not
+            // mentioned anywhere else in the query (conservatively: not
+            // appearing as a quoted name in the rest of the query's Debug).
+            let mut rest = query.clone();
+            rest.patterns = patterns[..i]
+                .iter()
+                .chain(&patterns[i + k..])
+                .cloned()
+                .collect();
+            let rest_text = format!("{rest:?}");
+            let mut seen = std::collections::HashSet::new();
+            let intermediates_free = m.intermediates.iter().all(|v| {
+                seen.insert(v.clone())
+                    && Some(v) != m.root.as_ref()
+                    && Some(v) != m.leaf_var.as_ref()
+                    && !row.contains_key(v)
+                    && !rest_text.contains(&format!("\"{v}\""))
+            });
+            if !intermediates_free {
+                continue;
+            }
+            let bound_root = m.root.as_ref().and_then(|v| row.get(v).copied());
+            let bound_leaf = m
+                .leaf_var
+                .as_ref()
+                .and_then(|v| row.get(v).copied())
+                .or(m.leaf_const);
+            let mut out = Vec::new();
+            for segment in &table.segments {
+                for (r, &node) in segment.nodes.iter().enumerate() {
+                    let Some(value) = segment.columns[col][r] else {
+                        continue;
+                    };
+                    if bound_root.is_some_and(|b| b != node)
+                        || bound_leaf.is_some_and(|b| b != value)
+                    {
+                        continue;
+                    }
+                    let mut new_row = row.clone();
+                    if let Some(v) = &m.root {
+                        new_row.insert(v.clone(), node);
+                    }
+                    if let Some(v) = &m.leaf_var {
+                        new_row.insert(v.clone(), value);
+                    }
+                    out.push(new_row);
+                }
+            }
+            return Ok(Some((k, out)));
+        }
+    }
+    Ok(None)
+}
+
+/// The variables of a chain of triple patterns that matches `path`.
+struct ChainMatch {
+    root: Option<String>,
+    intermediates: Vec<String>,
+    leaf_var: Option<String>,
+    leaf_const: Option<TermId>,
+}
+
+/// Whether `patterns` is exactly `path`'s chain: hop j has the path's
+/// predicate, links the previous node to the next in the hop's direction,
+/// starts from a root variable, and passes through variables. The leaf may
+/// be a variable or a constant (an unknown constant makes this `None`, left
+/// to the triple path).
+fn match_chain(
+    patterns: &[Pattern],
+    path: &loka_core::SubgraphPath,
+    ctx: &ExecutionContext<'_>,
+) -> Result<Option<ChainMatch>> {
+    let mut current: Option<&Term> = None;
+    let mut intermediates = Vec::new();
+    let mut root = None;
+    let mut last_next: Option<&Term> = None;
+    for (j, (pat, step)) in patterns.iter().zip(&path.steps).enumerate() {
+        let Pattern::Triple {
+            subject,
+            predicate,
+            object,
+        } = pat
+        else {
+            return Ok(None);
+        };
+        if matches!(predicate, Term::Variable(_) | Term::Path { .. }) {
+            return Ok(None);
+        }
+        if resolve_term(predicate, &HashMap::new(), ctx.dict, ctx.prefixes)? != Some(step.predicate)
+        {
+            return Ok(None);
+        }
+        let (from, to) = match step.direction {
+            loka_core::PathDirection::Forward => (subject, object),
+            loka_core::PathDirection::Reverse => (object, subject),
+        };
+        let Term::Variable(from_var) = from else {
+            return Ok(None);
+        };
+        match current {
+            None => root = Some(from_var.clone()),
+            Some(Term::Variable(prev)) if prev == from_var => {}
+            _ => return Ok(None),
+        }
+        if j + 1 < path.steps.len() {
+            let Term::Variable(mid) = to else {
+                return Ok(None);
+            };
+            intermediates.push(mid.clone());
+        }
+        current = Some(to);
+        last_next = Some(to);
+    }
+    let Some(leaf) = last_next else {
+        return Ok(None);
+    };
+    let (leaf_var, leaf_const) = match leaf {
+        Term::Variable(v) => (Some(v.clone()), None),
+        other => match resolve_term(other, &HashMap::new(), ctx.dict, ctx.prefixes)? {
+            Some(id) => (None, Some(id)),
+            None => return Ok(None),
+        },
+    };
+    Ok(Some(ChainMatch {
+        root,
+        intermediates,
+        leaf_var,
+        leaf_const,
+    }))
 }
 
 /// Attempt to evaluate multiple consecutive triple patterns as a single fused

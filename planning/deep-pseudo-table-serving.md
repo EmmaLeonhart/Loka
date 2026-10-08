@@ -77,6 +77,30 @@ took 0.86 s: fine for the idle cycle, not per query. For the chain query
 
 That's about 8.8×, so building it is justified, behind the precondition above.
 
+## Built (2026-10-08)
+
+- `PseudoTable::column_paths` keeps each deep column's full `SubgraphPath`. Deep columns
+  are only ever matched on it (`servable_column` stays false for them; the guard test
+  `deep_tables_are_never_servable` still holds).
+- **Exactness:** `exact_path_generations` compares a column's non-null cells with
+  `chain_solution_count`, a one-pass dynamic-programming count of the chain's bag of
+  solutions (a multiplicity per node, one pass per hop, no join materialised). If they're
+  equal, it records `(predicate, generation)` for every hop. `servable_path_column` requires
+  all of them unchanged.
+- **Executor:** `try_deep_chain` runs before the depth-1 fused scan when exactly one row is in
+  hand. `match_chain` checks the patterns are exactly the path: predicates, directions, root
+  variable, linked variables, and a variable or known-constant leaf. Intermediates must be
+  fresh, unbound, and not appear in the rest of the query (checked conservatively against its
+  Debug text). Not used under `SELECT *` (empty projection) or a temporal scope. Recorded in
+  `/health/queries` as `deep_chain(k)`.
+- `loka serve`'s idle maintenance discovers deep tables into the registry too
+  (`PseudoTableRegistry::deep`).
+- Tests (7): same rows and served; constant leaf; intermediate read (projection, FILTER,
+  `SELECT *`) → not served; non-member root, second leaf, and two middles → not served, with
+  all solutions returned; writes to either hop stop serving, unrelated writes don't.
+  Mutations: dropping exactness fails the three inexactness tests; dropping the intermediate
+  rule fails that test.
+
 ## Tests (before it can be called done)
 
 1. Same rows with and without the registry, for chain queries of depth 2 and 3, with hit counts

@@ -14,7 +14,8 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use loka_core::{
-    discover_pseudo_tables, extract_node_properties, PseudoTableRegistry, TermId, TripleStore,
+    discover_deep_pseudo_tables, discover_pseudo_tables, extract_node_properties,
+    PseudoTableRegistry, TermId, TripleStore,
 };
 use loka_hnsw::{HnswIndex, IndexSnapshot};
 
@@ -129,8 +130,11 @@ pub fn refresh_pseudo_tables(state: &AppState) -> Result<Option<usize>, ProtoErr
     if !due {
         return Ok(None);
     }
-    let registry = discover_pseudo_tables(&extract_node_properties(&store), &store);
-    let count = registry.len();
+    let mut registry = discover_pseudo_tables(&extract_node_properties(&store), &store);
+    // Deep (multi-hop) tables answer chain queries from exact path columns
+    // (planning/deep-pseudo-table-serving.md).
+    registry.deep = discover_deep_pseudo_tables(&store);
+    let count = registry.len() + registry.deep.len();
     *state.pseudo_tables.write().map_err(lock_err)? = Some(DiscoveredTables {
         generation: current,
         registry,

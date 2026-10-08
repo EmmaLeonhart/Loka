@@ -7,6 +7,29 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 — Deep pseudo-tables answer chain queries (built to the spec)
+
+Queue item 3d. The spec and the 35 ms → ~4 ms measurement came earlier today. Built:
+- **Full path per column** (`column_paths`). This removes the latent trap where a deep column
+  labelled with its first hop (`hasCapital`) held its last node (mayors). Deep columns are
+  matched only on paths.
+- **Exactness:** cells must equal the chain query's bag of solutions, counted by a one-pass
+  dynamic-programming walk over the path (no join materialised). **Freshness:** every hop's
+  predicate generation.
+- **Executor:** with one row in hand, a run of triple patterns that is exactly a servable
+  column's chain is answered from the column. Its intermediates must be fresh, unbound, and not
+  mentioned anywhere else in the query (checked conservatively against the query's Debug
+  text). Not used under `SELECT *`. Shown in `/health/queries` as `deep_chain(k)`.
+- The server's idle maintenance discovers deep tables alongside depth-1 ones.
+
+Tests (`deep_pseudo_table_serving.rs`, 7): served with the same rows; constant leaf;
+intermediate read through projection, FILTER or `SELECT *` → not served; non-member root, second
+leaf, two middles → not served with all solutions returned; hop writes stop serving, unrelated
+writes don't. Mutation checks: ignoring exactness fails exactly the three inexactness tests,
+and dropping the intermediate rule fails exactly its test. 35 suites pass; clippy is clean on
+all targets.
+
+---
 ## 2026-10-08 — Maintained distinct counts: +56% insert time, not built
 
 Queue item 3c. Adaptive execution's open question was whether to maintain per-predicate
