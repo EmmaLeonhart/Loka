@@ -127,23 +127,6 @@ The corpus is one tab-separated `subject\tpredicate\tobject\n` line per claim, E
 
 Full training pipeline + paper live under `training/`, `tools/`, `paper/`, `scripts/`. See `DEVLOG.md` for the v3 → v14 history including the v7 catalog-noise discovery (76 % of v6 corpus was external identifiers), the v9/v10 cron-loop automation, and the v11–v14 normalized-wikidata corpus-scale series. The paper (`paper/paper.md`) covers the full series in §5.9–§5.12.
 
-### 🤝 Contributing GPU time (v14)
-
-**v11–v14 are all shipped — but v14 floored at its epoch-4 checkpoint (ppl 202.01, series best).** [EmmaLeonhart](https://github.com/EmmaLeonhart)'s training box is a laptop (RTX 4070 *Laptop*, 8 GB VRAM); v11–v14 all trained in that envelope at `--batch-size 16`, but v14 only got a partial 5-epoch run, and a bounded continuation confirmed ~202 is the practical floor for a fresh optimizer resumed mid-line on this hardware. A **full clean 10-epoch run with a single optimizer** (4 M-triple corpus × 10 epochs ≈ 40 h sustained exclusive GPU) does not fit the laptop — that's the run expected to push meaningfully below 202.
-
-**If you have a GPU and time to donate**, the entire run is one command:
-
-```bash
-huggingface-cli login   # paste YOUR HF token (not Emma's)
-python tools/contribute_v14_training.py --hf-user YOUR_HF_USERNAME
-```
-
-The script pulls the v14-1M corpus from `EmmaLeonhart/normalized-wikidata` and the BPE tokenizer from `EmmaLeonhart/loka@v14` (byte-identical across all tags — stable since v6), trains 10 epochs of the standard 44.5 M-parameter architecture at batch 16, and pushes every epoch to **your** HF account as `<your-user>/loka-v14-contribution` tagged `v14.1` through `v14.10`. Even if a late epoch dies, every earlier epoch is preserved on HF.
-
-**Please open a GitHub issue at <https://github.com/EmmaLeonhart/Loka/issues> before you start** so the work doesn't get duplicated, and comment on it with your HF link when done — Emma can then mirror your result to `EmmaLeonhart/loka@v14` and credit you.
-
-Wall-time estimate at batch 16: ~4 h/epoch on an RTX 4090, ~8 h/epoch on an RTX 4070 Laptop. The command above is the whole procedure — this section is the full instructions.
-
 ## What's New — query engine (2026-10-07/08)
 
 - **Path traversal with exits.** Property paths walk the live HNSW graph (`loka:hnswNeighbor+`). They can also stop:

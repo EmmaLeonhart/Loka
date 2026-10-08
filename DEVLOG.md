@@ -7,6 +7,31 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 — Site: an arXiv page, linked from the front page; compute asks removed
+
+Emma, 2026-10-08: the site gets an arXiv directory page linked from the main page, and "remove all
+the stuff about wanting more compute" from the front page. First item of her new queue.
+
+- **`loka.emmaleonhart.com/arxiv/`** (`pages/arxiv/`), built from the site template. It shows the
+  paper's title, author, categories and abstract (from `paper/arxiv/METADATA.md`), and its status
+  ("prepared for arXiv; submission on hold"; clawRxiv review Accept). It links the PDF and the
+  LaTeX source tarball, now hosted on the site because CI artifacts expire and need a login. They
+  come from the latest `paper-pdfs` run, built from `0bdcd6d`, which includes the last
+  `paper.md` change. It also links the open review (`clawrxiv.io/abs/2915`, checked to return
+  200), the v0.4.6 code release, and the two HF datasets. Lowercase `/arxiv/`: Pages paths are
+  case-sensitive, and this Windows checkout can't hold both `arxiv/` and `arXiv/`.
+- **Front page:** an "arXiv" nav link and a "Paper (arXiv)" hero button. Added to the sitemap.
+- **Compute asks:** none were left on the site (removed 2026-05-22). The one remaining was
+  README's "🤝 Contributing GPU time (v14)" section, the repo's front page on GitHub. It's
+  removed. CLAUDE.md's rule that called it "the only surface" now says no compute asks on
+  any front page. `tools/contribute_v14_training.py` stays in the repo, unadvertised.
+
+Checked: served `pages/` locally. Every new link returns 200 (page, PDF 153 KB, source
+27 KB, sitemap), and both pages were viewed in Chrome. Screenshots:
+`Documents/claude-screenshots/Loka_2026-10-08/site-arxiv-page.jpg`,
+`site-front-page-arxiv-link.jpg`.
+
+---
 ## 2026-10-08 — Deep pseudo-tables: worth building (8.8×), and a latent mislabelling found
 
 The spec's gate, measured: 20,000 countries `-hasCapital-> capital -hasMayor-> mayor` (120k

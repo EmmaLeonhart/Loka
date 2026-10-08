@@ -13,9 +13,6 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ## ACTIVE — Emma, 2026-10-08 (strict order, top to bottom)
 
-1. **GitHub Pages: arXiv page + front-page link; remove compute asks.** Add an arXiv directory
-   page to the site (`/arxiv`) and link it from the main page. Remove everything on the front
-   page about wanting more compute.
 2. **Paper / arXiv on hold.** Step 10 (Accept, v16) is parked as it stands: move it out of
    this queue into TODO.md as on hold. The arXiv package stays in `paper/arxiv/`.
 3. **Attempt every TODO.md item that is not computationally intensive** (GPU-gated items and the
