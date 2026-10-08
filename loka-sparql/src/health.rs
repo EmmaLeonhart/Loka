@@ -1028,6 +1028,9 @@ pub struct QueryMetricsReport {
     pub patterns: Vec<PatternMetrics>,
     /// Planner estimate accuracy.
     pub estimates: EstimateAccuracy,
+    /// Times adaptive execution ran a different pattern next than the
+    /// planner's order (`planning/adaptive-execution.md`).
+    pub adaptive_reorders: u64,
 }
 
 #[derive(Debug, Default)]
@@ -1035,6 +1038,7 @@ struct MetricsInner {
     queries: Ring,
     patterns: std::collections::BTreeMap<String, (Ring, Ring)>,
     q_error: Ring,
+    adaptive_reorders: u64,
 }
 
 /// Thread-safe recorder of query and per-pattern performance. Shared by a
@@ -1076,6 +1080,13 @@ impl QueryMetrics {
         }
     }
 
+    /// Record one adaptive reorder.
+    pub fn record_reorder(&self) {
+        if let Ok(mut m) = self.inner.lock() {
+            m.adaptive_reorders += 1;
+        }
+    }
+
     /// A snapshot of everything recorded so far.
     pub fn report(&self) -> QueryMetricsReport {
         let m = match self.inner.lock() {
@@ -1104,6 +1115,7 @@ impl QueryMetrics {
                     m.q_error.samples.iter().filter(|q| **q <= 2.0).count() as f64 / held as f64
                 }),
             },
+            adaptive_reorders: m.adaptive_reorders,
         }
     }
 }

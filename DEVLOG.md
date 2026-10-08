@@ -7,6 +7,39 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 — Adaptive execution v1 (sampling): 923 ms → 3.8 ms on the gap query, no measurable overhead
+
+What it does: with at least 1,000 rows in hand, the executor estimates each remaining commuting
+join pattern in the current run as rows × fanout, sampled on 32 evenly strided rows. It runs the
+cheapest one next when the planner's choice is estimated at ≥4× the rows and ≥1,000 more.
+- FILTER, OPTIONAL, UNION, BIND, VALUES, subqueries and temporal scopes end a run.
+- It is off when a LIMIT is pushed down.
+- `DatabaseConfig::adaptive_execution` (default on); the reorder count is in
+  `/health/queries`.
+
+The benches caught an overhead regression in the first cut, now fixed. The already-good order of
+`adaptive_gap` went 2.9 → 8.2 ms, because sampling the expensive pattern just to decide not to
+run it cost more than the query. Now the planner's next pattern is sampled first, and if it is
+already under 1,000 estimated rows, nothing else is sampled. The sampling output is also capped
+at 32 × 64 rows. After the fix:
+- `adaptive_gap` planner order: **923 ms → 3.8 ms**; best order 2.8 ms (unchanged);
+- an interleaved on/off A/B (same process, 15 medians each) on a 20k-subject graph:
+  ratios 0.976 / 1.008 / 0.992 for star3 / chain / city_eq_star, so no measurable cost.
+
+Stored criterion baselines were not used for the overhead claim. Across runs they moved ±50%
+on queries adaptive execution can't touch (single-pattern), which is laptop noise.
+
+Tests (`loka-sparql/tests/adaptive_execution.rs`, 5, at a reduced data size: the full-size
+fixed-order runs took 102 s in debug, mostly one cross-product query, replaced):
+- the gap query is reordered exactly once, with the same rows as with adaptive off;
+- a good order is untouched;
+- FILTER, OPTIONAL and VALUES barriers give identical rows;
+- other shapes give identical rows;
+- under 1,000 rows nothing is sampled.
+
+33 suites pass; clippy is clean. Left for v2 (TODO): moving filters along with a reorder.
+
+---
 ## 2026-10-08 — Adaptive execution: measured worth building (static plan 146–317× slower on correlated data)
 
 Before building anything, I measured the spec's test 3 to see whether the static planner leaves

@@ -119,6 +119,31 @@ deliberately conservative:
   pushed into the patterns, because pushdown truncates every pattern's output.
 - `DatabaseConfig::adaptive_execution` (default on) turns it off for comparisons.
 
+## v1 result (2026-10-08)
+
+Built as above, plus one refinement found by the benches: the planner's next pattern is sampled
+first, and if it is estimated under 1,000 rows, nothing else is sampled. Without that, the
+already-good order of `adaptive_gap` slowed from 2.9 ms to 8.2 ms. Sampling the expensive
+pattern just to decide not to run it cost more than the query. The sampling output cap is
+also 32 × 64 rows: hitting it proves a fanout of at least 64, which is enough for the 4× rule.
+
+- `adaptive_gap` (criterion): planner order **923 ms → 3.8 ms**; best order 2.8 ms
+  (unchanged).
+- **Overhead when it doesn't switch:** an interleaved on/off A/B in one process, medians of
+  15 each, 20k-subject people graph. On/off ratio: star3 0.976, chain 1.008,
+  city_eq_star 0.992, i.e. no measurable cost. Against stored criterion baselines the laptop
+  showed ±50% noise even on queries adaptive execution can't touch, so those comparisons
+  weren't used.
+- Tests (`loka-sparql/tests/adaptive_execution.rs`, 5):
+  - the gap query is reordered once, with the same rows as with adaptive off;
+  - a good order is left alone;
+  - FILTER, OPTIONAL and VALUES barriers give the same rows on and off;
+  - other shapes give the same rows on and off;
+  - under 1,000 rows nothing is sampled.
+- v1 answers the open question below for now: sampling suffices on the measured case.
+  Distinct counts would only be worth their insert cost if sampling turns out noisy on real
+  data.
+
 ## Open questions (to settle before building)
 
 - Maintained or on-demand distinct counts: measure the insert overhead on the 2M store.

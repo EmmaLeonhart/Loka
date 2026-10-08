@@ -58,6 +58,9 @@ pub struct DatabaseConfig {
     pub owl_enabled: bool,
     /// Ordering axis for temporal indexing. Default: Utc.
     pub temporal_axis: TemporalAxis,
+    /// Reorder commuting join patterns mid-query from sampled row counts
+    /// (`planning/adaptive-execution.md`). Default: true.
+    pub adaptive_execution: bool,
 }
 
 impl Default for DatabaseConfig {
@@ -67,6 +70,7 @@ impl Default for DatabaseConfig {
             hnsw_edge_mode: HnswEdgeMode::Virtual,
             owl_enabled: true,
             temporal_axis: TemporalAxis::Utc,
+            adaptive_execution: true,
         }
     }
 }

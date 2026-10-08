@@ -182,14 +182,31 @@ fn execute_query_with_ctx(query: &Query, ctx: &mut ExecutionContext<'_>) -> Resu
     // subject variable and map to the same pseudo-table, fuse them into a
     // single vectorized multi-column scan (SIMD bitset AND). This avoids
     // intermediate materialization and join overhead.
-    let patterns = &query.patterns;
+    // Owned, so adaptive execution can move a cheaper commuting pattern up.
+    let mut patterns: Vec<Pattern> = query.patterns.clone();
     // Only the outermost evaluation records; nested subqueries see `None`.
     let metrics = ctx.metrics.take();
     let mut i = 0;
     while i < patterns.len() {
+        // Adaptive execution: with many rows in hand, run whichever commuting
+        // pattern of this run the sampled row counts say is far cheaper.
+        if ctx.config.adaptive_execution
+            && pushable_limit.is_none()
+            && results.len() >= ADAPTIVE_MIN_ROWS
+            && is_reorderable(&patterns[i])
+        {
+            if let Some(j) = choose_adaptive(&patterns, i, &results, ctx)? {
+                let next = patterns.remove(j);
+                patterns.insert(i, next);
+                if let Some(m) = metrics {
+                    m.record_reorder();
+                }
+            }
+        }
+
         // Try to detect a run of fuseable triple patterns.
         if let Some(registry) = ctx.pseudo_tables {
-            let run_end = find_fuseable_pattern_run(patterns, i, ctx, registry);
+            let run_end = find_fuseable_pattern_run(&patterns, i, ctx, registry);
             if run_end > i + 1 {
                 // We found 2+ consecutive patterns that can be fused.
                 let fuseable: Vec<&Pattern> = patterns[i..run_end].iter().collect();
@@ -4003,6 +4020,143 @@ fn entity_similarity(entity: TermId, query: &[f32], ctx: &ExecutionContext<'_>) 
         }
     }
     best
+}
+
+/// Adaptive execution only considers reordering once this many rows are in
+/// hand (`planning/adaptive-execution.md`).
+const ADAPTIVE_MIN_ROWS: usize = 1000;
+/// Rows sampled to estimate a candidate's fanout.
+const ADAPTIVE_SAMPLE: usize = 32;
+/// Output cap while sampling: hitting it proves a fanout of at least 64,
+/// which is all the 4x rule needs, and keeps probing an expensive pattern
+/// cheap.
+const ADAPTIVE_SAMPLE_CAP: usize = ADAPTIVE_SAMPLE * 64;
+/// A switch must save at least this many estimated rows.
+const ADAPTIVE_MIN_SAVING: f64 = 1000.0;
+
+/// Inner-join patterns, which commute: their order doesn't change the result.
+fn is_reorderable(pattern: &Pattern) -> bool {
+    matches!(
+        pattern,
+        Pattern::Triple { .. }
+            | Pattern::PathUntil { .. }
+            | Pattern::VectorSimilar { .. }
+            | Pattern::MetricSearch { .. }
+    )
+}
+
+/// Variables a reorderable pattern mentions.
+fn pattern_vars(pattern: &Pattern) -> Vec<&str> {
+    let terms: Vec<&Term> = match pattern {
+        Pattern::Triple {
+            subject,
+            predicate,
+            object,
+        } => vec![subject, predicate, object],
+        Pattern::PathUntil {
+            subject, object, ..
+        } => vec![subject, object],
+        Pattern::VectorSimilar { subject, .. } | Pattern::MetricSearch { subject, .. } => {
+            vec![subject]
+        }
+        _ => vec![],
+    };
+    terms
+        .into_iter()
+        .filter_map(|t| match t {
+            Term::Variable(v) => Some(v.as_str()),
+            _ => None,
+        })
+        .collect()
+}
+
+/// Estimated rows `pattern` would produce from `rows`: the row count times
+/// the fanout measured on up to [`ADAPTIVE_SAMPLE`] evenly strided rows. A
+/// pattern sharing no variable with the rows is a cross product, estimated
+/// from the planner's unconditional estimate.
+fn sampled_estimate(
+    pattern: &Pattern,
+    rows: &[Bindings],
+    ctx: &mut ExecutionContext<'_>,
+) -> Result<f64> {
+    let n = rows.len() as f64;
+    let shares = pattern_vars(pattern)
+        .iter()
+        .any(|v| rows.first().is_some_and(|r| r.contains_key(*v)));
+    if !shares {
+        let est = crate::planner::estimate_pattern_rows(
+            pattern,
+            ctx.store,
+            ctx.dict,
+            Some(ctx.vectors),
+            ctx.prefixes,
+        );
+        return Ok(est.map_or(f64::INFINITY, |e| n * e as f64));
+    }
+    let step = (rows.len() / ADAPTIVE_SAMPLE).max(1);
+    let sample: Vec<Bindings> = rows
+        .iter()
+        .step_by(step)
+        .take(ADAPTIVE_SAMPLE)
+        .cloned()
+        .collect();
+    let sample_scores = vec![HashMap::new(); sample.len()];
+    // Probing must not count as pseudo-table use.
+    let hits = ctx.pseudo_table_hits.get();
+    let (out, _) = evaluate_pattern(
+        pattern,
+        &sample,
+        &sample_scores,
+        ctx,
+        Some(ADAPTIVE_SAMPLE_CAP),
+    )?;
+    ctx.pseudo_table_hits.set(hits);
+    Ok(n * out.len() as f64 / sample.len().max(1) as f64)
+}
+
+/// The pattern to run next in place of `patterns[i]`, if adaptive execution
+/// should switch: within the run of reorderable patterns starting at `i`, the
+/// cheapest by sampled estimate, when the planner's choice is estimated at
+/// ≥4× as many rows and ≥1,000 more.
+fn choose_adaptive(
+    patterns: &[Pattern],
+    i: usize,
+    rows: &[Bindings],
+    ctx: &mut ExecutionContext<'_>,
+) -> Result<Option<usize>> {
+    let end = patterns[i..]
+        .iter()
+        .position(|p| !is_reorderable(p))
+        .map_or(patterns.len(), |k| i + k);
+    if end - i < 2 {
+        return Ok(None);
+    }
+    // The planner's choice first: if it is already cheap, no switch could
+    // save enough, so the others aren't sampled at all.
+    let planned = sampled_estimate(&patterns[i], rows, ctx)?;
+    if planned < ADAPTIVE_MIN_SAVING {
+        return Ok(None);
+    }
+    let mut estimates = Vec::with_capacity(end - i);
+    estimates.push(planned);
+    for p in &patterns[i + 1..end] {
+        check_deadline(ctx)?;
+        estimates.push(sampled_estimate(p, rows, ctx)?);
+    }
+    let (best, best_est) =
+        estimates
+            .iter()
+            .copied()
+            .enumerate()
+            .fold(
+                (0, f64::INFINITY),
+                |acc, (k, e)| if e < acc.1 { (k, e) } else { acc },
+            );
+    if best != 0 && planned >= 4.0 * best_est && planned - best_est >= ADAPTIVE_MIN_SAVING {
+        Ok(Some(i + best))
+    } else {
+        Ok(None)
+    }
 }
 
 /// A pattern's shape for metrics: its kind, and each position as constant

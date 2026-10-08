@@ -51,15 +51,6 @@ publish verdict.
 
 ---
 
-12. **Adaptive execution, sampling first** (`planning/adaptive-execution.md` § v1): reorder
-    within runs of commuting patterns (filters and other barriers end a run), estimate each
-    candidate as rows × sampled fanout (≤32 strided rows), switch only at ≥4× and ≥1,000
-    rows, off when a LIMIT is pushed down; `DatabaseConfig::adaptive_execution` (default on);
-    reorder count in `/health/queries`; tests: adaptive_gap picks `s`, same rows on/off,
-    barriers hold, small queries untouched.
-
----
-
 ## Pinned tail — autonomous-loop cron management
 
 These two items are always the last in the queue (autonomous-loop playbook §d):

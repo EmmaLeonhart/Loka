@@ -303,7 +303,7 @@ ORDER BY DESC(VECTOR_SCORE(?doc :hasEmbedding "..."^^loka:f32vec))
 - The planner costs an unbound VECTOR_SIMILAR as the rows it can return, `min(k, indexed vectors)`, on the same scale as a triple pattern's weight × cardinality, so a more selective graph pattern (e.g. a rare `rdf:type`) runs first (`optimize_with_vectors`)
 - For a **bound** subject the executor picks the access path at run time: exact scoring of the subjects' own vectors when that costs fewer distance computations than a beam search (`min(N, ef·M·(⌈log2 N⌉+1))`), else the HNSW search. An explicit `k:=` always takes the index path
 - Without `k:=`, the graph-first (exact) plan can return bound subjects the k-capped index path misses, so results are a superset of the index path's. Design: `planning/cost-based-hnsw.md`
-- Adaptive execution (runtime reordering) is future work
+- Adaptive execution v1: mid-query, commuting join patterns are reordered from sampled row counts (32 strided rows) when the planner's next pattern is estimated ≥4× and ≥1,000 rows worse; `DatabaseConfig::adaptive_execution` (default on). Design: `planning/adaptive-execution.md`
 
 ---
 
