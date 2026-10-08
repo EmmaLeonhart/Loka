@@ -105,6 +105,20 @@ Either fanout method picks `s` second here. Sampling bound rows finds almost no 
 counts give `s` about 1 per x, against 500 per y for `q`. So this case doesn't decide between
 them. The insert-overhead measurement below still does.
 
+## v1: sampling only (2026-10-08 decision)
+
+Built first because it needs no new store statistic, which is the spec's own suggestion. It is
+deliberately conservative:
+- **Segments** are maximal runs of reorderable patterns. A FILTER also ends a run; moving
+  filters along with a reorder is left for later.
+- **Fanout** comes from evaluating each candidate on up to 32 evenly strided current rows
+  (capped output). A candidate sharing no variable with the current rows is a cross product,
+  estimated as `n × the planner's estimate`.
+- **Gates:** only when there are at least 1,000 current rows, the planner's next pattern is
+  estimated at ≥4× the best, and the difference is ≥1,000 rows. Not when a LIMIT has been
+  pushed into the patterns, because pushdown truncates every pattern's output.
+- `DatabaseConfig::adaptive_execution` (default on) turns it off for comparisons.
+
 ## Open questions (to settle before building)
 
 - Maintained or on-demand distinct counts: measure the insert overhead on the 2M store.
