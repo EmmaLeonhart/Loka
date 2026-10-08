@@ -590,11 +590,38 @@ fn execute_insert_data(
                 }
             }
 
+            // A vector literal under a declared vector predicate also goes
+            // into its HNSW index, as POST /vectors does. Check dimensions
+            // before writing anything.
+            let mut vectors = state
+                .vectors
+                .write()
+                .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?;
+            let to_index = match object {
+                Term::VectorLiteral(v) => match vectors.get(p_id) {
+                    Some(index) if index.dimensions() != v.len() => {
+                        return Err(ProtoError::BadRequest(format!(
+                            "vector has {} dimensions; the predicate is declared with {}",
+                            v.len(),
+                            index.dimensions()
+                        )));
+                    }
+                    Some(_) => Some(v.clone()),
+                    None => None,
+                },
+                _ => None,
+            };
+
             let triple = loka_core::Triple::new(s_id, p_id, o_id);
             if store.insert(triple).is_ok() {
                 if let Some(ps) = ps_opt {
                     ps.insert(triple)
                         .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
+                }
+                if let Some(v) = to_index {
+                    vectors
+                        .insert(p_id, v, o_id)
+                        .map_err(|e| ProtoError::BadRequest(format!("vector index: {}", e)))?;
                 }
                 inserted += 1;
             }
@@ -646,6 +673,10 @@ fn execute_delete_data(
         None => None,
     };
     let ps_opt = ps_guard.as_deref();
+    let mut vectors = state
+        .vectors
+        .write()
+        .map_err(|e| ProtoError::BadRequest(format!("lock: {}", e)))?;
     let mut deleted = 0i64;
     for pattern in &query.patterns {
         if let Pattern::Triple {
@@ -656,15 +687,45 @@ fn execute_delete_data(
         {
             let s_id = resolve_term_to_id(subject, &mut dict, ps_opt, &query.prefixes)?;
             let p_id = resolve_term_to_id(predicate, &mut dict, ps_opt, &query.prefixes)?;
-            let o_id = resolve_term_to_id(object, &mut dict, ps_opt, &query.prefixes)?;
 
-            let triple = loka_core::Triple::new(s_id, p_id, o_id);
-            if store.remove(&triple) {
-                if let Some(ps) = ps_opt {
-                    ps.remove(&triple)
-                        .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
+            // A vector literal matches stored vectors by value (in canonical
+            // six-decimal form), not by text: a triple imported from
+            // N-Triples keeps its original spelling.
+            let objects: Vec<loka_core::TermId> = match object {
+                loka_sparql::parser::Term::VectorLiteral(v) => {
+                    let want = loka_hnsw::format_f32vec_literal(v);
+                    store
+                        .find_by_subject_predicate(s_id, p_id)
+                        .into_iter()
+                        .map(|t| t.object)
+                        .filter(|&o| {
+                            dict.resolve(o)
+                                .and_then(loka_hnsw::parse_f32vec_literal)
+                                .is_some_and(|got| loka_hnsw::format_f32vec_literal(&got) == want)
+                        })
+                        .collect()
                 }
-                deleted += 1;
+                _ => vec![resolve_term_to_id(
+                    object,
+                    &mut dict,
+                    ps_opt,
+                    &query.prefixes,
+                )?],
+            };
+
+            for o_id in objects {
+                let triple = loka_core::Triple::new(s_id, p_id, o_id);
+                if store.remove(&triple) {
+                    if let Some(ps) = ps_opt {
+                        ps.remove(&triple)
+                            .map_err(|e| ProtoError::BadRequest(format!("persist: {}", e)))?;
+                    }
+                    // The embedding leaves vector search too (as a tombstone).
+                    if vectors.has_index(p_id) {
+                        vectors.delete(p_id, o_id);
+                    }
+                    deleted += 1;
+                }
             }
         }
     }
@@ -736,9 +797,13 @@ fn resolve_term_to_id(
             }
             Ok(loka_core::quoted_triple_id(s_id, p_id, o_id))
         }
-        _ => Err(ProtoError::BadRequest(
+        Term::VectorLiteral(v) => intern_synced(dict, ps, &loka_hnsw::format_f32vec_literal(v)),
+        Term::Variable(_) => Err(ProtoError::BadRequest(
             "variables not allowed in INSERT/DELETE DATA".into(),
         )),
+        other => Err(ProtoError::BadRequest(format!(
+            "term not allowed in INSERT/DELETE DATA: {other:?}"
+        ))),
     }
 }
 
@@ -1527,8 +1592,7 @@ async fn insert_vector(
     Json(req): Json<InsertVectorRequest>,
 ) -> Result<Json<InsertVectorResponse>, ProtoError> {
     // Build the literal string before acquiring locks
-    let vec_str: Vec<String> = req.vector.iter().map(|f| format!("{:.6}", f)).collect();
-    let literal = format!("\"{}\"^^<http://loka.dev/f32vec>", vec_str.join(" "));
+    let literal = loka_hnsw::format_f32vec_literal(&req.vector);
 
     // The subject may be a plain IRI OR an RDF-star quoted triple
     // `<< <s> <p> <o> >>` — so a vector can be attached to the TRIPLE
@@ -1898,6 +1962,87 @@ mod tests {
         let (s, json) = send(state, "POST", "/sparql", "application/sparql-query", q).await;
         assert_eq!(s, StatusCode::OK, "{json}");
         json["results"]["bindings"].as_array().unwrap().clone()
+    }
+
+    async fn update(state: &Arc<AppState>, q: String) -> (StatusCode, serde_json::Value) {
+        send(state, "POST", "/sparql", "application/sparql-query", q).await
+    }
+
+    #[tokio::test]
+    async fn insert_data_with_a_vector_literal_is_searchable() {
+        let state = with_two_vectors().await;
+        let (s, json) = update(
+            &state,
+            format!(
+                "INSERT DATA {{ <http://example.org/c> <{EMB}> \"0.9 0.1 0 0\"^^<http://loka.dev/f32vec> }}"
+            ),
+        )
+        .await;
+        assert_eq!(s, StatusCode::OK, "{json}");
+        let found: Vec<_> = similar_to_a(&state)
+            .await
+            .iter()
+            .map(|b| b["s"]["value"].as_str().unwrap().to_string())
+            .collect();
+        assert!(
+            found.contains(&"http://example.org/c".to_string()),
+            "{found:?}"
+        );
+
+        // Wrong dimension: rejected, nothing written.
+        let (s, _) = update(
+            &state,
+            format!(
+                "INSERT DATA {{ <http://example.org/d> <{EMB}> \"1 0\"^^<http://loka.dev/f32vec> }}"
+            ),
+        )
+        .await;
+        assert_eq!(s, StatusCode::BAD_REQUEST);
+        let rows = star_rows(
+            &state,
+            &format!("SELECT ?v WHERE {{ <http://example.org/d> <{EMB}> ?v }}"),
+        )
+        .await;
+        assert!(rows.is_empty(), "{rows:?}");
+    }
+
+    #[tokio::test]
+    async fn delete_data_with_a_vector_literal_matches_by_value() {
+        // Stored by /vectors as "1.000000 0.000000 0.000000 0.000000"; the
+        // DELETE spells it "1 0 0 0".
+        let state = with_two_vectors().await;
+        assert_eq!(similar_to_a(&state).await.len(), 1);
+        let (s, json) = update(
+            &state,
+            format!(
+                "DELETE DATA {{ <http://example.org/a> <{EMB}> \"1 0 0 0\"^^<http://loka.dev/f32vec> }}"
+            ),
+        )
+        .await;
+        assert_eq!(s, StatusCode::OK, "{json}");
+        assert_eq!(
+            json["results"]["bindings"][0]["mutationCount"]["value"],
+            "1"
+        );
+        assert!(
+            similar_to_a(&state).await.is_empty(),
+            "removed from vector search"
+        );
+        let (_, health) = send(&state, "GET", "/vectors/health", "", String::new()).await;
+        assert_eq!(health["indexes"][0]["active_nodes"], 1);
+
+        // A value that isn't stored deletes nothing.
+        let (_, json) = update(
+            &state,
+            format!(
+                "DELETE DATA {{ <http://example.org/b> <{EMB}> \"0 0 1 0\"^^<http://loka.dev/f32vec> }}"
+            ),
+        )
+        .await;
+        assert_eq!(
+            json["results"]["bindings"][0]["mutationCount"]["value"],
+            "0"
+        );
     }
 
     #[tokio::test]

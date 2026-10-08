@@ -241,7 +241,7 @@ sustained GPU run or a large risky ingest; they wait for cloud GPU or a donor.
 ### Background Maintenance Cycle
 - [x] Low-usage detection, background HNSW rebuild off the lock, atomic swap: `loka serve --maintenance-idle-secs` (`planning/background-maintenance.md`; 2026-10-07)
 - [x] Background pseudo-table rediscovery: the idle maintenance cycle rediscovers once the store has changed (2026-10-07)
-- [ ] `INSERT DATA` / `DELETE DATA` reject `f32vec` literals with a misleading "variables not allowed" error (the parser makes them `Term::VectorLiteral`, and the original text needed to find the stored literal is gone). Vectors are deleted via `/retract` today.
+- [x] `INSERT DATA` / `DELETE DATA` accept `f32vec` literals: inserted in canonical form and indexed; deleted by value match, tombstoning the HNSW node (2026-10-07)
 
 ### Pseudo-Tables (remaining)
 - [x] Invalidation tracking (column-level, per-predicate store generations) and serving from exact columns, rediscovered in the idle maintenance cycle (`planning/pseudo-table-serving.md`; 2026-10-07)

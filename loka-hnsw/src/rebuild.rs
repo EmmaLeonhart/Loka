@@ -117,8 +117,9 @@ pub fn rebuild_from_store(
 ///
 /// Returns `None` if no quoted segment is present. Returns an empty Vec
 /// if the quoted segment has no parseable floats (caller treats both
-/// as skip-this-triple).
-fn parse_f32vec_literal(s: &str) -> Option<Vec<f32>> {
+/// as skip-this-triple). The same parse the startup rebuild uses, so a
+/// caller matching stored vectors by value sees what the index saw.
+pub fn parse_f32vec_literal(s: &str) -> Option<Vec<f32>> {
     let start = s.find('"')? + 1;
     let rest = &s[start..];
     let end_rel = rest.find('"')?;
@@ -130,10 +131,27 @@ fn parse_f32vec_literal(s: &str) -> Option<Vec<f32>> {
     )
 }
 
+/// The canonical stored form of a vector literal, as `POST /vectors` and
+/// SPARQL `INSERT DATA` write it: each component to six decimals.
+pub fn format_f32vec_literal(vector: &[f32]) -> String {
+    let parts: Vec<String> = vector.iter().map(|f| format!("{:.6}", f)).collect();
+    format!("\"{}\"^^<http://loka.dev/f32vec>", parts.join(" "))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use loka_core::Triple;
+
+    #[test]
+    fn format_and_parse_round_trip_at_six_decimals() {
+        let s = format_f32vec_literal(&[0.5, -0.25, 1.0]);
+        assert_eq!(
+            s,
+            "\"0.500000 -0.250000 1.000000\"^^<http://loka.dev/f32vec>"
+        );
+        assert_eq!(parse_f32vec_literal(&s), Some(vec![0.5, -0.25, 1.0]));
+    }
 
     #[test]
     fn rebuild_skips_triples_with_literal_predicate() {

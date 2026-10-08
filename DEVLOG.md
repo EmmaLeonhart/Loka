@@ -7,6 +7,37 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-07 (late night) — SPARQL INSERT/DELETE DATA handle vector literals
+
+Promoted from TODO.md, since step 10 waits on Emma. A `"…"^^loka:f32vec` object in
+`INSERT DATA` or `DELETE DATA` was rejected with "variables not allowed in INSERT/DELETE
+DATA". The parser turns it into `Term::VectorLiteral`, and the server's term resolver had no
+arm for it. So SPARQL could neither add nor remove a vector triple; only `POST /vectors` and
+`/retract` could.
+
+Now:
+- `INSERT DATA` interns the literal in the canonical form `POST /vectors` writes (each
+  component to six decimals, via the new shared `loka_hnsw::format_f32vec_literal`). Under a
+  declared vector predicate it is also indexed; a wrong dimension is rejected before
+  anything is written.
+- `DELETE DATA` matches stored vectors **by value** in that canonical form, not by text. A
+  triple imported from N-Triples keeps its original spelling, and `"1 0 0 0"` has to remove
+  what `/vectors` stored as `"1.000000 0.000000 0.000000 0.000000"`. The matched triples are
+  removed and their HNSW nodes tombstoned, so they leave vector search. Without the
+  tombstone they would stay searchable, with no subject pointing at them.
+- Other unsupported terms now get an error that names the term instead of blaming
+  variables.
+
+Tests (server, 2):
+- an inserted vector is found by VECTOR_SIMILAR;
+- a wrong-dimension insert is a 400 and writes nothing;
+- a delete spelled differently from the stored text removes the vector, takes it out of
+  search, and drops the active node count;
+- deleting a value that isn't stored deletes nothing.
+
+Both requests failed before this change. 32 suites pass; clippy is clean.
+
+---
 ## 2026-10-07 (late night) — Step 10: the "primitive entity resolution" con is model-bound; no resolver change
 
 Review v16 (Accept) lists exact-label entity resolution (8 of 672 resolved) as a con. Of the

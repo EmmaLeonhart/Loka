@@ -16,7 +16,9 @@ pub use edges::{
 };
 pub use error::{HnswError, Result};
 pub use index::{HnswConfig, HnswIndex, IndexSnapshot, SearchResult};
-pub use rebuild::{rebuild_from_store, RebuildDefaults};
+pub use rebuild::{
+    format_f32vec_literal, parse_f32vec_literal, rebuild_from_store, RebuildDefaults,
+};
 pub use registry::{VectorPredicateConfig, VectorRegistry};
 pub use vector::{
     cosine_similarity, dot_product, l2_norm, normalize, normalized, squared_euclidean,
