@@ -2989,6 +2989,23 @@ mod tests {
     }
 
     #[test]
+    fn deep_tables_are_never_servable() {
+        // A deep column is labelled with its path's FIRST step (country
+        // -hasCapital-> capital -hasMayor-> mayor is labelled hasCapital) but
+        // holds the LAST node. If one were servable, `?c :hasCapital ?x`
+        // would return mayors. Until columns carry their full path
+        // (planning/deep-pseudo-table-serving.md), none may serve.
+        let store = make_deep_tree_store();
+        let tables = discover_deep_pseudo_tables(&store);
+        assert!(!tables.is_empty());
+        for table in &tables {
+            for c in 0..table.columns.len() {
+                assert!(!table.servable_column(c, &store), "{} col {c}", table.label);
+            }
+        }
+    }
+
+    #[test]
     fn discover_deep_tables_materializes_tree() {
         let store = make_deep_tree_store();
         let tables = discover_deep_pseudo_tables(&store);

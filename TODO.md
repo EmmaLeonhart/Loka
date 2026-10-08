@@ -217,7 +217,7 @@ sustained GPU run or a large risky ingest; they wait for cloud GPU or a donor.
 ### Pseudo-Tables (remaining)
 - [x] Invalidation tracking (column-level, per-predicate store generations) and serving from exact columns, rediscovered in the idle maintenance cycle (`planning/pseudo-table-serving.md`; 2026-10-07)
 - [x] Multi-pattern star queries over one subject are fused into one columnar scan (existing fused scan, now only over exact, current columns)
-- [ ] Deep (multi-hop) pseudo-tables never serve queries: their columns are paths, not predicates; serving them needs path-level exactness. Spec: `planning/deep-pseudo-table-serving.md` (2026-10-08); next step is the "is it worth building" bench
+- [ ] Deep (multi-hop) pseudo-tables never serve queries: their columns are paths, not predicates; serving them needs path-level exactness. Spec: `planning/deep-pseudo-table-serving.md` (2026-10-08). Measured worth building (35 → ~4 ms on a 20k-root chain); first step is storing each column's full path
 
 ### Database Health Dashboard (remaining)
 - [x] Query performance metrics: per-pattern latency percentiles, planner estimate accuracy (`GET /health/queries`, `planning/query-metrics.md`; 2026-10-07)

@@ -11,6 +11,17 @@ shapes and materialises them with `materialize_subgraph_table`. Each column is a
 for a row is `resolve_path(root, path, store)`: one leaf `TermId`, or null. Deep tables
 currently get `column_generations = None` on every column, so they never answer a query.
 
+## Precondition found while measuring: columns lose their path
+
+`materialize_subgraph_table` labels each column with the **first** step of its path, as a
+`Property`, but the cell holds the path's **last** node. `country -hasCapital-> capital
+-hasMayor-> mayor` is labelled `(hasCapital, Subject)` and holds mayors. Two paths with the
+same first step get identical labels. This is harmless today: deep tables never enter the
+serving registry, and every column has `column_generations = None`, guarded by
+`deep_tables_are_never_servable`. But serving has to start by storing the full `SubgraphPath`
+per column (e.g. `PseudoTable::column_paths`), and must match queries on paths, never on
+these labels.
+
 ## When a path column may answer a chain of patterns
 
 A path column for `root -p1-> m1 -p2-> … -pk-> leaf` corresponds to the chain query
@@ -50,6 +61,21 @@ Measure first, as for depth-1 and adaptive execution. Benchmark a two-hop chain
 table, comparing the triple path (two joins) with a column scan. Build only if the column scan
 is clearly faster. The depth-1 star gain was 6× after the join fix; a chain's second hop is a
 point lookup per row, so the gain may be smaller.
+
+## Measured: worth building (2026-10-08)
+
+20,000 countries, each `country -hasCapital-> capital -hasMayor-> mayor`, plus names
+(120k triples). Discovery found one deep table with a country→mayor column (20,000 rows), and
+took 0.86 s: fine for the idle cycle, not per query. For the chain query
+`?c :hasCapital ?k . ?k :hasMayor ?m`, same 20,000 answers, release build, medians of 15:
+
+| | time |
+|---|---|
+| triple path (two joins) | 35 ms |
+| column scan, building result rows (realistic serving floor) | 4.0 ms |
+| bare column scan | 0.1 ms |
+
+That's about 8.8×, so building it is justified, behind the precondition above.
 
 ## Tests (before it can be called done)
 

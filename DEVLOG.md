@@ -7,6 +7,22 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 — Deep pseudo-tables: worth building (8.8×), and a latent mislabelling found
+
+The spec's gate, measured: 20,000 countries `-hasCapital-> capital -hasMayor-> mayor` (120k
+triples, release build). The chain query on the triple path takes 35 ms. Scanning the deep
+column that holds the same 20,000 answers, including building result rows, takes 4.0 ms (the
+bare scan is 0.1 ms). That's about 8.8×, so it's worth building. Discovery took 0.86 s, which
+fits the idle cycle. Measured with a throwaway probe, not committed.
+
+Found while locating that column: deep-table columns are labelled with their path's **first**
+step (`hasCapital`) but hold its **last** node (the mayor). Two paths sharing a first step get
+the same label. It's harmless today, because deep tables never reach the serving registry and
+never have servable columns. But it would return mayors for `?c :hasCapital ?x` the day they
+did. `deep_tables_are_never_servable` now guards that, and the spec makes "store each column's
+full path" the first step of building. 34 suites pass; clippy is clean.
+
+---
 ## 2026-10-08 — Deep pseudo-tables: serving spec written (not built)
 
 The open items needing nobody's decision are now only large ones. Deep (multi-hop) pseudo-tables
