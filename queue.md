@@ -15,8 +15,6 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 3. **Attempt every TODO.md item that is not computationally intensive** (GPU-gated items and the
    30M+ sustained-ingest check are excluded), in TODO.md order:
-   b. v0.3.1 release checklist (Gradle merge, version bump, tag): check whether it's
-      obsolete (current version 0.4.6); the tag itself is Emma's.
    c. Maintained distinct counts for adaptive execution: measure the insert overhead; build
       only if it's cheap and sampling shows noise.
    d. Deep pseudo-tables serving queries (`planning/deep-pseudo-table-serving.md`): store

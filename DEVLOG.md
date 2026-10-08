@@ -7,6 +7,18 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 — The v0.3.1 release checklist was already obsolete
+
+Queue item 3b. TODO.md still listed "merge Gradle migration, bump all SDK configs to 0.3.1, tag
+v0.3.1".
+- The Gradle migration is in: `sdks/java/build.gradle.kts`, and no `pom.xml`.
+- The tag exists, and releases have since gone up to `v0.4.6`.
+- The bump isn't needed: `publish-sdks.yml` overwrites each SDK's manifest version from the
+  git tag at publish time (also recorded in `planning/sdk-publish-readiness.md`).
+
+Checklist marked done/obsolete with that evidence. No code change.
+
+---
 ## 2026-10-08 — Installer: choose one of several models, generated from models.toml
 
 Queue item 3a (TODO "Windows installer — multi-model support"):

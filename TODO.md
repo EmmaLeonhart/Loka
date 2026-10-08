@@ -161,11 +161,12 @@ without 3 GB to spare, and a "bring your own GGUF" file picker.
 
 Merge the Gradle migration (local) and MCP agentic UX work (claude.ai remote session) then cut v0.3.1.
 
-### Release Checklist
+### Release Checklist: obsolete (checked 2026-10-08)
 - [x] Merge claude.ai remote branch (MCP agentic UX work) into main
-- [ ] Merge Gradle migration setup (local commits)
-- [ ] Bump version to 0.3.1 in `sdks/java/build.gradle.kts` and all other SDK configs
-- [ ] Tag `v0.3.1` and push to trigger publish workflow
+- [x] Merge Gradle migration setup: done (`sdks/java/build.gradle.kts`, no `pom.xml`)
+- [x] ~~Bump version to 0.3.1 in all SDK configs~~: not needed. `publish-sdks.yml` sets every
+      SDK's version from the git tag at publish time.
+- [x] Tag `v0.3.1`: exists, and releases have since reached `v0.4.6`
 
 ### Java/Kotlin SDK — Locally Complete
 The SDK is functionally complete (3 classes, ~400 LOC). Build migrated from Maven to Gradle (Kotlin DSL).
