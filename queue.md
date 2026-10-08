@@ -11,11 +11,10 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ---
 
-## ACTIVE — Emma, 2026-10-08 (strict order, top to bottom)
+## ACTIVE
 
-3. **Attempt every TODO.md item that is not computationally intensive** (GPU-gated items and the
-   30M+ sustained-ingest check are excluded), in TODO.md order:
-4. **Shut down all cron jobs.** One action after the attempts above, not a standing tail item.
+Empty. Emma's 2026-10-08 queue is done (DEVLOG, 2026-10-08), and the crons are shut down at her
+request. Next work: Emma's decisions (release, paper submission) or a new queue.
 
 ---
 

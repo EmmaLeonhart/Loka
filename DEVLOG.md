@@ -7,6 +7,32 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 — Emma's queue done; all crons shut down
+
+Emma's queue for the day, done in her order:
+1. **Site:** `/arxiv/` page, front-page links, compute asks removed (`e8f1268`).
+2. **Paper / arXiv on hold** (`e451f42`).
+3. **Attempts on every non-GPU TODO item:**
+   - installer multi-model (`c20745f`);
+   - obsolete v0.3.1 checklist closed (`e44029b`);
+   - distinct counts measured and not built (`ebff0f4`);
+   - deep pseudo-tables serving (`7382ca0`);
+   - health output (`4dca02f`);
+   - SDK readiness, licence text and the stale Apache claims (`ff40231`);
+   - remote Studio access (`78ab2f2`);
+   - GQL first subset (`e815630`);
+   - Studio desktop packages, plus the no-UI packaging bug (`c5201d0`, `6fef436`).
+4. **All cron jobs shut down:** work-loop (:03), auto-flush (:15), status-report (:42).
+   `CronList` is empty.
+
+Emma, on why: "I don't really want this session just constantly running and wasting my tokens."
+That's her explicit instruction for this session, and it overrides the standing "crons always
+on" rule here. A future session should ask before starting them again rather than assume.
+
+CI on the last push: CI, Integration Tests, Studio desktop builds and Deploy Pages all green. The
+live `/arxiv/` page and its PDF return 200.
+
+---
 ## 2026-10-08 — Studio desktop packages for all three platforms; the packaged Studio had no UI
 
 Queue item 3i. Before writing a new job I built the existing Windows Studio package locally, and
