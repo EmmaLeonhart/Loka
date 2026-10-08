@@ -7,6 +7,26 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 — `loka health` output, iterated from an agent's actual use
+
+Queue item 3e. I ran `loka health` and `loka health --json` on a freshly imported database, as an
+agent would, and fixed what got in the way:
+1. **Text and JSON contradicted each other.** With pseudo-table discovery never run, the text
+   said "No pseudo-tables discovered", which reads as "this data has no relational structure".
+   The JSON said "not yet discovered, run `loka health --refresh`". The text now prints the same
+   `status_detail` as the JSON.
+2. **The JSON had no recommended actions.** Only the text had them, so a JSON consumer had to
+   re-derive what to do. `HealthReport::recommended_actions` is now computed once; the text
+   prints it and the JSON carries it.
+3. **No pointer to query metrics.** A "Query Performance" section says they live on a running
+   server at `GET /health/queries`, with what that reports.
+4. A missing blank line ran the HNSW section into the Pseudo-Tables heading.
+
+Test: `undiscovered_pseudo_tables_say_how_to_discover_them_in_text_and_json` checks that text and
+JSON agree, that actions appear in both, the pointer, and the spacing. 35 suites pass; clippy is
+clean.
+
+---
 ## 2026-10-08 — Deep pseudo-tables answer chain queries (built to the spec)
 
 Queue item 3d. The spec and the 35 ms → ~4 ms measurement came earlier today. Built:

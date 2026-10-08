@@ -289,13 +289,16 @@ impl PseudoTableHealthMetrics {
         let mut lines = Vec::new();
 
         if self.table_count == 0 {
-            lines.push("  No pseudo-tables discovered.".to_string());
+            // The same detail the JSON carries: "not yet discovered" (run
+            // --refresh) and "none found" are different situations. The text
+            // used to say "No pseudo-tables discovered" either way.
+            lines.push(format!("  {}", self.status_detail));
             lines.push(
-                "  [CONTEXT: Pseudo-tables are auto-discovered from shared predicate patterns."
+                "  [CONTEXT: Pseudo-tables are auto-discovered from nodes that share predicates;"
                     .to_string(),
             );
             lines.push(
-                "   A database with no pseudo-tables either has too few triples or no relational structure.]"
+                "   they speed up star queries. None after discovery means too few triples or no relational structure.]"
                     .to_string(),
             );
             return lines.join("\n");
@@ -399,6 +402,10 @@ pub struct HealthReport {
     pub storage: StorageHealthMetrics,
     /// Overall database health (worst of all subsystems).
     pub overall_status: HealthStatus,
+    /// What to do, one line per subsystem that isn't healthy; empty when
+    /// all are. The same list the text report prints under "Recommended
+    /// Actions", so JSON consumers don't have to re-derive it.
+    pub recommended_actions: Vec<String>,
 }
 
 impl HealthReport {
@@ -429,6 +436,7 @@ impl HealthReport {
         if self.hnsw.is_empty() {
             sections.push("  No vector indexes declared.".to_string());
             sections.push("  [CONTEXT: Vector indexes are created via loka:declareVectorPredicate. No indexes = no vector search capability.]".to_string());
+            sections.push(String::new());
         } else {
             for index_health in &self.hnsw {
                 sections.push(index_health.to_ai_text());
@@ -441,28 +449,20 @@ impl HealthReport {
         sections.push(self.pseudo_tables.to_ai_text());
         sections.push(String::new());
 
+        // Query performance lives in the serving process, not on disk.
+        sections.push("## Query Performance".to_string());
+        sections.push(
+            "  Not recorded offline. On a running `loka serve`: GET /health/queries".to_string(),
+        );
+        sections.push("  [CONTEXT: query latency p50/p90/p99, latency and rows per pattern shape, and how accurate the planner's row estimates are.]".to_string());
+        sections.push(String::new());
+
         // Action items — the most important part for AI agents.
         // If an agent reads nothing else, this section tells them what to do.
-        let mut actions = Vec::new();
-        for h in &self.hnsw {
-            if h.status != HealthStatus::Healthy {
-                actions.push(format!(
-                    "- HNSW index '{}': {} (run `loka health --rebuild-hnsw` to rebuild all, or target specific predicates)",
-                    h.predicate_name, h.status_detail
-                ));
-            }
-        }
-        if self.pseudo_tables.status != HealthStatus::Healthy {
-            actions.push(format!(
-                "- Pseudo-tables: {} (run `loka health --refresh` to rediscover)",
-                self.pseudo_tables.status_detail
-            ));
-        }
-
-        if !actions.is_empty() {
+        if !self.recommended_actions.is_empty() {
             sections.push("## Recommended Actions".to_string());
-            for action in &actions {
-                sections.push(action.clone());
+            for action in &self.recommended_actions {
+                sections.push(format!("- {action}"));
             }
         } else {
             sections.push("## Recommended Actions".to_string());
@@ -627,12 +627,37 @@ pub fn generate_health_report(
         worst_status(&hnsw_metrics.iter().map(|h| h.status).collect::<Vec<_>>()),
     ]);
 
+    let recommended_actions = recommended_actions(&hnsw_metrics, &pseudo_table_metrics);
     HealthReport {
         hnsw: hnsw_metrics,
         pseudo_tables: pseudo_table_metrics,
         storage: storage_metrics,
         overall_status: overall,
+        recommended_actions,
     }
+}
+
+/// One action line per subsystem that isn't healthy.
+fn recommended_actions(
+    hnsw: &[HnswHealthMetrics],
+    pseudo_tables: &PseudoTableHealthMetrics,
+) -> Vec<String> {
+    let mut actions = Vec::new();
+    for h in hnsw {
+        if h.status != HealthStatus::Healthy {
+            actions.push(format!(
+                "HNSW index '{}': {} (run `loka health --rebuild-hnsw` to rebuild all, or target specific predicates)",
+                h.predicate_name, h.status_detail
+            ));
+        }
+    }
+    if pseudo_tables.status != HealthStatus::Healthy {
+        actions.push(format!(
+            "Pseudo-tables: {} (run `loka health --refresh` to rediscover)",
+            pseudo_tables.status_detail
+        ));
+    }
+    actions
 }
 
 // ---------------------------------------------------------------------------
@@ -855,6 +880,32 @@ mod tests {
         }
 
         (store, dict, vectors)
+    }
+
+    #[test]
+    fn undiscovered_pseudo_tables_say_how_to_discover_them_in_text_and_json() {
+        let (store, dict, vectors) = make_test_db();
+        let report = generate_health_report(&store, &dict, &vectors, None);
+        let text = report.to_ai_text();
+        // The text used to say "No pseudo-tables discovered" here, which
+        // reads as "there are none"; the JSON said "not yet discovered".
+        assert!(text.contains("--refresh"), "{text}");
+        assert!(!text.contains("No pseudo-tables discovered."), "{text}");
+        let json = serde_json::to_value(&report).unwrap();
+        assert!(json["pseudo_tables"]["status_detail"]
+            .as_str()
+            .unwrap()
+            .contains("--refresh"));
+        // Actions are in the JSON too, and match the text's.
+        let actions = json["recommended_actions"].as_array().unwrap();
+        for a in actions {
+            assert!(text.contains(a.as_str().unwrap()), "{a}");
+        }
+        assert!(text.contains("GET /health/queries"));
+        assert!(
+            !text.contains("]\n## Pseudo-Tables"),
+            "blank line before the section"
+        );
     }
 
     #[test]
