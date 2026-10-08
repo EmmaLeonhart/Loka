@@ -86,6 +86,25 @@ rows(q) ≈ n × fanout(q | bound positions)
 4. **No regression where the static plan is right.** The existing benches don't slow down by
    more than noise (the 4× / 1,000-row gate exists for this).
 
+## Measured: is it worth building? (2026-10-08)
+
+Yes. Test 3's dataset, now the `adaptive_gap` bench in `loka-sparql/benches/sparql_query.rs`:
+- 2000 `?x :p ?y` over 20 hubs;
+- 500 `:q` per hub;
+- `:s` on only 2 of the x's, but on 10,000 other subjects, so `count(s)` misleads.
+
+The static planner runs `p, q, s` through a 1M-row intermediate. Both runs give the same
+1,000 rows:
+
+| order | release probe (median of 5) | criterion |
+|---|---|---|
+| planner (`p, q, s`) | 636 ms | 923 ms |
+| best (`p, s, q`) | 4.4 ms | 2.9 ms |
+
+Either fanout method picks `s` second here. Sampling bound rows finds almost no `:s`. Distinct
+counts give `s` about 1 per x, against 500 per y for `q`. So this case doesn't decide between
+them. The insert-overhead measurement below still does.
+
 ## Open questions (to settle before building)
 
 - Maintained or on-demand distinct counts: measure the insert overhead on the 2M store.

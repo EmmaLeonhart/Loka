@@ -7,6 +7,30 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 — Adaptive execution: measured worth building (static plan 146–317× slower on correlated data)
+
+Before building anything, I measured the spec's test 3 to see whether the static planner leaves
+enough on the table. The dataset:
+- 2000 `?x :p ?y` over 20 hubs with 500 `:q` each;
+- `:s` on only 2 of the x's, but on 10,000 unrelated subjects, so the unconditional
+  `count(s)` looks big.
+
+The planner (checked by printing its order) runs `p, q, s`, building a 1M-row intermediate. The
+best order `p, s, q` never exceeds 2,000 rows. Both give the same 1,000 rows:
+
+| order | probe | criterion |
+|---|---|---|
+| planner | 636 ms | 923 ms |
+| best | 4.4 ms | 2.9 ms |
+
+The difference between the two methods is run-to-run noise on this laptop; both are recorded.
+
+The scenario is now the `adaptive_gap` bench, the target for an implementation. Both fanout
+methods in the spec would pick correctly here, so this doesn't settle sampling versus
+distinct counts. That question (the insert overhead on the 2M store) stays open in
+`planning/adaptive-execution.md`. Nothing in the engine changed.
+
+---
 ## 2026-10-08 — Adaptive execution: spec written (not built)
 
 Promoted from TODO.md while step 10 waits on Emma. Phase 4 deferred adaptive execution with

@@ -1,7 +1,9 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use loka_core::{TermDictionary, Triple, TripleStore};
 use loka_hnsw::{DistanceMetric, VectorPredicateConfig, VectorRegistry};
-use loka_sparql::{execute_with_pseudo_tables, execute_with_vectors, optimize_with_vectors, parse};
+use loka_sparql::{
+    execute, execute_with_pseudo_tables, execute_with_vectors, optimize_with_vectors, parse,
+};
 
 /// Build a chain graph: node_0 -> node_1 -> ... -> node_{n-1}
 fn chain_graph(length: usize) -> (TripleStore, TermDictionary) {
@@ -424,6 +426,56 @@ fn bench_pseudo_table_star(c: &mut Criterion) {
     group.finish();
 }
 
+/// planning/adaptive-execution.md test 3: correlated data where the static
+/// plan (from unconditional counts) runs `p, q, s` through a 1M-row
+/// intermediate, while `p, s, q` stays at 2k rows. Measured 2026-10-08:
+/// probe 636 ms vs 4.4 ms; criterion 923 ms vs 2.9 ms; same 1,000 rows.
+/// The target for adaptive execution.
+fn bench_adaptive_gap(c: &mut Criterion) {
+    let mut group = c.benchmark_group("adaptive_gap");
+    group.sample_size(10);
+    let mut dict = TermDictionary::new();
+    let mut store = TripleStore::new();
+    let id = |d: &mut TermDictionary, s: &str| d.intern(&format!("http://example.org/{}", s));
+    let (p, q, s) = (id(&mut dict, "p"), id(&mut dict, "q"), id(&mut dict, "s"));
+    for i in 0..2000 {
+        let x = id(&mut dict, &format!("x{}", i));
+        let y = id(&mut dict, &format!("hub{}", i % 20));
+        store.insert(Triple::new(x, p, y)).unwrap();
+        if i < 2 {
+            let w = id(&mut dict, &format!("w{}", i));
+            store.insert(Triple::new(x, s, w)).unwrap();
+        }
+    }
+    for h in 0..20 {
+        let y = id(&mut dict, &format!("hub{}", h));
+        for j in 0..500 {
+            let z = id(&mut dict, &format!("z{}_{}", h, j));
+            store.insert(Triple::new(y, q, z)).unwrap();
+        }
+    }
+    for k in 0..10_000 {
+        let o = id(&mut dict, &format!("other{}", k));
+        let w = id(&mut dict, &format!("ow{}", k));
+        store.insert(Triple::new(o, s, w)).unwrap();
+    }
+    let mut planned = parse(
+        "PREFIX ex: <http://example.org/> SELECT ?x ?z WHERE { ?x ex:p ?y . ?y ex:q ?z . ?x ex:s ?w }",
+    )
+    .unwrap();
+    loka_sparql::optimize_full(&mut planned, Some(&store), Some(&dict));
+    let best = parse(
+        "PREFIX ex: <http://example.org/> SELECT ?x ?z WHERE { ?x ex:p ?y . ?x ex:s ?w . ?y ex:q ?z }",
+    )
+    .unwrap();
+    for (name, q) in [("planner_order", &planned), ("best_order", &best)] {
+        group.bench_function(name, |b| {
+            b.iter(|| black_box(execute(black_box(q), &store, &dict).unwrap()));
+        });
+    }
+    group.finish();
+}
+
 /// OPTIONAL pattern: left outer join semantics.
 /// Common in SPARQL for getting optional properties.
 fn bench_optional(c: &mut Criterion) {
@@ -508,6 +560,7 @@ criterion_group!(
     bench_graph_then_vector,
     bench_rare_type_plan,
     bench_pseudo_table_star,
+    bench_adaptive_gap,
     bench_optional,
     bench_filter,
 );
