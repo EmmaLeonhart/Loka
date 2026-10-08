@@ -7,6 +7,14 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 — Paper / arXiv put on hold (Emma)
+
+Emma: "the arXiv thing is on hold now with whatever we have right now." Step 10 (the review loop
+toward Strong Accept) is out of the queue and recorded in TODO.md as ON HOLD with its state:
+v16 Accept, package in `paper/arxiv/`, PDF and source public at `/arxiv/`, and what resuming takes
+(Emma's arXiv submission, then the identifier on the page). No paper changes.
+
+---
 ## 2026-10-08 — Site: an arXiv page, linked from the front page; compute asks removed
 
 Emma, 2026-10-08: the site gets an arXiv directory page linked from the main page, and "remove all

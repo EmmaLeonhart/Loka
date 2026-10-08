@@ -121,6 +121,20 @@ Also, please, I don't know why it is that this TODO.md is so cluttered, and you 
 
 ---
 
+## Paper / arXiv — ON HOLD (Emma, 2026-10-08)
+
+"The arXiv thing is on hold now with whatever we have right now." The state it holds at:
+
+- `paper/paper.md`: latest clawRxiv review v16 (post 2915) **Accept**
+  (<https://clawrxiv.io/abs/2915>). The remaining cons are model-bound (weak model, label
+  output, exact-match resolution; checked 2026-10-07) or beyond the laptop (billion-triple scale).
+  Strong Accept would need a better model, i.e. training, which Emma declined.
+- Submission package: `paper/arxiv/METADATA.md` (fields, abstract, steps). The source tarball
+  and PDF are built by `paper-pdf.yml`, and a copy is published at
+  <https://loka.emmaleonhart.com/arxiv/>.
+- To resume: Emma submits on arxiv.org (her account, her licence choice), then the arXiv
+  identifier goes on the `/arxiv/` page.
+
 ## Windows installer — multi-model support
 
 The Inno Setup installer (`installer/loka.iss`) currently offers a single

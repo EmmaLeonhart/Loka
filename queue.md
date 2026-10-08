@@ -13,8 +13,6 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ## ACTIVE — Emma, 2026-10-08 (strict order, top to bottom)
 
-2. **Paper / arXiv on hold.** Step 10 (Accept, v16) is parked as it stands: move it out of
-   this queue into TODO.md as on hold. The arXiv package stays in `paper/arxiv/`.
 3. **Attempt every TODO.md item that is not computationally intensive** (GPU-gated items and the
    30M+ sustained-ingest check are excluded), in TODO.md order:
    a. Installer multi-model: models.toml as a list, CI pre-step generating the `.iss`
