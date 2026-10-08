@@ -1,0 +1,68 @@
+name: Studio desktop builds
+
+# Packages the Electron Loka Studio (loka-studio/electron + web-studio/) for
+# Windows (portable .exe), Linux (AppImage) and macOS (unsigned .dmg).
+# Run by hand to verify packaging without a release tag, and called by
+# release.yml on v* tags.
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  studio:
+    name: Studio (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            builder: --win portable
+            glob: loka-studio/electron/dist/*.exe
+            asset: loka-studio-windows-x64.exe
+          - os: ubuntu-latest
+            builder: --linux AppImage
+            glob: loka-studio/electron/dist/*.AppImage
+            asset: loka-studio-linux-x64.AppImage
+          - os: macos-latest
+            builder: --mac dmg
+            glob: loka-studio/electron/dist/*.dmg
+            asset: loka-studio-macos-arm64.dmg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install
+        working-directory: loka-studio/electron
+        run: npm install --no-audit --no-fund
+      - name: Package
+        working-directory: loka-studio/electron
+        shell: bash
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'   # unsigned
+        run: npx electron-builder ${{ matrix.builder }} --publish never
+      - name: Check web-studio is inside the package
+        shell: bash
+        run: |
+          # The packaged app serves its UI from resources/web-studio
+          # (extraResources). Fail if it isn't there.
+          found=$(find loka-studio/electron/dist -path '*web-studio/index.html' | head -1)
+          if [ -z "$found" ]; then echo "web-studio/index.html missing from the package"; exit 1; fi
+          echo "found: $found"
+      - name: Name the asset
+        shell: bash
+        run: |
+          f=$(ls ${{ matrix.glob }} | head -1)
+          cp "$f" "${{ matrix.asset }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: ${{ matrix.asset }}

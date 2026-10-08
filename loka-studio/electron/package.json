@@ -20,12 +20,27 @@
       "main.js",
       "server.js",
       "run-js.js",
-      "package.json",
-      "../../web-studio/**/*"
+      "package.json"
     ],
     "win": {
-      "target": "portable",
-      "icon": "../../pages/favicon.ico"
+      "target": "portable"
+    },
+    "extraResources": [
+      {
+        "from": "../../web-studio",
+        "to": "web-studio",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "linux": {
+      "target": "AppImage",
+      "category": "Development"
+    },
+    "mac": {
+      "target": "dmg",
+      "identity": null
     }
   },
   "devDependencies": {

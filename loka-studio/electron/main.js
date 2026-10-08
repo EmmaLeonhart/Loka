@@ -33,8 +33,12 @@ function createWindow() {
 
 app.whenReady().then(() => {
   // Start the bundled static server unless one is already up.
+  // Packaged, web-studio/ ships as an extra resource (resources/web-studio);
+  // server.js's default (../../web-studio from this file) only exists in a
+  // source checkout. Without this the installed Studio served 404s.
+  const webRoot = app.isPackaged ? { STUDIO_WEB_ROOT: path.join(process.resourcesPath, 'web-studio') } : {};
   staticProc = spawn(process.execPath, [path.join(__dirname, 'server.js')], {
-    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+    env: { ...process.env, ...webRoot, ELECTRON_RUN_AS_NODE: '1' },
     stdio: 'inherit',
   });
   waitForServer(URL, 40, createWindow);
