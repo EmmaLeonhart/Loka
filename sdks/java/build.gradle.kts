@@ -26,6 +26,11 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    // Print each test's outcome so CI shows whether the live-server
+    // integration test actually ran or was skipped (it needs LOKA_ENDPOINT).
+    testLogging {
+        events("passed", "skipped", "failed")
+    }
 }
 
 tasks.javadoc {

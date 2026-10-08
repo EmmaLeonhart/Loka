@@ -137,7 +137,22 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
+      # A real Loka for LokaIntegrationTest (skipped when LOKA_ENDPOINT is unset).
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build and start Loka
+        working-directory: .
+        run: |
+          cargo build --release -p loka-cli
+          nohup ./target/release/loka serve --data-dir "$RUNNER_TEMP/loka-it" --port 3030 > "$RUNNER_TEMP/loka.log" 2>&1 &
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:3030/health && exit 0
+            sleep 2
+          done
+          cat "$RUNNER_TEMP/loka.log"; exit 1
       - run: ./gradlew build
+        env:
+          LOKA_ENDPOINT: http://127.0.0.1:3030
 
   # ── C# / .NET SDK ────────────────────────────────────────────────────
 
