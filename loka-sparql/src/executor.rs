@@ -2338,7 +2338,10 @@ fn try_pseudo_table_scan(
     // every row).
     if [subject, object].iter().any(|t| {
         !matches!(t, Term::Variable(_))
-            && !matches!(resolve_term(t, &HashMap::new(), ctx.dict, ctx.prefixes), Ok(Some(_)))
+            && !matches!(
+                resolve_term(t, &HashMap::new(), ctx.dict, ctx.prefixes),
+                Ok(Some(_))
+            )
     }) {
         return Ok(None);
     }

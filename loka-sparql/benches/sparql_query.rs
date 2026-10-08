@@ -383,16 +383,20 @@ fn bench_pseudo_table_star(c: &mut Criterion) {
             store.insert(Triple::new(s, *p, o)).unwrap();
         }
     }
-    let registry = loka_core::discover_pseudo_tables(
-        &loka_core::extract_node_properties(&store),
-        &store,
-    );
+    let registry =
+        loka_core::discover_pseudo_tables(&loka_core::extract_node_properties(&store), &store);
     let vectors = VectorRegistry::new();
     let config = loka_core::DatabaseConfig::default();
     let queries = [
         ("name_scan", "SELECT ?s ?n WHERE { ?s ex:name ?n }"),
-        ("star3", "SELECT ?s ?n ?a ?c WHERE { ?s ex:name ?n . ?s ex:age ?a . ?s ex:city ?c }"),
-        ("city_eq_star", "SELECT ?s ?n WHERE { ?s ex:city ex:city7 . ?s ex:name ?n }"),
+        (
+            "star3",
+            "SELECT ?s ?n ?a ?c WHERE { ?s ex:name ?n . ?s ex:age ?a . ?s ex:city ?c }",
+        ),
+        (
+            "city_eq_star",
+            "SELECT ?s ?n WHERE { ?s ex:city ex:city7 . ?s ex:name ?n }",
+        ),
     ];
     for (name, body) in queries {
         let q = parse(&format!("PREFIX ex: <http://example.org/> {}", body)).unwrap();

@@ -38,7 +38,11 @@ impl Db {
     }
 
     /// Rows (as sorted strings) and pseudo-table hits.
-    fn run(&self, query: &str, registry: Option<&PseudoTableRegistry>) -> (BTreeSet<String>, usize) {
+    fn run(
+        &self,
+        query: &str,
+        registry: Option<&PseudoTableRegistry>,
+    ) -> (BTreeSet<String>, usize) {
         let q = parse(&format!("PREFIX ex: <{EX}> {query}")).unwrap();
         let (result, hits) = execute_with_pseudo_tables(
             &q,
@@ -153,10 +157,7 @@ fn a_second_value_is_still_returned() {
     let registry = db.discover();
     let hits = db.same_rows("SELECT ?s ?m WHERE { ?s ex:email ?m }", &registry);
     assert_eq!(hits, 0, "a cell holds one value, so the column isn't exact");
-    let (rows, _) = db.run(
-        "SELECT ?m WHERE { ex:p0 ex:email ?m }",
-        Some(&registry),
-    );
+    let (rows, _) = db.run("SELECT ?m WHERE { ex:p0 ex:email ?m }", Some(&registry));
     assert_eq!(rows.len(), 2);
     // Other columns are unaffected.
     assert!(db.same_rows("SELECT ?s ?n WHERE { ?s ex:name ?n }", &registry) > 0);
@@ -176,7 +177,10 @@ fn a_column_is_not_served_after_its_predicate_changes() {
     let q = "SELECT ?n WHERE { ?s ex:name ?n }";
     assert!(db.has(q, "n", "name40", &registry));
     assert!(!db.has(q, "n", "name3", &registry));
-    assert!(db.has(q, "n", "name4", &registry), "the check can see a present name");
+    assert!(
+        db.has(q, "n", "name4", &registry),
+        "the check can see a present name"
+    );
 
     // A write to another predicate leaves the age column servable.
     assert!(db.same_rows("SELECT ?s ?a WHERE { ?s ex:age ?a }", &registry) > 0);

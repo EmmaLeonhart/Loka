@@ -1205,7 +1205,10 @@ impl PseudoTable {
     /// Whether column `col_idx` may answer a pattern on its predicate now:
     /// it was exact when built and its predicate hasn't changed since.
     pub fn servable_column(&self, col_idx: usize, store: &TripleStore) -> bool {
-        match (self.columns.get(col_idx), self.column_generations.get(col_idx)) {
+        match (
+            self.columns.get(col_idx),
+            self.column_generations.get(col_idx),
+        ) {
             (Some(property), Some(Some(generation))) => {
                 store.predicate_generation(property.predicate) == *generation
             }
