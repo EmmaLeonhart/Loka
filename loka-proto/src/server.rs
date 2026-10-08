@@ -2282,6 +2282,46 @@ mod tests {
         assert_eq!(m["estimates"]["q_error"]["p50"], 1.0, "{m}");
     }
 
+    /// The two Pramana dogfooding bugs (TODO.md, 2026-07-20), through the
+    /// path Pramana uses: N-Triples ingest, the planner, HTTP. Neither
+    /// reproduces on 2026-10-08; these keep it that way.
+    #[tokio::test]
+    async fn pramana_label_and_uuid_join_shapes_match() {
+        let state = test_state();
+        let nt = "<http://pramana.org/entity/e1> <http://pramana.org/prop/direct/EntityLabel> \"GAP2-timing-probe\" .
+<http://pramana.org/entity/e1> <http://pramana.org/prop/direct/uuid> \"3946bf48-aaaa\" .
+<http://pramana.org/entity/other> <http://pramana.org/prop/direct/uuid> \"zzzz\" .
+<http://pramana.org/entity/p0> <http://pramana.org/prop/direct/subject> <http://pramana.org/entity/e1> .
+<http://pramana.org/entity/p1> <http://pramana.org/prop/direct/subject> <http://pramana.org/entity/e1> .
+<http://pramana.org/entity/p2> <http://pramana.org/prop/direct/subject> <http://pramana.org/entity/e1> .
+";
+        let (s, _) = send(&state, "POST", "/triples", "text/plain", nt.to_string()).await;
+        assert_eq!(s, StatusCode::OK);
+        let n = |q: &'static str| {
+            let state = state.clone();
+            async move {
+                let (s, json) = send(
+                    &state,
+                    "POST",
+                    "/sparql",
+                    "application/sparql-query",
+                    q.to_string(),
+                )
+                .await;
+                assert_eq!(s, StatusCode::OK, "{json}");
+                json["results"]["bindings"].as_array().unwrap().len()
+            }
+        };
+        // Bug 1: prefixed predicate + literal object.
+        assert_eq!(n("SELECT ?e WHERE { ?e <http://pramana.org/prop/direct/EntityLabel> \"GAP2-timing-probe\" }").await, 1);
+        assert_eq!(n("PREFIX wdt: <http://pramana.org/prop/direct/> SELECT ?e WHERE { ?e wdt:EntityLabel \"GAP2-timing-probe\" }").await, 1);
+        // Bug 2: object variable joined into a literal-bound pattern, both
+        // written orders, full and prefixed.
+        assert_eq!(n("SELECT ?p WHERE { ?p <http://pramana.org/prop/direct/subject> ?s . ?s <http://pramana.org/prop/direct/uuid> \"3946bf48-aaaa\" }").await, 3);
+        assert_eq!(n("SELECT ?p WHERE { ?s <http://pramana.org/prop/direct/uuid> \"3946bf48-aaaa\" . ?p <http://pramana.org/prop/direct/subject> ?s }").await, 3);
+        assert_eq!(n("PREFIX wdt: <http://pramana.org/prop/direct/> SELECT ?p WHERE { ?p wdt:subject ?s . ?s wdt:uuid \"3946bf48-aaaa\" }").await, 3);
+    }
+
     /// A computed BIND value must render as its string over HTTP.
     ///
     /// This is the end of the chain that starts in loka-core: the value table is

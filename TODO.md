@@ -108,41 +108,15 @@ Two additions from continued dogfooding:
    `SELECT ?t WHERE { ?t <...EntityLabel> "X" }`). Pramana's page renders need dozens-to-hundreds of
    such lookups → unusable. POS/SPO prefix scans should make these ~ms; something is scanning.
 
-## 🐛 BUG 2 (found 2026-07-20, same dogfooding): object-variable ⋈ literal-bound join returns 0 rows
+## Pramana dogfooding bugs (2026-07-20): not reproducible on main as of 2026-10-08
 
-A join where a variable appears as the OBJECT of one pattern and the SUBJECT of a literal-bound
-pattern returns 0 rows, though each leg matches alone:
-
-```sparql
-# 0 rows (both legs individually match):
-SELECT ?p WHERE { ?p <.../subject> ?s . ?s <.../uuid> "3946bf48-..." }
-# workaround — bind the object URI directly (works, 5 rows):
-SELECT ?p WHERE { ?p <.../subject> <http://pramana.org/entity/3946bf48-...> }
-```
-
-Subject-side joins on the same store work (`?e <uuid> "..." . ?e <label> ?l` matches). Suspect the
-object→subject join path (OSP/POS usage) when the driving pattern is a literal-bound lookup.
-Distinct from BUG 1 (this one uses full URIs throughout). Behaviour was inconsistent across stores/
-sessions (the same query shape returned rows on an older store) — possibly planner join-order
-dependent. Pramana works around it by constructing entity URIs directly (WD namespace + uuid).
-
-## 🐛 BUG (found 2026-07-20 dogfooding Pramana-on-Loka): prefixed predicate + literal object matches nothing
-
-A SPARQL pattern using a PREFIXED predicate with a LITERAL object returns 0 rows, while the identical
-query with the full predicate URI returns the correct match. Repro (data present in both cases):
-
-```sparql
-# MATCHES (1 row):
-SELECT ?e WHERE { ?e <http://pramana.org/prop/direct/EntityLabel> "GAP2-timing-probe" }
-# MATCHES NOTHING (0 rows) — identical semantics:
-PREFIX wdt: <http://pramana.org/prop/direct/>
-SELECT ?e WHERE { ?e wdt:EntityLabel "GAP2-timing-probe" }
-```
-
-Prefixed predicates with VARIABLE objects work fine (`?e wdt:EntityLabel ?l` matches). So the bug is
-specifically prefixed-name expansion in patterns with a constant literal object — likely in the query
-parser/planner path that special-cases bound-object lookups. Found via Pramana's `_find_entity_by_label`
-silently never matching (caused duplicate entity creation). Pramana works around it with full URIs.
+The two bugs logged here (prefixed predicate + literal object matching nothing; an object-variable
+join into a literal-bound pattern returning 0 rows) don't reproduce on current main. Checked:
+in-memory executor; HTTP server with N-Triples ingest and the planner; a persistent store before
+and after a restart; full and prefixed IRIs; both join orders. Regression tests:
+`loka-sparql/tests/pramana_bugs.rs`, `loka-proto` `pramana_label_and_uuid_join_shapes_match`.
+If Pramana hits either again, reopen with that store's data: the original report said the
+behaviour varied between stores.
 
 # DO THE STUFF IN THE QUEUE.MD
 

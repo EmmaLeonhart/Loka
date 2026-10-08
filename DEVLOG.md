@@ -7,6 +7,33 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-08 — The two Pramana dogfooding bugs: not reproducible on main; regression tests added
+
+Looking for the next TODO item, I found two bugs from Emma's 2026-07-20 Pramana-on-Loka
+dogfooding sitting under `## 🐛` headings in TODO.md, not as `- [ ]` items, so every "open
+items" scan had missed them:
+1. a prefixed predicate with a literal object (`?e wdt:EntityLabel "x"`) matched nothing,
+   while the full IRI worked;
+2. `?p :subject ?s . ?s :uuid "…"` returned 0 rows, though each leg matched.
+
+Neither reproduces now:
+- in the executor directly;
+- through `loka serve` with N-Triples ingest and the planner (Pramana's path);
+- on a persistent store, both fresh and after a restart;
+- with prefixed and full IRIs;
+- in both join orders.
+
+All gave the right counts (1, 1, 3, 3). Without Pramana's store I can't say which change between
+July and now fixed them, so I don't claim one. Regression tests lock them in
+(`loka-sparql/tests/pramana_bugs.rs`, 2; a loka-proto HTTP test, 1). TODO.md now says this, and
+says to reopen with the original store's data if Pramana sees them again (the report noted the
+behaviour varied between stores).
+
+The note above those sections ("DO THE STUFF IN THE QUEUE.MD", 2026-05-09) is five months old,
+and the queue it pointed to has been worked through since. I left it in place: it's Emma's text,
+and removing it is her call.
+
+---
 ## 2026-10-08 — Adaptive execution v2: reorders may cross filters they can't affect
 
 The planner pushes each FILTER down to just after its variables are bound, so filters sit in
