@@ -5,7 +5,18 @@ mod mcp;
 use std::io::{BufRead, Write};
 use std::sync::{Arc, RwLock};
 
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
+
+/// Query languages `loka query` accepts.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
+enum QueryLang {
+    /// SPARQL+ (SPARQL 1.1 with the Loka extensions).
+    Sparql,
+    /// The Cypher read subset, transpiled to SPARQL.
+    Cypher,
+    /// The GQL (ISO 39075) read subset, transpiled to SPARQL.
+    Gql,
+}
 
 /// Version string including the build stamp from `build.rs`.
 ///
@@ -69,14 +80,25 @@ enum Commands {
         #[arg(long, default_value = "127.0.0.1")]
         host: String,
     },
-    /// Execute a SPARQL query from the command line.
+    /// Execute a query from the command line (SPARQL+, or Cypher/GQL
+    /// transpiled to SPARQL).
     Query {
-        /// The SPARQL query string.
+        /// The query string, in the language given by --lang.
         query: String,
 
         /// Data directory.
         #[arg(short, long, default_value = "./loka-data")]
         data_dir: String,
+
+        /// Query language. Cypher and GQL are transpiled to SPARQL, with bare
+        /// names in the http://loka.dev/ namespace.
+        #[arg(long, value_enum, default_value_t = QueryLang::Sparql)]
+        lang: QueryLang,
+
+        /// Print the SPARQL that a Cypher/GQL query was transpiled to before
+        /// running it.
+        #[arg(long)]
+        show_sparql: bool,
     },
     /// Import N-Triples (or N-Triples-star) data from a file into the database.
     Import {
@@ -461,7 +483,27 @@ async fn main() -> anyhow::Result<()> {
             axum::serve(listener, app).await?;
         }
 
-        Commands::Query { query, data_dir } => {
+        Commands::Query {
+            query,
+            data_dir,
+            lang,
+            show_sparql,
+        } => {
+            // Transpile first, so a query outside the Cypher/GQL subset fails
+            // before the store is loaded.
+            let query = match lang {
+                QueryLang::Sparql => query,
+                QueryLang::Cypher => loka_sparql::transpile(&query)?,
+                QueryLang::Gql => loka_sparql::transpile_gql(&query)?,
+            };
+            if show_sparql && lang != QueryLang::Sparql {
+                println!(
+                    "{}
+",
+                    query
+                );
+            }
+
             let ps = loka_core::PersistentStore::open(&data_dir)?;
 
             let mut dict = loka_core::TermDictionary::new();

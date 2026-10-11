@@ -284,8 +284,10 @@ Re-checked 2026-10-08 against today's Studio (web-studio + Electron; Flutter del
       read-core surface forms (`IS Label`, `&` conjunction, `FILTER`, `OFFSET`) normalised onto
       the Cypher subset, so both share one RDF mapping and one rejection discipline. Rejected
       with reasons: label `|` `!` `%`, quantified paths, `USE`, `INSERT` and other statements.
+- [x] CLI entry point: `loka query --lang cypher|gql [--show-sparql]` (2026-10-10,
+      `loka-cli/tests/query_lang_e2e.rs`)
 - [ ] GQL next: quantified paths onto SPARQL+ property paths; `IS NULL` (needs Cypher-side
-      support first); a CLI/HTTP entry point (Cypher has none either yet).
+      support first); an HTTP entry point for Cypher and GQL.
 
 ### ✅ FIXED 2026-07-29: string / IRI equality in FILTER now matches
 

@@ -231,6 +231,7 @@ SELECT, ASK, CONSTRUCT, DESCRIBE | INSERT DATA, DELETE DATA (incl. vector litera
 ```bash
 # Serverless operations (no server needed)
 loka query -d ./mydb "SELECT ..." # Run SPARQL query directly
+loka query -d ./mydb --lang cypher "MATCH (p:Person) RETURN p" # Cypher/GQL, transpiled to SPARQL
 loka import -d ./mydb data.nt     # Import N-Triples
 loka export -d ./mydb -o dump.nt  # Export all triples
 loka info -d ./mydb               # Show database stats

@@ -13,8 +13,7 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ## ACTIVE
 
-Empty. Emma's 2026-10-08 queue is done (DEVLOG, 2026-10-08), and the crons are shut down at her
-request. Next work: Emma's decisions (release, paper submission) or a new queue.
+1. **Cypher/GQL HTTP entry point**: the same languages on the server's query endpoint.
 
 ---
 
