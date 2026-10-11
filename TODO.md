@@ -286,8 +286,9 @@ Re-checked 2026-10-08 against today's Studio (web-studio + Electron; Flutter del
       with reasons: label `|` `!` `%`, quantified paths, `USE`, `INSERT` and other statements.
 - [x] CLI entry point: `loka query --lang cypher|gql [--show-sparql]` (2026-10-10,
       `loka-cli/tests/query_lang_e2e.rs`)
+- [x] HTTP entry points: `GET/POST /cypher` and `/gql`, answered like `/sparql` (2026-10-10)
 - [ ] GQL next: quantified paths onto SPARQL+ property paths; `IS NULL` (needs Cypher-side
-      support first); an HTTP entry point for Cypher and GQL.
+      support first).
 
 ### ✅ FIXED 2026-07-29: string / IRI equality in FILTER now matches
 

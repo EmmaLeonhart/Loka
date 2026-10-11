@@ -108,6 +108,7 @@ docker run -p 3030:3030 -v loka-data:/data loka
 | `/sparql` | GET/POST | SPARQL queries (JSON results) |
 | `/sparql.csv` | GET/POST | SPARQL queries (CSV results) |
 | `/sparql.tsv` | GET/POST | SPARQL queries (TSV results) |
+| `/cypher`, `/gql` | GET/POST | Cypher / GQL read subset, transpiled to SPARQL (results as `/sparql`) |
 | `/triples` | POST | Insert N-Triples data |
 | `/vectors/declare` | POST | Declare a vector predicate |
 | `/vectors` | POST | Insert a vector embedding |

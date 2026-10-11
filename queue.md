@@ -13,7 +13,8 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ## ACTIVE
 
-1. **Cypher/GQL HTTP entry point**: the same languages on the server's query endpoint.
+Empty. The Cypher/GQL CLI and HTTP entry points are done (DEVLOG, 2026-10-10); the work-loop
+cron promotes the next bounded non-GPU TODO item.
 
 ---
 

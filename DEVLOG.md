@@ -7,6 +7,29 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-10 — `/cypher` and `/gql` HTTP endpoints
+
+The second half of the TODO item "GQL next": the server now answers Cypher and GQL. `GET` and
+`POST` on `/cypher` and `/gql` transpile the query to SPARQL, then answer it exactly as `/sparql`
+does. They take the same `query=` parameter, raw or form-encoded POST bodies, and Accept-header
+negotiation (JSON, CSV, TSV, XML). They sit behind the same passcode and rate-limit layers as
+every other route. A query outside the subset is a 400 that carries the transpiler's reason.
+`/sparql`'s body parsing and negotiation moved into two shared helpers (`query_from_body`,
+`negotiate_sparql`) so the three routes can't drift apart.
+
+I chose separate routes over a `lang` parameter on `/sparql` so that `/sparql` stays a plain
+SPARQL-protocol endpoint for standard clients.
+
+Verified: 3 new tests in `loka-proto/src/server.rs`.
+- SPARQL, Cypher and GQL return the same rows over POST, a GET traversal and a form-encoded body.
+- `Accept: text/csv` on `/cypher` gives CSV.
+- A label disjunction on `/gql` is a 400 saying "unsupported".
+
+`cargo test -p loka-proto` passes. Clippy `-D warnings` (loka-proto, loka-cli) and
+`cargo fmt --check` are clean. Docs updated: README, `docs/cli-reference.md`,
+`docs/AGENT_SETUP.md`. The queue is empty again.
+
+---
 ## 2026-10-10 — `loka query --lang cypher|gql`: a CLI entry point for Cypher and GQL
 
 The crons are running again. Emma's 2026-10-08 shutdown note said the next session should ask

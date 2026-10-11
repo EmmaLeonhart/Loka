@@ -10,17 +10,22 @@
 
 ### `loka query`
 
-Execute a SPARQL query directly on a `.sdb` directory. No server needed.
+Execute a query directly on a `.sdb` directory. No server needed. SPARQL+ by default; the
+Cypher and GQL read subsets are transpiled to SPARQL, with bare names in `http://loka.dev/`.
 
 ```bash
 loka query -d ./my-database "SELECT * WHERE { ?s ?p ?o } LIMIT 10"
 loka query -d /data/mydb "SELECT ?name WHERE { ?s :name ?name }"
+loka query -d /data/mydb --lang cypher "MATCH (a:Person)-[:KNOWS]->(b) RETURN b"
+loka query -d /data/mydb --lang gql --show-sparql "MATCH (p IS Person) RETURN p"
 ```
 
 | Argument/Flag | Default | Description |
 |---|---|---|
-| `query` (positional) | required | The SPARQL query string |
+| `query` (positional) | required | The query string, in the language given by `--lang` |
 | `-d, --data-dir` | `./loka-data` | Data directory |
+| `--lang` | `sparql` | `sparql`, `cypher` or `gql` |
+| `--show-sparql` | off | Print the SPARQL a Cypher/GQL query was transpiled to |
 
 ---
 
@@ -206,6 +211,7 @@ When running in server mode (`loka serve`), the following endpoints are availabl
 | Endpoint | Method | Description |
 |---|---|---|
 | `/sparql` | GET/POST | SPARQL query endpoint (standard SPARQL protocol) |
+| `/cypher`, `/gql` | GET/POST | Cypher / GQL read subset, transpiled to SPARQL; same `query` parameter, body forms and content negotiation as `/sparql`; 400 with the reason for anything outside the subset |
 | `/triples` | POST | Insert N-Triples data |
 | `/triples` | GET | Export triples (supports content negotiation) |
 | `/health` | GET | Health check (always accessible, even with passcode) |

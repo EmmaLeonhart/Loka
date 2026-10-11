@@ -65,6 +65,8 @@ pub struct AppState {
 pub fn router(state: Arc<AppState>) -> Router {
     Router::new()
         .route("/sparql", get(sparql_get).post(sparql_post))
+        .route("/cypher", get(cypher_get).post(cypher_post))
+        .route("/gql", get(gql_get).post(gql_post))
         .route("/graph", get(export_graph))
         .route("/browse", get(serve_browse))
         .route("/sparql.csv", get(sparql_csv_get).post(sparql_csv_post))
@@ -193,14 +195,28 @@ async fn sparql_post(
     headers: axum::http::HeaderMap,
     body: String,
 ) -> Result<axum::response::Response, ProtoError> {
-    let query = if let Some(encoded) = body.strip_prefix("query=") {
-        urlencoding::decode(encoded)
-            .map_err(|e| ProtoError::BadRequest(format!("invalid encoding: {}", e)))?
-            .into_owned()
-    } else {
-        body
-    };
+    let query = query_from_body(body)?;
+    negotiate_sparql(&query, &state, &headers)
+}
 
+/// The query in a POST body: raw, or form-encoded as `query=...`.
+fn query_from_body(body: String) -> Result<String, ProtoError> {
+    if let Some(encoded) = body.strip_prefix("query=") {
+        Ok(urlencoding::decode(encoded)
+            .map_err(|e| ProtoError::BadRequest(format!("invalid encoding: {}", e)))?
+            .into_owned())
+    } else {
+        Ok(body)
+    }
+}
+
+/// Run a SPARQL query and render it in the format the Accept header asks for
+/// (JSON by default; CSV, TSV or XML on request).
+fn negotiate_sparql(
+    query: &str,
+    state: &Arc<AppState>,
+    headers: &axum::http::HeaderMap,
+) -> Result<axum::response::Response, ProtoError> {
     // Content negotiation via Accept header
     let accept = headers
         .get(header::ACCEPT)
@@ -208,23 +224,75 @@ async fn sparql_post(
         .unwrap_or("application/sparql-results+json");
 
     if accept.contains("text/csv") {
-        let resp = sparql_delimited(&query, &state, ",", "text/csv; charset=utf-8")?;
+        let resp = sparql_delimited(query, state, ",", "text/csv; charset=utf-8")?;
         Ok(resp.into_response())
     } else if accept.contains("text/tab-separated") || accept.contains("text/tsv") {
         let resp = sparql_delimited(
-            &query,
-            &state,
+            query,
+            state,
             "\t",
             "text/tab-separated-values; charset=utf-8",
         )?;
         Ok(resp.into_response())
     } else if accept.contains("application/sparql-results+xml") || accept.contains("text/xml") {
-        let resp = sparql_xml(&query, &state)?;
+        let resp = sparql_xml(query, state)?;
         Ok(resp.into_response())
     } else {
-        let resp = execute_sparql(&query, &state)?;
+        let resp = execute_sparql(query, state)?;
         Ok(resp.into_response())
     }
+}
+
+// ─── Cypher / GQL ────────────────────────────────────────────────────────────
+//
+// Both are transpiled to SPARQL (bare names in `http://loka.dev/`) and then
+// answered exactly like /sparql, including content negotiation. A query
+// outside the supported subset is a 400 carrying the transpiler's reason.
+
+fn transpile_cypher(query: &str) -> Result<String, ProtoError> {
+    loka_sparql::transpile(query).map_err(|e| ProtoError::BadRequest(e.to_string()))
+}
+
+fn transpile_gql(query: &str) -> Result<String, ProtoError> {
+    loka_sparql::transpile_gql(query).map_err(|e| ProtoError::BadRequest(e.to_string()))
+}
+
+/// GET /cypher?query=MATCH...
+async fn cypher_get(
+    State(state): State<Arc<AppState>>,
+    headers: axum::http::HeaderMap,
+    AxumQuery(params): AxumQuery<SparqlQueryParams>,
+) -> Result<axum::response::Response, ProtoError> {
+    negotiate_sparql(&transpile_cypher(&params.query)?, &state, &headers)
+}
+
+/// POST /cypher with the Cypher query in the body.
+async fn cypher_post(
+    State(state): State<Arc<AppState>>,
+    headers: axum::http::HeaderMap,
+    body: String,
+) -> Result<axum::response::Response, ProtoError> {
+    let query = query_from_body(body)?;
+    negotiate_sparql(&transpile_cypher(&query)?, &state, &headers)
+}
+
+/// GET /gql?query=MATCH...
+async fn gql_get(
+    State(state): State<Arc<AppState>>,
+    headers: axum::http::HeaderMap,
+    AxumQuery(params): AxumQuery<SparqlQueryParams>,
+) -> Result<axum::response::Response, ProtoError> {
+    negotiate_sparql(&transpile_gql(&params.query)?, &state, &headers)
+}
+
+/// POST /gql with the GQL query in the body.
+async fn gql_post(
+    State(state): State<Arc<AppState>>,
+    headers: axum::http::HeaderMap,
+    body: String,
+) -> Result<axum::response::Response, ProtoError> {
+    let query = query_from_body(body)?;
+    negotiate_sparql(&transpile_gql(&query)?, &state, &headers)
 }
 
 // ─── SPARQL CSV/TSV ─────────────────────────────────────────────────────────
@@ -1923,6 +1991,145 @@ mod tests {
             status,
             serde_json::from_slice(&bytes).unwrap_or(serde_json::Value::Null),
         )
+    }
+
+    /// Load two people and a city in the transpilers' `http://loka.dev/`
+    /// namespace, so Cypher/GQL bare names resolve.
+    async fn people_state() -> Arc<AppState> {
+        let state = test_state();
+        let nt = concat!(
+            "<http://loka.dev/ada> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://loka.dev/Person> .
+",
+            "<http://loka.dev/bob> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://loka.dev/Person> .
+",
+            "<http://loka.dev/london> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://loka.dev/City> .
+",
+            "<http://loka.dev/ada> <http://loka.dev/KNOWS> <http://loka.dev/bob> .
+",
+        );
+        let (status, _) = send(&state, "POST", "/triples", "text/plain", nt.into()).await;
+        assert_eq!(status, StatusCode::OK);
+        state
+    }
+
+    /// The bound values of `var`, sorted, from a SPARQL results JSON body.
+    fn bound(json: &serde_json::Value, var: &str) -> Vec<String> {
+        let mut vals: Vec<String> = json["results"]["bindings"]
+            .as_array()
+            .expect("no bindings array")
+            .iter()
+            .map(|b| b[var]["value"].as_str().unwrap_or_default().to_string())
+            .collect();
+        vals.sort();
+        vals
+    }
+
+    #[tokio::test]
+    async fn cypher_and_gql_endpoints_match_sparql() {
+        let state = people_state().await;
+        let (s, sparql) = send(
+            &state,
+            "POST",
+            "/sparql",
+            "application/sparql-query",
+            "SELECT ?p WHERE { ?p a <http://loka.dev/Person> }".into(),
+        )
+        .await;
+        assert_eq!(s, StatusCode::OK);
+        let people = bound(&sparql, "p");
+        assert_eq!(people, vec!["http://loka.dev/ada", "http://loka.dev/bob"]);
+
+        let (s, cypher) = send(
+            &state,
+            "POST",
+            "/cypher",
+            "text/plain",
+            "MATCH (p:Person) RETURN p".into(),
+        )
+        .await;
+        assert_eq!(s, StatusCode::OK);
+        assert_eq!(bound(&cypher, "p"), people);
+
+        let (s, gql) = send(
+            &state,
+            "POST",
+            "/gql",
+            "text/plain",
+            "MATCH (p IS Person) RETURN p".into(),
+        )
+        .await;
+        assert_eq!(s, StatusCode::OK);
+        assert_eq!(bound(&gql, "p"), people);
+
+        // GET with a URL-encoded query, and a traversal.
+        let q = urlencoding::encode("MATCH (a:Person)-[:KNOWS]->(b) RETURN b");
+        let (s, known) = send(
+            &state,
+            "GET",
+            &format!("/cypher?query={q}"),
+            "",
+            String::new(),
+        )
+        .await;
+        assert_eq!(s, StatusCode::OK);
+        assert_eq!(bound(&known, "b"), vec!["http://loka.dev/bob"]);
+
+        // Form-encoded POST body, as /sparql accepts.
+        let body = format!(
+            "query={}",
+            urlencoding::encode("MATCH (p IS Person) RETURN p")
+        );
+        let (s, form) = send(
+            &state,
+            "POST",
+            "/gql",
+            "application/x-www-form-urlencoded",
+            body,
+        )
+        .await;
+        assert_eq!(s, StatusCode::OK);
+        assert_eq!(bound(&form, "p"), people);
+    }
+
+    #[tokio::test]
+    async fn cypher_endpoint_negotiates_csv() {
+        let state = people_state().await;
+        let req = Request::builder()
+            .method("POST")
+            .uri("/cypher")
+            .header("accept", "text/csv")
+            .body(Body::from("MATCH (p:Person) RETURN p"))
+            .unwrap();
+        let resp = router(state).oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let ctype = resp.headers()[header::CONTENT_TYPE]
+            .to_str()
+            .unwrap()
+            .to_string();
+        assert!(ctype.starts_with("text/csv"), "content-type {ctype}");
+        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let text = String::from_utf8(bytes.to_vec()).unwrap();
+        assert!(text.contains("http://loka.dev/ada"), "csv: {text}");
+        assert!(text.contains("http://loka.dev/bob"), "csv: {text}");
+    }
+
+    #[tokio::test]
+    async fn unsupported_gql_is_a_400_with_the_reason() {
+        let state = people_state().await;
+        let req = Request::builder()
+            .method("POST")
+            .uri("/gql")
+            .body(Body::from("MATCH (p IS Person|City) RETURN p"))
+            .unwrap();
+        let resp = router(state).oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let text = String::from_utf8_lossy(&bytes).to_lowercase();
+        assert!(text.contains("unsupported"), "body: {text}");
     }
 
     const EMB: &str = "http://example.org/emb";

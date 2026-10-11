@@ -244,6 +244,7 @@ loka serve                        # Start HTTP server (port 3030)
 loka serve --memory-only          # In-memory only
 loka serve --maintenance-idle-secs 300  # Rebuild HNSW + rediscover pseudo-tables when idle
 # GET /health/queries             # Query latency and planner-estimate accuracy
+# POST /cypher, POST /gql         # Cypher / GQL, transpiled to SPARQL, answered like /sparql
 loka mcp --url http://host:3030   # MCP server (server mode)
 
 # Maintenance
