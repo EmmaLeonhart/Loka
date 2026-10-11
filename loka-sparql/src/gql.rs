@@ -339,17 +339,20 @@ mod tests {
 
     #[test]
     fn is_predicates_and_strings_are_left_alone() {
-        // `IS NULL` / `IS NOT` stay predicates, not labels. (The shared Cypher
-        // back end doesn't support IS NULL yet, so such a query then fails
-        // there exactly as its Cypher form does.)
+        // `IS NULL` / `IS NOT` stay predicates, not labels, and transpile as
+        // their Cypher forms do.
         assert_eq!(
             normalize("MATCH (a IS Person) WHERE a.nick IS NULL AND a.x IS NOT NULL RETURN a")
                 .unwrap(),
             "MATCH (a:Person) WHERE a.nick IS NULL AND a.x IS NOT NULL RETURN a"
         );
-        assert_eq!(
-            transpile_gql("MATCH (a IS Person) WHERE a.nick IS NULL RETURN a"),
-            transpile("MATCH (a:Person) WHERE a.nick IS NULL RETURN a")
+        same(
+            "MATCH (a IS Person) WHERE a.nick IS NULL RETURN a",
+            "MATCH (a:Person) WHERE a.nick IS NULL RETURN a",
+        );
+        same(
+            "MATCH (a IS Person) FILTER a.nick IS NOT NULL RETURN a",
+            "MATCH (a:Person) WHERE a.nick IS NOT NULL RETURN a",
         );
         same(
             r#"MATCH (a {name: "IS Person & FILTER | x"}) RETURN a"#,

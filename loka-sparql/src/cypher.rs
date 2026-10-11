@@ -19,11 +19,19 @@
 //! | `(a)<-[:KNOWS]-(b)` | `?b loka:KNOWS ?a .` |
 //! | `(a)-[:KNOWS*]->(b)`, `*1..` | `?a loka:KNOWS+ ?b .` (needs `RETURN DISTINCT`) |
 //! | `WHERE a.age > 30` | `?a loka:age ?_w0 . FILTER(?_w0 > 30)` |
+//! | `WHERE a.nick IS NULL` | `FILTER((!BOUND(?a) \|\| NOT EXISTS { ?a loka:nick ?_t0 }))` |
+//! | `WHERE a IS NOT NULL` | `FILTER(BOUND(?a))` |
 //! | `RETURN a.name` | `?a loka:name ?_r0 .` + `SELECT ?_r0` |
 //!
 //! `WHERE a.age > 30` emits a triple pattern *and* a filter because Cypher's
 //! `WHERE` on a property requires that property to exist — a bare `FILTER` over
 //! an unbound variable would not.
+//!
+//! RDF has no null: an absent property is an absent triple, so `IS NULL` on a
+//! property is `NOT EXISTS` and `IS NOT NULL` is `EXISTS`. Both carry a
+//! `BOUND` guard, because in Cypher a property of an unbound node (from an
+//! `OPTIONAL MATCH`) is null, while `NOT EXISTS { ?a … }` with `?a` unbound
+//! matches any subject. `= NULL` is still rejected: in Cypher it is never true.
 //!
 //! A variable-length relationship with no upper bound and a minimum of one
 //! becomes a `+` property path. The two agree on *which* endpoint pairs match:
@@ -814,6 +822,10 @@ impl Transpiler {
             return Ok(inner);
         }
 
+        if let Some(test) = self.null_test(neg) {
+            return Ok(test);
+        }
+
         let lhs = self.operand()?;
 
         let op = match self.peek() {
@@ -852,6 +864,53 @@ impl Transpiler {
         let op = if neg { invert_op(op) } else { op };
         let rhs = self.operand()?;
         Ok(Expr::Cmp(format!("{} {} {}", lhs, op, rhs)))
+    }
+
+    /// `var IS [NOT] NULL` or `var.prop IS [NOT] NULL`, if that is what comes
+    /// next. Unlike a comparison operand, the property emits no required
+    /// triple pattern: its absence is the point.
+    fn null_test(&mut self, neg: bool) -> Option<Expr> {
+        let tok = |j: usize| self.toks.get(j).map(|s| &s.tok);
+        let is_kw = |t: Option<&Tok>, kw: &str| matches!(t, Some(Tok::Ident(s)) if s.eq_ignore_ascii_case(kw));
+        let Some(Tok::Ident(var)) = tok(self.i).cloned() else {
+            return None;
+        };
+        let mut j = self.i + 1;
+        let prop = match (tok(j), tok(j + 1)) {
+            (Some(Tok::Punct('.')), Some(Tok::Ident(p))) => {
+                j += 2;
+                Some(p.clone())
+            }
+            _ => None,
+        };
+        if !is_kw(tok(j), "IS") {
+            return None;
+        }
+        j += 1;
+        let not = is_kw(tok(j), "NOT");
+        if not {
+            j += 1;
+        }
+        if !is_kw(tok(j), "NULL") {
+            return None;
+        }
+        self.i = j + 1;
+
+        // `IS NULL`, unless negated by `IS NOT` or a surrounding NOT.
+        let want_null = not == neg;
+        Some(Expr::Cmp(match prop {
+            None if want_null => format!("!BOUND(?{var})"),
+            None => format!("BOUND(?{var})"),
+            Some(prop) => {
+                let t = self.fresh_tmp();
+                let group = format!("{{ ?{var} {} ?{t} . }}", self.iri(&prop));
+                if want_null {
+                    format!("(!BOUND(?{var}) || NOT EXISTS {group})")
+                } else {
+                    format!("(BOUND(?{var}) && EXISTS {group})")
+                }
+            }
+        }))
     }
 
     /// A WHERE operand: `var.prop` (emits a pattern, yields a temp var) or a literal.
@@ -1548,6 +1607,49 @@ mod tests {
     #[test]
     fn rejects_aggregates_explicitly() {
         rejects("MATCH (a:Person) RETURN count(a)", "aggregate");
+    }
+
+    #[test]
+    fn is_null_is_a_guarded_not_exists() {
+        let out = t("MATCH (a:Person) WHERE a.nick IS NULL RETURN a");
+        assert!(
+            out.contains("(!BOUND(?a) || NOT EXISTS { ?a loka:nick ?_t0 . })"),
+            "{}",
+            out
+        );
+        // No required pattern for the property: its absence is the point.
+        assert!(
+            !out.contains(
+                "?a loka:nick ?_t0 .
+"
+            ),
+            "{}",
+            out
+        );
+        parses(&out);
+
+        let out = t("MATCH (a:Person) WHERE a.nick IS NOT NULL RETURN a");
+        assert!(
+            out.contains("(BOUND(?a) && EXISTS { ?a loka:nick ?_t0 . })"),
+            "{}",
+            out
+        );
+        parses(&out);
+
+        // NOT flips it, as for comparisons.
+        let out = t("MATCH (a:Person) WHERE NOT a.nick IS NULL RETURN a");
+        assert!(out.contains("(BOUND(?a) && EXISTS"), "{}", out);
+
+        // A bare variable is a BOUND test.
+        let out = t("MATCH (a) OPTIONAL MATCH (a)-[:KNOWS]->(b) WHERE b IS NULL RETURN a");
+        assert!(out.contains("FILTER(!BOUND(?b))"), "{}", out);
+        parses(&out);
+        let out = t("MATCH (a) OPTIONAL MATCH (a)-[:KNOWS]->(b) WHERE b IS NOT NULL RETURN a");
+        assert!(out.contains("FILTER(BOUND(?b))"), "{}", out);
+
+        // Inside a disjunction.
+        let out = t("MATCH (a:Person) WHERE a.nick IS NULL OR a.age > 30 RETURN a");
+        parses(&out);
     }
 
     #[test]

@@ -7,6 +7,32 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-11 — `IS NULL` / `IS NOT NULL` in Cypher and GQL
+
+The last open part of "GQL next". RDF has no null: a missing property is a missing triple.
+So `a.p IS NULL` becomes `NOT EXISTS { ?a loka:p ?t . }`, and `IS NOT NULL` becomes
+`EXISTS { … }`. A bare `a IS [NOT] NULL` becomes `[!]BOUND(?a)`.
+
+- **No required pattern:** unlike a comparison operand, the property emits no required triple
+  pattern, since its absence is the point.
+- **NOT:** a surrounding `NOT` is pushed through, as for comparisons.
+- **The guard:** the property form carries a `BOUND` guard, `(!BOUND(?a) || NOT EXISTS {…})`
+  and `(BOUND(?a) && EXISTS {…})`. In Cypher, a property of an unbound node (from an
+  `OPTIONAL MATCH`) is null. Without the guard, `NOT EXISTS { ?b loka:nick ?t }` with `?b`
+  unbound matches any subject's nick and drops the row. I checked this with a throwaway probe
+  on the test graph: the guarded form keeps ada, bob and cy, and the unguarded form keeps only
+  ada.
+- **GQL:** its `IS NULL` already passed through the normaliser unchanged, so it works too. The
+  existing GQL test now requires both sides to succeed instead of failing equally.
+- **`= NULL`:** still rejected, because in Cypher it is never true.
+
+Verified:
+- `is_null_is_a_guarded_not_exists` (unit) checks the emitted forms and that they parse.
+- `is_null_tests_a_missing_property` (e2e) covers IS NULL, IS NOT NULL, NOT, the OPTIONAL MATCH
+  property case, and a bare variable.
+- Workspace: 590 tests pass. Clippy `-D warnings` and `cargo fmt --check` are clean.
+
+---
 ## 2026-10-11 — SPARQL `?` (zero-or-one) paths parse and evaluate
 
 While looking at the `?` overwrite bug recorded in the last entry, I found that `?` paths

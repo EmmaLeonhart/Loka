@@ -394,3 +394,65 @@ fn plus_path_checks_an_already_bound_object() {
     assert_eq!(rows.len(), 1, "{rows:?}");
     assert_eq!(rows[0]["y"], c);
 }
+
+#[test]
+fn is_null_tests_a_missing_property() {
+    // ada has a nick, bob and cy don't; ada KNOWS bob.
+    let mut dict = TermDictionary::new();
+    let mut store = TripleStore::new();
+    let iri = |n: &str| format!("http://loka.dev/{n}");
+    let ty = dict.intern("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+    let [person, nick, knows] = ["Person", "nick", "KNOWS"].map(|n| dict.intern(&iri(n)));
+    let [ada, bob, cy] = ["ada", "bob", "cy"].map(|n| dict.intern(&iri(n)));
+    let ada_nick = dict.intern("\"Addy\"");
+    for (s, p, o) in [
+        (ada, ty, person),
+        (bob, ty, person),
+        (cy, ty, person),
+        (ada, nick, ada_nick),
+        (ada, knows, bob),
+    ] {
+        store.insert(Triple::new(s, p, o)).unwrap();
+    }
+    let a_of = |cypher: &str| {
+        let sparql = transpile(cypher).unwrap();
+        bindings(&sparql, &store, &dict, "a")
+    };
+
+    assert_eq!(
+        a_of("MATCH (a:Person) WHERE a.nick IS NULL RETURN a"),
+        [iri("bob"), iri("cy")]
+    );
+    assert_eq!(
+        a_of("MATCH (a:Person) WHERE a.nick IS NOT NULL RETURN a"),
+        [iri("ada")]
+    );
+    assert_eq!(
+        a_of("MATCH (a:Person) WHERE NOT a.nick IS NULL RETURN a"),
+        [iri("ada")]
+    );
+
+    // b is unbound for bob and cy (they know no one). In Cypher an unbound
+    // node's property is null, so all three rows stay; without the BOUND
+    // guard, NOT EXISTS { ?b loka:nick ?t } with ?b unbound would match ada's
+    // nick and drop bob and cy.
+    let sparql = transpile(
+        "MATCH (a:Person) OPTIONAL MATCH (a)-[:KNOWS]->(b) WHERE b.nick IS NULL RETURN a",
+    )
+    .unwrap();
+    assert_eq!(
+        bindings(&sparql, &store, &dict, "a"),
+        [iri("ada"), iri("bob"), iri("cy")],
+        "{sparql}"
+    );
+
+    // A bare variable: who knows no one.
+    let sparql =
+        transpile("MATCH (a:Person) OPTIONAL MATCH (a)-[:KNOWS]->(b) WHERE b IS NULL RETURN a")
+            .unwrap();
+    assert_eq!(
+        bindings(&sparql, &store, &dict, "a"),
+        [iri("bob"), iri("cy")],
+        "{sparql}"
+    );
+}

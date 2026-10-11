@@ -290,7 +290,8 @@ Re-checked 2026-10-08 against today's Studio (web-studio + Electron; Flutter del
 - [x] Quantified paths (2026-10-11): Cypher `*` / `*1..` and GQL `+` / `{1,}` become a SPARQL+
       `+` path under `RETURN DISTINCT`; `*1..1` / `{1}` a plain edge. Zero-length and bounded
       forms are rejected with reasons (SPARQL+ paths carry no length bounds).
-- [ ] GQL next: `IS NULL` (needs Cypher-side support first).
+- [x] `IS NULL` / `IS NOT NULL` in Cypher and GQL (2026-10-11): a BOUND-guarded `NOT EXISTS` /
+      `EXISTS` for a property, `[!]BOUND` for a bare variable
 - [x] SPARQL `?` paths parse and evaluate (2026-10-11, `loka-sparql/tests/zero_or_one_path.rs`)
 - [ ] Executor: `*` and `?` paths with an unbound subject skip the zero-length step (`*` returns
       nothing, `?` only the one-step pairs). SPARQL's zero-length step over a free subject pairs

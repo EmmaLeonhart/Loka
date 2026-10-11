@@ -13,7 +13,7 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ## ACTIVE
 
-Empty. SPARQL `?` paths are done (DEVLOG, 2026-10-11); the work-loop cron promotes the next
+Empty. Cypher/GQL `IS NULL` is done (DEVLOG, 2026-10-11); the work-loop cron promotes the next
 bounded non-GPU TODO item.
 
 ---
