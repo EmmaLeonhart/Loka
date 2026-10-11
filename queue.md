@@ -13,8 +13,8 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ## ACTIVE
 
-Empty. The Cypher/GQL CLI and HTTP entry points are done (DEVLOG, 2026-10-10); the work-loop
-cron promotes the next bounded non-GPU TODO item.
+Empty. Quantified paths are done (DEVLOG, 2026-10-11); the work-loop cron promotes the next
+bounded non-GPU TODO item.
 
 ---
 

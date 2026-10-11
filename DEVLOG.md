@@ -7,6 +7,43 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-11 — Quantified paths in Cypher and GQL; `+` paths with an unbound subject fixed
+
+TODO "GQL next", the quantified-path part.
+- Cypher `-[:T*]->` and `*1..`, and GQL `-[:T]->+` and `->{1,}`, now transpile to the SPARQL+
+  path `loka:T+`. `*1..1` / `*1` / `{1}` is a plain edge.
+- GQL quantifiers move inside the edge brackets, so the Cypher back end makes every
+  accept/reject decision for both languages.
+- The mapping needs `RETURN DISTINCT`. Both languages match the same endpoint pairs: a node
+  reachable by any walk is also reachable by a trail, and Cypher enumerates trails. But Cypher
+  returns one row per path, while a SPARQL path returns one row per distinct pair. So the row
+  counts only agree under DISTINCT, and a query without it is rejected with that reason.
+- Rejected with reasons: zero-length (`*0..`, GQL `*`, `{0,}`) and bounded (`*2..3`,
+  `{1,3}`) forms, a quantifier on a bracketless edge, and quantified parenthesised paths.
+
+The end-to-end test found two executor bugs, which I fixed:
+- **A `+` path with an unbound subject returned nothing.** The walk only started from a bound
+  subject, so `?x loka:KNOWS+ <d>` and `?x loka:KNOWS+ ?y` were empty. Cypher's inbound form
+  (`(y)<-[:T*]-(x)`) depends on this. Now a bound object is walked backwards
+  (`reverse_reach`), and with both ends free the walk starts from every subject of the
+  predicate.
+- **A `+`/`*` path overwrote an object variable bound by an earlier pattern** instead of
+  checking it. `?y loka:name "C" . <a> loka:KNOWS+ ?y` returned a row for every node reachable
+  from a.
+
+Verified:
+- Both new executor tests fail against the old `executor.rs` (0 rows instead of 3, and 2 rows
+  instead of 1) and pass now.
+- `variable_length_paths_reach_through_a_cycle` runs all four surface forms, the inbound form,
+  a dead end and `*1..1` on a graph with a cycle.
+- Workspace tests: 582 pass. Clippy `-D warnings` and `cargo fmt --check` are clean.
+
+Left alone and added to TODO:
+- `*` paths with an unbound subject still return nothing, because the zero-length semantics
+  over a free subject needs a decision first.
+- `?` paths have the same overwrite bug on the zero step.
+
+---
 ## 2026-10-10 — `/cypher` and `/gql` HTTP endpoints
 
 The second half of the TODO item "GQL next": the server now answers Cypher and GQL. `GET` and

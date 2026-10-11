@@ -12,6 +12,13 @@
 //! | `(a IS Person & Employee)`, `(a :Person & Employee)` | `(a:Person:Employee)` |
 //! | `FILTER cond` | `WHERE cond` |
 //! | `OFFSET n` | `SKIP n` |
+//! | `-[:T]->+`, `-[:T]->{1,}` | `-[:T*1..]->` |
+//! | `-[:T]->{m,n}`, `{n}`, `{,n}`, `*` | `-[:T*m..n]->`, `*n..n`, `*0..n`, `*0..` |
+//!
+//! A quantifier after an edge pattern moves inside its brackets, where the
+//! Cypher back end decides what has a faithful mapping: `{1,}` (and `+`)
+//! becomes a SPARQL+ `+` path under `RETURN DISTINCT`, `{1}` a plain edge, and
+//! the zero-length and bounded forms are rejected with the back end's reason.
 //!
 //! `IS NULL`, `IS NOT …` and the other `IS` predicates are left alone; only
 //! `IS <label>` is a label test. (The Cypher back end doesn't support
@@ -19,8 +26,8 @@
 //! String literals are copied untouched.
 //!
 //! Rejected with a reason instead of approximated: label disjunction `|`,
-//! negation `!` and wildcard `%`; quantified path patterns (`->{1,3}`);
-//! graph selection (`USE`) and the GQL statements outside a single read query
+//! negation `!` and wildcard `%`; a quantifier on a bracketless edge (`->+`)
+//! or a parenthesised path (`(…){1,}`); graph selection (`USE`) and the GQL statements outside a single read query
 //! (`INSERT`, `LET`, `FOR`, `NEXT`, `CALL`, `YIELD`, `FINISH`, `SELECT`).
 //! Errors from the shared back end are [`CypherError`]s.
 
@@ -82,6 +89,75 @@ fn unsupported(construct: &str, reason: &'static str) -> CypherError {
     CypherError::Unsupported {
         construct: construct.to_string(),
         reason,
+    }
+}
+
+/// Parse the edge quantifier starting at `chars[i]` (`+`, `*`, `{m,n}`,
+/// `{m,}`, `{,n}`, `{n}`) into Cypher's `*m..n` form, returning the index
+/// after it.
+fn quantifier(chars: &[char], i: usize) -> Result<(String, usize), CypherError> {
+    match chars[i] {
+        '+' => return Ok(("*1..".into(), i + 1)),
+        '*' => return Ok(("*0..".into(), i + 1)),
+        _ => {}
+    }
+    let close = chars[i..]
+        .iter()
+        .position(|&c| c == '}')
+        .map(|p| i + p)
+        .ok_or_else(|| CypherError::Syntax {
+            position: i,
+            message: "unterminated path quantifier".into(),
+        })?;
+    let body: String = chars[i + 1..close]
+        .iter()
+        .filter(|c| !c.is_whitespace())
+        .collect();
+    let bad = || CypherError::Syntax {
+        position: i,
+        message: format!("expected a path quantifier {{m,n}}, found {{{}}}", body),
+    };
+    let num = |t: &str| -> Result<Option<u64>, CypherError> {
+        if t.is_empty() {
+            Ok(None)
+        } else {
+            t.parse::<u64>().map(Some).map_err(|_| bad())
+        }
+    };
+    let cypher = match body.split_once(',') {
+        None => {
+            let n = num(&body)?.ok_or_else(bad)?;
+            format!("*{n}..{n}")
+        }
+        Some((lo, hi)) => {
+            let lo = num(lo)?.unwrap_or(0);
+            match num(hi)? {
+                Some(hi) => format!("*{lo}..{hi}"),
+                None => format!("*{lo}.."),
+            }
+        }
+    };
+    Ok((cypher, close + 1))
+}
+
+/// Put a Cypher length (`*m..n`) inside the edge pattern just written, before
+/// its closing `]`.
+fn move_into_edge(out: &mut String, bounds: &str) -> Result<(), CypherError> {
+    let tail = out.trim_end();
+    let arrow = tail
+        .strip_suffix("->")
+        .or_else(|| tail.strip_suffix('-'))
+        .map(str::trim_end);
+    match arrow {
+        Some(head) if head.ends_with(']') => {
+            let at = head.len() - 1;
+            out.insert_str(at, bounds);
+            Ok(())
+        }
+        _ => Err(unsupported(
+            "quantified bracketless edge",
+            "a quantifier needs a typed edge pattern such as `-[:T]->{1,}`",
+        )),
     }
 }
 
@@ -184,9 +260,30 @@ fn normalize(gql: &str) -> Result<String, CypherError> {
                 ))
             }
             '{' if matches!(last_sig, Some('>') | Some('-')) => {
+                let (bounds, next) = quantifier(&chars, i)?;
+                move_into_edge(&mut out, &bounds)?;
+                i = next;
+                last_sig = Some('-');
+                continue;
+            }
+            // `+` / `*` only right after an edge arrow, so `a.x > +3` is left alone.
+            '+' | '*'
+                if {
+                    let t = out.trim_end();
+                    t.ends_with("->") || t.ends_with("]-")
+                } =>
+            {
+                let (bounds, next) = quantifier(&chars, i)?;
+                move_into_edge(&mut out, &bounds)?;
+                i = next;
+                last_sig = Some('-');
+                continue;
+            }
+            '{' if last_sig == Some(')') => {
                 return Err(unsupported(
                     "quantified path pattern",
-                    "path quantifiers ({m,n}) are not in the supported subset; use SPARQL+ property paths",
+                    "quantified parenthesised path patterns are not in the supported subset; \
+                     quantify a single edge (`-[:T]->{1,}`) or use SPARQL+ property paths",
                 ));
             }
             _ => {}
@@ -261,12 +358,42 @@ mod tests {
     }
 
     #[test]
+    fn edge_quantifiers_move_into_the_brackets() {
+        for q in [
+            "MATCH (a IS Person)-[:KNOWS]->+(b) RETURN DISTINCT b",
+            "MATCH (a IS Person)-[:KNOWS]->{1,}(b) RETURN DISTINCT b",
+            "MATCH (a IS Person)-[:KNOWS]-> { 1 , } (b) RETURN DISTINCT b",
+        ] {
+            same(q, "MATCH (a:Person)-[:KNOWS*1..]->(b) RETURN DISTINCT b");
+        }
+        same(
+            "MATCH (a)<-[:KNOWS]-{1,}(b) RETURN DISTINCT b",
+            "MATCH (a)<-[:KNOWS*1..]-(b) RETURN DISTINCT b",
+        );
+        same(
+            "MATCH (a)-[:KNOWS]->{1}(b) RETURN b",
+            "MATCH (a)-[:KNOWS]->(b) RETURN b",
+        );
+        // A `+` that is a sign, not a quantifier, is left alone.
+        assert_eq!(
+            normalize("MATCH (a) WHERE a.x > +3 RETURN a").unwrap(),
+            "MATCH (a) WHERE a.x > +3 RETURN a"
+        );
+    }
+
+    #[test]
     fn constructs_without_a_faithful_reading_are_rejected() {
         for q in [
             "MATCH (a IS Person | Robot) RETURN a",
             "MATCH (a IS !Person) RETURN a",
             "MATCH (a IS %) RETURN a",
-            "MATCH (a)-[:KNOWS]->{1,3}(b) RETURN b",
+            "MATCH (a)-[:KNOWS]->{1,3}(b) RETURN DISTINCT b",
+            "MATCH (a)-[:KNOWS]->{2,}(b) RETURN DISTINCT b",
+            "MATCH (a)-[:KNOWS]->{0,}(b) RETURN DISTINCT b",
+            "MATCH (a)-[:KNOWS]->*(b) RETURN DISTINCT b",
+            "MATCH (a)-[:KNOWS]->+(b) RETURN b",
+            "MATCH (a)->+(b) RETURN DISTINCT b",
+            "MATCH ((a)-[:KNOWS]->(b)){1,} RETURN DISTINCT b",
             "USE g MATCH (a) RETURN a",
             "INSERT (a IS Person)",
             "LET x = 1 RETURN x",

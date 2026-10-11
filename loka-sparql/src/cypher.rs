@@ -17,12 +17,23 @@
 //! | `(a {name: "Ada"})` | `?a loka:name "Ada" .` |
 //! | `(a)-[:KNOWS]->(b)` | `?a loka:KNOWS ?b .` |
 //! | `(a)<-[:KNOWS]-(b)` | `?b loka:KNOWS ?a .` |
+//! | `(a)-[:KNOWS*]->(b)`, `*1..` | `?a loka:KNOWS+ ?b .` (needs `RETURN DISTINCT`) |
 //! | `WHERE a.age > 30` | `?a loka:age ?_w0 . FILTER(?_w0 > 30)` |
 //! | `RETURN a.name` | `?a loka:name ?_r0 .` + `SELECT ?_r0` |
 //!
 //! `WHERE a.age > 30` emits a triple pattern *and* a filter because Cypher's
 //! `WHERE` on a property requires that property to exist — a bare `FILTER` over
 //! an unbound variable would not.
+//!
+//! A variable-length relationship with no upper bound and a minimum of one
+//! becomes a `+` property path. The two agree on *which* endpoint pairs match:
+//! any node reachable by a walk is reachable by a trail, which is what Cypher
+//! enumerates. They disagree on *how many rows*: Cypher returns one row per
+//! path, a SPARQL property path one per distinct pair. So the mapping is exact
+//! only under `RETURN DISTINCT`, and a query without it is rejected. `*1..1`
+//! (or `*1`) is a plain edge. Zero-length (`*0..`) and bounded (`*2..3`) forms
+//! are rejected: SPARQL+ paths carry no length bounds, and a zero-length step
+//! over unbound endpoints means different things in the two languages.
 //!
 //! # What is deliberately rejected
 //!
@@ -279,6 +290,9 @@ struct Transpiler {
     tmp: usize,
     /// Variables bound by patterns, so RETURN can validate against them.
     bound: Vec<String>,
+    /// A variable-length relationship was mapped to a `+` path, which is exact
+    /// only under `RETURN DISTINCT`.
+    var_length: bool,
 }
 
 /// Keywords that end a clause.
@@ -375,6 +389,7 @@ impl Transpiler {
             anon: 0,
             tmp: 0,
             bound: Vec::new(),
+            var_length: false,
         }
     }
 
@@ -434,6 +449,39 @@ impl Transpiler {
     }
 
     /// `loka:Name`, escaping anything that is not a bare PN_LOCAL.
+    /// The bounds after a variable-length `*`: `*` is (1, unbounded), `*n` is
+    /// (n, n), and `*m..n`, `*m..`, `*..n` default a missing minimum to 1.
+    fn length_bounds(&mut self) -> TResult<(u64, Option<u64>)> {
+        let min = self.path_length()?;
+        let dots = matches!(self.peek(), Some(Tok::Punct('.')))
+            && matches!(
+                self.toks.get(self.i + 1).map(|s| &s.tok),
+                Some(Tok::Punct('.'))
+            );
+        if !dots {
+            return Ok(match min {
+                Some(n) => (n, Some(n)),
+                None => (1, None),
+            });
+        }
+        self.i += 2;
+        let max = self.path_length()?;
+        Ok((min.unwrap_or(1), max))
+    }
+
+    /// An optional non-negative path length.
+    fn path_length(&mut self) -> TResult<Option<u64>> {
+        let Some(Tok::Num(n)) = self.peek().cloned() else {
+            return Ok(None);
+        };
+        let position = self.pos();
+        self.i += 1;
+        n.parse::<u64>().map(Some).map_err(|_| CypherError::Syntax {
+            position,
+            message: format!("expected a path length, found {}", n),
+        })
+    }
+
     fn iri(&self, name: &str) -> String {
         if name
             .chars()
@@ -620,14 +668,33 @@ impl Transpiler {
                 );
             };
 
-            // Variable-length paths `*`, `*1..3`
-            if matches!(self.peek(), Some(Tok::Punct('*'))) {
-                return unsupported(
-                    "variable-length relationship",
-                    "Cypher's `*n..m` bounds do not map onto SPARQL property paths, which have \
-                     only `*` and `+` with no length bounds. Use a property path directly.",
-                );
-            }
+            // Variable-length paths `*`, `*1..`, `*1..1`
+            let one_or_more =
+                if matches!(self.peek(), Some(Tok::Punct('*'))) {
+                    self.i += 1;
+                    match self.length_bounds()? {
+                        (1, None) => {
+                            self.var_length = true;
+                            true
+                        }
+                        (1, Some(1)) => false,
+                        (0, _) => {
+                            return unsupported(
+                                "zero-length relationship",
+                                "a zero-length step matches a node to itself, and over unbound \
+                             endpoints SPARQL's `*` pairs every term in the store, not every node \
+                             in the pattern. Use `*1..` (a `+` path) or a SPARQL+ `*` path.",
+                            )
+                        }
+                        _ => return unsupported(
+                            "bounded variable-length relationship",
+                            "SPARQL+ property paths have `+` and `*` with no length bounds, so \
+                             only `*`, `*1..` and `*1..1` have a faithful mapping.",
+                        ),
+                    }
+                } else {
+                    false
+                };
 
             // Relationship property map
             if matches!(self.peek(), Some(Tok::Punct('{'))) {
@@ -669,10 +736,14 @@ impl Transpiler {
 
             let right = self.node(into)?;
 
+            let mut pred = self.iri(&rel_type);
+            if one_or_more {
+                pred.push('+');
+            }
             if inbound && !outbound {
-                into.push(format!("?{} {} ?{} .", right, self.iri(&rel_type), left));
+                into.push(format!("?{} {} ?{} .", right, pred, left));
             } else {
-                into.push(format!("?{} {} ?{} .", left, self.iri(&rel_type), right));
+                into.push(format!("?{} {} ?{} .", left, pred, right));
             }
 
             left = right;
@@ -905,6 +976,13 @@ impl Transpiler {
         }
 
         let distinct = self.eat_kw("DISTINCT");
+        if self.var_length && !distinct {
+            return unsupported(
+                "variable-length relationship without RETURN DISTINCT",
+                "a SPARQL property path yields one row per reachable pair, Cypher one row per \
+                 path, so the row counts agree only under RETURN DISTINCT. Add DISTINCT.",
+            );
+        }
 
         let mut projection: Vec<String> = Vec::new();
         loop {
@@ -1408,8 +1486,42 @@ mod tests {
     }
 
     #[test]
-    fn rejects_variable_length_paths() {
-        rejects("MATCH (a)-[:KNOWS*1..3]->(b) RETURN a", "property path");
+    fn rejects_variable_length_paths_without_a_faithful_mapping() {
+        rejects(
+            "MATCH (a)-[:KNOWS*1..3]->(b) RETURN DISTINCT b",
+            "property paths",
+        );
+        rejects(
+            "MATCH (a)-[:KNOWS*2..]->(b) RETURN DISTINCT b",
+            "property paths",
+        );
+        rejects(
+            "MATCH (a)-[:KNOWS*0..]->(b) RETURN DISTINCT b",
+            "zero-length",
+        );
+        rejects("MATCH (a)-[:KNOWS*]->(b) RETURN b", "DISTINCT");
+    }
+
+    #[test]
+    fn unbounded_variable_length_is_a_plus_path() {
+        for q in [
+            "MATCH (a)-[:KNOWS*]->(b) RETURN DISTINCT b",
+            "MATCH (a)-[:KNOWS*1..]->(b) RETURN DISTINCT b",
+        ] {
+            let out = t(q);
+            assert!(out.contains("?a loka:KNOWS+ ?b ."), "{}", out);
+            assert!(crate::parse(&out).is_ok(), "{}", out);
+        }
+        let inbound = t("MATCH (a)<-[:KNOWS*]-(b) RETURN DISTINCT b");
+        assert!(inbound.contains("?b loka:KNOWS+ ?a ."), "{}", inbound);
+        // Exactly one step is a plain edge, and needs no DISTINCT.
+        for q in [
+            "MATCH (a)-[:KNOWS*1..1]->(b) RETURN b",
+            "MATCH (a)-[:KNOWS*1]->(b) RETURN b",
+        ] {
+            let out = t(q);
+            assert!(out.contains("?a loka:KNOWS ?b ."), "{}", out);
+        }
     }
 
     #[test]

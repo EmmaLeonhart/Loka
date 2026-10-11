@@ -3853,7 +3853,7 @@ fn evaluate_property_path(
                 // Zero-length path: subject = object
                 if include_zero {
                     if let Some(sid) = s_id {
-                        if let Term::Variable(o_var) = object {
+                        if let (Term::Variable(o_var), None) = (object, o_id) {
                             let mut new_row = row.clone();
                             new_row.insert(o_var.clone(), sid);
                             all_results.push(new_row);
@@ -3865,48 +3865,102 @@ fn evaluate_property_path(
                     }
                 }
 
-                let Some(start) = s_id else {
-                    continue;
-                };
-                let mut frontier = vec![start];
-                let mut visited = std::collections::HashSet::new();
-                // SPARQL `+`/`*` yield each reachable node once per start, not
-                // once per edge into it.
-                let mut emitted = std::collections::HashSet::new();
-                if include_zero {
-                    emitted.insert(start);
-                }
-
-                for _depth in 0..max_depth {
-                    if frontier.is_empty() {
-                        break;
-                    }
-                    check_deadline(ctx)?;
-
-                    let mut next_frontier = Vec::new();
-                    for &node in &frontier {
-                        if !visited.insert(node) {
+                // Where the walk starts, and the row it extends. A bound
+                // subject is the only start. An unbound `+` subject over
+                // stored edges (until 2026-10-11 this returned nothing):
+                // with a bound object, walk backwards from it; with both ends
+                // free, start from every subject of the predicate. `*` and
+                // the virtual HNSW edges still need a bound subject.
+                let starts: Vec<(TermId, Bindings)> = match s_id {
+                    Some(s) => vec![(s, row.clone())],
+                    None => {
+                        let Term::Variable(s_var) = subject else {
+                            continue;
+                        };
+                        if include_zero || hnsw_path {
                             continue;
                         }
-                        let targets = path_step_targets(node, base_pred, pred_id, hnsw_path, ctx)?;
-                        for target in targets {
-                            if emitted.insert(target) {
-                                if let Term::Variable(o_var) = object {
-                                    let mut new_row = row.clone();
-                                    new_row.insert(o_var.clone(), target);
-                                    all_results.push(new_row);
-                                    all_scores.push(current_scores[row_idx].clone());
-                                } else if o_id == Some(target) {
-                                    all_results.push(row.clone());
-                                    all_scores.push(current_scores[row_idx].clone());
+                        if let Some(o) = o_id {
+                            for src in reverse_reach(o, pred_id, max_depth, ctx)? {
+                                let mut new_row = row.clone();
+                                new_row.insert(s_var.clone(), src);
+                                all_results.push(new_row);
+                                all_scores.push(current_scores[row_idx].clone());
+                            }
+                            continue;
+                        }
+                        let mut subjects: Vec<TermId> = ctx
+                            .store
+                            .find_by_predicate(pred_id)
+                            .into_iter()
+                            .filter(|t| {
+                                is_edge_temporally_valid(
+                                    t.subject,
+                                    t.predicate,
+                                    t.object,
+                                    &ctx.temporal_filter,
+                                    ctx.store,
+                                )
+                            })
+                            .map(|t| t.subject)
+                            .collect();
+                        subjects.sort_unstable();
+                        subjects.dedup();
+                        subjects
+                            .into_iter()
+                            .map(|s| {
+                                let mut base = row.clone();
+                                base.insert(s_var.clone(), s);
+                                (s, base)
+                            })
+                            .collect()
+                    }
+                };
+
+                for (start, base) in starts {
+                    // `?x p+ ?x`: binding the subject binds the object too.
+                    let o_id = resolve_term(object, &base, ctx.dict, ctx.prefixes)?;
+                    let mut frontier = vec![start];
+                    let mut visited = std::collections::HashSet::new();
+                    // SPARQL `+`/`*` yield each reachable node once per start, not
+                    // once per edge into it.
+                    let mut emitted = std::collections::HashSet::new();
+                    if include_zero {
+                        emitted.insert(start);
+                    }
+
+                    for _depth in 0..max_depth {
+                        if frontier.is_empty() {
+                            break;
+                        }
+                        check_deadline(ctx)?;
+
+                        let mut next_frontier = Vec::new();
+                        for &node in &frontier {
+                            if !visited.insert(node) {
+                                continue;
+                            }
+                            let targets =
+                                path_step_targets(node, base_pred, pred_id, hnsw_path, ctx)?;
+                            for target in targets {
+                                if emitted.insert(target) {
+                                    if let (Term::Variable(o_var), None) = (object, o_id) {
+                                        let mut new_row = base.clone();
+                                        new_row.insert(o_var.clone(), target);
+                                        all_results.push(new_row);
+                                        all_scores.push(current_scores[row_idx].clone());
+                                    } else if o_id == Some(target) {
+                                        all_results.push(base.clone());
+                                        all_scores.push(current_scores[row_idx].clone());
+                                    }
+                                }
+                                if !visited.contains(&target) {
+                                    next_frontier.push(target);
                                 }
                             }
-                            if !visited.contains(&target) {
-                                next_frontier.push(target);
-                            }
                         }
+                        frontier = next_frontier;
                     }
-                    frontier = next_frontier;
                 }
             }
 
@@ -3942,6 +3996,53 @@ fn evaluate_property_path(
             Ok((results, scores))
         }
     }
+}
+
+/// Every node with a `pred+` path to `target` over stored edges (temporally
+/// valid ones, with a temporal filter active), each once: a backward
+/// breadth-first walk, so a bound object needn't start a walk from every
+/// subject in the store.
+fn reverse_reach(
+    target: TermId,
+    pred_id: TermId,
+    max_depth: usize,
+    ctx: &ExecutionContext<'_>,
+) -> Result<Vec<TermId>> {
+    let mut frontier = vec![target];
+    let mut visited = std::collections::HashSet::new();
+    let mut emitted = std::collections::HashSet::new();
+    let mut out = Vec::new();
+    for _depth in 0..max_depth {
+        if frontier.is_empty() {
+            break;
+        }
+        check_deadline(ctx)?;
+        let mut next_frontier = Vec::new();
+        for &node in &frontier {
+            if !visited.insert(node) {
+                continue;
+            }
+            for t in ctx.store.find_by_predicate_object(pred_id, node) {
+                if !is_edge_temporally_valid(
+                    t.subject,
+                    t.predicate,
+                    t.object,
+                    &ctx.temporal_filter,
+                    ctx.store,
+                ) {
+                    continue;
+                }
+                if emitted.insert(t.subject) {
+                    out.push(t.subject);
+                }
+                if !visited.contains(&t.subject) {
+                    next_frontier.push(t.subject);
+                }
+            }
+        }
+        frontier = next_frontier;
+    }
+    Ok(out)
 }
 
 /// Whether `pred` is one of the three virtual HNSW edge predicates, whose
