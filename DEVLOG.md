@@ -7,6 +7,35 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-11 — SPARQL `?` (zero-or-one) paths parse and evaluate
+
+While looking at the `?` overwrite bug recorded in the last entry, I found that `?` paths
+couldn't be written at all. The parser accepted `+` and `*` after a path element but never
+emitted `PathModifier::ZeroOrOne`, so `loka:p?` failed to parse, and the executor's `?` branch
+was dead code. So the bug I'd recorded was never reachable.
+
+- **Parser:** `?` right after a path element is the zero-or-one modifier. If a name character
+  follows it (`loka:p?o`), it starts the object variable instead, as SPARQL's tokenizer reads
+  it.
+- **Zero step:** a bound or constant object is now checked instead of overwritten.
+- **One step:** a row the zero step already produced (a self-loop `b p b`) is not emitted
+  twice. SPARQL's `?` yields each pair once.
+- **Limit (in TODO):** with an unbound subject, `?` still skips the zero step and returns only
+  the one-step pairs. This is the same open question as `*`.
+
+Verified: `loka-sparql/tests/zero_or_one_path.rs` has 6 tests, covering:
+- zero or one step from a bound subject;
+- a self-loop giving one row;
+- a constant object;
+- an object bound earlier;
+- `:p?o` read as the object variable;
+- the free-subject one-step pairs.
+
+Against the old parser and executor, 5 fail (the query didn't parse) and the `:p?o` regression
+guard passes, as it should. Workspace: 588 tests pass. Clippy `-D warnings` and
+`cargo fmt --check` are clean.
+
+---
 ## 2026-10-11 — Quantified paths in Cypher and GQL; `+` paths with an unbound subject fixed
 
 TODO "GQL next", the quantified-path part.

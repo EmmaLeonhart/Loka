@@ -3971,27 +3971,48 @@ fn evaluate_property_path(
             let mut results = Vec::new();
             let mut scores = Vec::new();
 
-            // Zero step: subject = object
+            // Zero step: subject = object. A bound or constant object is
+            // checked, not overwritten.
             for (i, row) in current.iter().enumerate() {
                 if let Some(sid) = resolve_term(subject, row, ctx.dict, ctx.prefixes)? {
-                    if let Term::Variable(o_var) = object {
-                        let mut new_row = row.clone();
-                        new_row.insert(o_var.clone(), sid);
-                        results.push(new_row);
-                        scores.push(current_scores[i].clone());
+                    match (object, resolve_term(object, row, ctx.dict, ctx.prefixes)?) {
+                        (Term::Variable(o_var), None) => {
+                            let mut new_row = row.clone();
+                            new_row.insert(o_var.clone(), sid);
+                            results.push(new_row);
+                            scores.push(current_scores[i].clone());
+                        }
+                        (_, Some(oid)) if oid == sid => {
+                            results.push(row.clone());
+                            scores.push(current_scores[i].clone());
+                        }
+                        _ => {}
                     }
                 }
             }
 
-            // One step: normal triple pattern
+            // One step: normal triple pattern. A self-loop `s p s` gives the
+            // same row as the zero step did; SPARQL's `?` yields it once.
+            let row_key = |r: &Bindings| {
+                let mut k: Vec<(String, TermId)> =
+                    r.iter().map(|(v, &id)| (v.clone(), id)).collect();
+                k.sort_unstable();
+                k
+            };
+            let zero_rows: std::collections::HashSet<Vec<(String, TermId)>> =
+                results.iter().map(row_key).collect();
             let one_step = Pattern::Triple {
                 subject: subject.clone(),
                 predicate: base_pred.clone(),
                 object: object.clone(),
             };
             let (r1, s1) = evaluate_pattern(&one_step, current, current_scores, ctx, None)?;
-            results.extend(r1);
-            scores.extend(s1);
+            for (row, score) in r1.into_iter().zip(s1) {
+                if !zero_rows.contains(&row_key(&row)) {
+                    results.push(row);
+                    scores.push(score);
+                }
+            }
 
             Ok((results, scores))
         }

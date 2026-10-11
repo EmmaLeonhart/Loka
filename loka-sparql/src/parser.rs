@@ -1391,12 +1391,22 @@ impl<'a> Parser<'a> {
     }
 
     /// One path element: a predicate, optionally followed (with no space) by
-    /// `+` or `*`.
+    /// `+`, `*` or `?`. A `?` that starts a variable name (`:p?o`) is the
+    /// object variable, not a modifier, as in SPARQL's tokenizer.
     fn parse_path_element(&mut self) -> Result<Term> {
         let base = self.parse_term()?;
         let modifier = match self.peek_char() {
             Some('+') => PathModifier::OneOrMore,
             Some('*') => PathModifier::ZeroOrMore,
+            Some('?')
+                if !self
+                    .input
+                    .as_bytes()
+                    .get(self.pos + 1)
+                    .is_some_and(|&b| b.is_ascii_alphanumeric() || b == b'_') =>
+            {
+                PathModifier::ZeroOrOne
+            }
             _ => return Ok(base),
         };
         self.pos += 1;

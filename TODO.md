@@ -291,10 +291,10 @@ Re-checked 2026-10-08 against today's Studio (web-studio + Electron; Flutter del
       `+` path under `RETURN DISTINCT`; `*1..1` / `{1}` a plain edge. Zero-length and bounded
       forms are rejected with reasons (SPARQL+ paths carry no length bounds).
 - [ ] GQL next: `IS NULL` (needs Cypher-side support first).
-- [ ] Executor: `*` paths with an unbound subject still return nothing (SPARQL's zero-length
-      step over a free subject pairs every term in the store with itself; decide that semantics
-      before building it). `?` paths overwrite an already-bound object variable on the
-      zero step, the bug fixed for `+`/`*` on 2026-10-11.
+- [x] SPARQL `?` paths parse and evaluate (2026-10-11, `loka-sparql/tests/zero_or_one_path.rs`)
+- [ ] Executor: `*` and `?` paths with an unbound subject skip the zero-length step (`*` returns
+      nothing, `?` only the one-step pairs). SPARQL's zero-length step over a free subject pairs
+      every term in the store with itself; decide that semantics before building it.
 
 ### ✅ FIXED 2026-07-29: string / IRI equality in FILTER now matches
 
