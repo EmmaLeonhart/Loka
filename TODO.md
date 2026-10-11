@@ -239,7 +239,10 @@ sustained GPU run or a large risky ingest; they wait for cloud GPU or a donor.
 - [x] Query performance metrics: per-pattern latency percentiles, planner estimate accuracy (`GET /health/queries`, `planning/query-metrics.md`; 2026-10-07)
 - [x] Studio page reading `/health/queries`: Query performance section of the web-studio Health tab (2026-10-08)
 - [x] Iterate CLI health output format based on real agent usage: one pass from an agent run (2026-10-08). Text and JSON agree on undiscovered pseudo-tables, JSON carries `recommended_actions`, and there's a pointer to `/health/queries`
-- [ ] Loka Studio health dashboard as Flutter landing page: overall status, per-index cards, action buttons
+- [x] Studio health dashboard (2026-10-11, web-studio; Flutter is gone): overall status cards,
+      one card per HNSW index, and a "Rebuild HNSW indexes" action (`POST /vectors/rebuild`)
+- [ ] Make Health the Studio landing tab instead of the Knowledge Graph? Emma's call: "Load
+      test data" is built around landing on the graph.
 
 ### SDK Publishing — EMMA-GATED (audit complete 2026-05-31, verdict in `planning/sdk-publish-readiness.md`)
 

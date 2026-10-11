@@ -13,8 +13,8 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ## ACTIVE
 
-Empty. Cypher/GQL `IS NULL` is done (DEVLOG, 2026-10-11); the work-loop cron promotes the next
-bounded non-GPU TODO item.
+Empty. The Studio health dashboard is done (DEVLOG, 2026-10-11). The remaining TODO items are
+blocked on Emma, a tag, or a decision (see the latest status report).
 
 ---
 

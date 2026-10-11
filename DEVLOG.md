@@ -7,6 +7,38 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-11 — Studio Health tab: per-index cards and a Rebuild action
+
+The TODO item "Loka Studio health dashboard as Flutter landing page" was written for the Flutter
+Studio, which was deleted on 2026-05-30. I re-read it for web-studio. The Health tab already
+had the overall status cards. What it lacked:
+
+- **A working index count.** The "Vector predicates" card read `predicates` /
+  `predicate_count`, which `/vectors/health` has never returned (it returns `index_count` and
+  `indexes`), so it always showed "—". It's now "Vector indexes", read from `index_count`.
+- **Per-index cards.** There is now one card per HNSW index: the predicate, live and total
+  nodes, dimensions, metric, % tombstoned, and the server's compaction flag. Before, the index
+  data was only raw JSON behind the debug toggle, which is still there.
+- **An action button.** "Rebuild HNSW indexes" calls `POST /vectors/rebuild` and reloads. It's
+  disabled when there are no indexes.
+
+Making Health the landing tab is a product call and is left in TODO for Emma. "Load test data"
+is built around landing on the Knowledge Graph.
+
+Verified in Chrome. I ran an in-memory `loka serve` on :3071 and served web-studio statically
+on :3072:
+- I declared a 4-dim predicate and inserted 6 vectors. The card read "6 / 6 nodes · 4 dims ·
+  cosine · 0% tombstoned · healthy", and the count card read 1.
+- I retracted 2 of the vectors. After a Refresh the card read "4 / 6 nodes · 33% tombstoned ·
+  needs compaction", in red.
+- Clicking Rebuild showed "rebuilt 1 index" and the card read "4 / 4 nodes · 0% tombstoned ·
+  healthy".
+- The console showed no errors.
+
+Screenshots are in `Documents/claude-screenshots/Loka_2026-10-11/`. Both test servers and the
+tab were closed afterwards.
+
+---
 ## 2026-10-11 — `IS NULL` / `IS NOT NULL` in Cypher and GQL
 
 The last open part of "GQL next". RDF has no null: a missing property is a missing triple.

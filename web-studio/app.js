@@ -71,6 +71,14 @@ export class LokaClient {
     } catch { return {}; }
   }
 
+  // Compact and rebuild every HNSW index (`POST /vectors/rebuild`). Throws
+  // with the server's message on failure.
+  async rebuildVectors() {
+    const r = await this._fetch('/vectors/rebuild', { method: 'POST' });
+    if (!r.ok) throw new Error(`${r.status} ${await r.text()}`);
+    return r.json();
+  }
+
   // Query latency and planner-estimate accuracy (`GET /health/queries`,
   // planning/query-metrics.md). `null` when the endpoint has none.
   async queryMetrics() {

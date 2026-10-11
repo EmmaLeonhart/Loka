@@ -1,7 +1,7 @@
 // Health screen — port of loka-studio/lib/screens/health_screen.dart.
 // Reachability + DB stats (count, type distribution) + query performance
-// (/health/queries) + HNSW vector index health, via
-// LokaClient.{health,stats,queryMetrics,vectorsHealth}.
+// (/health/queries) + one card per HNSW index and a rebuild action, via
+// LokaClient.{health,stats,queryMetrics,vectorsHealth,rebuildVectors}.
 
 const esc = (s) => String(s).replace(/[&<>"]/g,
   c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -9,6 +9,25 @@ const short = (u) => { const m = /[#/]([^#/]+)\/?$/.exec(u); return m ? m[1] : u
 
 const ms = (v) => (v == null ? '—' : v < 1 ? `${(v * 1000).toFixed(0)} µs` : `${v.toFixed(1)} ms`);
 const num = (v, d = 1) => (v == null ? '—' : Number(v).toFixed(d));
+
+// One card per HNSW index from GET /vectors/health: predicate, live vs total
+// nodes, shape, and how much of it is tombstones (the server flags an index
+// for compaction above 30%).
+function renderIndexes(vh) {
+  const idx = Array.isArray(vh.indexes) ? vh.indexes : [];
+  if (!idx.length) return '';
+  return '<h2 class="s-title">Vector indexes</h2><div class="cards">' +
+    idx.map(i => {
+      const pct = Math.round((i.deleted_ratio ?? 0) * 100);
+      const state = i.needs_compaction
+        ? '<span style="color:var(--red)">needs compaction</span>'
+        : '<span style="color:var(--green)">healthy</span>';
+      return `<div class="card"><div class="k" title="${esc(i.predicate)}">${esc(short(i.predicate))}</div>` +
+        `<div class="val">${Number(i.active_nodes).toLocaleString()}` +
+        `<span class="muted" style="font-size:.9rem;font-weight:400"> / ${Number(i.total_nodes).toLocaleString()} nodes</span></div>` +
+        `<div class="muted" style="margin-top:6px">${esc(i.dimensions)} dims · ${esc(String(i.metric).toLowerCase())} · ${pct}% tombstoned · ${state}</div></div>`;
+    }).join('') + '</div>';
+}
 
 // Query performance from GET /health/queries (planning/query-metrics.md):
 // latency percentiles, per pattern shape, and how close the planner's row
@@ -47,8 +66,10 @@ export default async function mount(host, ctx) {
   host.innerHTML = `<div class="pad">
     <h2 class="s-title">Health</h2>
     <div class="toolbar"><button class="run" id="hx-refresh">Refresh</button>
+      <button class="run" id="hx-rebuild" disabled title="Compact and rebuild every HNSW index (POST /vectors/rebuild)">Rebuild HNSW indexes</button>
       <span class="count" id="hx-info"></span></div>
     <div id="hx-cards" class="cards"></div>
+    <div id="hx-indexes" style="margin-top:18px"></div>
     <div id="hx-types" style="margin-top:18px"></div>
     <div id="hx-queries" style="margin-top:18px"></div>
     <div id="hx-vec" style="margin-top:18px"></div>
@@ -59,6 +80,8 @@ export default async function mount(host, ctx) {
   const vecEl = host.querySelector('#hx-vec');
   const info = host.querySelector('#hx-info');
   const refresh = host.querySelector('#hx-refresh');
+  const rebuild = host.querySelector('#hx-rebuild');
+  const indexesEl = host.querySelector('#hx-indexes');
 
   function card(k, v, color) {
     return `<div class="card"><div class="k">${esc(k)}</div>` +
@@ -68,7 +91,8 @@ export default async function mount(host, ctx) {
   async function load() {
     refresh.disabled = true;
     info.textContent = 'checking…';
-    cards.innerHTML = typesEl.innerHTML = queriesEl.innerHTML = vecEl.innerHTML = '';
+    rebuild.disabled = true;
+    cards.innerHTML = indexesEl.innerHTML = typesEl.innerHTML = queriesEl.innerHTML = vecEl.innerHTML = '';
     const up = await ctx.client.health();
     const stats = await ctx.client.stats();
     const vh = await ctx.client.vectorsHealth();
@@ -80,9 +104,10 @@ export default async function mount(host, ctx) {
            up ? 'var(--green)' : 'var(--red)') +
       card('Triples', stats.totalTriples >= 0 ? stats.totalTriples.toLocaleString() : '—') +
       card('Distinct types', Object.keys(stats.types).length) +
-      card('Vector predicates',
-           Array.isArray(vh.predicates) ? vh.predicates.length :
-           (vh.predicate_count ?? (vh.predicates ? Object.keys(vh.predicates).length : '—')));
+      card('Vector indexes', vh.index_count ?? '—');
+
+    indexesEl.innerHTML = renderIndexes(vh);
+    rebuild.disabled = !(vh.index_count > 0);
 
     const types = Object.entries(stats.types).sort((a, b) => b[1] - a[1]);
     if (types.length) {
@@ -118,5 +143,17 @@ export default async function mount(host, ctx) {
 
   }
   refresh.onclick = load;
+  rebuild.onclick = async () => {
+    rebuild.disabled = refresh.disabled = true;
+    info.textContent = 'rebuilding…';
+    try {
+      const r = await ctx.client.rebuildVectors();
+      await load();
+      info.textContent = `${ctx.endpoint} · rebuilt ${r.indexes_rebuilt} index${r.indexes_rebuilt === 1 ? '' : 'es'}`;
+    } catch (e) {
+      info.textContent = `rebuild failed: ${e.message}`;
+      rebuild.disabled = refresh.disabled = false;
+    }
+  };
   load();
 }
