@@ -7,6 +7,17 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-11 — Crons stopped at Emma's request
+
+Emma: "Stop all crons." All three are cancelled: the work loop (:03), auto-flush (:15) and status
+report (:42). `CronList` is empty.
+
+Before that, they had run idle for about ten hours. The queue had been empty since `e18cccd`,
+and every open TODO item is blocked on Emma, the next release tag, or a decision. This is the
+second time (after 2026-10-08) that she has stopped crons that were spending tokens with nothing
+to do.
+
+---
 ## 2026-10-11 — Studio Health tab: per-index cards and a Rebuild action
 
 The TODO item "Loka Studio health dashboard as Flutter landing page" was written for the Flutter
