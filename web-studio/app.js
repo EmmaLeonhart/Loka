@@ -246,6 +246,19 @@ async function render() {
   }
 }
 
+// The Knowledge Graph tab frames the server's /browse, which can't send our
+// Authorization header itself; it asks for the passcode by postMessage. Answer
+// only our own frame, and only to the endpoint's origin.
+window.addEventListener('message', e => {
+  if (!e.data || e.data.type !== 'loka-passcode-request') return;
+  const frame = view.querySelector('iframe');
+  if (!frame || e.source !== frame.contentWindow) return;
+  let origin;
+  try { origin = new URL(client.endpoint).origin; } catch { return; }
+  if (e.origin !== origin) return;
+  e.source.postMessage({ type: 'loka-passcode', passcode: client.passcode }, origin);
+});
+
 window.addEventListener('hashchange', render);
 if (!location.hash) location.hash = TABS[0].id;
 render();

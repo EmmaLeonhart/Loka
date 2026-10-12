@@ -112,7 +112,10 @@ async fn activity_middleware(
 }
 
 /// Simple passcode authentication middleware.
-/// Skips auth for /health endpoint. When passcode is not configured, all requests pass.
+/// Skips auth for `/health` and for `GET /browse`, the compiled-in graph
+/// browser page: it holds no data, and Studio frames it, so it can't carry
+/// a header. Its data requests carry the passcode and are checked as usual.
+/// When passcode is not configured, all requests pass.
 async fn auth_middleware(
     State(state): State<Arc<AppState>>,
     req: axum::extract::Request,
@@ -124,8 +127,10 @@ async fn auth_middleware(
         None => return next.run(req).await,
     };
 
-    // Health endpoint is always accessible
-    if req.uri().path() == "/health" {
+    // Health endpoint and the static graph browser page are always accessible
+    if req.uri().path() == "/health"
+        || (req.uri().path() == "/browse" && req.method() == axum::http::Method::GET)
+    {
         return next.run(req).await;
     }
 
@@ -3303,6 +3308,45 @@ mod tests {
             let resolved = ps.resolve(ps_id).unwrap().unwrap();
             assert_eq!(resolved, term, "ps.resolve must round-trip");
         }
+    }
+
+    #[tokio::test]
+    async fn passcode_guards_data_but_not_the_browse_page() {
+        // Studio's Knowledge Graph tab frames /browse, and an iframe can't send
+        // `Authorization`, so against a passcode-protected server the tab never
+        // loaded. The page itself is static and holds no data; it's exempt.
+        // Everything it fetches is still checked.
+        let mut state = Arc::try_unwrap(test_state()).ok().unwrap();
+        state.passcode = Some("s3cret".into());
+        let app = router(Arc::new(state));
+        let status = |method: &str, uri: &str, auth: Option<&str>| {
+            let mut b = Request::builder().method(method).uri(uri.to_string());
+            if let Some(a) = auth {
+                b = b.header("authorization", a);
+            }
+            let req = b.body(Body::empty()).unwrap();
+            let app = app.clone();
+            async move { app.oneshot(req).await.unwrap().status() }
+        };
+        let q = "/sparql?query=SELECT%20%2A%20WHERE%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D";
+
+        assert_eq!(status("GET", "/browse", None).await, StatusCode::OK);
+        assert_eq!(status("GET", "/health", None).await, StatusCode::OK);
+        assert_eq!(status("GET", q, None).await, StatusCode::UNAUTHORIZED);
+        assert_eq!(
+            status("GET", q, Some("Bearer wrong")).await,
+            StatusCode::UNAUTHORIZED
+        );
+        assert_eq!(
+            status("GET", q, Some("Bearer s3cret")).await,
+            StatusCode::OK
+        );
+        assert_eq!(
+            status("GET", "/graph", None).await,
+            StatusCode::UNAUTHORIZED
+        );
+        // Only GET /browse is exempt, not other methods on the path.
+        assert_ne!(status("POST", "/browse", None).await, StatusCode::OK);
     }
 
     #[tokio::test]

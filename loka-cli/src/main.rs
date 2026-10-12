@@ -59,8 +59,9 @@ enum Commands {
         #[arg(long)]
         memory_only: bool,
 
-        /// Simple passcode authentication. When set, all requests
-        /// (except /health) require `Authorization: Bearer <passcode>`.
+        /// Simple passcode authentication. When set, all requests (except
+        /// /health and the static GET /browse page) require
+        /// `Authorization: Bearer <passcode>`.
         #[arg(long)]
         passcode: Option<String>,
 

@@ -281,8 +281,10 @@ publish is the irreversible step and needs Emma's explicit go + these setups:
 Re-checked 2026-10-08 against today's Studio (web-studio + Electron; Flutter deleted 2026-05-30):
 - [x] Remote Studio access: `loka serve --host <addr>` (default 127.0.0.1) plus a passcode field in
       Studio that sends `Authorization: Bearer`. Verified in Chrome against a passcode-protected
-      server. Known limit: the Knowledge Graph tab iframes `/browse`, which can't send the header,
-      so that one tab doesn't load against a passcode-protected server.
+      server. The Knowledge Graph tab works against one too (2026-10-12): `GET /browse` is exempt
+      from the passcode, and the framed page gets the passcode from Studio by `postMessage`.
+      Remaining limit: the world-model double-click goes through the Python sidecar, which
+      queries the data endpoint without the passcode.
 - [x] ~~Dart FFI bindings~~: obsolete, there's no Dart left. Studio talks HTTP.
 - [x] ~~Studio-embedded MCP server~~: covered by `loka mcp --studio` (MCP + Studio together).
 - [x] ~~Flutter graph view parity with browse.html~~: obsolete; the Knowledge Graph tab *is* `browse.html`.

@@ -140,6 +140,18 @@
 
 <script>
 const EP = () => document.getElementById('endpoint').value.replace(/\/$/,'');
+// A `loka serve --passcode` server needs `Authorization: Bearer` on every data
+// request. When Studio frames this page it holds the passcode, and an iframe
+// can't send headers on its own, so we ask the parent for it by postMessage
+// (never in a URL). Only data-endpoint requests carry it, not the sidecar's.
+let _passcode = '';
+const AUTH = () => _passcode ? { Authorization: 'Bearer ' + _passcode } : {};
+window.addEventListener('message', e => {
+    if (e.source !== window.parent || !e.data || e.data.type !== 'loka-passcode') return;
+    _passcode = e.data.passcode || '';
+    checkHealth();
+});
+if (window.parent !== window) window.parent.postMessage({ type: 'loka-passcode-request' }, '*');
 const COLORS = { iri: '#3498db', literal: '#3fb950', vector: '#d29922', selected: '#e74c3c' };
 
 // ── Shorten IRIs ──
@@ -248,7 +260,7 @@ function updateGStatus() {
 
 // ── SPARQL ──
 async function sparql(q) {
-    const r = await fetch(EP()+'/sparql?query='+encodeURIComponent(q));
+    const r = await fetch(EP()+'/sparql?query='+encodeURIComponent(q), { headers: AUTH() });
     if (!r.ok) throw new Error(await r.text());
     return r.json();
 }
@@ -402,7 +414,7 @@ async function retractPreview(iri) {
     try {
         const r = await fetch(EP() + '/retract/preview', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...AUTH() },
             body: JSON.stringify({ iri })
         });
         if (!r.ok) throw new Error(await r.text());
@@ -432,7 +444,7 @@ async function retractCommit(iri) {
     try {
         const r = await fetch(EP() + '/retract', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...AUTH() },
             body: JSON.stringify({ iri, commit: true })
         });
         if (!r.ok) throw new Error(await r.text());

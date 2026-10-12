@@ -7,6 +7,40 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-12 — Studio's Knowledge Graph tab works against a passcode-protected server
+
+With nothing in the queue and every checkbox in TODO.md either done or waiting on Emma, the work
+loop took a limit that TODO.md recorded under "Remote Studio access" without a checkbox. Studio's
+Knowledge Graph tab frames the server's `/browse`. An iframe can't send `Authorization: Bearer`.
+So against `loka serve --passcode`, the page itself got a 401 and the tab never loaded.
+
+The fix has three parts:
+- **Server** (`loka-proto/src/server.rs`): `GET /browse` skips the passcode check, as `/health`
+  already did. The page is `tools/browse.html` compiled into the binary and holds no data. Only
+  GET is exempt. Every data route is still checked, including the ones the page calls.
+- **`browse.html`**: when it is framed, it asks its parent for the passcode with `postMessage`.
+  It accepts the reply only from `window.parent`. It sends the passcode on its `/sparql`,
+  `/retract/preview` and `/retract` requests. The passcode never goes into a URL or query
+  string, and it is never sent to the inference sidecar.
+- **Studio** (`web-studio/app.js`): it answers the request only when the request comes from its
+  own iframe and from the endpoint's origin, and it posts the reply to that origin only. A
+  passcode change already re-renders the tab, which re-asks.
+
+Verification: the new test `passcode_guards_data_but_not_the_browse_page` checks five things:
+`/browse` and `/health` return 200 without the passcode; `/sparql` returns 401 with no passcode
+or a wrong one, and 200 with the right one; `/graph` returns 401 without it; and `POST /browse`
+is not let through. I also checked it in Chrome against a release build with
+`loka serve --memory-only --passcode` and the demo data loaded. With the passcode set in
+Studio, the graph tab returned 30 rows and drew the graph. With the passcode cleared, the same
+query showed the server's 401 message. The screenshot is in
+`Documents/claude-screenshots/Loka_2026-10-12/`. `cargo test --workspace` and clippy
+(`loka-cli`, `loka-proto`) are clean.
+
+Still not covered: double-clicking a node to have the world model generate triples goes through
+the Python sidecar (`tools/infer_server.py`), and it queries the data endpoint without the
+passcode. The sidecar is a dev tool, so this is noted in TODO.md and not fixed here.
+
+---
 ## 2026-10-11 — Installer model choice: the fetch isn't the missing piece
 
 The work loop looked at the last TODO item it could build without Emma: "`loka.exe` has no
