@@ -13,8 +13,13 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ## ACTIVE
 
-Empty, and the crons are stopped at Emma's request (DEVLOG, 2026-10-11). The remaining TODO
-items are blocked on Emma, a tag, or a decision.
+1. **Executor: zero-length step for `*` / `?` with an unbound subject** (promoted from TODO.md
+   "Query Language Wrappers"). Decision (made without Emma, per her 2026-10-11 instruction):
+   follow SPARQL 1.1 §18.5 `ZeroLengthPath` — with both ends free, every node of the graph (every
+   subject and object of a stored, temporally valid triple) pairs with itself; with a bound
+   object and a free subject, the subject binds to the object. `*` also gets the one-or-more
+   walk `+` already has for a free subject. Update the `?` test that pinned the old behaviour,
+   add `*` tests, run the workspace tests.
 
 ---
 
