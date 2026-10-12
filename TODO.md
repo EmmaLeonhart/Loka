@@ -1,6 +1,6 @@
 # Loka — TODO
 
-**Status: 229 of 249 items complete (92%)**
+**Status: 230 of 249 items complete (92%)**
 
 ## 🔒 FIX (2026-07-20): `loka serve` now binds 127.0.0.1 (was 0.0.0.0)
 
@@ -241,8 +241,8 @@ sustained GPU run or a large risky ingest; they wait for cloud GPU or a donor.
 - [x] Iterate CLI health output format based on real agent usage: one pass from an agent run (2026-10-08). Text and JSON agree on undiscovered pseudo-tables, JSON carries `recommended_actions`, and there's a pointer to `/health/queries`
 - [x] Studio health dashboard (2026-10-11, web-studio; Flutter is gone): overall status cards,
       one card per HNSW index, and a "Rebuild HNSW indexes" action (`POST /vectors/rebuild`)
-- [ ] Make Health the Studio landing tab instead of the Knowledge Graph? Emma's call: "Load
-      test data" is built around landing on the graph.
+- [x] Make Health the Studio landing tab instead of the Knowledge Graph? Decided 2026-10-11:
+      no, the graph stays the landing tab (DEVLOG). `#health` opens Health directly.
 
 ### SDK Publishing — EMMA-GATED (audit complete 2026-05-31, verdict in `planning/sdk-publish-readiness.md`)
 

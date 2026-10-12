@@ -7,6 +7,27 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-11 — Studio keeps the Knowledge Graph as its landing tab
+
+The work loop promoted the last TODO item that needed only a decision: should the web-studio
+open on Health instead of the Knowledge Graph? It had been left as Emma's call. Under her
+instruction to make the call rather than wait, I decided: **no change, the graph stays first.**
+
+Why:
+- The TODO note said "Load test data" depends on landing on the graph. It doesn't. The button
+  sets `location.hash = 'graph'` itself (`web-studio/app.js`), so it works from any tab. That
+  argument doesn't settle it either way.
+- What settles it is who opens Studio. `launch_studio` opens it for a person, at an agent's
+  request, to see the data. CLAUDE.md (principle 6) lists graph visualization and HNSW health as
+  the two things Studio is for. Of the two, the graph is what someone wants first. On a new,
+  empty store, Health is a page of zeros, while the graph tab has "Load test data" right beside
+  it.
+- Health is one click away, and `#health` is a deep link that opens it directly. Anyone who
+  wants Studio to open on Health can use that link, without changing the default for everyone.
+
+No code changes. The TODO item is ticked as decided.
+
+---
 ## 2026-10-11 — `*` and `?` paths take the zero-length step from an unbound subject
 
 The queue was empty, so the work loop promoted this TODO item. Its only blocker was a question:
