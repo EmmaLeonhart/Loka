@@ -7,6 +7,23 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-11 — Installer model choice: the fetch isn't the missing piece
+
+The work loop looked at the last TODO item it could build without Emma: "`loka.exe` has no
+first-run model fetch. That's the step that makes the model choice do anything." That second
+sentence is wrong. The only code that loads Qwen is `tools/infer_server.py`, a Python sidecar
+that needs torch and transformers. The installer ships `loka.exe` and Studio, and no Python. The
+sidecar also never reads `install-selection.toml`. A downloader in `loka.exe` would put 1–3 GB
+of weights on disk that nothing in an installed Loka can run.
+
+So the missing piece is an inference runtime for the installed product, not a fetch. The options
+are: bundle Python and torch; build a native Rust runtime (llama.cpp bindings or candle) with GGUF
+weights; or take the model option out of the installer until one exists. Each one changes what
+the installer is. That is a product decision with a large build behind it, so I didn't make the
+call this time, even under the "decide rather than wait" instruction. The TODO line now gives
+the real blocker and the three options. No code changes.
+
+---
 ## 2026-10-11 — Studio keeps the Knowledge Graph as its landing tab
 
 The work loop promoted the last TODO item that needed only a decision: should the web-studio

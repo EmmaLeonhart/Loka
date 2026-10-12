@@ -149,8 +149,14 @@ models at install time. Loose plan:
 - [x] `install-selection.toml` records the chosen model's id and repo
 - [ ] **Unverified until a release build:** `loka.iss` itself only compiles under ISCC on a
       `v*` tag (no Inno Setup here). Check the first rc/tag build.
-- [ ] Nothing reads `install-selection.toml` yet: `loka.exe` has no first-run model fetch.
-      That's the step that makes the model choice do anything.
+- [ ] Nothing reads `install-selection.toml` yet. A first-run fetch alone would **not** make the
+      choice do anything (checked 2026-10-11): the only consumer of the model is
+      `tools/infer_server.py`, a Python + torch + transformers sidecar the installer doesn't ship,
+      and it ignores `install-selection.toml`. The real step is choosing an inference runtime for
+      an installed Loka: (a) bundle a Python runtime with torch (~2 GB+), (b) a native runtime
+      in Rust (llama.cpp bindings or candle) with GGUF weights, which changes the `hf_repo`
+      entries in `models.toml`, or (c) drop the model option from the installer until one
+      exists. Needs Emma's decision. Building a downloader for files nothing runs is busywork.
 
 Future candidates: a smaller-footprint Qwen / Phi / Llama option for users
 without 3 GB to spare, and a "bring your own GGUF" file picker.
