@@ -7,6 +7,37 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-11 — `*` and `?` paths take the zero-length step from an unbound subject
+
+The queue was empty, so the work loop promoted this TODO item. Its only blocker was a question:
+what should the zero-length step mean when the subject is unbound? Emma asked that blocked items
+get a decision instead of waiting, so I made one.
+
+**Decision: follow SPARQL 1.1 §18.5 (`ZeroLengthPath`) as written.** With both ends free, every
+node of the graph pairs with itself. A node is any subject or object of a stored triple (a
+temporally valid one when a temporal filter is active). With the object bound, the subject binds
+to the object, even if the object has no edges on that predicate. The alternative was to limit the
+zero step to nodes that touch the path predicate. I rejected it because that isn't SPARQL, and a
+query that ran on Jena or Oxigraph would quietly return different rows here. The cost is real:
+`?x p* ?y` scans the whole store once per query, though the scan is cached across rows. The query
+deadline still bounds it.
+
+Before this change, `?x p* ?y` returned nothing. `?x p? ?y` returned only the one-step pairs. Now:
+
+- `*` with a free subject also runs the one-or-more walk that `+` already had: backwards from a
+  bound object, or from every subject of the predicate when both ends are free. A pair that a
+  cycle reaches and the zero step also gives (`b p b`) comes out once.
+- `?x p* ?x` gives one row per node.
+- The virtual HNSW edge predicates get the zero step, but their walk still needs a bound subject.
+
+The `?` test that pinned the old behaviour (`an_unbound_subject_gets_the_one_step_pairs`, 2 rows)
+now expects 5 rows: four nodes and the a→b step. It is renamed to match. Seven new tests are in
+`loka-sparql/tests/zero_length_free_subject.rs`. `cargo test --workspace` passes, and
+`cargo clippy -p loka-sparql --all-targets -D warnings` is clean. The Cypher/GQL rejection of
+zero-length relationships stands. Its reason (SPARQL's `*` pairs every term in the store) now
+describes what the engine actually does.
+
+---
 ## 2026-10-11 — Crons stopped at Emma's request
 
 Emma: "Stop all crons." All three are cancelled: the work loop (:03), auto-flush (:15) and status

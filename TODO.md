@@ -1,6 +1,6 @@
 # Loka — TODO
 
-**Status: 228 of 249 items complete (92%)**
+**Status: 229 of 249 items complete (92%)**
 
 ## 🔒 FIX (2026-07-20): `loka serve` now binds 127.0.0.1 (was 0.0.0.0)
 
@@ -296,9 +296,10 @@ Re-checked 2026-10-08 against today's Studio (web-studio + Electron; Flutter del
 - [x] `IS NULL` / `IS NOT NULL` in Cypher and GQL (2026-10-11): a BOUND-guarded `NOT EXISTS` /
       `EXISTS` for a property, `[!]BOUND` for a bare variable
 - [x] SPARQL `?` paths parse and evaluate (2026-10-11, `loka-sparql/tests/zero_or_one_path.rs`)
-- [ ] Executor: `*` and `?` paths with an unbound subject skip the zero-length step (`*` returns
-      nothing, `?` only the one-step pairs). SPARQL's zero-length step over a free subject pairs
-      every term in the store with itself; decide that semantics before building it.
+- [x] Executor: `*` and `?` paths with an unbound subject now take the zero-length step
+      (2026-10-11, `loka-sparql/tests/zero_length_free_subject.rs`). Semantics per SPARQL 1.1
+      §18.5: both ends free → every subject and object in the store pairs with itself; a bound
+      object → the subject binds to it. `*` also walks from a free subject, as `+` already did.
 
 ### ✅ FIXED 2026-07-29: string / IRI equality in FILTER now matches
 

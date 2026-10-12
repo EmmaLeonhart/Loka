@@ -3838,6 +3838,9 @@ fn evaluate_property_path(
             // below only walked stored triples, so `loka:hnswNeighbor+` reached
             // nothing.
             let hnsw_path = is_hnsw_edge_predicate(base_pred, current, ctx);
+            // Every node of the graph, gathered once on first need: the
+            // zero-length step for a free subject and object.
+            let mut nodes: Option<Vec<TermId>> = None;
 
             for (row_idx, row) in current.iter().enumerate() {
                 let s_id = resolve_term(subject, row, ctx.dict, ctx.prefixes)?;
@@ -3862,26 +3865,37 @@ fn evaluate_property_path(
                             all_results.push(row.clone());
                             all_scores.push(current_scores[row_idx].clone());
                         }
+                    } else {
+                        for new_row in
+                            zero_length_free_subject(subject, object, o_id, row, &mut nodes, ctx)?
+                        {
+                            all_results.push(new_row);
+                            all_scores.push(current_scores[row_idx].clone());
+                        }
                     }
                 }
 
                 // Where the walk starts, and the row it extends. A bound
-                // subject is the only start. An unbound `+` subject over
-                // stored edges (until 2026-10-11 this returned nothing):
-                // with a bound object, walk backwards from it; with both ends
-                // free, start from every subject of the predicate. `*` and
-                // the virtual HNSW edges still need a bound subject.
+                // subject is the only start. An unbound subject over stored
+                // edges (until 2026-10-11 this returned nothing): with a
+                // bound object, walk backwards from it; with both ends free,
+                // start from every subject of the predicate. The virtual HNSW
+                // edges still need a bound subject.
                 let starts: Vec<(TermId, Bindings)> = match s_id {
                     Some(s) => vec![(s, row.clone())],
                     None => {
                         let Term::Variable(s_var) = subject else {
                             continue;
                         };
-                        if include_zero || hnsw_path {
+                        if hnsw_path {
                             continue;
                         }
                         if let Some(o) = o_id {
                             for src in reverse_reach(o, pred_id, max_depth, ctx)? {
+                                // `*`: the zero step above already gave `o` itself.
+                                if include_zero && src == o {
+                                    continue;
+                                }
                                 let mut new_row = row.clone();
                                 new_row.insert(s_var.clone(), src);
                                 all_results.push(new_row);
@@ -3973,21 +3987,30 @@ fn evaluate_property_path(
 
             // Zero step: subject = object. A bound or constant object is
             // checked, not overwritten.
+            let mut nodes: Option<Vec<TermId>> = None;
             for (i, row) in current.iter().enumerate() {
-                if let Some(sid) = resolve_term(subject, row, ctx.dict, ctx.prefixes)? {
-                    match (object, resolve_term(object, row, ctx.dict, ctx.prefixes)?) {
-                        (Term::Variable(o_var), None) => {
-                            let mut new_row = row.clone();
-                            new_row.insert(o_var.clone(), sid);
-                            results.push(new_row);
-                            scores.push(current_scores[i].clone());
-                        }
-                        (_, Some(oid)) if oid == sid => {
-                            results.push(row.clone());
-                            scores.push(current_scores[i].clone());
-                        }
-                        _ => {}
+                let Some(sid) = resolve_term(subject, row, ctx.dict, ctx.prefixes)? else {
+                    let o_id = resolve_term(object, row, ctx.dict, ctx.prefixes)?;
+                    for new_row in
+                        zero_length_free_subject(subject, object, o_id, row, &mut nodes, ctx)?
+                    {
+                        results.push(new_row);
+                        scores.push(current_scores[i].clone());
                     }
+                    continue;
+                };
+                match (object, resolve_term(object, row, ctx.dict, ctx.prefixes)?) {
+                    (Term::Variable(o_var), None) => {
+                        let mut new_row = row.clone();
+                        new_row.insert(o_var.clone(), sid);
+                        results.push(new_row);
+                        scores.push(current_scores[i].clone());
+                    }
+                    (_, Some(oid)) if oid == sid => {
+                        results.push(row.clone());
+                        scores.push(current_scores[i].clone());
+                    }
+                    _ => {}
                 }
             }
 
@@ -4017,6 +4040,61 @@ fn evaluate_property_path(
             Ok((results, scores))
         }
     }
+}
+
+/// The zero-length step of a `*` or `?` path whose subject is a free
+/// variable (SPARQL 1.1 §18.5, `ZeroLengthPath`): with a bound object the
+/// subject binds to it; with the object free too, every node of the graph
+/// pairs with itself. `?x p* ?x` binds `?x` once per node. A node is any
+/// subject or object of a stored triple (a temporally valid one, with a
+/// temporal filter active); `nodes` caches that scan across rows.
+fn zero_length_free_subject(
+    subject: &Term,
+    object: &Term,
+    o_id: Option<TermId>,
+    row: &Bindings,
+    nodes: &mut Option<Vec<TermId>>,
+    ctx: &ExecutionContext<'_>,
+) -> Result<Vec<Bindings>> {
+    let Term::Variable(s_var) = subject else {
+        return Ok(Vec::new());
+    };
+    if let Some(o) = o_id {
+        let mut new_row = row.clone();
+        new_row.insert(s_var.clone(), o);
+        return Ok(vec![new_row]);
+    }
+    // A constant object the dictionary has never seen names no node.
+    let Term::Variable(o_var) = object else {
+        return Ok(Vec::new());
+    };
+    if nodes.is_none() {
+        check_deadline(ctx)?;
+        let mut all: Vec<TermId> = Vec::new();
+        for t in ctx.store.iter() {
+            if is_edge_temporally_valid(
+                t.subject,
+                t.predicate,
+                t.object,
+                &ctx.temporal_filter,
+                ctx.store,
+            ) {
+                all.push(t.subject);
+                all.push(t.object);
+            }
+        }
+        all.sort_unstable();
+        all.dedup();
+        *nodes = Some(all);
+    }
+    let mut out = Vec::new();
+    for &n in nodes.as_deref().unwrap_or(&[]) {
+        let mut new_row = row.clone();
+        new_row.insert(s_var.clone(), n);
+        new_row.insert(o_var.clone(), n);
+        out.push(new_row);
+    }
+    Ok(out)
 }
 
 /// Every node with a `pred+` path to `target` over stored edges (temporally

@@ -92,9 +92,10 @@ fn a_question_mark_starting_a_variable_is_the_object() {
 }
 
 #[test]
-fn an_unbound_subject_gets_the_one_step_pairs() {
-    // The zero step needs a bound subject (as `*` does); the one-step pairs
-    // come through, the self-loop once.
+fn an_unbound_subject_gets_every_node_and_the_one_step_pairs() {
+    // Zero step (SPARQL 1.1 §18.5): every node pairs with itself, so a, b,
+    // "A", "B". One step adds a→b; b's self-loop is already the zero row.
+    // Until 2026-10-11 the zero step needed a bound subject and this gave 2.
     let (rows, _) = run("SELECT ?x ?y WHERE { ?x loka:p? ?y }");
-    assert_eq!(rows.len(), 2, "{rows:?}");
+    assert_eq!(rows.len(), 5, "{rows:?}");
 }
