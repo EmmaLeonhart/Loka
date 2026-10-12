@@ -13,8 +13,13 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ## ACTIVE
 
-Empty. The zero-length path step is done (DEVLOG, 2026-10-11). The remaining TODO items are
-blocked on Emma, a tag, or a decision.
+1. **Studio Knowledge Graph tab against a passcode-protected server** (the "known limit" under
+   TODO.md › Loka Studio › Remote Studio access). `/browse` is iframed and can't send
+   `Authorization: Bearer`. Fix: exempt `GET /browse` (a compiled-in static page, no data) from
+   the passcode check; have `browse.html`, when framed, ask its parent for the passcode by
+   `postMessage` (source-checked, never in a URL) and send it on every data fetch; Studio
+   answers the request. Server test for the exemption + that data routes still 401; verify in
+   Chrome against `loka serve --passcode`.
 
 ---
 
