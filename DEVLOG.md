@@ -7,6 +7,19 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-16 — CLAUDE.md: the arXiv submission is the repo's current focus
+
+Emma asked that the arXiv work be written down as the purpose, so that every session starts
+from it. There is no `intent.md`, so it went in a new section at the top of CLAUDE.md. That
+section says:
+- `queue.md` holds only arXiv items.
+- On an empty queue the work loop promotes only arXiv-related work (new review points, claim
+  drift, a broken package or `/arxiv/` page), never unrelated TODO.md items. When none is
+  actionable, it reports "arXiv waiting on Emma".
+- It gives pointers to the hand-off, the metadata and the package.
+- The focus holds until Emma changes it.
+
+---
 ## 2026-10-16 — arXiv hold lifted; hand-off written for Emma
 
 TODO.md's "Paper / arXiv — ON HOLD" block is now "ready for Emma to submit". It lists the steps

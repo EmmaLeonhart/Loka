@@ -1,5 +1,25 @@
 # Loka — Claude Code Context
 
+## Current focus: the arXiv submission (Emma, 2026-10-16)
+
+**The purpose of work in this repo right now is the arXiv submission of `paper/paper.md`
+(*Loka: Retractable Provenance for Model-Generated Triples in an RDF-star Store*) and nothing
+else.** Every session, and every work-loop cron tick, starts from that:
+
+- `queue.md` holds only arXiv items. When it is empty, the work loop promotes only arXiv-related
+  work (for example, a new clawRxiv review in `paper/reviews/` that raises a fixable point, a
+  claim in the paper that no longer matches the code, or a broken `/arxiv/` page or package
+  build). It does **not** promote unrelated TODO.md items. If nothing arXiv-related is
+  actionable, it reports `nothing actionable; arXiv waiting on Emma` and stops.
+- Where things are: submission steps and status in TODO.md, "Paper / arXiv — ready for Emma to
+  submit"; fields and abstract in `paper/arxiv/METADATA.md`; the package from
+  `.github/workflows/paper-pdf.yml`; the public copy at `pages/arxiv/`
+  (<https://loka.emmaleonhart.com/arxiv/>), refreshed by hand after any paper change;
+  history in DEVLOG.md.
+- Only Emma can do the arxiv.org steps (account, endorsement, upload, licence click). Once she
+  pastes the arXiv ID, put it on the `/arxiv/` page and in README.md.
+- This focus holds until Emma changes it here.
+
 ## What This Is
 
 Loka is a lean, high-performance RDF-star triplestore written in Rust with native HNSW vector indexing and a hybrid SPARQL extension. It is a single-purpose database: store triples, answer queries, at any scale.
