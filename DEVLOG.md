@@ -7,6 +7,40 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-16 — World-model double-click works against a passcode-protected server
+
+This closes the last limit in TODO.md's "Remote Studio access" entry. Double-clicking a node
+in the graph tab asks the Python inference sidecar (`tools/infer_server.py`) to generate
+triples. The sidecar reads the node's neighbourhood from Loka by SPARQL and writes the result
+with `POST /triples`. Neither request carried the passcode, so against `loka serve --passcode`
+the double-click always failed.
+
+The changes:
+- **`browse.html`** sends `Authorization: Bearer` on its `/generate` call, but only when the
+  sidecar URL's host is `localhost`, `127.0.0.1` or `[::1]`. A `?infer=` link can point the
+  sidecar at any host, and the passcode must not go to a host the user didn't choose.
+- **`infer_server.py`** passes that header unchanged to every Loka request it makes for the
+  call. It keeps no passcode of its own, so another page can't use it as a proxy into a
+  protected server. CORS now allows the `Authorization` header.
+- **`graph_retrieval.retrieve`** and **`retrieval_generate.generate`** take an `auth=` header
+  dict and add it to every SPARQL request. `_label` uses the local label map and makes no
+  request.
+
+Verification: a scratch script ran a real `loka serve --memory-only --passcode` and the real
+sidecar handler. Only the Qwen generation and the MiniLM encoder were stubbed. The fixture
+declares the `nodeEmb`/`tripleEmb` vector predicates, as `load_retrieval_loka.py` does, so
+the `VECTOR_SIMILAR` reads run too. With the header, all 7 of the sidecar's SPARQL reads and
+its `POST /triples` returned 200, and the generated triple could be queried from the server
+afterwards. With no header, or a wrong passcode, the sidecar's first read got 401. The
+loopback check in the page was run in Node: it accepts the three loopback forms and rejects
+`evil.example`, `127.0.0.1.evil.example`, `localhost@evil.example` and a malformed URL.
+
+A rough edge I left alone: when Loka refuses the sidecar with 401, the sidecar reports 502
+"could not reach Loka … 401 Unauthorized". The status code is in the message, but the
+wording is wrong. A sidecar on another machine also still can't get the passcode. That is
+deliberate.
+
+---
 ## 2026-10-12 — Studio's Knowledge Graph tab works against a passcode-protected server
 
 With nothing in the queue and every checkbox in TODO.md either done or waiting on Emma, the work

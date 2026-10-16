@@ -13,8 +13,8 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ## ACTIVE
 
-Empty. The Studio graph tab now works against a passcode-protected server (DEVLOG,
-2026-10-12). The remaining TODO items are blocked on Emma, a tag, or a decision.
+Empty. The world-model double-click now works against a passcode-protected server
+(DEVLOG, 2026-10-16).
 
 ---
 

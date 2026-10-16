@@ -143,9 +143,17 @@ const EP = () => document.getElementById('endpoint').value.replace(/\/$/,'');
 // A `loka serve --passcode` server needs `Authorization: Bearer` on every data
 // request. When Studio frames this page it holds the passcode, and an iframe
 // can't send headers on its own, so we ask the parent for it by postMessage
-// (never in a URL). Only data-endpoint requests carry it, not the sidecar's.
+// (never in a URL). Data-endpoint requests carry it. The inference sidecar gets
+// it only when the sidecar is on this machine (loopback). It needs the passcode
+// to read and write the same server. A `?infer=` link can point the sidecar
+// anywhere, and the passcode must not go to a host the user didn't pick.
 let _passcode = '';
 const AUTH = () => _passcode ? { Authorization: 'Bearer ' + _passcode } : {};
+const isLoopback = u => {
+    try { return ['localhost', '127.0.0.1', '[::1]'].includes(new URL(u).hostname); }
+    catch (_) { return false; }
+};
+const INFER_AUTH = () => isLoopback(IEP()) ? AUTH() : {};
 window.addEventListener('message', e => {
     if (e.source !== window.parent || !e.data || e.data.type !== 'loka-passcode') return;
     _passcode = e.data.passcode || '';
@@ -650,7 +658,7 @@ async function generateFromNode(iri){
     setG('✨ asking the world model about '+sh(iri)+' …  (CPU — a few seconds)');
     try {
         const r = await fetch(IEP()+'/generate', {
-            method:'POST', headers:{'Content-Type':'application/json'},
+            method:'POST', headers:{'Content-Type':'application/json', ...INFER_AUTH()},
             // confidence:0 + low token floor → show the model's actual best
             // guess (flagged low-confidence here) rather than discarding it.
             body: JSON.stringify({ subject: iri, endpoint: EP(), confidence: 0, post: true })

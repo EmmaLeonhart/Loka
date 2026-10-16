@@ -45,8 +45,8 @@ def _load():
 
 
 def generate(endpoint, node, hops=2, budget=50, max_new_tokens=180,
-             model_version="qwen2.5-1.5b-base"):
-    ctx = retrieve(endpoint, node, hops=hops, budget=budget)
+             model_version="qwen2.5-1.5b-base", auth=None):
+    ctx = retrieve(endpoint, node, hops=hops, budget=budget, auth=auth)
     if not ctx:
         return [], "no context retrieved for node"
     subj_label = next((s for s, _, _ in reversed(ctx)), None) or node

@@ -47,12 +47,13 @@ import sys as _sys, time as _time  # noqa: E402
 _NQ = [0]
 
 
-def _sparql(ep, q, timeout=20):
+def _sparql(ep, q, timeout=20, auth=None):
     _NQ[0] += 1
     t = _time.time()
     r = requests.post(f"{ep}/sparql", data=q,
                       headers={"Content-Type": "application/sparql-query",
-                               "Accept": "application/sparql-results+json"},
+                               "Accept": "application/sparql-results+json",
+                               **(auth or {})},
                       timeout=timeout)
     dt = _time.time() - t
     if dt > 2.0:
@@ -70,7 +71,9 @@ def _label(ep, iri, cache=None):
     return _LABELS.get(iri) or iri.rsplit("/", 1)[-1].rsplit("#", 1)[-1]
 
 
-def retrieve(endpoint, node, hops=2, vec_k=8, budget=60):
+def retrieve(endpoint, node, hops=2, vec_k=8, budget=60, auth=None):
+    """`auth` is extra request headers for a `loka serve --passcode` server,
+    e.g. {"Authorization": "Bearer <passcode>"}; None for an open one."""
     ep = endpoint.rstrip("/")
     _t0 = _time.time()
 
@@ -98,7 +101,7 @@ def retrieve(endpoint, node, hops=2, vec_k=8, budget=60):
         sc = 0.5 + 0.5 * (1.0 / (1.0 + depth))
         nxt = []
         vv = _vals(frontier)
-        for b in _sparql(ep, f'SELECT ?s ?p ?o WHERE {{ VALUES ?s {{ {vv} }} '
+        for b in _sparql(ep, auth=auth, q=f'SELECT ?s ?p ?o WHERE {{ VALUES ?s {{ {vv} }} '
                               f'?s ?p ?o }} LIMIT 500'):
             s, p, o = b["s"]["value"], b["p"]["value"], b["o"]["value"]
             if p == RDFS_LABEL:
@@ -106,7 +109,7 @@ def retrieve(endpoint, node, hops=2, vec_k=8, budget=60):
             add(s, p, o, sc)
             if b["o"]["type"] == "uri" and o not in seen and depth < hops:
                 seen.add(o); nxt.append(o)
-        for b in _sparql(ep, f'SELECT ?s ?p ?o WHERE {{ VALUES ?o {{ {vv} }} '
+        for b in _sparql(ep, auth=auth, q=f'SELECT ?s ?p ?o WHERE {{ VALUES ?o {{ {vv} }} '
                               f'?s ?p ?o }} LIMIT 400'):
             s, p, o = b["s"]["value"], b["p"]["value"], b["o"]["value"]
             if p == RDFS_LABEL:
@@ -125,19 +128,19 @@ def retrieve(endpoint, node, hops=2, vec_k=8, budget=60):
     # 2a. nodes similar to N -> ONE batched query for all their triples
     #     (VECTOR_SIMILAR rebinds the same ?n; dedupe).
     sim_nodes = []
-    for b in _sparql(ep, f'SELECT ?n WHERE {{ VECTOR_SIMILAR(?n <{NODE_EMB}> '
+    for b in _sparql(ep, auth=auth, q=f'SELECT ?n WHERE {{ VECTOR_SIMILAR(?n <{NODE_EMB}> '
                           f'"{vstr}"^^<http://loka.dev/f32vec>, 0.4, k:={vec_k}) }}'):
         v = b["n"]["value"]
         if v not in sim_nodes:
             sim_nodes.append(v)
     if sim_nodes:
-        for r in _sparql(ep, f'SELECT ?s ?p ?o WHERE {{ VALUES ?s '
+        for r in _sparql(ep, auth=auth, q=f'SELECT ?s ?p ?o WHERE {{ VALUES ?s '
                               f'{{ {_vals(sim_nodes[:10])} }} ?s ?p ?o }} LIMIT 200'):
             if r["p"]["value"] == RDFS_LABEL:
                 continue
             add(r["s"]["value"], r["p"]["value"], r["o"]["value"], 0.6)
     # 2b. triples similar to N's neighbourhood (idx-triple)
-    for b in _sparql(ep, f'SELECT ?t WHERE {{ VECTOR_SIMILAR(?t <{TRIPLE_EMB}> '
+    for b in _sparql(ep, auth=auth, q=f'SELECT ?t WHERE {{ VECTOR_SIMILAR(?t <{TRIPLE_EMB}> '
                           f'"{vstr}"^^<http://loka.dev/f32vec>, 0.4, k:={vec_k}) }}'):
         t = b["t"]["value"]
         if t.startswith("<<") and t.endswith(">>"):

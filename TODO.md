@@ -283,8 +283,8 @@ Re-checked 2026-10-08 against today's Studio (web-studio + Electron; Flutter del
       Studio that sends `Authorization: Bearer`. Verified in Chrome against a passcode-protected
       server. The Knowledge Graph tab works against one too (2026-10-12): `GET /browse` is exempt
       from the passcode, and the framed page gets the passcode from Studio by `postMessage`.
-      Remaining limit: the world-model double-click goes through the Python sidecar, which
-      queries the data endpoint without the passcode.
+      The world-model double-click works against one too (2026-10-16): the page sends the
+      passcode to the sidecar only when the sidecar is on loopback, and the sidecar forwards it.
 - [x] ~~Dart FFI bindings~~: obsolete, there's no Dart left. Studio talks HTTP.
 - [x] ~~Studio-embedded MCP server~~: covered by `loka mcp --studio` (MCP + Studio together).
 - [x] ~~Flutter graph view parity with browse.html~~: obsolete; the Knowledge Graph tab *is* `browse.html`.

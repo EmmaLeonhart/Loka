@@ -165,7 +165,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
         self.end_headers()
         self.wfile.write(body)
 
@@ -173,7 +173,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
         self.send_header("Content-Length", "0")
         self.end_headers()
 
@@ -211,12 +211,17 @@ class Handler(BaseHTTPRequestHandler):
         token_floor = float(req.get("min_token_prob", 0.01))
         max_candidates = int(req.get("max_candidates", 6))
         do_post = bool(req.get("post", True))
+        # A `loka serve --passcode` server: the page sends its Authorization
+        # header here and it is passed on to Loka unchanged. The sidecar holds
+        # no passcode of its own, so another page can't use it as a proxy.
+        authz = self.headers.get("Authorization")
+        auth = {"Authorization": authz} if authz else None
 
         try:
             with _GEN_LOCK:
                 result = self._generate(
                     subject, endpoint, confidence, token_floor,
-                    max_candidates, do_post,
+                    max_candidates, do_post, auth,
                 )
             self._send(200, result)
         except requests.RequestException as e:
@@ -225,13 +230,13 @@ class Handler(BaseHTTPRequestHandler):
             self._send(500, {"error": f"{type(e).__name__}: {e}"})
 
     def _generate(self, subject, endpoint, confidence, token_floor,
-                  max_candidates, do_post):
+                  max_candidates, do_post, auth=None):
         # Pivot path: base Qwen + Emma's BFS+embedding retrieval against
         # the vectorised Loka the double-click points at. No fine-tune.
         # (confidence/token_floor/max_candidates kept for API compat —
         # the base model doesn't use the from-scratch decoder knobs.)
         from retrieval_generate import generate as rg_generate
-        triples, nt = rg_generate(endpoint, subject, hops=1, budget=28)
+        triples, nt = rg_generate(endpoint, subject, hops=1, budget=28, auth=auth)
         generated = [{"s": t["s"], "p": t["p"], "o": t["o"],
                       "confidence": t.get("confidence")} for t in triples]
 
@@ -248,7 +253,8 @@ class Handler(BaseHTTPRequestHandler):
             r = requests.post(
                 f"{endpoint.rstrip('/')}/triples",
                 data=(nt + "\n").encode("utf-8"),
-                headers={"Content-Type": "text/plain; charset=utf-8"},
+                headers={"Content-Type": "text/plain; charset=utf-8",
+                         **(auth or {})},
                 timeout=120,
             )
             if r.status_code == 200:
