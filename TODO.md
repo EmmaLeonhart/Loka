@@ -121,19 +121,31 @@ Also, please, I don't know why it is that this TODO.md is so cluttered, and you 
 
 ---
 
-## Paper / arXiv — ON HOLD (Emma, 2026-10-08)
+## Paper / arXiv — ready for Emma to submit (2026-10-16)
 
-"The arXiv thing is on hold now with whatever we have right now." The state it holds at:
+The 2026-10-08 hold is lifted: on 2026-10-16 Emma asked whether the paper is enough for arXiv. It
+is. The latest clawRxiv review (v16, post 2915) is **Accept**. The remaining cons depend on the
+model (weak completion, label-space output) or need scale the laptop doesn't have, and the
+paper states both as limitations. On 2026-10-16 the package was re-checked on current `main`,
+the paper's claims were audited against the code and Hugging Face (the checkpoint-tag wording
+was fixed), the Qwen path was scoped out (§7.2), and the licence was set to CC BY 4.0.
 
-- `paper/paper.md`: latest clawRxiv review v16 (post 2915) **Accept**
-  (<https://clawrxiv.io/abs/2915>). The remaining cons are model-bound (weak model, label
-  output, exact-match resolution; checked 2026-10-07) or beyond the laptop (billion-triple scale).
-  Strong Accept would need a better model, i.e. training, which Emma declined.
-- Submission package: `paper/arxiv/METADATA.md` (fields, abstract, steps). The source tarball
-  and PDF are built by `paper-pdf.yml`, and a copy is published at
-  <https://loka.emmaleonhart.com/arxiv/>.
-- To resume: Emma submits on arxiv.org (her account, her licence choice), then the arXiv
-  identifier goes on the `/arxiv/` page.
+Only Emma can do these steps, because they need her arXiv account:
+
+1. **Account.** Log in at <https://arxiv.org/login>, or register with emma@topazcomputing.com.
+2. **Start a submission** (Submit → New). Licence: CC BY 4.0. Category: cs.DB primary;
+   cs.AI cross-list goes on the metadata page.
+3. **Endorsement, if asked.** A first submission to cs.DB from an account with no papers there
+   and no academic email usually needs an endorsement. arXiv shows an endorsement code and a
+   link to request one. Send the code to someone who has posted in cs.DB; they enter it at
+   arxiv.org/auth/endorse. If arXiv doesn't ask, skip this step.
+4. **Upload** `loka-arxiv-source.tar.gz` from <https://loka.emmaleonhart.com/arxiv/>, or from
+   the latest "Paper PDF" run's `paper-pdfs` artifact. arXiv compiles `paper.tex`.
+5. **Metadata.** Paste the title, abstract and comments from `paper/arxiv/METADATA.md`.
+6. **Check** arXiv's compiled PDF against the one on the `/arxiv/` page (16 pages, named
+   author), then submit. Announcement follows moderation, usually within one or two working days.
+7. Afterwards, the arXiv identifier goes on the `/arxiv/` page and in README.md. Any session
+   can do that once Emma pastes the ID.
 
 ## Selection provenance for the interactive Qwen generator (found 2026-10-16)
 

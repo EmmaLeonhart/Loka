@@ -7,6 +7,20 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-16 — arXiv hold lifted; hand-off written for Emma
+
+TODO.md's "Paper / arXiv — ON HOLD" block is now "ready for Emma to submit". It lists the steps
+only she can take: the arXiv account, the CC BY 4.0 click, a cs.DB endorsement if arXiv asks for
+one (likely, for a first cs.DB submission from an account with no papers there), the upload,
+pasting the metadata, and checking arXiv's compiled PDF.
+
+Today's paper edits (checkpoint tags, the §7.2 Qwen bullet) changed the PDF, so the
+`/arxiv/` page on the site, which serves hand-copied files, was out of date. The "Paper PDF"
+run for `196d05c` (38946463567) was green. Its arXiv-check PDF is still 16 pages, names the
+author, has no `??`, and contains both edits. I copied it and its source tarball into
+`pages/arxiv/` under the page's existing file names.
+
+---
 ## 2026-10-16 — arXiv licence: CC BY 4.0
 
 `paper/arxiv/METADATA.md` left the licence to Emma. The queue rule is to make the call when an
