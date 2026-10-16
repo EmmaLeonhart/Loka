@@ -7,6 +7,14 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-16 — `/arxiv/` copy refreshed with the v17 limitation
+
+The "Paper PDF" run for `9fcf6ac` (38974333695) passed. The latest paper change is in it. Its
+arXiv-check PDF is still 16 pages, names the author, has no `??`, and contains the new "One
+justification per triple" bullet. I copied it and its source tarball into `pages/arxiv/`
+under the existing names, so the public page matches `main` again.
+
+---
 ## 2026-10-16 — v17 review (Accept): alternative derivations stated as a limitation
 
 clawRxiv review v17 (post 2919, the paper with today's edits) is an Accept again. One con was

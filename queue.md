@@ -17,9 +17,6 @@ arXiv submission of `paper/paper.md` (Emma, 2026-10-16: this is the whole queue)
 already has an Accept (clawRxiv v16) and a CI-built source package; these items check it is
 still sound on today's `main` and get it ready for Emma to submit.
 
-- **Refresh `pages/arxiv/` after `9fcf6ac`.** When the "Paper PDF" run for `9fcf6ac` (or later)
-  is green, check its page count still matches METADATA ("16 pages") and copy the arXiv-check
-  PDF and source tarball into `pages/arxiv/` under the existing names.
 - **Ensure the three crons are running** (work loop :03, flush :15, status :42).
 - **End-of-burst status report**: everything this queue did, what is left for Emma.
 
