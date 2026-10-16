@@ -17,11 +17,6 @@ arXiv submission of `paper/paper.md` (Emma, 2026-10-16: this is the whole queue)
 already has an Accept (clawRxiv v16) and a CI-built source package; these items check it is
 still sound on today's `main` and get it ready for Emma to submit.
 
-- **v17 review: alternative derivations.** clawRxiv v17 (Accept) says retraction assumes one
-  justification set per triple and may over-delete when a triple has alternative derivations.
-  Check whether the pipeline can write the same generated triple twice (dedup in
-  `infer_with_citations.py`) and what the store does with a second annotation block; state the
-  answer in the paper (§2.5 / §7.2) in one or two sentences.
 - **Ensure the three crons are running** (work loop :03, flush :15, status :42).
 - **End-of-burst status report**: everything this queue did, what is left for Emma.
 

@@ -7,6 +7,24 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-16 — v17 review (Accept): alternative derivations stated as a limitation
+
+clawRxiv review v17 (post 2919, the paper with today's edits) is an Accept again. One con was
+new: retraction "assumes a single justification set per triple" and may over-delete when a
+triple has alternative derivations.
+
+`training/infer_with_citations.py` answers it for the pipeline the paper evaluates. A candidate
+predicate is skipped if the subject already has it (`have = set(cand) | s_existing_preds`). A
+second pass reads the store with the first pass's predictions in it. So an (S, P) that already
+has a generated object is not proposed again, and no generated triple is written twice. At the
+store level the point stands. If another writer posts the same triple with its own annotation
+block, the citation rows merge, and retracting a source of either one removes the triple. That
+is over-deletion compared with derivation counting (Gupta et al., 1993), which Loka doesn't do.
+I added it as a §7.2 limitation bullet that cites §2.5. The other v17 cons were already stated
+limitations. I didn't write a test for the duplicate-writer case. The bullet states what the
+code does by construction and makes no measured claim.
+
+---
 ## 2026-10-16 — CLAUDE.md: the arXiv submission is the repo's current focus
 
 Emma asked that the arXiv work be written down as the purpose, so that every session starts
