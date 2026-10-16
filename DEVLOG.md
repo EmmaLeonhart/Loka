@@ -7,6 +7,23 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-16 — Paper scopes out the interactive Qwen generator
+
+§2.6 of the paper argues for from-scratch models: a pretrained model's provenance is incomplete
+by construction. But the Studio double-click goes through `tools/retrieval_generate.py`, where
+base Qwen continues a list of retrieved triples, and release `v0.4.6`, which the paper cites,
+already shipped that path. What it writes: the generated flag, the model, the base model and a
+confidence. It writes no `propositionInferredFrom` edges, and its subjects are label literals.
+So its output stays out of training corpora, but cascade retraction can't reach it.
+
+The decision was mine to make: add a §7.2 limitation saying this path is outside the provenance
+record and outside the evaluation, rather than change the code before submission. Why: the
+paper's claims are all measured on the §4.4 procedure, and the sentence makes them exact for
+the cited release. Giving the Qwen path real selection provenance is feature work: retrieval
+would have to keep IRIs, cite quoted triples and write IRI subjects. I added it to TODO.md as
+its own section, not to this queue.
+
+---
 ## 2026-10-16 — Paper claims audit: checkpoint tags corrected
 
 The second arXiv item checked the paper's concrete claims against today's code and the published

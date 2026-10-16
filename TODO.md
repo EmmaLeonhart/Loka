@@ -135,6 +135,15 @@ Also, please, I don't know why it is that this TODO.md is so cluttered, and you 
 - To resume: Emma submits on arxiv.org (her account, her licence choice), then the arXiv
   identifier goes on the `/arxiv/` page.
 
+## Selection provenance for the interactive Qwen generator (found 2026-10-16)
+
+`tools/retrieval_generate.py` (the Studio double-click) writes `propositionGenerated`,
+`propositionGeneratedBy`, the base model and a confidence, but no `propositionInferredFrom`
+edges, and its subjects are label literals, not IRIs. Cascade retraction therefore can't reach
+its output. To fix it, `graph_retrieval.retrieve` would have to keep the IRIs of the triples
+it retrieves (it currently returns only labels), cite those as quoted triples, and write the
+subject as the node's IRI. The paper (§7.2) states this as a limitation.
+
 ## Windows installer — multi-model support
 
 The Inno Setup installer (`installer/loka.iss`) currently offers a single
