@@ -7,6 +7,17 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-16 — arXiv licence: CC BY 4.0
+
+`paper/arxiv/METADATA.md` left the licence to Emma. The queue rule is to make the call when an
+item is stuck on a question, so I did: **CC BY 4.0**. Everything else in the release is already
+open for reuse: the code is AGPL, the source data is CC0, and the checkpoints and corpora are
+public. arXiv's default licence (non-exclusive distribution) permits the least reuse of the
+options, and nothing here needs that restriction. The choice is made at the arXiv submission
+click, so it is still Emma's to change until then. METADATA notes that a CC licence on a posted
+version can't be withdrawn.
+
+---
 ## 2026-10-16 — Paper scopes out the interactive Qwen generator
 
 §2.6 of the paper argues for from-scratch models: a pretrained model's provenance is incomplete

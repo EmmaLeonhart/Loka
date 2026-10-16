@@ -13,7 +13,9 @@ references. **Submitting is Emma's action.**
 - **Primary category:** cs.DB (Databases)
 - **Cross-list:** cs.AI (Artificial Intelligence)
 - **Comments:** 16 pages. Code: https://github.com/EmmaLeonhart/Loka (release v0.4.6). Checkpoints and corpora: https://huggingface.co/datasets/EmmaLeonhart/loka and https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata
-- **License:** Emma's choice. arXiv's default is its non-exclusive distribution licence; CC BY 4.0 is the common choice for reuse.
+- **License:** CC BY 4.0 (decided 2026-10-16, see DEVLOG). It matches the rest of the release:
+  open code (AGPL), CC0 source data, public checkpoints and corpora. A CC licence on arXiv can't
+  be withdrawn once a version is posted, so this is the one field to re-read before clicking.
 
 ## Abstract (plain text, 1661 characters; arXiv limit 1,920)
 

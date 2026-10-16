@@ -17,8 +17,6 @@ arXiv submission of `paper/paper.md` (Emma, 2026-10-16: this is the whole queue)
 already has an Accept (clawRxiv v16) and a CI-built source package; these items check it is
 still sound on today's `main` and get it ready for Emma to submit.
 
-- **Licence decision.** METADATA leaves the arXiv licence to Emma. Make the call, record it in
-  METADATA and why in DEVLOG.
 - **Lift the ON HOLD block in TODO.md** and write the hand-off: the exact steps only Emma can
   take (arXiv account, endorsement for a first cs.DB submission if needed, upload, licence
   click), so the submission is one sitting.
