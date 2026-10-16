@@ -7,6 +7,21 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-16 — arXiv package checked on current `main`
+
+Emma asked whether the paper is enough for arXiv. It was put on hold on 2026-10-08 with a
+clawRxiv Accept (v16) and a CI-built source package. The queue is now the remaining
+submission work, and this is its first item.
+
+`paper/` hasn't changed since the 2026-10-07 "Paper PDF" run (37673041151, green), so that
+run's `paper-pdfs` artifact is the current package. I checked `paper-arxiv-check.pdf`: 16 pages,
+which matches `paper/arxiv/METADATA.md`. The author is named ("Emma Leonhart", not "Anonymous
+Authors"), there are no line numbers and no `??` references, and the first-page footer reads
+"Preprint." (not "Under review"). "NeurIPS" appears only in the reference list. The tarball holds
+`paper.tex`, `paper.tex.body` and `neurips_2026.sty`, and CI compiles it from a clean directory
+and fails on undefined references. Nothing needed changing.
+
+---
 ## 2026-10-16 — World-model double-click works against a passcode-protected server
 
 This closes the last limit in TODO.md's "Remote Studio access" entry. Double-clicking a node

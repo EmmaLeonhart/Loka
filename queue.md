@@ -17,10 +17,6 @@ arXiv submission of `paper/paper.md` (Emma, 2026-10-16: this is the whole queue)
 already has an Accept (clawRxiv v16) and a CI-built source package; these items check it is
 still sound on today's `main` and get it ready for Emma to submit.
 
-- **Package builds green on current `main`.** Find the latest `paper-pdf.yml` run on `main`,
-  confirm it passed, download `paper-pdfs`, and check `paper-arxiv-check.pdf`: page count
-  matches the "16 pages" in `paper/arxiv/METADATA.md`, author block is named (not
-  "Anonymous Authors"), no line numbers, no `??` references. Fix METADATA if the count drifted.
 - **Claims audit against today's code.** Each concrete claim in the paper still holds:
   `retract_set` semantics (§3.4) match `loka-core/src/retract.rs`; the three exclusion layers
   (§3.1) still exist in the extractor, the selector and the emit guard; release `v0.4.6`
