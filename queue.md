@@ -13,8 +13,30 @@ See the Loka-repo `CLAUDE.md` for the canonical convention; the short version is
 
 ## ACTIVE
 
-Empty. The world-model double-click now works against a passcode-protected server
-(DEVLOG, 2026-10-16).
+arXiv submission of `paper/paper.md` (Emma, 2026-10-16: this is the whole queue). The paper
+already has an Accept (clawRxiv v16) and a CI-built source package; these items check it is
+still sound on today's `main` and get it ready for Emma to submit.
+
+- **Package builds green on current `main`.** Find the latest `paper-pdf.yml` run on `main`,
+  confirm it passed, download `paper-pdfs`, and check `paper-arxiv-check.pdf`: page count
+  matches the "16 pages" in `paper/arxiv/METADATA.md`, author block is named (not
+  "Anonymous Authors"), no line numbers, no `??` references. Fix METADATA if the count drifted.
+- **Claims audit against today's code.** Each concrete claim in the paper still holds:
+  `retract_set` semantics (§3.4) match `loka-core/src/retract.rs`; the three exclusion layers
+  (§3.1) still exist in the extractor, the selector and the emit guard; release `v0.4.6`
+  exists on GitHub; HF tags `v3`–`v14` and the four `normalized-wikidata` tiers exist.
+  Fix the paper, not the facts, where something drifted.
+- **Interactive inference path vs §2.6.** The paper argues for from-scratch models because a
+  pretrained one's provenance is incomplete; the shipped double-click now uses base Qwen +
+  retrieval. Check what that path writes (provenance annotations or not) and decide whether
+  the paper needs a sentence saying that path is outside its scope.
+- **Licence decision.** METADATA leaves the arXiv licence to Emma. Make the call, record it in
+  METADATA and why in DEVLOG.
+- **Lift the ON HOLD block in TODO.md** and write the hand-off: the exact steps only Emma can
+  take (arXiv account, endorsement for a first cs.DB submission if needed, upload, licence
+  click), so the submission is one sitting.
+- **Ensure the three crons are running** (work loop :03, flush :15, status :42).
+- **End-of-burst status report**: everything this queue did, what is left for Emma.
 
 ---
 
