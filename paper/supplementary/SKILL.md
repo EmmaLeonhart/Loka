@@ -130,4 +130,4 @@ grep -n "is_reserved_predicate" training/infer_with_citations.py
 
 ## Model series (§5, Appendix A)
 
-All checkpoints (`v3`–`v14`) are tags of `EmmaLeonhart/loka`; the v11–v14 corpora are tags of `EmmaLeonhart/normalized-wikidata`. Perplexities in Appendix A are the training logs' exp(mean training loss) at the released epoch; we checked that the v13 checkpoint reproduces its value (about 245 on a sample, against 242.75 recorded).
+All checkpoints (`v3`–`v14`) are files `checkpoints/wikidata_vN.pt` in `EmmaLeonhart/loka` (v3, v4 and v7 have no snapshot tag); the v11–v14 corpora are tags of `EmmaLeonhart/normalized-wikidata`. Perplexities in Appendix A are the training logs' exp(mean training loss) at the released epoch; we checked that the v13 checkpoint reproduces its value (about 245 on a sample, against 242.75 recorded).

@@ -17,11 +17,6 @@ arXiv submission of `paper/paper.md` (Emma, 2026-10-16: this is the whole queue)
 already has an Accept (clawRxiv v16) and a CI-built source package; these items check it is
 still sound on today's `main` and get it ready for Emma to submit.
 
-- **Claims audit against today's code.** Each concrete claim in the paper still holds:
-  `retract_set` semantics (§3.4) match `loka-core/src/retract.rs`; the three exclusion layers
-  (§3.1) still exist in the extractor, the selector and the emit guard; release `v0.4.6`
-  exists on GitHub; HF tags `v3`–`v14` and the four `normalized-wikidata` tiers exist.
-  Fix the paper, not the facts, where something drifted.
 - **Interactive inference path vs §2.6.** The paper argues for from-scratch models because a
   pretrained one's provenance is incomplete; the shipped double-click now uses base Qwen +
   retrieval. Check what that path writes (provenance annotations or not) and decide whether

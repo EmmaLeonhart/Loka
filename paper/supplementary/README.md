@@ -29,5 +29,6 @@ https://github.com/EmmaLeonhart/Loka/releases/tag/v0.4.0
 
 ## Hugging Face mirror
 
-Corpus + checkpoints (with snapshot tags `v3`, `v4`, `v5`):
+Checkpoints `checkpoints/wikidata_v3.pt`–`wikidata_v14.pt` (snapshot tags exist for v5, v6,
+v8–v14 and the per-epoch v13.* / v14.*; v3, v4 and v7 are files without a tag):
 https://huggingface.co/datasets/EmmaLeonhart/loka

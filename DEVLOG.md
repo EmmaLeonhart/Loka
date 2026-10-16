@@ -7,6 +7,33 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-16 — Paper claims audit: checkpoint tags corrected
+
+The second arXiv item checked the paper's concrete claims against today's code and the published
+artefacts.
+
+These still hold:
+- **§3.4.** `retract_set` (`loka-core/src/retract.rs`) sweeps depth 0's own annotations, follows
+  only `propositionInferredFrom`, and keeps a `seen` set for cycles.
+- **§3.1.** All three exclusion layers are in place: the SPARQL-star `FILTER NOT EXISTS` and the
+  reserved-prefix drop in `training/preprocess.py`; candidate filtering in
+  `training/infer_with_citations.py`; and the emit guard in that same file.
+- **§5.5.** The streamed-corpus path strips reserved predicates
+  (`tools/preprocess_from_hf.py`, `skipped_provenance`).
+- **Releases and data.** Release `v0.4.6` exists (2026-10-07). All four `normalized-wikidata`
+  tiers are tagged. All `wikidata_v3.pt`–`wikidata_v14.pt` checkpoints are on Hugging Face.
+
+One claim was wrong. The header said "snapshot tags `v3`–`v14`, plus per-epoch `v12.*` `v13.*`
+`v14.*`", but on Hugging Face:
+- v3, v4 and v7 are files without a tag;
+- there are no v12 per-epoch checkpoints at all, only v13 (5) and v14 (7).
+
+I corrected the paper rather than adding tags on Hugging Face. The paper now names the checkpoint
+files and says only v13 and v14 have per-epoch checkpoints. Appendix A and
+`paper/supplementary/{README,SKILL}.md` are corrected to match. The measured numbers (§6) were
+not re-run. They are recorded measurements, and re-running them isn't part of a claims audit.
+
+---
 ## 2026-10-16 — arXiv package checked on current `main`
 
 Emma asked whether the paper is enough for arXiv. It was put on hold on 2026-10-08 with a
