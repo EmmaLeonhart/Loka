@@ -7,6 +7,14 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-17 — three crons started for this session
+
+The queue's first item was to make sure the work-loop (:03), auto-flush (:15) and
+status-report (:42) crons were running. This session had none, so I created all three
+(session-local; they expire after 7 days or when the session ends). Main was one commit
+behind origin (a benchmark-results commit), fast-forwarded before starting.
+
+---
 ## 2026-10-16 — `/arxiv/` copy refreshed with the v17 limitation
 
 The "Paper PDF" run for `9fcf6ac` (38974333695) passed. The latest paper change is in it. Its
