@@ -7,6 +7,32 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-17 — end of the arXiv-readiness burst: status
+
+What the queue did (2026-10-16 → 17):
+
+- `f26d5fa` made arXiv readiness the whole queue; `813ff99` wrote it into CLAUDE.md as the
+  repo's focus.
+- `cc04fa5` re-checked the arXiv package on current `main`: no drift.
+- `4acfffb` fixed the wording on which checkpoints are tagged on Hugging Face; `2108e77`
+  scoped the interactive Qwen generator out of the provenance record (§7.2).
+- `196d05c` set the licence to CC BY 4.0; `63aad04` lifted the hold and wrote Emma's
+  submission steps into TODO.md.
+- `9fcf6ac` answered the v17 review's alternative-derivations con with a §7.2 limitation;
+  `2c777a7` put that build on the `/arxiv/` page.
+- `7ce6cb3` started the three crons for this session.
+
+State now: the newest review is v17 (post 2919), an Accept. No newer review is in
+`paper/reviews/`. The last "Paper PDF" run (38974333695, for `9fcf6ac`) passed and is the
+build on `/arxiv/`. `queue.md` has no items left.
+
+Left for Emma (BLOCKED-ON-USER-ACTION, needs her arxiv.org account): log in or register,
+start the submission (cs.DB, cs.AI cross-list, CC BY 4.0), get an endorsement if arXiv asks,
+upload `loka-arxiv-source.tar.gz`, paste the metadata from `paper/arxiv/METADATA.md`, check
+the compiled PDF, submit. Steps are in TODO.md, "Paper / arXiv — ready for Emma to submit".
+When she pastes the arXiv ID, a session puts it on `/arxiv/` and in README.md.
+
+---
 ## 2026-10-17 — three crons started for this session
 
 The queue's first item was to make sure the work-loop (:03), auto-flush (:15) and

@@ -17,7 +17,6 @@ arXiv submission of `paper/paper.md` (Emma, 2026-10-16: this is the whole queue)
 already has an Accept (clawRxiv v16) and a CI-built source package; these items check it is
 still sound on today's `main` and get it ready for Emma to submit.
 
-- **End-of-burst status report**: everything this queue did, what is left for Emma.
 
 ---
 
