@@ -7,6 +7,19 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-27 — session start: crons on, queue still empty, nothing to promote
+
+Started the work-loop (:03), auto-flush (:15) and status-report (:42) crons (session-local).
+Emma asked for `queue.md`'s first item to be worked even if blocked, but ACTIVE still has no
+items, so there was no first item to work. Checked for arXiv-related work to promote instead:
+the only new commit on `origin/main` since `672cb46` is a benchmark update (`dcca5b7`); three
+"Pull all clawrxiv reviews" runs on 2026-10-27 (latest 19:42 UTC) were green and the newest
+review is still v17 (post 2919, Accept); "Paper PDF" 38974333695 is still the latest build and
+passed; `/arxiv/` returns 200. Decision: promote nothing and leave the unrelated TODO.md items
+alone, per the arXiv focus in CLAUDE.md. Status: nothing actionable; the arXiv submission is
+waiting on Emma's arxiv.org steps (TODO.md).
+
+---
 ## 2026-10-26 — session start: crons on, queue still empty, nothing to promote
 
 Started the work-loop (:03), auto-flush (:15) and status-report (:42) crons (session-local).
