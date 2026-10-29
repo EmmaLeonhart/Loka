@@ -7,6 +7,20 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-28 — paper §6.2/§6.3/abstract: cost and size ratios stated plainly (LLM review round, item 4)
+
+Claude's review recomputed §6.2's per-removed-triple cost from the table: 0.28, 0.40, 0.79 and
+0.87 µs, so the "about 0.8 µs" figure holds only for the two large rows and the "time follows
+the removed set, not the store" claim rests on those two points. §6.2 now gives the small-graph
+figures, gives the depth difference as the likely reason (the "fits in cache" part is a
+plausible explanation, not a measurement), and says the store-size comparison is two data
+points. The abstract's "about 0.1 s" now says "in memory", since persistent commit is a separate
+measurement. ChatGPT and Claude both read a "2.8× smaller" claim into §6.3 that the paper never
+makes; §6.3 now gives both ratios explicitly: 2.8×/2.4× in rows and 1.5×/1.3× in bytes against
+reification/named graphs (computed from the table: 937/333, 785/333, 125,570/82,839,
+106,767/82,839).
+
+---
 ## 2026-10-28 — paper §4.4: penalty formula and confidence semantics (LLM review round, item 3)
 
 Claude's review read §4.4's `logit[t] /= penalty^count[t]` and warned that dividing a negative
