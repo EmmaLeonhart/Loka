@@ -7,6 +7,21 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-28 — migrated to cleanvibe 2.0.6 (skills + one-cron loop)
+
+Emma: Loka was still on the old cleanvibe format (inlined workflow sections, three-cron
+playbook). Cloned `EmmaLeonhart/cleanvibe` (v2.0.6, `6bb15cd`) to `../cleanvibe` and vendored its
+seven skills into `.claude/skills/` with `cleanvibe.skills.write_skills`. Did not run
+`migrate_repos_to_skills.py --apply`: it walks every repo under the root and drops CLAUDE.md's
+whole "Workflow Rules" section, which in Loka holds project rules (v14 donor-only, laptop
+thermal limits, quiet windows, implement-before-run, release notes). Trimmed CLAUDE.md by hand
+instead: the generic bullets and the queue/todo, cron, three-cron, emergency-stop, writing and
+update-check sections are gone (the skills carry them); the project rules stay as "Loka project
+rules"; a "Skills (cleanvibe 2.0.6)" section records the new loop (`7,37 * * * *`), the
+uppercase TODO.md/DEVLOG.md names and the sync date. Added `INTENT.md`, which the new loop
+re-reads each tick.
+
+---
 ## 2026-10-28 — end-of-burst summary: LLM review round addressed (item 9)
 
 Emma had the `/arxiv/` PDF reviewed in Chrome by ChatGPT, Claude, Grok and Mistral (all Accept /
