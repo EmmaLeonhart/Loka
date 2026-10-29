@@ -76,7 +76,7 @@ Every predicate under `http://loka.dev/provenance/` is system-internal. The name
 |---|---|---|
 | `propositionGenerated` | `xsd:boolean` | This triple was emitted by a model (not curated). |
 | `propositionGeneratedBy` | string | The model version (e.g., `wikidata_v4`) that emitted it. |
-| `propositionConfidence` | `xsd:decimal` | Mean per-token softmax probability of the prediction. |
+| `propositionConfidence` | `xsd:decimal` | Mean post-penalty token probability of the prediction; a decoding score, not calibrated (§4.4). |
 | `propositionInferredFrom` | quoted triple | A stored statement the prediction procedure took as input (selection provenance). |
 | `propositionPredictedLabel` | string | The raw model output, kept when the object was resolved to an entity IRI (§4.4). |
 | `propositionImportedFrom` | URI | Reserved; not currently emitted in production (was found redundant for uniformly-Wikidata corpora). |
