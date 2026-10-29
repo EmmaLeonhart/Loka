@@ -147,6 +147,17 @@ Only Emma can do these steps, because they need her arXiv account:
 7. Afterwards, the arXiv identifier goes on the `/arxiv/` page and in README.md. Any session
    can do that once Emma pastes the ID.
 
+## Retraction leaves curated qualifier/reference rows behind (found 2026-10-28, NEEDS-DECISION)
+
+`loka-core::retract_set` sweeps only reserved-namespace annotations at depth 0, so removing a
+curated claim leaves its Wikidata `<<S P O>> pq:/pr: …` rows on an unasserted quoted triple.
+Found by Claude's review of the arXiv PDF; pinned by
+`retract::tests::depth_zero_curated_annotation_is_kept` and documented in paper §3.4/§7.2.
+Decision for Emma: sweep all annotations of a depth-0 triple (one-line change in
+`retract.rs` plus the reference closure in `tests/retract_reference.rs`)? Doing so changes the
+real-data removal counts in paper §6.2 (4,354 / 8,621), which would need the 153k and 2M
+experiments re-run (hours of CPU inference on the laptop) before the paper could claim them.
+
 ## Selection provenance for the interactive Qwen generator (found 2026-10-16)
 
 `tools/retrieval_generate.py` (the Studio double-click) writes `propositionGenerated`,

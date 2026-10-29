@@ -7,6 +7,26 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-28 — retraction keeps curated annotations of a removed triple: documented, pinned (LLM review round, item 5)
+
+Claude's review suspected that deleting a curated triple leaves its Wikidata qualifier and
+reference rows behind. Confirmed by reading `loka-core/src/retract.rs`: at depth 0 only
+annotation rows with a reserved-namespace predicate are swept, and `tools/wikidata_hf_import.py`
+writes qualifiers and references as `<< S P O >> pq:/pr: …` rows, so they survive on a quoted
+triple that is no longer asserted. Added `retract::tests::depth_zero_curated_annotation_is_kept`
+to pin this; it and the other 6 retract unit tests pass, as do both `retract_reference`
+integration tests (run locally with the MSVC environment from `vcvars64.bat`; Git Bash's
+coreutils `link` shadows the MSVC linker, so `cargo test` must run from PowerShell/cmd).
+
+Decision (made here, per Emma's instruction to make the call): document, do not change the
+engine. Sweeping these rows is a one-line change, but it changes the real-data removal sets
+reported in §6.2 (4,354 and 8,621), which were measured against a reference that uses the same
+definition. Re-measuring them means re-running the 153k and 2M inference passes, hours of CPU
+on the thermally constrained laptop, and the paper could not claim the new numbers until then.
+RDF-star permits annotating an unasserted quoted triple, so the store stays well-formed. Paper
+§3.4 and §7.2 now say this plainly; the engine change is a NEEDS-DECISION entry in TODO.md.
+
+---
 ## 2026-10-28 — paper §6.2/§6.3/abstract: cost and size ratios stated plainly (LLM review round, item 4)
 
 Claude's review recomputed §6.2's per-removed-triple cost from the table: 0.28, 0.40, 0.79 and

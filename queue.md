@@ -20,15 +20,12 @@ still sound on today's `main` and get it ready for Emma to submit.
 Review-round fixes (Emma, 2026-10-28: "attempt to address" the points from the ChatGPT /
 Claude / Grok / Mistral reviews of the `/arxiv/` PDF). One item per commit, in order:
 
-1. Investigate: does retracting a node leave curated RDF-star annotations (Wikidata qualifier /
-   reference rows) on a deleted quoted triple? If yes: fix in `loka-core`, add a regression
-   test, and describe it in §6.1/§3.4. If no: say in §3.4 why not.
-2. §3.4/§7.2: state the retraction invariant explicitly (node-rooted; a shared triple is removed
+1. §3.4/§7.2: state the retraction invariant explicitly (node-rooted; a shared triple is removed
    when any of its recorded derivations loses a source) as one short definition.
-3. Rebuild: push, confirm the "Paper PDF" run is green, refresh `pages/arxiv/` (PDF + source
+2. Rebuild: push, confirm the "Paper PDF" run is green, refresh `pages/arxiv/` (PDF + source
    tarball) from that run's artifacts, check `/arxiv/` serves it.
-4. Ensure the three crons (:03 work-loop, :15 auto-flush, :42 status) are still running.
-5. Run the status-report action once more as an end-of-burst summary.
+3. Ensure the three crons (:03 work-loop, :15 auto-flush, :42 status) are still running.
+4. Run the status-report action once more as an end-of-burst summary.
 
 
 ---

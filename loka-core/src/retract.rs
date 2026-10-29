@@ -409,4 +409,28 @@ mod tests {
             );
         }
     }
+
+    /// Curated RDF-star annotations (Wikidata qualifier / reference rows, whose
+    /// predicate is outside the reserved namespace) on a triple removed at
+    /// depth 0 are NOT swept: they stay as annotations on a quoted triple that
+    /// is no longer asserted. This pins the current, documented behaviour
+    /// (paper §3.4); changing it is an open decision, see TODO.md.
+    #[test]
+    fn depth_zero_curated_annotation_is_kept() {
+        let (mut store, mut dict, q42) = fixture();
+        let q350 = dict.lookup("http://wd/Q350").unwrap();
+        let p_pob = dict.lookup("http://wd/P_pob").unwrap();
+        let pq_start = dict.intern("http://wd/pq_P580");
+        let date = dict.intern("\"1952\"");
+        let claim = dict.register_quoted(q42, p_pob, q350);
+        store.insert(Triple::new(claim, pq_start, date)).unwrap();
+
+        let set = retract_set(q42, &store, &dict);
+        // The claim itself goes at depth 0 ...
+        assert!(set.by_depth[0]
+            .iter()
+            .any(|t| *t == Triple::new(q42, p_pob, q350)));
+        // ... but its curated qualifier row does not.
+        assert!(!set.all().any(|t| *t == Triple::new(claim, pq_start, date)));
+    }
 }
