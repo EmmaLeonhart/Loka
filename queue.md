@@ -19,9 +19,6 @@ still sound on today's `main` and get it ready for Emma to submit.
 
 Gemini's review of the fixed build (2026-10-29), one item at a time:
 
-1. §6.2: find why the importer rejected 2,139 of the 155,324 pulled lines (DEVLOG 2026-10-09)
-   and state the cause in the paper. If the pulled file is gone and the cause cannot be found,
-   keep "not recorded" and say so in DEVLOG.
 2. Finish: Paper PDF CI green for the §9 fix (and item 1 if it changed the paper), then refresh
    `pages/arxiv/` (PDF, tarball; check the page count).
 

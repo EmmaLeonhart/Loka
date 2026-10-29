@@ -7,6 +7,17 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — §6.2: why the 2,139 lines were rejected cannot be recovered; said so (Gemini item 1)
+
+Gemini wanted the cause of the importer's 2,139 rejected lines stated. It cannot be found now.
+DEVLOG 2026-10-09 records only the count. The pulled file is gone (no `training/data/`, no
+`.nt` from those dates anywhere in the repo). Re-pulling the same neighbourhood from Wikidata
+today would give different data, so it would not show what was rejected then. Decision: say this
+in the paper instead of guessing a cause. §6.2 now says the file was not kept, so the cause can
+no longer be determined, and that every check runs on the imported store, so the rejected lines
+are in no result.
+
+---
 ## 2026-10-29 — Gemini reviewed the fixed build: Weak Accept; §9 scaling claim qualified
 
 Emma said Agree to Google's upload-terms dialog. Gemini's hidden file input (exposed by giving
