@@ -7,6 +7,17 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-28 — paper §3.4: what statement-level retraction would need (Gemini review)
+
+Gemini asked the paper to say what supporting statement-level retraction would take. §3.4 now
+says: the closure already works per triple (`retract_set` seeds from a set of removed triples
+and finds citing generated triples with `find_by_predicate_object`, i.e. the POS index), so
+only the root changes; the limiting part is the record, which cites one statement per
+contributing neighbour (§4.4) and would have to cite every matching statement, at the volume
+the unbounded selector produced (median 105 citations vs 9). Stated as a design consequence;
+nothing was implemented.
+
+---
 ## 2026-10-28 — paper §1/§3.2: selection provenance is a dependency of the proposal (Gemini review)
 
 Gemini suggested saying up front, in the contributions and §3.2, that `propositionInferredFrom`
