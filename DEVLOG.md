@@ -7,6 +7,19 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-28 — paper §5 condensed, debugging detail moved to Appendix B (Gemini review)
+
+Gemini's main editorial point: the v3–v14 model narrative takes a large share of what is a
+systems paper. §5 keeps its headings (§5.2, §5.3 and §5.5 are cross-referenced elsewhere) but
+§5.2–5.4 are now one short paragraph each with the finding and the numbers it rests on; the
+v3/v4 example, the catalog-noise examples and datatype list, the v6–v10 probe table and the
+residual-failure table moved verbatim to a new "Appendix B. Model-series debugging history"
+(B.1–B.3). §5.3's summary gives the kept count as "2,231 of 12,756 properties" (10,525 dropped
++ 2,231 kept, from the moved text). Not changed: the probe numbers themselves; Claude's earlier
+question about v7's 64 % catalog share after the exclusion is still unexplained in the appendix
+text and is not addressed here. Whether Appendix B renders unnumbered is checked in the build.
+
+---
 ## 2026-10-28 — paper §3.4: what statement-level retraction would need (Gemini review)
 
 Gemini asked the paper to say what supporting statement-level retraction would take. §3.4 now
