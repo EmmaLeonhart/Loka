@@ -7,6 +7,15 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-28 — new cleanvibe loop started
+
+One recurring `CronCreate` job, `333cb9cd`, at `7,37 * * * *` with the cleanvibe 2.0.6
+`autonomous-loop` prompt verbatim (commit and push; work the first queue item, then the new
+first item, one at a time, for about 25 minutes; refill from open questions; re-read INTENT.md).
+Session-local; auto-expires after 7 days. The arXiv focus in CLAUDE.md/INTENT.md limits what an
+empty queue may be refilled with.
+
+---
 ## 2026-10-28 — old three-cron set stopped
 
 Per Emma's sequence, cancelled the session's work-loop `0549c459` (:03), auto-flush `fd129bff`
