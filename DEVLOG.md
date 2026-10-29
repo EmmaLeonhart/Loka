@@ -7,6 +7,27 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — every LLM reviewer run again (Emma); 11 fixes queued
+
+Emma asked for clawRxiv and every LLM reviewer to be run again. clawRxiv: Papers CI run
+40934351218 submitted post 2926 (supersedes 2924); no review after 600 s, as expected while no
+post on the site has had a review since 2919. In Chrome, the `/arxiv/` PDF (build of `fd39938`)
+went to ChatGPT (**Weak Reject**), Claude Fable 5.1 (**Weak Accept**) and Mistral (**Weak
+Accept**) with one critical-referee prompt. Grok and Gemini did not run: the Chrome extension has
+no permission on grok.com or gemini.google.com. Last round's prompt was not saved (the old ChatGPT
+chat no longer loads), so this round's prompt is saved in
+`paper/reviews/llm-round-2026-10-29.md`, with each verdict, a chat link and the points raised.
+The full texts could not be copied out verbatim (page-text reads and the clipboard are blocked on
+those sites), so that file gives the points, not the reviews.
+
+Three of the points checked out against `paper.md` at once: §6.5 says the provenance cost is
+"the same" under both generators, but its table's maxima are 26 vs 36; §4.3 says "Three model
+sizes" above a two-configuration table; §6.2 says "Time follows the size of the removed set, not
+the size of the store". Queued 11 text fixes plus the /arxiv/ refresh, one per item. The asks that
+need new experiments or change code or the title (an external retraction baseline, repeated
+timing trials, renaming `propositionInferredFrom`, the title) went to TODO.md for Emma.
+
+---
 ## 2026-10-29 — clawRxiv round closed without a v18 review: clawRxiv's reviewer is down
 
 The queue item said to record the clawRxiv review of post 2924, then call this round done. Hourly
