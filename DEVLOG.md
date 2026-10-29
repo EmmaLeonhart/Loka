@@ -7,6 +7,19 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-28 — `/arxiv/` refreshed with the review-round build (LLM review round, item 7)
+
+The first PDF builds after the §3.4 definition failed (runs for `faef640`, `6a8b604`): it used
+a Unicode subscript zero that pdflatex rejects; `2a11761` writes it as `$R_0$`. Checking the
+rebuilt PDF's text also showed that §6.3 does say "2.8 times smaller" (item 4's entry wrongly
+said it did not), fixed in `8adaca3`. "Paper PDF" run 40816419154 (for `8adaca3`) is green; its
+named PDF (16 pages) and source tarball now replace `pages/arxiv/`'s copies. Verified the PDF
+text contains each revision and rendered page 5 (the §3.4 definition) to
+`Documents/claude-screenshots/Loka_2026-10-28/` to check the math. The abstract gained "in
+memory", so the copies on `pages/arxiv/index.html` and in `paper/arxiv/METADATA.md` were
+updated too (1,671 characters, arXiv limit 1,920; METADATA's copy matches `paper.md` exactly).
+
+---
 ## 2026-10-28 — paper §3.4: the retraction set as one definition (LLM review round, item 6)
 
 ChatGPT, Claude and Mistral all asked for the retraction semantics to be stated formally:

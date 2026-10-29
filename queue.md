@@ -20,10 +20,8 @@ still sound on today's `main` and get it ready for Emma to submit.
 Review-round fixes (Emma, 2026-10-28: "attempt to address" the points from the ChatGPT /
 Claude / Grok / Mistral reviews of the `/arxiv/` PDF). One item per commit, in order:
 
-1. Rebuild: push, confirm the "Paper PDF" run is green, refresh `pages/arxiv/` (PDF + source
-   tarball) from that run's artifacts, check `/arxiv/` serves it.
-2. Ensure the three crons (:03 work-loop, :15 auto-flush, :42 status) are still running.
-3. Run the status-report action once more as an end-of-burst summary.
+1. Ensure the three crons (:03 work-loop, :15 auto-flush, :42 status) are still running.
+2. Run the status-report action once more as an end-of-burst summary.
 
 
 ---
