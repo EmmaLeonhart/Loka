@@ -7,6 +7,16 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-28 — paper §4.4: citation cap stated (Gemini review)
+
+Gemini's review asked how a maximum of 26 citations on the 153k store squares with 39 on the 2M
+store when the selector is bounded at 20 + 20. Checked `candidate_predicates_with_evidence` in
+`training/infer_with_citations.py`: subject-side citations come from at most 20 consulted
+statements, neighbour-side citations are the first matching statement of each of at most 20
+neighbours, so a prediction cites at most 40. §4.4 now states the cap and the observed maxima
+(26 in §6.5's table, 39 in §6.2), so the two numbers read as consistent.
+
+---
 ## 2026-10-28 — new cleanvibe loop started
 
 One recurring `CronCreate` job, `333cb9cd`, at `7,37 * * * *` with the cleanvibe 2.0.6

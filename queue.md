@@ -19,17 +19,15 @@ still sound on today's `main` and get it ready for Emma to submit.
 
 Emma, 2026-10-28, in this order (cleanvibe already cloned to `../cleanvibe`, v2.0.6):
 
-1. Paper §4.4: state the citation cap (at most 20 subject statements + 20 neighbour statements =
-   40), per Gemini's 26-vs-39 question.
-2. Paper §2.2: stop calling selection provenance "a form of why-provenance" outright; it is
+1. Paper §2.2: stop calling selection provenance "a form of why-provenance" outright; it is
    procedural provenance of the (S, P) proposal, not a witness for the object value (Gemini).
-3. Paper §1 / §3.2: say in the contributions and §3.2 that `propositionInferredFrom` records
+2. Paper §1 / §3.2: say in the contributions and §3.2 that `propositionInferredFrom` records
    candidate-proposal dependencies, not value-generation justification (Gemini).
-4. Paper §3.4: say what statement-level retraction would need (index of statement-level citations,
+3. Paper §3.4: say what statement-level retraction would need (index of statement-level citations,
    cite every consulted statement of each neighbour) (Gemini).
-5. Paper §5: condense the v3–v10 training narrative in the main text to a summary and move the
+4. Paper §5: condense the v3–v10 training narrative in the main text to a summary and move the
    debugging detail to an appendix (Gemini: model story distracts from the systems contribution).
-6. Finish: push, confirm Paper PDF green, refresh `/arxiv/` (PDF, tarball, abstract copies),
+5. Finish: push, confirm Paper PDF green, refresh `/arxiv/` (PDF, tarball, abstract copies),
    confirm the papers-ci clawRxiv submission ran, and record the new clawRxiv review when it lands.
 
 
