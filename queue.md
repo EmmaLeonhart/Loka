@@ -19,10 +19,7 @@ still sound on today's `main` and get it ready for Emma to submit.
 
 Emma, 2026-10-28, in this order (cleanvibe already cloned to `../cleanvibe`, v2.0.6):
 
-1. Paper §1 / §3.1: narrow "any single layer suffices" / "even if one guard regresses". A generated
-   triple uses an ordinary predicate, so only the corpus filter's generated-flag check keeps it out
-   of training; the prefix checks cover the annotation rows (ChatGPT review §4.3).
-2. Finish: push, confirm Paper PDF green, refresh `/arxiv/` (PDF, tarball, abstract copies),
+1. Finish: push, confirm Paper PDF green, refresh `/arxiv/` (PDF, tarball, abstract copies),
    confirm the papers-ci clawRxiv submission ran, and record the new clawRxiv review when it lands.
 
 

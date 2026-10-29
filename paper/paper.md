@@ -20,7 +20,7 @@ We are specific about what the dependency edge means. In our prediction procedur
 
 ### Contributions
 
-1. **A reserved provenance namespace with three-layer exclusion.** Predicates under `http://loka.dev/provenance/` are system-only. The corpus extractor, the candidate selector and the writer each refuse them independently, so generated statements and their annotations never re-enter a training corpus even if one guard regresses. (§3.1)
+1. **A reserved provenance namespace with three-layer exclusion.** Predicates under `http://loka.dev/provenance/` are system-only. The corpus extractor drops every triple flagged generated and every reserved-namespace row, so neither generated statements nor their annotations enter a training corpus; the candidate selector and the writer also refuse reserved predicates independently, so the model can neither learn nor emit system metadata even if one of those guards regresses. (§3.1)
 
 2. **An RDF-star annotation schema for generated triples.** Each generated triple carries a fixed block of annotations on the quoted triple: a generated flag, the model version, a confidence, and selection-provenance edges whose objects are themselves quoted triples: the stored statements that led the procedure to propose the (subject, predicate) slot. They record the candidate's proposal, not a justification of the predicted object, which the model produces from the subject and predicate labels. (§3.2)
 
@@ -100,7 +100,7 @@ It also drops any row whose predicate IRI matches the reserved prefix. Both this
 
 **Emit-time guard.** Each prediction's primary triple is checked against the reserved prefix immediately before it is written to the output stream. A reserved-prefix predicate is logged loudly and dropped.
 
-Any single layer suffices. Three are kept because regressions in one path should not silently allow the model to learn or output system metadata.
+The layers protect two different invariants. Keeping *generated triples* out of a corpus rests on the extractor's generated-flag filter alone: a generated triple uses an ordinary data predicate, so the prefix checks do not see it. Keeping *system metadata* out of the model's input and output rests on all three: the extractor's prefix filter keeps annotation rows out of training, and the selector and the emit-time guard stop the model proposing or writing a reserved predicate. For that second invariant any single layer suffices, and three are kept so that a regression in one path cannot silently let the model learn or output system metadata.
 
 ### 3.2 Annotating generated triples
 

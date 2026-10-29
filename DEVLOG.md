@@ -7,6 +7,17 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-28 — paper §1/§3.1: what each exclusion layer actually guards (ChatGPT review)
+
+ChatGPT's review (§4.3) noted that "any single layer suffices" is not true for generated
+triples: they use ordinary data predicates, so the selector's and writer's reserved-prefix
+checks never see them, and only the extractor's generated-flag filter keeps them out of a
+corpus. Contribution 1 and §3.1 now separate the two invariants: generated triples out of
+training (extractor flag filter alone) and system metadata out of the model's input and output
+(all three layers, any one sufficient). Grep found no other copy of the overclaim in the
+abstract, METADATA or the `/arxiv/` page.
+
+---
 ## 2026-10-28 — paper §5 condensed, debugging detail moved to Appendix B (Gemini review)
 
 Gemini's main editorial point: the v3–v14 model narrative takes a large share of what is a
