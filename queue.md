@@ -20,8 +20,6 @@ still sound on today's `main` and get it ready for Emma to submit.
 LLM review round of 2026-10-29 (ChatGPT Weak Reject, Claude and Mistral Weak Accept; details
 and sources in `paper/reviews/llm-round-2026-10-29.md`). One fix per item, in this order:
 
-1. §6.2 (and its repeat in §9): soften "time follows the size of the removed set, not the size of
-   the store" to what one run per size and two large data points show (ChatGPT, Mistral, Claude).
 2. §6.5 and §4.4: "the provenance cost is the same under both generators" vs the table's maxima,
    26 vs 36; say median/p90 match and the maxima differ, and check §4.4's quoted maxima (Mistral,
    Claude).

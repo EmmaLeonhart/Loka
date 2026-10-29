@@ -7,6 +7,15 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — paper §6.2: scaling claim scoped to what the runs show (LLM round, item 1)
+
+ChatGPT, Mistral and Claude all said "Time follows the size of the removed set, not the size of
+the store" overreaches: one run per size, and the pair of large rows is the only comparison that
+holds the removal size roughly fixed. The sentence now says the results are consistent with that
+and do not establish it in general. The caveats after it (two data points, the 1.6x run-to-run
+drift) were already there. The claim is not repeated in §9, the abstract, METADATA or `/arxiv/`.
+
+---
 ## 2026-10-29 — every LLM reviewer run again (Emma); 11 fixes queued
 
 Emma asked for clawRxiv and every LLM reviewer to be run again. clawRxiv: Papers CI run
