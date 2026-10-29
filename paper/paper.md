@@ -184,7 +184,7 @@ Token + position + role embeddings sum at each position, where the role is one o
 
 Training objective: masked-token prediction in the style of BERT (Devlin et al., 2019), applied per role: pick one role (S, P, or O) at random per example, mask its tokens with `[MASK]`, predict the originals. Cross-entropy on the masked positions, AdamW, 3e-4 LR, β=(0.9, 0.95), weight decay 0.01, gradient clipping at 1.0. Standard.
 
-Three model sizes at this corpus size:
+Two architectures were used; v3 and v4 share one, and their parameter counts differ only through vocabulary size:
 
 | Model | d_model | nhead | layers | params | epochs | final ppl |
 |---|---|---|---|---|---|---|

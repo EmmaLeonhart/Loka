@@ -7,6 +7,15 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — paper §4.3: "two architectures", not "three model sizes" (LLM round, item 4)
+
+Claude noted that §4.3 introduces its table with "Three model sizes at this corpus size", but
+the table has two configurations (256/8/4 for v3–v4, 512/8/6 for v5–v14) and rows trained on
+different corpora. The line now says two architectures were used, and that v3 and v4 differ in
+parameter count only through vocabulary size (same d_model, heads and layers; 16,012,800 against
+15,967,744 parameters).
+
+---
 ## 2026-10-29 — paper §6.3: reified join was faster; storage-only claim (LLM round, item 3)
 
 ChatGPT, Claude and Mistral pointed out that "answers this query within 0.1 ms of the reified
