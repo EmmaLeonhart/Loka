@@ -17,6 +17,28 @@ arXiv submission of `paper/paper.md` (Emma, 2026-10-16: this is the whole queue)
 already has an Accept (clawRxiv v16) and a CI-built source package; these items check it is
 still sound on today's `main` and get it ready for Emma to submit.
 
+Emma, 2026-10-28, in this order (cleanvibe already cloned to `../cleanvibe`, v2.0.6):
+
+1. Migrate Loka to modern cleanvibe: vendor `.claude/skills/` from `cleanvibe/skills.py`; replace
+   CLAUDE.md's inlined workflow / cron / three-cron / emergency-stop / writing / update-check
+   sections with the `## Skills` pointer, KEEPING Loka-specific rules (v14 donor-only, thermal
+   limits, quiet windows, implement-before-run, release notes, arXiv focus, strict-order rule);
+   add `INTENT.md` (the new loop reads it).
+2. Kill all running crons (the old :03 / :15 / :42 three-cron set).
+3. Start the new autonomous loop: one `CronCreate` at `7,37 * * * *` with the cleanvibe prompt.
+4. Paper §4.4: state the citation cap (at most 20 subject statements + 20 neighbour statements =
+   40), per Gemini's 26-vs-39 question.
+5. Paper §2.2: stop calling selection provenance "a form of why-provenance" outright; it is
+   procedural provenance of the (S, P) proposal, not a witness for the object value (Gemini).
+6. Paper §1 / §3.2: say in the contributions and §3.2 that `propositionInferredFrom` records
+   candidate-proposal dependencies, not value-generation justification (Gemini).
+7. Paper §3.4: say what statement-level retraction would need (index of statement-level citations,
+   cite every consulted statement of each neighbour) (Gemini).
+8. Paper §5: condense the v3–v10 training narrative in the main text to a summary and move the
+   debugging detail to an appendix (Gemini: model story distracts from the systems contribution).
+9. Finish: push, confirm Paper PDF green, refresh `/arxiv/` (PDF, tarball, abstract copies),
+   confirm the papers-ci clawRxiv submission ran, and record the new clawRxiv review when it lands.
+
 
 ---
 
