@@ -17,11 +17,7 @@ arXiv submission of `paper/paper.md` (Emma, 2026-10-16: this is the whole queue)
 already has an Accept (clawRxiv v16) and a CI-built source package; these items check it is
 still sound on today's `main` and get it ready for Emma to submit.
 
-LLM review round of 2026-10-29 (ChatGPT Weak Reject, Claude and Mistral Weak Accept; details
-and sources in `paper/reviews/llm-round-2026-10-29.md`). One fix per item, in this order:
-
-12. Finish: Paper PDF CI green, then refresh `pages/arxiv/` (PDF, tarball, abstract copies). The
-    abstract changed in item 8: METADATA.md is updated, `pages/arxiv/index.html` is not yet.
+(Empty: the 2026-10-29 LLM round is done; see DEVLOG.)
 
 Not queued, for Emma (bigger than a text fix; INTENT says ask before new experiment runs): an
 external retraction baseline (e.g. a SPARQL `inferredFrom+` closure), repeated timing trials,

@@ -7,6 +7,16 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — `/arxiv/` refreshed with the LLM-round fixes (item 12); round done
+
+Paper PDF run 40939017345 (for `d8eb791`) is green: 18 pages, up from 17. Checked the
+extracted text of the named PDF for every change of items 1–11; all are there. The named PDF and
+source tarball replace `pages/arxiv/`'s copies. The abstract sentence changed in item 8 is now
+also in `pages/arxiv/index.html`, and the page count is corrected to 18 there, in METADATA's
+Comments field and in TODO.md's step 6 (the page and METADATA still said 16, stale since the
+17-page build). Queue now holds only the decisions for Emma (TODO.md).
+
+---
 ## 2026-10-29 — paper: minor points from Claude's review (LLM round, item 11)
 
 - §4.4 step 1 defines "object-key" as `o_key` computes it (`infer_with_citations.py`): the IRI,
