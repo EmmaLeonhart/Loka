@@ -7,6 +7,19 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-28 — paper §3.4: the retraction set as one definition (LLM review round, item 6)
+
+ChatGPT, Claude and Mistral all asked for the retraction semantics to be stated formally:
+node-rooted vs statement-level, and what happens to a triple with several derivations. §3.4
+already described the algorithm as steps; it now also gives the set as one least-fixpoint
+definition (R₀ = the node's rows; R = smallest superset closed under "a generated triple citing
+something in R"; plus the reserved-namespace annotations of generated triples in R) and names
+the three deliberate consequences: node-rooted, any-source-lost removes a merged triple
+(pointing at the existing §7.2 bullet), and nothing outside the reserved namespace is removed
+beyond R₀. No proof was added; the reference-closure checks in §6.1–6.2 already test the
+implementation against this definition, and the paper does not claim more than that.
+
+---
 ## 2026-10-28 — retraction keeps curated annotations of a removed triple: documented, pinned (LLM review round, item 5)
 
 Claude's review suspected that deleting a curated triple leaves its Wikidata qualifier and
