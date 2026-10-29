@@ -7,6 +7,18 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — paper §3.1: "any single layer suffices" corrected (LLM round, item 7)
+
+Mistral said §3.1's "for that second invariant any single layer suffices" is asserted, not
+tested. No test covers it (`training/test_selection_provenance.py` has none on reserved
+predicates), and the sentence was also wrong. The selector (`infer_with_citations.py`, candidate
+filter) and the emit-time guard (the "REFUSED to emit" check) each block reserved predicates on
+the output side. Keeping annotation rows out of training rests on the extractor's prefix filter
+alone; no other layer covers it. Decision: correct the sentence instead of adding a test for a
+claim that is not true. It now says which guards overlap (output side only) and that no test
+disables one to check the other.
+
+---
 ## 2026-10-29 — paper §6.2: units of 4,354 and 4,451 stated (LLM round, item 6)
 
 Claude asked how "4,354 required removals" squares with one preview removing "a maximum of

@@ -20,8 +20,6 @@ still sound on today's `main` and get it ready for Emma to submit.
 LLM review round of 2026-10-29 (ChatGPT Weak Reject, Claude and Mistral Weak Accept; details
 and sources in `paper/reviews/llm-round-2026-10-29.md`). One fix per item, in this order:
 
-7. §3.1 "for that second invariant any single layer suffices": find the test that shows it; if
-   there is none, add one or soften the sentence (Mistral).
 8. "Enforced at write time" (Abstract, §1, §3.1): check whether `/triples` accepts a
    client-written generated flag; if it does, scope the claim to the inference pipeline (Claude W3).
 9. §6.1 vs §3.2: check whether the synthetic correctness test writes the production provenance
