@@ -19,10 +19,12 @@ integration tests (run locally with the MSVC environment from `vcvars64.bat`; Gi
 coreutils `link` shadows the MSVC linker, so `cargo test` must run from PowerShell/cmd).
 
 Decision (made here, per Emma's instruction to make the call): document, do not change the
-engine. Sweeping these rows is a one-line change, but it changes the real-data removal sets
-reported in §6.2 (4,354 and 8,621), which were measured against a reference that uses the same
-definition. Re-measuring them means re-running the 153k and 2M inference passes, hours of CPU
-on the thermally constrained laptop, and the paper could not claim the new numbers until then.
+engine. Sweeping these rows is a one-line change, but it changes the removal totals, committed row
+counts and commit timings reported in §6.2 (the agreement checks in `tools/retract_real_eval.py`
+compare only generated triples, so 4,354 and 8,621 would still hold; the first version of this
+entry and of the paper text said otherwise and was corrected in the next commit). Re-measuring
+needs the 153k and 2M stores rebuilt and re-timed on the laptop, and the paper could not claim
+new numbers until then.
 RDF-star permits annotating an unasserted quoted triple, so the store stays well-formed. Paper
 §3.4 and §7.2 now say this plainly; the engine change is a NEEDS-DECISION entry in TODO.md.
 
