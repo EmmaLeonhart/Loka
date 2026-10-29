@@ -7,6 +7,19 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — abstract and §3.1: guards are in the pipeline, not the store (LLM round, item 8)
+
+Claude (W3) said "enforced at ... write time" reads as a store guarantee, but the check is in
+the inference loop. Confirmed: `POST /triples` (`loka-proto/src/server.rs`) accepts any triple,
+including reserved-namespace rows (its own tests post them that way). That is by design: the
+store keeps whatever it is given. The abstract now says the namespace is checked at extraction,
+at selection and when the inference pipeline writes, and that the pipeline's own outputs never
+re-enter a corpus. It no longer says "generated triples" in general. §3.1 adds that the guards sit
+in the extractor and pipeline, and that a generated triple another tool writes without the flag
+is not excluded. Abstract copy updated in `paper/arxiv/METADATA.md`. `pages/arxiv/index.html`
+gets it with the PDF refresh (item 12) so the page and its PDF stay in step.
+
+---
 ## 2026-10-29 — paper §3.1: "any single layer suffices" corrected (LLM round, item 7)
 
 Mistral said §3.1's "for that second invariant any single layer suffices" is asserted, not

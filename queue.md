@@ -20,15 +20,14 @@ still sound on today's `main` and get it ready for Emma to submit.
 LLM review round of 2026-10-29 (ChatGPT Weak Reject, Claude and Mistral Weak Accept; details
 and sources in `paper/reviews/llm-round-2026-10-29.md`). One fix per item, in this order:
 
-8. "Enforced at write time" (Abstract, §1, §3.1): check whether `/triples` accepts a
-   client-written generated flag; if it does, scope the claim to the inference pipeline (Claude W3).
 9. §6.1 vs §3.2: check whether the synthetic correctness test writes the production provenance
    predicates; if not, say so in §6.1 (Claude W6).
 10. Emit threshold 0.4 (§4.4) vs ≥ 0.25 in the Appendix B.2 probe: explain or align (Mistral).
 11. Minor (Claude): define "object-key" (§4.4 step 1); define confidence once; explain the 2,139
     rows between 155,324 pulled and 153,185 imported (§6.2); remove stray "Preprint." and the
     sentence "Standard." (§4.3); cite TripleProv (Wylot et al.) in §2.
-12. Finish: Paper PDF CI green, then refresh `pages/arxiv/` (PDF, tarball, abstract copies).
+12. Finish: Paper PDF CI green, then refresh `pages/arxiv/` (PDF, tarball, abstract copies). The
+    abstract changed in item 8: METADATA.md is updated, `pages/arxiv/index.html` is not yet.
 
 Not queued, for Emma (bigger than a text fix; INTENT says ask before new experiment runs): an
 external retraction baseline (e.g. a SPARQL `inferredFrom+` closure), repeated timing trials,
