@@ -7,6 +7,18 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — Gemini reviewed the fixed build: Weak Accept; §9 scaling claim qualified
+
+Emma said Agree to Google's upload-terms dialog. Gemini's hidden file input (exposed by giving
+it an aria-label) took the PDF. **Weak Accept.** It caught that §9 still said "cost following
+the size of the removal rather than of the store". The §6.2 fix (item 1) missed this copy
+because I searched for the §6.2 wording only. §9 now limits the claim to the two large synthetic
+data points that isolate store size. Its other points: state why 2,139 lines were rejected
+(queued), and that curated annotations of a retracted triple stay behind (already Emma's open
+decision in TODO.md). All five reviewers have now run: ChatGPT Weak Reject; Claude, Mistral,
+Grok and Gemini Weak Accept.
+
+---
 ## 2026-10-29 — Grok reviewed the fixed build: Weak Accept, nothing new to fix; Gemini waits on Emma
 
 At Emma's request I retried Grok and Gemini (the first attempt had hit "permission denied"
