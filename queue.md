@@ -20,9 +20,6 @@ still sound on today's `main` and get it ready for Emma to submit.
 LLM review round of 2026-10-29 (ChatGPT Weak Reject, Claude and Mistral Weak Accept; details
 and sources in `paper/reviews/llm-round-2026-10-29.md`). One fix per item, in this order:
 
-11. Minor (Claude): define "object-key" (§4.4 step 1); define confidence once; explain the 2,139
-    rows between 155,324 pulled and 153,185 imported (§6.2); remove stray "Preprint." and the
-    sentence "Standard." (§4.3); cite TripleProv (Wylot et al.) in §2.
 12. Finish: Paper PDF CI green, then refresh `pages/arxiv/` (PDF, tarball, abstract copies). The
     abstract changed in item 8: METADATA.md is updated, `pages/arxiv/index.html` is not yet.
 

@@ -7,6 +7,20 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — paper: minor points from Claude's review (LLM round, item 11)
+
+- §4.4 step 1 defines "object-key" as `o_key` computes it (`infer_with_citations.py`): the IRI,
+  or a literal's normalised value without datatype or language tag (`parse_literal`).
+- Step 3 no longer defines confidence a second time; it refers to step 2.
+- §4.3: dropped the one-word sentence "Standard.".
+- §6.2: the 2,139 rows between 155,324 pulled and 153,185 imported are the importer's rejected
+  lines (DEVLOG 2026-10-09, 1.4 %). Why they were rejected was never recorded, and the paper says so.
+- §2.2: cites TripleProv (Wylot, Cudré-Mauroux, Groth, WWW 2014) as in-store provenance with
+  native lineage queries. Citation from memory, not checked against the publisher.
+- Not changed: the "Preprint." header is the NeurIPS template's `[preprint]` option
+  (`paper/paper.tex`), which is the standard arXiv form.
+
+---
 ## 2026-10-29 — Appendix B.1: probe threshold 0.25 vs pipeline default 0.4 (LLM round, item 10)
 
 Mistral asked why §4.4 says the emit threshold is 0.4 while the Appendix B probe keeps
