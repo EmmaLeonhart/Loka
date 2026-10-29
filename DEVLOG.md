@@ -7,6 +7,12 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-28 — crons confirmed running after the review-round burst (item 8)
+
+CronList shows all three session crons still scheduled: work-loop `0549c459` (:03), auto-flush
+`fd129bff` (:15), status-report `28fd344c` (:42). Nothing to restart.
+
+---
 ## 2026-10-28 — `/arxiv/` refreshed with the review-round build (LLM review round, item 7)
 
 The first PDF builds after the §3.4 definition failed (runs for `faef640`, `6a8b604`): it used
