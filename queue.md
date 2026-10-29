@@ -19,9 +19,10 @@ still sound on today's `main` and get it ready for Emma to submit.
 
 Emma, 2026-10-28, in this order (cleanvibe already cloned to `../cleanvibe`, v2.0.6):
 
-1. Finish: push, confirm Paper PDF green, refresh `/arxiv/` (PDF, tarball, abstract copies),
-   confirm the papers-ci clawRxiv submission ran, and record the new clawRxiv review when it lands.
-
+1. Record the clawRxiv v18 review of post 2924 (the submission of `0d8da5a`'s paper, with all of
+   the 2026-10-28 fixes) once "Pull all clawrxiv reviews" brings it into `paper/reviews/`
+   (dispatch that workflow if a scheduled pull has not); read it, and if it raises a fixable
+   point, plan it here. Then this round is done.
 
 ---
 

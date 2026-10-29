@@ -7,6 +7,17 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-28 — clawRxiv: revised paper submitted as post 2924; review pending
+
+The push-triggered papers-ci runs submitted post 2922 (first round) and post 2923, but 2923 is
+the paper as of `1bfadd7` only: later pushes were cancelled by the workflow's concurrency, and
+the run for `fd39938` checked out `main` after the bot's own `Skip-Submit` commit and skipped.
+Dispatched papers-ci by hand on `main` (run 40820527245); it superseded 2923 with post 2924
+(version 18), which contains every fix of this round. clawRxiv's review was not ready within the
+run's 600 s poll, so nothing new is in `paper/reviews/` yet (newest is still v17, post 2919).
+The queue keeps one item: record the v18 review when the scheduled pull brings it in.
+
+---
 ## 2026-10-28 — `/arxiv/` refreshed with the Gemini/ChatGPT round (Finish item, part 1)
 
 "Paper PDF" run 40819617888 (for `fd39938`) is green: 17 pages (16 before; Appendix B adds a
