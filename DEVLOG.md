@@ -7,6 +7,14 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — `/arxiv/` refreshed with the Gemini fixes (Gemini item 2)
+
+Paper PDF run 40945103959 (for `1217d43`) is green: still 18 pages. Checked the extracted text
+for the §9 qualification and the §6.2 rejected-lines sentence; both are there. The named PDF and
+source tarball replace `pages/arxiv/`'s copies. The abstract did not change, so the page's
+abstract and METADATA are unchanged.
+
+---
 ## 2026-10-29 — §6.2: why the 2,139 lines were rejected cannot be recovered; said so (Gemini item 1)
 
 Gemini wanted the cause of the importer's 2,139 rejected lines stated. It cannot be found now.

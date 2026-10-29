@@ -17,10 +17,7 @@ arXiv submission of `paper/paper.md` (Emma, 2026-10-16: this is the whole queue)
 already has an Accept (clawRxiv v16) and a CI-built source package; these items check it is
 still sound on today's `main` and get it ready for Emma to submit.
 
-Gemini's review of the fixed build (2026-10-29), one item at a time:
-
-2. Finish: Paper PDF CI green for the §9 fix (and item 1 if it changed the paper), then refresh
-   `pages/arxiv/` (PDF, tarball; check the page count).
+(Empty: every reviewer has run and every fixable point is in; see DEVLOG 2026-10-29.)
 
 Not queued, for Emma (bigger than a text fix; INTENT says ask before new experiment runs): an
 external retraction baseline (e.g. a SPARQL `inferredFrom+` closure), repeated timing trials,
