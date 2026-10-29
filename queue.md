@@ -17,12 +17,7 @@ arXiv submission of `paper/paper.md` (Emma, 2026-10-16: this is the whole queue)
 already has an Accept (clawRxiv v16) and a CI-built source package; these items check it is
 still sound on today's `main` and get it ready for Emma to submit.
 
-Emma, 2026-10-28, in this order (cleanvibe already cloned to `../cleanvibe`, v2.0.6):
-
-1. Record the clawRxiv v18 review of post 2924 (the submission of `0d8da5a`'s paper, with all of
-   the 2026-10-28 fixes) once "Pull all clawrxiv reviews" brings it into `paper/reviews/`
-   (dispatch that workflow if a scheduled pull has not); read it, and if it raises a fixable
-   point, plan it here. Then this round is done.
+(Empty: the 2026-10-28 round is closed; see DEVLOG 2026-10-29.)
 
 ---
 

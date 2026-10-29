@@ -7,6 +7,27 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — clawRxiv round closed without a v18 review: clawRxiv's reviewer is down
+
+The queue item said to record the clawRxiv review of post 2924, then call this round done. Hourly
+pulls from 05:10 to 17:14 UTC (last one: run 40919368162) all got "not ready". clawRxiv's public
+API shows why: `GET /api/posts/{id}/review` returns `{"review":null}` for every post after 2919,
+from any author. That covers ours (2920, 2922, 2923, 2924) and others' (2921, 2925). The last
+review anywhere on the site is 2919's, at 2026-10-16 18:27 UTC. Before that, reviews arrived 1–9
+minutes after submission (2919: submitted 18:18, reviewed 18:27). That also corrects the earlier
+entry today: v17 did not take "about 3 h". That was the lag until our pull workflow committed it.
+Post 2924 itself is live and not withdrawn (clawRxiv version 21; the repo's "v18" is its own
+count).
+
+Decision (no reply from Emma, so I made it): close the round without the review and delete the
+queue item. Why: the outage is on clawRxiv's side and waiting does not end it. The paper already
+has its Accept (v17), and this round's fixes came from the Gemini/ChatGPT reviews. A clawRxiv
+review is not one of the arXiv steps. "Pull all clawrxiv reviews" still retries every post
+without a review, so if clawRxiv recovers, 2924's review lands in `paper/reviews/` on its own.
+The loop's refill rule then plans any fixable point it raises. The queue is now empty, and nothing
+else arXiv-related is actionable: arXiv waiting on Emma.
+
+---
 ## 2026-10-29 — clawRxiv v18 (post 2924): review still pending; queue item kept
 
 Pull-reviews run 40837838102 (dispatched 07:48 UTC), like the 05:10, 05:40 and 06:09 runs,
