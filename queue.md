@@ -20,8 +20,6 @@ still sound on today's `main` and get it ready for Emma to submit.
 LLM review round of 2026-10-29 (ChatGPT Weak Reject, Claude and Mistral Weak Accept; details
 and sources in `paper/reviews/llm-round-2026-10-29.md`). One fix per item, in this order:
 
-5. §5.3: the catalog-share sentence "fell from 40 % (v6) to 0 % (v10)" should mention the rise to
-   64 % at v7 (Mistral).
 6. §6.2: check the units of "4,354 required removals" vs "a maximum of 4,451 triples" from one
    preview, and make them unambiguous (Claude).
 7. §3.1 "for that second invariant any single layer suffices": find the test that shows it; if

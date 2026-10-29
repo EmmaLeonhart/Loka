@@ -229,7 +229,7 @@ The first corpus kept datatype IRIs inside literal strings, and the model traine
 
 ### 5.3 Catalog noise
 
-Catalog cross-reference identifiers (Wikidata's `external-id` datatype: about 80 % of properties and 75.7 % of the v6 training rows) taught v6 to emit confident identifier-shaped strings, including on unrelated predicates. From v7 on, the corpus excludes the datatypes whose values carry no transferable content, keeping 2,231 of 12,756 properties, and normalises time and quantity literals; the specification ships as `training/wikidata_excluded_predicates.json`. On a fixed behavioural probe, the share of emissions on catalog-identifier predicates fell from 40 % (v6) to 0 % (v10), and a date-shaped leak onto `instance of` disappeared from v7 on (Appendix B).
+Catalog cross-reference identifiers (Wikidata's `external-id` datatype: about 80 % of properties and 75.7 % of the v6 training rows) taught v6 to emit confident identifier-shaped strings, including on unrelated predicates. From v7 on, the corpus excludes the datatypes whose values carry no transferable content, keeping 2,231 of 12,756 properties, and normalises time and quantity literals; the specification ships as `training/wikidata_excluded_predicates.json`. On a fixed behavioural probe, the share of emissions on catalog-identifier predicates fell from 40 % (v6) to 0 % (v10), though not steadily: it was 64 % at v7 (9 of only 14 emissions), which we have not explained, then 15 %, 3 % and 0 %; and a date-shaped leak onto `instance of` disappeared from v7 on (Appendix B).
 
 ### 5.4 Residual failure modes
 

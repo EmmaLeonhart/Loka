@@ -7,6 +7,14 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — paper §5.3: the v7 rise in catalog share stated (LLM round, item 5)
+
+Mistral noted that "fell from 40 % (v6) to 0 % (v10)" hides Table B.2's v7 value of 64 %
+(9 of 14 emissions). Claude's earlier question about the same number was still open. §5.3 now
+gives the whole path (40, 64, 15, 3, 0 %), notes that v7 had only 14 emissions, and says the v7
+rise is not explained. That is true: nothing in the repo explains it, and no new probe was run.
+
+---
 ## 2026-10-29 — paper §4.3: "two architectures", not "three model sizes" (LLM round, item 4)
 
 Claude noted that §4.3 introduces its table with "Three model sizes at this corpus size", but
