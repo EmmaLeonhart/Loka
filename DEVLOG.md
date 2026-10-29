@@ -7,6 +7,32 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-28 — end-of-burst summary: LLM review round addressed (item 9)
+
+Emma had the `/arxiv/` PDF reviewed in Chrome by ChatGPT, Claude, Grok and Mistral (all Accept /
+weak accept; Gemini never answered, DeepSeek and Perplexity need a sign-in) and asked for the
+points to be addressed. Commits, in order: `947681b` plan; `7c1742e` §3.1 namespace table;
+`fbae936` §6.4 literal Hits@1 exception; `ab1f012` + `1ad5914` §4.4 penalty on probabilities,
+confidence uncalibrated; `e263a96` + `e98a72a` §6.2 per-triple cost for every row, §6.3 row and
+byte ratios; `2ab0a0f` + `191d119` curated annotations kept by retraction (unit test, paper
+§3.4/§7.2, TODO.md decision); `faef640` + `6a8b604` + `2a11761` §3.4 least-fixpoint definition;
+`8adaca3` §6.3 "2.8 times fewer rows (1.5 times fewer bytes)"; `eee8c70` `/arxiv/` refresh
+(Paper PDF run 40816419154, live and verified); `1db2d03` crons confirmed.
+
+Hard rails: every changed number was recomputed from the paper's own tables; the retraction
+change is a test pinning existing behaviour, not a behaviour change (7 retract unit tests + 2
+reference tests pass locally). Four of my own errors were caught and corrected in follow-up
+commits (an unmeasured cache explanation, the wrong set of §6.2 numbers a sweep would change, a
+false "nothing outside the reserved namespace" consequence, and wrongly calling the reviewers'
+"2.8×" a misreading). Two PDF builds failed on a Unicode subscript before `2a11761` fixed it.
+
+Not done, by decision: no calibration study, no larger-scale or deeper correctness run, no
+stronger generator, no source-dump pinning (all need new experiments). Open:
+NEEDS-DECISION (Emma) whether retraction should also sweep curated annotations of a removed
+triple (TODO.md); BLOCKED-ON-USER-ACTION the arxiv.org submission steps. The papers-ci push
+`de334ef` submitted the revised paper to clawRxiv; its review had not landed at time of writing.
+
+---
 ## 2026-10-28 — crons confirmed running after the review-round burst (item 8)
 
 CronList shows all three session crons still scheduled: work-loop `0549c459` (:03), auto-flush

@@ -17,11 +17,6 @@ arXiv submission of `paper/paper.md` (Emma, 2026-10-16: this is the whole queue)
 already has an Accept (clawRxiv v16) and a CI-built source package; these items check it is
 still sound on today's `main` and get it ready for Emma to submit.
 
-Review-round fixes (Emma, 2026-10-28: "attempt to address" the points from the ChatGPT /
-Claude / Grok / Mistral reviews of the `/arxiv/` PDF). One item per commit, in order:
-
-1. Run the status-report action once more as an end-of-burst summary.
-
 
 ---
 
