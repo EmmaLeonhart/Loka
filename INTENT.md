@@ -28,4 +28,8 @@ README.md.
 - Numbers in the paper are only changed when recomputed from the paper's tables or re-measured.
 - Open decision for Emma (TODO.md): whether retraction should also sweep curated annotations
   of a removed triple; the paper documents current behaviour (§3.4, §7.2).
+- LLM reviews (ChatGPT, Claude, Grok, Mistral, Gemini) are run in Chrome on the `/arxiv/` PDF
+  with the prompt saved in `paper/reviews/llm-round-2026-10-29.md`. A "permission denied" from
+  the extension can be transient: retry before reporting a reviewer as unavailable (Emma,
+  2026-10-29). clawRxiv has given no reviews since 2026-10-16 (site-wide).
 - When Emma is angry, freeze and answer from context; do not search or start anything new.
