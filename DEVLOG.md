@@ -7,6 +7,16 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — Appendix B.1: probe threshold 0.25 vs pipeline default 0.4 (LLM round, item 10)
+
+Mistral asked why §4.4 says the emit threshold is 0.4 while the Appendix B probe keeps
+emissions at ≥ 0.25. Both are right. The code default is 0.4 (`infer_with_citations.py`,
+`test_autoregressive_propgen.py`), and the probe is run with `--confidence 0.25` (the CLAUDE.md
+step-3 command). Appendix B.1 now says the probe threshold is below the pipeline default, so the
+probe also counts emissions the pipeline would not write. It does not claim a reason for picking
+0.25, because none is recorded.
+
+---
 ## 2026-10-29 — paper §6.1: synthetic schema vs production stated (LLM round, item 9)
 
 Claude (W6) noted that §6.1's generator writes only `propositionGeneratedBy` and

@@ -425,7 +425,7 @@ The first corpus serialised typed literals with their datatype IRI inside the li
 
 ### B.2 Catalog noise (§5.3)
 
-A behavioural test on the v6 model exposed a larger corpus problem. The test seeds a breadth-first, depth-3 Wikidata neighbourhood at `Q42` (183 entities, 14,586 triples), takes 30 high-PageRank source triples, generates up to 10 candidate predictions per source, and keeps those at confidence ≥ 0.25. It is a small, fixed probe, used to compare versions with each other, not a benchmark.
+A behavioural test on the v6 model exposed a larger corpus problem. The test seeds a breadth-first, depth-3 Wikidata neighbourhood at `Q42` (183 entities, 14,586 triples), takes 30 high-PageRank source triples, generates up to 10 candidate predictions per source, and keeps those at confidence ≥ 0.25, below the inference pipeline's default of 0.4 (§4.4), so it also counts emissions the pipeline would not write. It is a small, fixed probe, used to compare versions with each other, not a benchmark.
 
 v6 produced confident identifier-shaped hallucinations: `British Broadcasting Corporation | ISNI -> "00000000"` (0.75), `Douglas Adams | Freebase ID -> "/ m / 0 c _ _ 9"` (0.43). The identifier *shape* also leaked onto unrelated predicates: `instance of -> "+ Ġof - 00 - 03 T 00"`, a Wikidata date prefix, appeared on 15 different subjects in one run.
 
