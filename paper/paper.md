@@ -22,7 +22,7 @@ We are specific about what the dependency edge means. In our prediction procedur
 
 1. **A reserved provenance namespace with three-layer exclusion.** Predicates under `http://loka.dev/provenance/` are system-only. The corpus extractor, the candidate selector and the writer each refuse them independently, so generated statements and their annotations never re-enter a training corpus even if one guard regresses. (§3.1)
 
-2. **An RDF-star annotation schema for generated triples.** Each generated triple carries a fixed block of annotations on the quoted triple: a generated flag, the model version, a confidence, and selection-provenance edges whose objects are themselves quoted triples. (§3.2)
+2. **An RDF-star annotation schema for generated triples.** Each generated triple carries a fixed block of annotations on the quoted triple: a generated flag, the model version, a confidence, and selection-provenance edges whose objects are themselves quoted triples: the stored statements that led the procedure to propose the (subject, predicate) slot. They record the candidate's proposal, not a justification of the predicted object, which the model produces from the subject and predicate labels. (§3.2)
 
 3. **Cascade retraction.** Removing a node removes its statements and every generated triple that transitively depended on them. Traversal follows only selection-provenance edges and stays inside the reserved namespace, so ordinary data edges are never treated as dependencies. We test it against an independent reference implementation and measure its cost. (§3.4, §6.1–6.2)
 
@@ -104,7 +104,7 @@ Any single layer suffices. Three are kept because regressions in one path should
 
 ### 3.2 Annotating generated triples
 
-Selection provenance records the stored statements that the prediction procedure took as input (§4.4), not statements the model attended to or that support the prediction (§1). The schema does not depend on that choice: a procedure that selected its evidence differently, or a model that retrieved it, would write the same block.
+Selection provenance records the stored statements that the prediction procedure took as input (§4.4): the ones that led it to propose the (subject, predicate) slot. It is a dependency of the proposal, not a justification of the predicted value; it does not name statements the model attended to or that support the prediction (§1). The schema does not depend on that choice: a procedure that selected its evidence differently, or a model that retrieved it, would write the same block.
 
 When the inference layer accepts a candidate `(S, P)` and emits a predicted object `"X"`, it writes a fixed-shape block:
 

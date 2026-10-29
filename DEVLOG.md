@@ -7,6 +7,17 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-28 — paper §1/§3.2: selection provenance is a dependency of the proposal (Gemini review)
+
+Gemini suggested saying up front, in the contributions and §3.2, that `propositionInferredFrom`
+records candidate-proposal dependencies, not justification of the generated value. Contribution
+2 and the first paragraph of §3.2 now say the cited statements are the ones that led the
+procedure to propose the (subject, predicate) slot, and that the object comes from the model.
+Reading the contributions again showed ChatGPT's threat-model point is still open (contribution
+1 says generated statements stay out of training "even if one guard regresses", but only the
+corpus filter catches generated primary triples); added it to the queue before the Finish item.
+
+---
 ## 2026-10-28 — paper §2.2: selection provenance is not why-provenance (Gemini review)
 
 Gemini's review said §2.2 stretches Buneman et al.'s term: calling selection provenance "a form
