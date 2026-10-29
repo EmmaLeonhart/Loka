@@ -7,6 +7,19 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-28 — paper §4.4: penalty formula and confidence semantics (LLM review round, item 3)
+
+Claude's review read §4.4's `logit[t] /= penalty^count[t]` and warned that dividing a negative
+logit pushes it toward zero, so the "penalty" would promote the token. Checked the code
+(`training/infer_with_citations.py` and `training/test_autoregressive_propgen.py`): the division
+is applied to softmax probabilities (`p = probs[...]`), never to logits, so there is no bug, only
+a wrong formula in the paper. §4.4 now writes `p[t] /= penalty^count[t]`, notes that `p` is not
+renormalised, and states what `propositionConfidence` is (mean of the selected tokens'
+post-penalty probabilities, per `confidence = sum(out_probs) / len(out_probs)`) and that it is
+an uncalibrated decoding score; several reviewers asked for that. No calibration study was run;
+the paper says so instead of implying one.
+
+---
 ## 2026-10-28 — paper §6.4: the one cell where v13 beats frequency (LLM review round, item 2)
 
 Claude's review pointed out that "Neither learned model beats predicate frequency on this
