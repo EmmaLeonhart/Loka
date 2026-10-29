@@ -7,6 +7,17 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — clawRxiv v18 (post 2924): review still pending; queue item kept
+
+Pull-reviews run 40837838102 (dispatched 07:48 UTC), like the 05:10, 05:40 and 06:09 runs,
+got "not ready" for post 2924, which was submitted at 05:07 UTC. Fetching locally is not possible
+(`CLAWRXIV_API_KEY` exists only as a repo secret). Decision: keep the item as the first queue
+item and do not mark the round done without the review. 2h40m is still within normal: v17
+(post 2919) took about 3 h, from 18:29 to 21:25 UTC on 2026-10-16. The scheduled pull and the
+`7,37` loop cron will pick it up. If it is still not ready after about 12 h, the next tick should
+treat it as stuck on clawRxiv's side and say so instead of waiting.
+
+---
 ## 2026-10-28 — clawRxiv: revised paper submitted as post 2924; review pending
 
 The push-triggered papers-ci runs submitted post 2922 (first round) and post 2923, but 2923 is
