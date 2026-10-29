@@ -20,8 +20,6 @@ still sound on today's `main` and get it ready for Emma to submit.
 LLM review round of 2026-10-29 (ChatGPT Weak Reject, Claude and Mistral Weak Accept; details
 and sources in `paper/reviews/llm-round-2026-10-29.md`). One fix per item, in this order:
 
-9. §6.1 vs §3.2: check whether the synthetic correctness test writes the production provenance
-   predicates; if not, say so in §6.1 (Claude W6).
 10. Emit threshold 0.4 (§4.4) vs ≥ 0.25 in the Appendix B.2 probe: explain or align (Mistral).
 11. Minor (Claude): define "object-key" (§4.4 step 1); define confidence once; explain the 2,139
     rows between 155,324 pulled and 153,185 imported (§6.2); remove stray "Preprint." and the

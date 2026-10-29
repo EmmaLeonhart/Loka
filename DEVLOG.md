@@ -7,6 +7,17 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — paper §6.1: synthetic schema vs production stated (LLM round, item 9)
+
+Claude (W6) noted that §6.1's generator writes only `propositionGeneratedBy` and
+`propositionInferredFrom`, while production also writes the generated flag, confidence and
+predicted label. Checked `loka-core/src/retract.rs`: the closure follows only
+`PROP_INFERRED_FROM`, and annotation rows are swept by `is_reserved_predicate` (prefix match), so
+the extra predicates do not change what the engine does. The §6.2 real-data checks
+(`tools/retract_real_eval.py`, production-written data) already cover the full schema. §6.1 now
+says this. No code or test change.
+
+---
 ## 2026-10-29 — abstract and §3.1: guards are in the pipeline, not the store (LLM round, item 8)
 
 Claude (W3) said "enforced at ... write time" reads as a store guarantee, but the check is in
