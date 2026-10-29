@@ -7,6 +7,16 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-28 — `/arxiv/` refreshed with the Gemini/ChatGPT round (Finish item, part 1)
+
+"Paper PDF" run 40819617888 (for `fd39938`) is green: 17 pages (16 before; Appendix B adds a
+page). Checked the text for every change of this round and rendered page 16 (start of Appendix
+B) to `Documents/claude-screenshots/Loka_2026-10-28/` (Appendix B and B.1–B.3 render
+unnumbered). Its named PDF and source tarball replace `pages/arxiv/`'s copies. The abstract did
+not change this round; METADATA's copy still equals `paper.md`'s. The papers-ci clawRxiv
+submission for `fd39938` is queued; the queue item stays until its review is recorded.
+
+---
 ## 2026-10-28 — paper §1/§3.1: what each exclusion layer actually guards (ChatGPT review)
 
 ChatGPT's review (§4.3) noted that "any single layer suffices" is not true for generated
