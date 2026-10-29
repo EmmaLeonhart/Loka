@@ -20,9 +20,6 @@ still sound on today's `main` and get it ready for Emma to submit.
 LLM review round of 2026-10-29 (ChatGPT Weak Reject, Claude and Mistral Weak Accept; details
 and sources in `paper/reviews/llm-round-2026-10-29.md`). One fix per item, in this order:
 
-2. §6.5 and §4.4: "the provenance cost is the same under both generators" vs the table's maxima,
-   26 vs 36; say median/p90 match and the maxima differ, and check §4.4's quoted maxima (Mistral,
-   Claude).
 3. §6.3: say plainly that the reified join was faster (0.56 vs 0.66 ms median) and that the
    named-graph comparison is rows/bytes only (ChatGPT, Claude, Mistral).
 4. §4.3: "Three model sizes at this corpus size" vs a table with two configurations (Claude).

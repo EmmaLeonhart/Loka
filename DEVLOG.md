@@ -7,6 +7,16 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — paper §6.5/§4.4: citation maxima stated per generator (LLM round, item 2)
+
+Mistral and Claude pointed out that §6.5 calls the provenance cost "the same" under both
+generators while its table's maxima are 26 (v13) and 36 (predicate frequency), and that §4.4
+gives the observed maxima as "26 (§6.5) and 39 (§6.2)", leaving out §6.5's 36. §6.5 now says the
+cost is nearly the same: medians equal (9/9), means 10.5/10.3, 90th percentiles 20/19, maxima
+26/36. §4.4 gives all three maxima with where each comes from. All numbers are from the existing
+tables; nothing was re-measured.
+
+---
 ## 2026-10-29 — paper §6.2: scaling claim scoped to what the runs show (LLM round, item 1)
 
 ChatGPT, Mistral and Claude all said "Time follows the size of the removed set, not the size of
