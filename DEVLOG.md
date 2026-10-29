@@ -15,8 +15,9 @@ already described the algorithm as steps; it now also gives the set as one least
 definition (R₀ = the node's rows; R = smallest superset closed under "a generated triple citing
 something in R"; plus the reserved-namespace annotations of generated triples in R) and names
 the three deliberate consequences: node-rooted, any-source-lost removes a merged triple
-(pointing at the existing §7.2 bullet), and nothing outside the reserved namespace is removed
-beyond R₀. No proof was added; the reference-closure checks in §6.1–6.2 already test the
+(pointing at the existing §7.2 bullet), and no curated triple outside R₀ is removed (first
+worded wrongly as "nothing outside the reserved namespace", which generated triples contradict;
+fixed in the next commit). No proof was added; the reference-closure checks in §6.1–6.2 already test the
 implementation against this definition, and the paper does not claim more than that.
 
 ---
