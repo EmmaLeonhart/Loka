@@ -51,8 +51,10 @@ the removed set, not the store" claim rests on those two points. §6.2 now gives
 figures, gives the depth difference as the likely reason (the "fits in cache" part is a
 plausible explanation, not a measurement), and says the store-size comparison is two data
 points. The abstract's "about 0.1 s" now says "in memory", since persistent commit is a separate
-measurement. ChatGPT and Claude both read a "2.8× smaller" claim into §6.3 that the paper never
-makes; §6.3 now gives both ratios explicitly: 2.8×/2.4× in rows and 1.5×/1.3× in bytes against
+measurement. ChatGPT and Claude both flagged §6.3's "2.8 times smaller" as a row ratio
+(this entry first said the paper never makes that claim, which was wrong: a grep cut the line
+short; corrected the next commit, where the sentence now reads "2.8 times fewer rows (1.5 times
+fewer bytes)"); §6.3 now gives both ratios explicitly: 2.8×/2.4× in rows and 1.5×/1.3× in bytes against
 reification/named graphs (computed from the table: 937/333, 785/333, 125,570/82,839,
 106,767/82,839).
 
