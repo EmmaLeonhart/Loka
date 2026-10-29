@@ -7,6 +7,12 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-28 — old three-cron set stopped
+
+Per Emma's sequence, cancelled the session's work-loop `0549c459` (:03), auto-flush `fd129bff`
+(:15) and status-report `28fd344c` (:42). CronList afterwards: no scheduled jobs.
+
+---
 ## 2026-10-28 — migrated to cleanvibe 2.0.6 (skills + one-cron loop)
 
 Emma: Loka was still on the old cleanvibe format (inlined workflow sections, three-cron
