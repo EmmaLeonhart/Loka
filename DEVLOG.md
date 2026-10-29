@@ -7,6 +7,15 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — paper §6.2: units of 4,354 and 4,451 stated (LLM round, item 6)
+
+Claude asked how "4,354 required removals" squares with one preview removing "a maximum of
+4,451 triples". They count different things. 4,354 is (entity, generated triple) pairs summed
+over all 983 previews. 4,451 is the size of a single preview, which also holds the entity's
+curated triples and annotation rows: the store has only 356 generated triples, so it cannot be
+generated triples alone. The text now says what each number counts.
+
+---
 ## 2026-10-29 — paper §5.3: the v7 rise in catalog share stated (LLM round, item 5)
 
 Mistral noted that "fell from 40 % (v6) to 0 % (v10)" hides Table B.2's v7 value of 64 %
