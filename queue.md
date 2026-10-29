@@ -20,8 +20,6 @@ still sound on today's `main` and get it ready for Emma to submit.
 LLM review round of 2026-10-29 (ChatGPT Weak Reject, Claude and Mistral Weak Accept; details
 and sources in `paper/reviews/llm-round-2026-10-29.md`). One fix per item, in this order:
 
-3. §6.3: say plainly that the reified join was faster (0.56 vs 0.66 ms median) and that the
-   named-graph comparison is rows/bytes only (ChatGPT, Claude, Mistral).
 4. §4.3: "Three model sizes at this corpus size" vs a table with two configurations (Claude).
 5. §5.3: the catalog-share sentence "fell from 40 % (v6) to 0 % (v10)" should mention the rise to
    64 % at v7 (Mistral).

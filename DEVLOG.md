@@ -7,6 +7,14 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — paper §6.3: reified join was faster; storage-only claim (LLM round, item 3)
+
+ChatGPT, Claude and Mistral pointed out that "answers this query within 0.1 ms of the reified
+one" hides which side was faster: the reified join, 0.56 ms against 0.66 ms median. §6.3 now says
+so directly, says the RDF-star advantage shown is in storage, not query speed, and says the
+named-graph comparison is rows and bytes only.
+
+---
 ## 2026-10-29 — paper §6.5/§4.4: citation maxima stated per generator (LLM round, item 2)
 
 Mistral and Claude pointed out that §6.5 calls the provenance cost "the same" under both
