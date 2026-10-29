@@ -20,23 +20,21 @@ still sound on today's `main` and get it ready for Emma to submit.
 Review-round fixes (Emma, 2026-10-28: "attempt to address" the points from the ChatGPT /
 Claude / Grok / Mistral reviews of the `/arxiv/` PDF). One item per commit, in order:
 
-1. §6.4: "Neither learned model beats predicate frequency" is contradicted by v13's literal
-   Hits@1 (0.020 vs 0.018); state the exception.
-2. §4.4: the repetition penalty divides softmax probabilities (`p[t]`), not logits — fix the
+1. §4.4: the repetition penalty divides softmax probabilities (`p[t]`), not logits — fix the
    formula; state that `propositionConfidence` is the mean of post-penalty probabilities and is
    not calibrated.
-3. §6.2: per-removed-triple cost is ~0.3–0.4 µs on the two small graphs and ~0.8–0.9 µs on the
+2. §6.2: per-removed-triple cost is ~0.3–0.4 µs on the two small graphs and ~0.8–0.9 µs on the
    two large ones; say so instead of resting the "follows the removed set" claim on two points
    without comment; note the byte ratio (≈1.5×) next to the row ratio in §6.3.
-4. Investigate: does retracting a node leave curated RDF-star annotations (Wikidata qualifier /
+3. Investigate: does retracting a node leave curated RDF-star annotations (Wikidata qualifier /
    reference rows) on a deleted quoted triple? If yes: fix in `loka-core`, add a regression
    test, and describe it in §6.1/§3.4. If no: say in §3.4 why not.
-5. §3.4/§7.2: state the retraction invariant explicitly (node-rooted; a shared triple is removed
+4. §3.4/§7.2: state the retraction invariant explicitly (node-rooted; a shared triple is removed
    when any of its recorded derivations loses a source) as one short definition.
-6. Rebuild: push, confirm the "Paper PDF" run is green, refresh `pages/arxiv/` (PDF + source
+5. Rebuild: push, confirm the "Paper PDF" run is green, refresh `pages/arxiv/` (PDF + source
    tarball) from that run's artifacts, check `/arxiv/` serves it.
-7. Ensure the three crons (:03 work-loop, :15 auto-flush, :42 status) are still running.
-8. Run the status-report action once more as an end-of-burst summary.
+6. Ensure the three crons (:03 work-loop, :15 auto-flush, :42 status) are still running.
+7. Run the status-report action once more as an end-of-burst summary.
 
 
 ---

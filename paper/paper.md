@@ -322,7 +322,7 @@ The model scores a candidate of L tokens by masking L object positions, exactly 
 | v13 transformer | literal-valued | 13,596 | 0.038 | **0.020** | 0.033 | 0.068 |
 | TransE | literal-valued | 13,596 | 0.017 | 0.006 | 0.015 | 0.032 |
 
-Entity-valued objects are those whose label also occurs as a subject in training. Neither learned model beats predicate frequency on this split. The v13 transformer ranks above the untuned TransE, but with no tuning for either model we do not read that as a comparison of methods. The result is consistent with the model's training perplexity (Appendix A): it is a weak completion model. This is why the paper's claims concern the provenance machinery and not the quality of what the model predicts; the machinery is independent of the model it records.
+Entity-valued objects are those whose label also occurs as a subject in training. Neither learned model beats predicate frequency on this split, with one exception within noise: on literal-valued objects the v13 transformer's Hits@1 is 0.020 against 0.018 (about 27 more queries of 13,596 ranked first), while its MRR and every other column on that subset are lower. The v13 transformer ranks above the untuned TransE, but with no tuning for either model we do not read that as a comparison of methods. The result is consistent with the model's training perplexity (Appendix A): it is a weak completion model. This is why the paper's claims concern the provenance machinery and not the quality of what the model predicts; the machinery is independent of the model it records.
 
 ### 6.5 Independence from the generator
 

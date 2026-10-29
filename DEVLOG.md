@@ -7,6 +7,16 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-28 — paper §6.4: the one cell where v13 beats frequency (LLM review round, item 2)
+
+Claude's review pointed out that "Neither learned model beats predicate frequency on this
+split" is contradicted by the table itself: on literal-valued objects v13's Hits@1 is 0.020
+against frequency's 0.018. The sentence now names that exception and its size (about 27 of
+13,596 queries) and says MRR and every other column on that subset are still lower. The
+abstract, §7.1 and the conclusion compare overall scores, where the claim holds, so they are
+unchanged.
+
+---
 ## 2026-10-28 — paper §3.1: reserved-namespace table completed (LLM review round, item 1)
 
 Emma had the `/arxiv/` PDF reviewed by ChatGPT, Claude, Grok and Mistral (Gemini never
