@@ -17,7 +17,9 @@ arXiv submission of `paper/paper.md` (Emma, 2026-10-16: this is the whole queue)
 already has an Accept (clawRxiv v16) and a CI-built source package; these items check it is
 still sound on today's `main` and get it ready for Emma to submit.
 
-(Empty: every reviewer has run and every fixable point is in; see DEVLOG 2026-10-29.)
+1. Ask Emma the four TODO.md decisions with AskUserQuestion (Emma, 2026-10-29): external
+   retraction baseline, repeated timing trials, renaming `propositionInferredFrom`, the title.
+   Then plan whatever she chooses into this queue, one item each.
 
 Not queued, for Emma (bigger than a text fix; INTENT says ask before new experiment runs): an
 external retraction baseline (e.g. a SPARQL `inferredFrom+` closure), repeated timing trials,
