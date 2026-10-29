@@ -7,6 +7,20 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — Grok reviewed the fixed build: Weak Accept, nothing new to fix; Gemini waits on Emma
+
+At Emma's request I retried Grok and Gemini (the first attempt had hit "permission denied"
+and I had stopped there; that was too early). Both pages worked on the retry. Grok's text box
+dropped the spaces from typed text, so the prompt was cleared and inserted with
+`execCommand('insertText')`. Grok reviewed the 18-page build with items 1–11 fixed: **Weak
+Accept**, no numerical inconsistencies, and it reads the fixed §6.2/§6.3/§6.5 as accurate. Its
+optional "median 92 ms" wording for the abstract was not taken (see the review file). Gemini:
+"Upload files" opens a native picker, so the PDF went in through an injected file input and a
+synthetic drop. Google then showed an upload-terms dialog. Accepting terms needs Emma's yes, so
+the dialog is left open and Gemini has not run yet. Screenshots in
+`Documents/claude-screenshots/Loka_2026-10-29/`.
+
+---
 ## 2026-10-29 — `/arxiv/` refreshed with the LLM-round fixes (item 12); round done
 
 Paper PDF run 40939017345 (for `d8eb791`) is green: 18 pages, up from 17. Checked the
