@@ -7,6 +7,17 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-28 — paper §2.2: selection provenance is not why-provenance (Gemini review)
+
+Gemini's review said §2.2 stretches Buneman et al.'s term: calling selection provenance "a form
+of why-provenance" implies the cited statements witness the output, but the model predicts the
+object from the subject and predicate labels alone, so the citations explain the (S, P)
+proposal, not the value. §2.2 now says it shares why-provenance's shape (one source set per
+output) but not its meaning, and is provenance of the proposal. The same overreach was in the
+suggested PROV-O mapping (`prov:wasDerivedFrom`); it now points to `prov:used` on the
+generating activity as the closer fit.
+
+---
 ## 2026-10-28 — paper §4.4: citation cap stated (Gemini review)
 
 Gemini's review asked how a maximum of 26 citations on the 153k store squares with 39 on the 2M
