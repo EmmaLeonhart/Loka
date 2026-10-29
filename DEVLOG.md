@@ -7,6 +7,20 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-28 — paper §3.1: reserved-namespace table completed (LLM review round, item 1)
+
+Emma had the `/arxiv/` PDF reviewed by ChatGPT, Claude, Grok and Mistral (Gemini never
+answered; DeepSeek and Perplexity need a sign-in) and asked for the points to be addressed;
+they are planned as one queue item each. Claude's review noticed that §3.1 calls its table "the
+full namespace" but omits `propositionPredictedLabel`, which `training/infer_with_citations.py`
+writes under the reserved prefix (§4.4 step 4). Checked both enforcement paths: the corpus
+filter (`training/preprocess.py`, `is_reserved`) and the retraction sweep
+(`loka-core/src/retract.rs`, `is_reserved_predicate`) match on the prefix, so the predicate was
+already covered and only the text was wrong. Added the row, said in the text that both paths
+match the prefix, and replaced the naming example `propositionGeneratedFrom` (not a real
+predicate) with `propositionGeneratedBy`.
+
+---
 ## 2026-10-28 — session start: crons on, queue still empty, nothing to promote
 
 Started the work-loop (:03), auto-flush (:15) and status-report (:42) crons (session-local).

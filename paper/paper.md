@@ -70,7 +70,7 @@ The models in our case study are trained from scratch on triples, not fine-tuned
 
 ### 3.1 The reserved provenance namespace
 
-Every predicate under `http://loka.dev/provenance/` is system-internal. The names are deliberately verbose — `propositionGeneratedFrom` rather than `generatedFrom` — so a human scanning raw triples spots them at a glance and accidental collision with real-world predicates is vanishingly unlikely. The full namespace currently holds:
+Every predicate under `http://loka.dev/provenance/` is system-internal. The names are deliberately verbose — `propositionGeneratedBy` rather than `generatedBy` — so a human scanning raw triples spots them at a glance and accidental collision with real-world predicates is vanishingly unlikely. The full namespace currently holds:
 
 | Predicate | Object type | Meaning |
 |---|---|---|
@@ -78,6 +78,7 @@ Every predicate under `http://loka.dev/provenance/` is system-internal. The name
 | `propositionGeneratedBy` | string | The model version (e.g., `wikidata_v4`) that emitted it. |
 | `propositionConfidence` | `xsd:decimal` | Mean per-token softmax probability of the prediction. |
 | `propositionInferredFrom` | quoted triple | A stored statement the prediction procedure took as input (selection provenance). |
+| `propositionPredictedLabel` | string | The raw model output, kept when the object was resolved to an entity IRI (§4.4). |
 | `propositionImportedFrom` | URI | Reserved; not currently emitted in production (was found redundant for uniformly-Wikidata corpora). |
 
 Three layers of enforcement keep these out of the model's view and output:
@@ -93,7 +94,7 @@ SELECT ?s ?p ?o WHERE {
 }
 ```
 
-It also drops any row whose predicate IRI matches the reserved prefix.
+It also drops any row whose predicate IRI matches the reserved prefix. Both this filter and the retraction sweep of §3.4 match the prefix, not a list of names, so a predicate added to the namespace is covered without further changes.
 
 **Candidate filtering.** The inference loop builds candidate `(subject, predicate)` pairs by intersecting subject-with-graph-neighbor predicates. Reserved-namespace predicates are excluded from `pred_usage` and re-filtered at the candidate list level.
 
