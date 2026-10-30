@@ -7,6 +7,17 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — Emma answered the four review-round decisions; planned into the queue
+
+Asked with AskUserQuestion. Emma chose: run the external retraction baseline (a SPARQL
+property-path closure on the §6.2 stores); re-run the §6.2 timings five times each and report
+median and min–max; rename `propositionInferredFrom` everywhere, to `propositionSelectedFrom`
+(the name the review suggested); retitle the paper "Loka: Provenance for Retracting
+Model-Generated Triples in an RDF-star Store". Each is now one `queue.md` item, plus a final
+rebuild-and-refresh of `/arxiv/`. The rename goes first so the new timings and the baseline
+are measured on the code that ships. TODO.md's decision list now records the answers.
+
+---
 ## 2026-10-29 — `/arxiv/` refreshed with the Gemini fixes (Gemini item 2)
 
 Paper PDF run 40945103959 (for `1217d43`) is green: still 18 pages. Checked the extracted text

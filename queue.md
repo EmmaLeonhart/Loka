@@ -17,13 +17,30 @@ arXiv submission of `paper/paper.md` (Emma, 2026-10-16: this is the whole queue)
 already has an Accept (clawRxiv v16) and a CI-built source package; these items check it is
 still sound on today's `main` and get it ready for Emma to submit.
 
-1. Ask Emma the four TODO.md decisions with AskUserQuestion (Emma, 2026-10-29): external
-   retraction baseline, repeated timing trials, renaming `propositionInferredFrom`, the title.
-   Then plan whatever she chooses into this queue, one item each.
-
-Not queued, for Emma (bigger than a text fix; INTENT says ask before new experiment runs): an
-external retraction baseline (e.g. a SPARQL `inferredFrom+` closure), repeated timing trials,
-renaming `propositionInferredFrom`, and the title wording. See TODO.md.
+1. Rename `propositionInferredFrom` to `propositionSelectedFrom` everywhere (Emma, 2026-10-29:
+   "Rename everywhere"). Code (`loka-core` id.rs/retract.rs, `loka-proto` server.rs,
+   `loka-sparql` executor.rs, `loka-cli` mcp.rs), tests, tools/ and training/ scripts, docs,
+   pages, CLAUDE.md, README and the paper. Leave dated history (DEVLOG, paper/reviews/,
+   planning notes describing past work) as written. Decide how stores holding the old IRI are
+   read (alias on load, or a one-shot migration in `loka` CLI) and test it. The paper says once
+   that the §6.2 real-data runs predate the rename (same IRI role, new name). `cargo test`
+   green before commit.
+2. Repeated timing trials for §6.2 (Emma, 2026-10-29: "5 runs each"). Run
+   `loka-core/benches/retract.rs` five separate times at all four sizes on the renamed code,
+   release build, laptop idle (no `loka serve`/training alongside). Report median and min–max
+   across the five runs in the §6.2 table; replace the "one run, 1.6× faster earlier" sentence
+   with what the spread shows. Keep the raw criterion outputs under `paper/supplementary/`.
+3. External retraction baseline (Emma, 2026-10-29: "Yes, run it"). Time a plain SPARQL
+   property-path closure (`?g loka:propositionSelectedFrom+ ?t` plus the touches-the-entity
+   rule) on the same four generated stores as §6.2, five runs each, and compare with
+   `retract_set`. Check the closure returns the same set. Add a column or short table to §6.2
+   and a sentence to §8; drop "no external baseline" from §7.3 if it is there.
+4. Retitle the paper to "Loka: Provenance for Retracting Model-Generated Triples in an RDF-star
+   Store" (Emma, 2026-10-29). `paper/paper.md`, `paper/arxiv/METADATA.md`, the LaTeX build
+   inputs, `pages/arxiv/index.html`, README, CLAUDE.md's focus line, TODO.md.
+5. Rebuild and refresh: wait for the Paper PDF run on the new `main`, check the extracted text
+   for items 1–4, and replace `pages/arxiv/`'s PDF and source tarball; update page count and
+   abstract on the page and in METADATA if they changed.
 
 ---
 

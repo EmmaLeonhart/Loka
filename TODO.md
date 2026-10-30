@@ -768,13 +768,10 @@ Benchmark results are tracked automatically by CI. See:
 - [ ] The attach step itself runs only on a `v*` tag: check the assets on the next release.
 - [ ] macOS build is unsigned (Gatekeeper will warn); signing needs an Apple Developer ID (Emma's).
 
-## Decisions for Emma from the 2026-10-29 LLM review round
+## Decisions from the 2026-10-29 LLM review round (answered by Emma, 2026-10-29)
 
-From `paper/reviews/llm-round-2026-10-29.md`; each needs a new experiment run or changes code
-or the title, so each waits for Emma:
-- External baseline for retraction (ChatGPT, Mistral, Claude): e.g. time a SPARQL
-  `?g loka:inferredFrom+ ?t` closure on the same stores as §6.2.
-- Repeated timing trials with dispersion for §6.2 (all three reviewers).
-- Rename `propositionInferredFrom` (e.g. `propositionSelectedFrom`): Claude notes that the name
-  says inference, which the paper itself says the record is not. This changes code and stored data.
-- Title: "Retractable Provenance": it is the triples that are retracted, not the provenance (Claude).
+From `paper/reviews/llm-round-2026-10-29.md`. Emma's answers are planned into `queue.md`:
+- External baseline for retraction: yes, time a SPARQL property-path closure on the §6.2 stores.
+- Repeated timing trials for §6.2: yes, five runs each, median and min–max.
+- Rename `propositionInferredFrom`: yes, everywhere, to `propositionSelectedFrom`.
+- Title: "Loka: Provenance for Retracting Model-Generated Triples in an RDF-star Store".
