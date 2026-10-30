@@ -17,9 +17,8 @@ arXiv submission of `paper/paper.md` (Emma, 2026-10-16: this is the whole queue)
 already has an Accept (clawRxiv v16) and a CI-built source package; these items check it is
 still sound on today's `main` and get it ready for Emma to submit.
 
-Fixes from the late round-2 reviews (DeepSeek, Perplexity, on the reframed build):
-
-1. Rebuild and refresh `/arxiv/`.
+(empty: all round-2 fixes are done; arXiv waits on Emma's upload, see TODO.md "Paper / arXiv —
+ready for Emma to submit")
 
 Not queued, for Emma (new experiments; INTENT says ask first): a store-size × removal-size grid; an extractor run on the
 153k store showing 0 generated/reserved rows; deeper chains; an over-deletion count. Also:

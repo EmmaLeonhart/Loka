@@ -7,6 +7,15 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — `/arxiv/` refreshed with the DeepSeek/Perplexity fixes; queue empty
+
+Paper PDF run 40993098827 (for `312d8d3`) is green, still 17 pages. The extracted text has the
+§1/§3.4 scoping, §4.4's narrower guarantee and the §7.3 traversal-vs-capture limitation, and no
+longer says "cites everything it used". The named PDF and source tarball replace
+`pages/arxiv/`'s copies (`baceef1`). The abstract did not change. Queue empty; arXiv waits on
+Emma's upload.
+
+---
 ## 2026-10-29 — §7.3: the correctness checks test traversal, not dependency capture
 
 Perplexity W2 (round 2): every correctness check compares retraction with a closure over the
