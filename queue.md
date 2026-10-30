@@ -17,14 +17,8 @@ arXiv submission of `paper/paper.md` (Emma, 2026-10-16: this is the whole queue)
 already has an Accept (clawRxiv v16) and a CI-built source package; these items check it is
 still sound on today's `main` and get it ready for Emma to submit.
 
-1. Tag release `v0.4.7` for the paper to cite (Emma said yes, 2026-10-29). Not pushed yet: a
-   `v*` tag also triggers `publish-sdks.yml` (PyPI, npm, Maven, NuGet; at v0.4.6 those ran and
-   failed), and SDK publishing is Emma-gated. Asked whether to cancel that run; her reply was
-   about the cron waiting on the turn, not an answer, so the tag waits for a clear yes on the
-   SDK run. Do NOT push the tag on a cron tick. Once she answers: bump `Cargo.toml` to 0.4.7,
-   tag with informative notes (rename + legacy alias, SPARQL baseline bench, five-run timings),
-   point paper.md line 3, METADATA's Comments and the `/arxiv/` page at v0.4.7, refresh the
-   build.
+1. Refresh `/arxiv/` once the Paper PDF run for the v0.4.7 citation commit is green: check the
+   PDF cites v0.4.7, copy the named PDF and source tarball over `pages/arxiv/`'s copies.
 
 ---
 

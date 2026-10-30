@@ -1,6 +1,6 @@
 # Loka: Provenance for Retracting Model-Generated Triples in an RDF-star Store
 
-**Code:** <https://github.com/EmmaLeonhart/Loka> (release `v0.4.6`: <https://github.com/EmmaLeonhart/Loka/releases/tag/v0.4.6>) &middot; **Model checkpoints:** <https://huggingface.co/datasets/EmmaLeonhart/loka> (`checkpoints/wikidata_v3.pt`–`wikidata_v14.pt`, plus per-epoch checkpoints for v13 and v14, snapshot tags `v13.*` `v14.*`) &middot; **Normalized-Wikidata training corpora (v11+):** <https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata> (snapshot tags `v11-50k`, `v12-100k`, `v13-500k`, `v14-1M`) &middot; **Source dataset:** <https://huggingface.co/datasets/philippesaade/wikidata>
+**Code:** <https://github.com/EmmaLeonhart/Loka> (release `v0.4.7`: <https://github.com/EmmaLeonhart/Loka/releases/tag/v0.4.7>) &middot; **Model checkpoints:** <https://huggingface.co/datasets/EmmaLeonhart/loka> (`checkpoints/wikidata_v3.pt`–`wikidata_v14.pt`, plus per-epoch checkpoints for v13 and v14, snapshot tags `v13.*` `v14.*`) &middot; **Normalized-Wikidata training corpora (v11+):** <https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata> (snapshot tags `v11-50k`, `v12-100k`, `v13-500k`, `v14-1M`) &middot; **Source dataset:** <https://huggingface.co/datasets/philippesaade/wikidata>
 
 ---
 
@@ -400,7 +400,7 @@ We described how a triplestore can hold model-generated statements next to curat
 
 **Software and data.**
 
-- Loka engine, release `v0.4.6` (includes the retraction fix of §6.1). https://github.com/EmmaLeonhart/Loka/releases/tag/v0.4.6. AGPL-3.0-or-later.
+- Loka engine, release `v0.4.7` (includes the retraction fix of §6.1, the `propositionSelectedFrom` name and the §6.2 baseline benchmark). https://github.com/EmmaLeonhart/Loka/releases/tag/v0.4.7. AGPL-3.0-or-later.
 - Model checkpoints: https://huggingface.co/datasets/EmmaLeonhart/loka. Training corpora: https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata.
 - Source data: philippesaade, *wikidata*, Hugging Face dataset, CC0. https://huggingface.co/datasets/philippesaade/wikidata. The dataset revision used for the v11–v14 corpora was not pinned, and the dataset has been updated since.
 

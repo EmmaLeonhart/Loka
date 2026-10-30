@@ -7,6 +7,17 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — Release v0.4.7 tagged; the paper cites it
+
+Emma: "Okay, do it", and the SDK-publish run was never a reason to hold the tag (saved as a
+memory). `Cargo.toml` bumped to 0.4.7 (`3bf8b88`), annotated tag pushed, and release notes
+written: the rename as a breaking change for provenance writers, with the legacy alias so old
+stores need no migration; the SPARQL baseline bench; the five-run and baseline numbers; and the
+path-into-quoted-pattern limitation. The tag started the Release and Publish SDKs runs as usual.
+The paper (code link and reference list), METADATA, the `/arxiv/` page and the supplementary
+SKILL.md now cite v0.4.7.
+
+---
 ## 2026-10-29 — v0.4.7 release: Emma said yes; tag held on the SDK-publish question
 
 Emma chose to tag v0.4.7 for the paper. Before tagging I found that a `v*` tag also runs
