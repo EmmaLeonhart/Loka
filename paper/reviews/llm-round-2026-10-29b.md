@@ -15,7 +15,7 @@ the same prompt as round 1 (`llm-round-2026-10-29.md`):
 | Reviewer | Verdict | Link |
 |---|---|---|
 | Meta AI | **Weak Accept** for arXiv ("Weak Reject for a top-tier venue in current form") | meta.ai/prompt/37905ade-5f45-4dbe-83ba-c4b1faeda481 |
-| DeepSeek | none: Google sign-in hits DeepSeek's slider CAPTCHA, with Proton VPN on and again after Emma turned it off (agents may not solve CAPTCHAs) | — |
+| DeepSeek | **Weak Accept** ("with those changes I would move to Accept"). Run on the reframed 17-page build after Emma solved the sign-in CAPTCHA (agents may not); the first few words of the typed prompt were lost, the rest arrived | chat.deepseek.com/a/chat/s/a8080cd7-2910-4e0a-97b7-605db1320b40 |
 | Gemini (Flash) | **Weak Accept** ("leaning Accept for arXiv") | gemini.google.com/app/3610c94b3ec46721 |
 | ChatGPT | **Weak Accept** (round 1: Weak Reject) | chatgpt.com/c/6ae3f785-eaf8-83e8-b966-f699a761a2e1 |
 | Claude (Fable 5.1) | **Weak Reject** for a main-track venue, Accept at a workshop; "nothing here blocks an arXiv posting" (round 1: Weak Accept) | claude.ai/chat/e0133834-b0cc-4531-a332-275c5d48fa4a |
@@ -46,6 +46,16 @@ capture: a missing citation would be absent from both the store and the referenc
 capture oracle on small graphs. (W3) Annotations attach to triple content, not to an
 assertion. A triple that is both curated and generated is unresolved. (W4) Novelty versus the
 engineering integration.
+
+DeepSeek's points (reframed build): (W1) compare with TripleProv properly (table: granularity,
+storage, query, retraction). (W2) Store-size claim: §9 should match §6.2's hedge; add a third
+large size or say "consistent with". (W3) Run the synthetic correctness test with the full
+production annotation block; build a three-hop real chain. (W4) Qualify "the stored statements
+the procedure took as input" with the selector's bounds, and report how often the bound binds.
+(W7) Abstract should say exclusion and retraction assume the flag is set. Claims: "every
+model-predicted triple ... from which stored statements" (§1, §3.4) is false for the interactive
+generator (§7.2); say "written by the §4.4 procedure". Minor: say whether §6.2/§6.3 ran after
+the §6.1 fix; consider moving §6.3/§6.4 to an appendix.
 
 ## Checked and not real
 
