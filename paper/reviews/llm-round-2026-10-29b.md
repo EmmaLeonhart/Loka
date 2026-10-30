@@ -18,3 +18,6 @@ the same prompt as round 1 (`llm-round-2026-10-29.md`):
 | DeepSeek | none: Google sign-in hits DeepSeek's slider CAPTCHA, with Proton VPN on and again after Emma turned it off (agents may not solve CAPTCHAs) | — |
 | Gemini (Flash) | **Weak Accept** ("leaning Accept for arXiv") | gemini.google.com/app/3610c94b3ec46721 |
 | ChatGPT | **Weak Accept** (round 1: Weak Reject) | chatgpt.com/c/6ae3f785-eaf8-83e8-b966-f699a761a2e1 |
+| Claude (Fable 5.1) | **Weak Reject** for a main-track venue, Accept at a workshop; "nothing here blocks an arXiv posting" (round 1: Weak Accept) | claude.ai/chat/e0133834-b0cc-4531-a332-275c5d48fa4a |
+| Grok | **Weak Accept** ("no claim is contradicted by the tables") | grok.com/c/151b7336-b287-4366-850a-10dea830a49f |
+| Mistral (Vibe) | **Weak Accept** ("with W1–W3 addressed I would move to Accept"; checked the arithmetic and found it clean) | chat.mistral.ai/work/e1c93fc9-4824-49d3-a7be-3bfedaa6b801 |
