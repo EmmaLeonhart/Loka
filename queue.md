@@ -21,8 +21,8 @@ still sound on today's `main` and get it ready for Emma to submit.
    queue to basically actively go through the process of uploading"). In Chrome via the
    extension: Emma signs in at arxiv.org herself (agents may not submit a password, even an
    autofilled one; the login page was left open with her username filled). Then Claude starts
-   Submit → New and fills it from `paper/arxiv/METADATA.md`: licence CC BY 4.0, primary cs.AI,
-   cross-list cs.DB; upload `pages/arxiv/loka-retractable-provenance-source.tar.gz` (the
+   Submit → New and fills it from `paper/arxiv/METADATA.md`: licence CC BY 4.0, primary cs.LG,
+   cross-lists cs.DB and cs.AI; upload `pages/arxiv/loka-retractable-provenance-source.tar.gz` (the
    `c60a23b`+ build, 17 pages); paste title, abstract and comments. If arXiv asks for an
    endorsement, show Emma the code and stop; requesting it is hers. Check arXiv's compiled PDF
    against `pages/arxiv/loka-retractable-provenance.pdf` (17 pages, named author). Stop before
@@ -32,7 +32,7 @@ still sound on today's `main` and get it ready for Emma to submit.
    untitled submissions, `submit/8274430` and `submit/8274728` (both expire 2026-11-06), so no
    third one was started. On `submit/8274430/start` the contact certification and the Submission
    Agreement are ticked (Emma's "Accept"), and the archive is set to cs, subject Artificial
-   Intelligence. The Claude Code permission check blocked Claude from clicking two radios: the
+   Intelligence (Emma then changed it to cs.LG primary, cs.DB + cs.AI cross-lists, now set to Machine Learning). The Claude Code permission check blocked Claude from clicking two radios: the
    Authorship one ("I am submitting as an author") and the CC BY licence. Emma has to click those
    two and then Continue. After that, Claude does Add Files onward. Delete `8274728` only if Emma
    says to.
