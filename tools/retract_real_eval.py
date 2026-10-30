@@ -30,7 +30,7 @@ from pathlib import Path
 
 import requests
 
-INFERRED = "<http://loka.dev/provenance/propositionInferredFrom>"
+INFERRED = "<http://loka.dev/provenance/propositionSelectedFrom>"
 QUOTED = re.compile(r"<< (\S+) (\S+) (.+?) >>")
 
 

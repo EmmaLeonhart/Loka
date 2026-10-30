@@ -439,7 +439,7 @@ fn handle_tools_list(id: &Value) -> Value {
                 },
                 {
                     "name": "retract_node",
-                    "description": "Cascade-retraction: remove a node — real data OR AI-generated — and every generated inference that transitively cited it. Propagation follows ONLY provenance back-edges (http://loka.dev/provenance/propositionInferredFrom); ordinary data edges are never followed (real→real is not a dependency). Dry-run by default: returns the would-be-removed set grouped by cascade depth. Pass commit:true to actually delete (DESTRUCTIVE).",
+                    "description": "Cascade-retraction: remove a node — real data OR AI-generated — and every generated inference that transitively cited it. Propagation follows ONLY provenance back-edges (http://loka.dev/provenance/propositionSelectedFrom); ordinary data edges are never followed (real→real is not a dependency). Dry-run by default: returns the would-be-removed set grouped by cascade depth. Pass commit:true to actually delete (DESTRUCTIVE).",
                     "inputSchema": {
                         "type": "object",
                         "properties": {

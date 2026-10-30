@@ -40,7 +40,7 @@ else under `training/`; from-scratch artefacts stay isolated.
 - **Base model:** Qwen 2.5 1.5B-Instruct (Apache 2.0, multilingual, fits 16 GB GPU).
 - **Method:** QLoRA via HuggingFace `peft` + `trl.SFTTrainer`.
 - **Output schema:** same reserved provenance namespace as from-scratch —
-  `http://loka.dev/provenance/` (`propositionInferredFrom`,
+  `http://loka.dev/provenance/` (`propositionSelectedFrom`,
   `propositionGeneratedBy`, `propositionConfidence`), emitted as RDF-star
   annotations. Identical to `../infer_with_citations.py`.
 

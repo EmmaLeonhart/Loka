@@ -7,6 +7,24 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — `propositionInferredFrom` renamed to `propositionSelectedFrom`
+
+Emma chose "rename everywhere". The new name says what the edge records: the statements the
+selector took as input, not an inference. Renamed in the engine (`PROP_SELECTED_FROM` in
+`loka-core`, the MCP tool text, server and executor tests), the Python writers and checkers in
+`training/` and `tools/`, the site, README, CLAUDE.md, docs, status, the live planning specs
+and the paper. Dated history keeps the old name: this log, `paper/reviews/`, `pages/history`
+(and its search excerpt), and the dated planning notes.
+
+Decision on old stores: no data migration. The cascade follows both IRIs (the old one is
+`PROP_SELECTED_FROM_LEGACY`, read-only, never written), so the §6 real-data stores and the
+generated corpora already on Hugging Face retract the same way. New test
+`follows_pre_rename_predicate` covers a store that has only the old IRI. Paper §3.1 now says
+the predicate was renamed and that the §6 real-data stores were written under the old name.
+Tests: `cargo test` for loka-core/sparql/proto/cli all pass (run under `vcvars64.bat`; Git
+Bash still has no MSVC), and `training/test_selection_provenance.py` passes (8).
+
+---
 ## 2026-10-29 — Emma answered the four review-round decisions; planned into the queue
 
 Asked with AskUserQuestion. Emma chose: run the external retraction baseline (a SPARQL

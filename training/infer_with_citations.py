@@ -8,7 +8,7 @@ top-1 tokens. If the prediction is high-confidence, emit:
     << <S> <P> "predicted-label" >>  loka:generated     "true"^^xsd:boolean .
     << <S> <P> "predicted-label" >>  loka:generatedBy   "wikidata_v2" .
     << <S> <P> "predicted-label" >>  loka:confidence    "0.87"^^xsd:decimal .
-    << <S> <P> "predicted-label" >>  loka:inferredFrom  << <S> <p_existing> <o_existing> >> .
+    << <S> <P> "predicted-label" >>  loka:selectedFrom  << <S> <p_existing> <o_existing> >> .
     ...
 
 Generated triples are tagged so they can be (a) hidden from default queries and
@@ -60,7 +60,7 @@ from preprocess import (  # noqa: E402
     LOKA_GENERATED,
     LOKA_GENERATED_BY,
     LOKA_CONFIDENCE,
-    LOKA_INFERRED_FROM,
+    LOKA_SELECTED_FROM,
 )
 
 XSD_BOOLEAN = "http://www.w3.org/2001/XMLSchema#boolean"
@@ -384,7 +384,7 @@ def candidate_predicates_with_evidence(
     how many such matches support them. ``evidence[p2]`` lists exactly the
     statements of S whose (p, o-key) matched a neighbour that has p2, in S's
     fact order. Those are the statements the proposal depended on, which is
-    what ``propositionInferredFrom`` should cite: retracting any of them must
+    what ``propositionSelectedFrom`` should cite: retracting any of them must
     retract the prediction.
 
     ``neighbour_evidence[p2]`` lists one statement per neighbour that produced
@@ -634,7 +634,7 @@ def generate_for_subject(
         cited_rows += [(f"<{ns}>", f"<{np_}>", fmt_term(no)) for ns, np_, no in neighbour_evidence[p_uri]]
         for cited_s, cited_p, cited_o in cited_rows[:max_citations]:
             cited = quoted(cited_s, cited_p, cited_o)
-            out_lines.append(f"{qt} <{LOKA_INFERRED_FROM}> {cited} .")
+            out_lines.append(f"{qt} <{LOKA_SELECTED_FROM}> {cited} .")
         shown = f"{o_label!s} -> <{resolved}>" if resolved else f"{o_label!s}"
         log.append(f"  + {s_label!s} | {p_label!s} | {shown}  (conf={conf:.3f})")
 

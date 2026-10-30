@@ -8,7 +8,7 @@ Last touched: **2026-05-20**
 
 ## What this project is in one paragraph
 
-A neuro-symbolic world model. **Loka** is the engine (Rust, this repo): a lean RDF-star triplestore with native HNSW vector indexing and a SPARQL+ query layer. **Loka** is also the project as a whole: the engine plus a 44.5 M-parameter role-aware transformer trained on label-substituted RDF-star Wikidata triples. The transformer predicts missing slot values in `<<S P O>>` triples and its predictions land back in the store as RDF-star annotations with `propositionInferredFrom` provenance edges. End-to-end loop: ingest → preprocess → train → predict → write-back-with-provenance. Canonical vision: `planning/world-model-thesis.md`. Per-version detail: `DEVLOG.md`.
+A neuro-symbolic world model. **Loka** is the engine (Rust, this repo): a lean RDF-star triplestore with native HNSW vector indexing and a SPARQL+ query layer. **Loka** is also the project as a whole: the engine plus a 44.5 M-parameter role-aware transformer trained on label-substituted RDF-star Wikidata triples. The transformer predicts missing slot values in `<<S P O>>` triples and its predictions land back in the store as RDF-star annotations with `propositionSelectedFrom` provenance edges. End-to-end loop: ingest → preprocess → train → predict → write-back-with-provenance. Canonical vision: `planning/world-model-thesis.md`. Per-version detail: `DEVLOG.md`.
 
 ---
 
@@ -103,7 +103,7 @@ python training/infer_with_citations.py \
 ## Decisions to remember
 
 - **`http://loka.dev/provenance/` is a reserved namespace.** The world model never sees, proposes, or emits predicates under it. Enforced at three layers in `preprocess.py`, `preprocess_from_hf.py`, and `infer_with_citations.py`.
-- **RDF-star is THE citation mechanism.** `propositionInferredFrom`, `propositionGenerated`, `propositionGeneratedBy`, `propositionConfidence`.
+- **RDF-star is THE citation mechanism.** `propositionSelectedFrom`, `propositionGenerated`, `propositionGeneratedBy`, `propositionConfidence`.
 - **Hallucinated citations are not a blocker.** They're auditable RDF-star rows; filterable like any other generated triple.
 - **Property labels from corpus `rdfs:label` rows are corrupt** (engine bug #2 fallout in RDF-star executors). Always source property labels from `training/property_label_cache.json` (7 312 curated entries) + Wikidata API fallback. The streaming preprocessor enforces this.
 - **`--batch-size 16` for all training on this laptop.** Batch 32 OOMs the 4070 Laptop's 8 GB VRAM at the 44.5 M-param scale.

@@ -63,7 +63,7 @@ def test_emitted_citations_are_the_evidence(monkeypatch):
         vocab=None, inv_vocab=None, tokens_per_role=8, device="cpu",
         model_version="test",
     )
-    cited = [ln for ln in lines if iwc.LOKA_INFERRED_FROM in ln]
+    cited = [ln for ln in lines if iwc.LOKA_SELECTED_FROM in ln]
     assert len(cited) == 2
     assert f"<< <{EX}S> <{EX}p_city> <{EX}Paris> >> ." in cited[0]
     assert f"<< <{EX}N> <{EX}p_mayor> <{EX}Hidalgo> >> ." in cited[1]
@@ -140,5 +140,5 @@ def test_frequency_generator_same_provenance_as_model(monkeypatch):
         object_predictor=freq)
     # The frequency generator emits the most common object of p_mayor as its real term.
     assert freq_lines[0] == f"<{EX}S> <{EX}p_mayor> <{EX}Hidalgo> ."
-    cited = lambda ls: [ln.split(iwc.LOKA_INFERRED_FROM + "> ")[1] for ln in ls if iwc.LOKA_INFERRED_FROM in ln]
+    cited = lambda ls: [ln.split(iwc.LOKA_SELECTED_FROM + "> ")[1] for ln in ls if iwc.LOKA_SELECTED_FROM in ln]
     assert cited(model_lines) == cited(freq_lines)

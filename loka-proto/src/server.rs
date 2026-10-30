@@ -2803,7 +2803,7 @@ mod tests {
         let body = concat!(
             "<http://wd/Q42> <http://wd/P_pob> <http://wd/Q350> .\n",
             "<< <http://wd/Q350> <http://wd/G_died> <http://wd/Q999> >> ",
-            "<http://loka.dev/provenance/propositionInferredFrom> ",
+            "<http://loka.dev/provenance/propositionSelectedFrom> ",
             "<< <http://wd/Q42> <http://wd/P_pob> <http://wd/Q350> >> .\n",
         );
         let req = Request::builder()
@@ -2876,7 +2876,7 @@ mod tests {
         let body = concat!(
             "<http://wd/Q42> <http://wd/P_pob> <http://wd/Q350> .\n",
             "<< <http://wd/Q350> <http://wd/G_died> <http://wd/Q999> >> ",
-            "<http://loka.dev/provenance/propositionInferredFrom> ",
+            "<http://loka.dev/provenance/propositionSelectedFrom> ",
             "<< <http://wd/Q42> <http://wd/P_pob> <http://wd/Q350> >> .\n",
         );
         let req = Request::builder()

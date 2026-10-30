@@ -163,7 +163,7 @@ on the 153k and 2M stores before the paper could claim them.
 ## Selection provenance for the interactive Qwen generator (found 2026-10-16)
 
 `tools/retrieval_generate.py` (the Studio double-click) writes `propositionGenerated`,
-`propositionGeneratedBy`, the base model and a confidence, but no `propositionInferredFrom`
+`propositionGeneratedBy`, the base model and a confidence, but no `propositionSelectedFrom`
 edges, and its subjects are label literals, not IRIs. Cascade retraction therefore can't reach
 its output. To fix it, `graph_retrieval.retrieve` would have to keep the IRIs of the triples
 it retrieves (it currently returns only labels), cite those as quoted triples, and write the

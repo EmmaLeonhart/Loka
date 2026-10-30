@@ -28,7 +28,7 @@ import sys
 from pathlib import Path
 
 PROV = "http://loka.dev/provenance/"
-INFERRED = f"<{PROV}propositionInferredFrom>"
+INFERRED = f"<{PROV}propositionSelectedFrom>"
 RDF = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 W3PROV = "http://www.w3.org/ns/prov#"
 QUOTED = re.compile(r"<< (\S+) (\S+) (.+?) >>")

@@ -7,7 +7,7 @@
     <meta property="og:type" content="website">
     <meta property="og:title" content="Loka — Neuro-Symbolic World Model on RDF-Star">
     <meta property="og:description" content="Two systems sharing one query language: an RDF-star triplestore plus a transformer trained on the same triples. Generated facts write back as RDF-star annotations with cited inference chains.">
-    <meta name="description" content="Loka is a neuro-symbolic world model. Explicit memory (RDF-star triplestore, exact answers) + implicit memory (transformer, plausible answers with propositionInferredFrom citation edges).">
+    <meta name="description" content="Loka is a neuro-symbolic world model. Explicit memory (RDF-star triplestore, exact answers) + implicit memory (transformer, plausible answers with propositionSelectedFrom citation edges).">
     <meta property="og:url" content="https://loka.emmaleonhart.com/">
     <meta property="og:site_name" content="Loka">
     <meta name="twitter:card" content="summary">
@@ -21,7 +21,7 @@
         "@type": "SoftwareApplication",
         "name": "Loka",
         "alternateName": "Loka",
-        "description": "A neuro-symbolic world model. RDF-star triplestore (engine) plus a small role-aware transformer trained on the same triples. Generated facts land back in the store as RDF-star annotations with propositionInferredFrom citation edges.",
+        "description": "A neuro-symbolic world model. RDF-star triplestore (engine) plus a small role-aware transformer trained on the same triples. Generated facts land back in the store as RDF-star annotations with propositionSelectedFrom citation edges.",
         "url": "https://loka.emmaleonhart.com/",
         "applicationCategory": "Database",
         "operatingSystem": "Windows, macOS, Linux",
@@ -319,7 +319,7 @@
         A <strong>neuro-symbolic world model</strong>. Two systems sharing one query language: an RDF-star
         triplestore (explicit memory, exact answers) plus a transformer trained on the same triples (implicit memory,
         plausible answers). Generated facts write back into the store as RDF-star annotations with
-        <code>propositionInferredFrom</code> citation edges.
+        <code>propositionSelectedFrom</code> citation edges.
     </p>
     <div class="badges">
         <span class="badge badge-rust">Engine in Rust</span>

@@ -5160,7 +5160,7 @@ mod tests {
     }
 
     /// A provenance edge between two quoted triples:
-    /// `<< Q1 G Q2 >> inferredFrom << Q42 P20 Q31 >>`, plus an unrelated
+    /// `<< Q1 G Q2 >> selectedFrom << Q42 P20 Q31 >>`, plus an unrelated
     /// annotation whose object is a plain IRI.
     fn nested_star_fixture() -> (TripleStore, TermDictionary) {
         let mut dict = TermDictionary::new();
@@ -5171,7 +5171,7 @@ mod tests {
         let q1 = dict.intern("http://wd/Q1");
         let g = dict.intern("http://wd/G");
         let q2 = dict.intern("http://wd/Q2");
-        let inferred = dict.intern("http://loka.dev/provenance/propositionInferredFrom");
+        let inferred = dict.intern("http://loka.dev/provenance/propositionSelectedFrom");
         let by = dict.intern("http://loka.dev/provenance/propositionGeneratedBy");
         let model = dict.intern("http://wd/model");
         store.insert(Triple::new(q42, p20, q31)).unwrap();
@@ -5191,7 +5191,7 @@ mod tests {
         let (store, dict) = nested_star_fixture();
         let q = parser::parse(
             "SELECT ?s ?cs ?co WHERE { << ?s ?p ?o >> \
-             <http://loka.dev/provenance/propositionInferredFrom> << ?cs ?cp ?co >> }",
+             <http://loka.dev/provenance/propositionSelectedFrom> << ?cs ?cp ?co >> }",
         )
         .unwrap();
         let result = execute(&q, &store, &dict).unwrap();
@@ -5236,7 +5236,7 @@ mod tests {
         let (store, dict) = nested_star_fixture();
         let hit = parser::parse(
             "SELECT ?s WHERE { << ?s ?p ?o >> \
-             <http://loka.dev/provenance/propositionInferredFrom> << ?cs ?cp <http://wd/Q31> >> }",
+             <http://loka.dev/provenance/propositionSelectedFrom> << ?cs ?cp <http://wd/Q31> >> }",
         )
         .unwrap();
         assert_eq!(execute(&hit, &store, &dict).unwrap().rows.len(), 1);

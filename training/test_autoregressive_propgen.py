@@ -50,7 +50,7 @@ from preprocess import (  # noqa: E402
     LOKA_GENERATED,
     LOKA_GENERATED_BY,
     LOKA_CONFIDENCE,
-    LOKA_INFERRED_FROM,
+    LOKA_SELECTED_FROM,
     WIKIDATA_PROP_RE,
 )
 from infer_with_citations import (  # noqa: E402
@@ -720,7 +720,7 @@ def main() -> None:
                 cited = quoted(
                     fmt_subj_term(ct), f"<{ct['p']['value']}>", fmt_term(ct["o"]),
                 )
-                out_lines.append(f"{qt} <{LOKA_INFERRED_FROM}> {cited} .")
+                out_lines.append(f"{qt} <{LOKA_SELECTED_FROM}> {cited} .")
 
             print(
                 f"      gen#{child_idx + 1}: {c_s_label} | {c_p_label} -> {o_label!s} "

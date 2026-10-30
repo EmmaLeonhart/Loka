@@ -4,7 +4,7 @@ Question, for every entity X in the seed: "which generated triples cite a
 stored statement whose object is X?" Asked of
 - an RDF-star store (annotation blocks as written by infer_with_citations.py):
     SELECT ?s ?p ?o WHERE {
-      << ?s ?p ?o >> prov:propositionInferredFrom << ?cs ?cp X >> }
+      << ?s ?p ?o >> prov:propositionSelectedFrom << ?cs ?cp X >> }
 - a reification + PROV-O store (tools/provenance_encodings.py output):
     SELECT ?s ?p ?o WHERE {
       ?g rdf:subject ?s ; rdf:predicate ?p ; rdf:object ?o ;
@@ -28,7 +28,7 @@ from pathlib import Path
 
 import requests
 
-INFERRED = "<http://loka.dev/provenance/propositionInferredFrom>"
+INFERRED = "<http://loka.dev/provenance/propositionSelectedFrom>"
 RDF = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 WDF = "<http://www.w3.org/ns/prov#wasDerivedFrom>"
 

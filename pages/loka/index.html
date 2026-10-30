@@ -7,7 +7,7 @@
 <meta property="og:title" content="Loka — Neuro-Symbolic World Model on RDF-Star">
 <meta property="og:description" content="Generative citation in a two-system world model. Explicit memory (RDF-star triplestore) + implicit memory (transformer trained on the same triples) sharing one query language.">
 <meta property="og:url" content="https://loka.emmaleonhart.com/loka/">
-<meta name="description" content="Loka is the world-model layer built on top of the Loka engine. A small role-aware transformer trained on label-substituted RDF-star triples, producing predictions that land back in the store as RDF-star annotations with propositionInferredFrom citation edges.">
+<meta name="description" content="Loka is the world-model layer built on top of the Loka engine. A small role-aware transformer trained on label-substituted RDF-star triples, producing predictions that land back in the store as RDF-star annotations with propositionSelectedFrom citation edges.">
 <link rel="canonical" href="https://loka.emmaleonhart.com/loka/">
 <title>Loka — Neuro-Symbolic World Model</title>
 <style>
@@ -108,7 +108,7 @@ li { margin-bottom: 6px; }
   <p class="tagline">
     Two systems sharing one query language. <strong>Explicit memory</strong> (an RDF-star triplestore, exact answers) plus
     <strong>implicit memory</strong> (a transformer trained on the same triples, plausible answers). Generated facts
-    write back into the store as RDF-star annotations with <code>propositionInferredFrom</code> citation edges.
+    write back into the store as RDF-star annotations with <code>propositionSelectedFrom</code> citation edges.
   </p>
   <div class="badges">
     <span class="badge">RDF-star</span>
@@ -131,7 +131,7 @@ li { margin-bottom: 6px; }
   shifted: the engine is now one half of a neuro-symbolic world-model engine. The other half is a small role-aware
   transformer trained from scratch on the same triples (with English labels substituted for opaque QIDs/PIDs). Both
   expose the same SPARQL+ interface. A query reaches both systems and the caller doesn't pick which one answered &mdash;
-  except via <code>propositionInferredFrom</code> RDF-star edges that thread every model-generated triple back to the
+  except via <code>propositionSelectedFrom</code> RDF-star edges that thread every model-generated triple back to the
   context that informed it. The engine retains the Loka name; the project as a whole is becoming Loka.
 </p>
 
@@ -178,7 +178,7 @@ li { margin-bottom: 6px; }
 <p>
   When the inference layer accepts a candidate <code>(S, P)</code> and emits a predicted object <code>"X"</code>, it
   writes a fixed-shape annotation block. The block's <em>subject</em> is the quoted generated triple. Its objects
-  include the metadata predicates plus one or more <code>propositionInferredFrom</code> edges whose object is
+  include the metadata predicates plus one or more <code>propositionSelectedFrom</code> edges whose object is
   <em>another</em> quoted triple &mdash; a cited piece of context the prediction was conditioned on:
 </p>
 
@@ -186,8 +186,8 @@ li { margin-bottom: 6px; }
 &lt;&lt;S P "X"&gt;&gt;  prov:propositionGenerated     "true"^^xsd:boolean .
 &lt;&lt;S P "X"&gt;&gt;  prov:propositionGeneratedBy   "loka-wikidata-v14" .
 &lt;&lt;S P "X"&gt;&gt;  prov:propositionConfidence    "0.43"^^xsd:decimal .
-&lt;&lt;S P "X"&gt;&gt;  prov:propositionInferredFrom  &lt;&lt;S existing_p1 existing_o1&gt;&gt; .
-&lt;&lt;S P "X"&gt;&gt;  prov:propositionInferredFrom  &lt;&lt;S existing_p2 existing_o2&gt;&gt; .
+&lt;&lt;S P "X"&gt;&gt;  prov:propositionSelectedFrom  &lt;&lt;S existing_p1 existing_o1&gt;&gt; .
+&lt;&lt;S P "X"&gt;&gt;  prov:propositionSelectedFrom  &lt;&lt;S existing_p2 existing_o2&gt;&gt; .
    ...one per cited context triple (default 10)
 </code></pre>
 
@@ -201,7 +201,7 @@ li { margin-bottom: 6px; }
 
 <div class="callout">
   <strong>Why hallucinated citations aren't a blocker.</strong>
-  A fabricated <code>propositionInferredFrom</code> edge is still a <em>transparent</em> RDF-star row pointing at a
+  A fabricated <code>propositionSelectedFrom</code> edge is still a <em>transparent</em> RDF-star row pointing at a
   concrete context triple &mdash; auditable, filterable like any generated triple, often informative about what the
   model thinks the reasoning is. The schema does the work; we don't need elaborate guards.
 </div>
@@ -214,7 +214,7 @@ li { margin-bottom: 6px; }
   orphaned hallucination.
 </p>
 <p>
-  Propagation follows <strong>only</strong> <code>propositionInferredFrom</code> back-edges and is bounded to the
+  Propagation follows <strong>only</strong> <code>propositionSelectedFrom</code> back-edges and is bounded to the
   reserved <code>http://loka.dev/provenance/</code> namespace, so an ordinary data edge is never mistaken for a
   derivation &mdash; <em>real&rarr;real is not a dependency</em> &mdash; and the traversal is cycle-safe. It ships
   end-to-end: a pure engine function (<code>retract_set</code>), a read-only <code>POST /retract/preview</code>, a
@@ -227,7 +227,7 @@ retract_node { "iri": "&lt;node&gt;" }                 # dry run — lists the c
 retract_node { "iri": "&lt;node&gt;", "commit": true } # destructive — deletes it</code></pre>
 <p class="meta">
   This depends on Loka assigning RDF-star quoted triples a persisted, reversible id: a
-  <code>propositionInferredFrom</code> object is a content hash of the cited triple, and the cascade can only
+  <code>propositionSelectedFrom</code> object is a content hash of the cited triple, and the cascade can only
   dereference it because the engine keeps a <code>quoted_triple_id&nbsp;&rarr;&nbsp;(s,p,o)</code> reverse index
   (the same index that makes a quoted subject render as <code>&lt;&lt; s p o &gt;&gt;</code> instead of an opaque
   blank node, end-to-end across ingest, persistence, query, and export).

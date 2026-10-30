@@ -2,7 +2,7 @@
 //! randomly generated provenance graphs.
 //!
 //! The generator builds real triples, generated triples that cite earlier
-//! real or generated triples via `propositionInferredFrom` (plus some
+//! real or generated triples via `propositionSelectedFrom` (plus some
 //! back-citations to later generated triples, so cycles occur), and a
 //! `propositionGeneratedBy` row per generated triple. The reference computes
 //! the retraction closure from the generator's own lists, never touching the
@@ -15,7 +15,7 @@
 
 use std::collections::HashSet;
 
-use loka_core::{retract_set, TermDictionary, TermId, Triple, TripleStore, PROP_INFERRED_FROM};
+use loka_core::{retract_set, TermDictionary, TermId, Triple, TripleStore, PROP_SELECTED_FROM};
 
 /// Small deterministic xorshift RNG (no dependency needed).
 pub struct Rng(u64);
@@ -70,7 +70,7 @@ pub fn generate(seed: u64, n_entities: usize, n_real: usize, n_gen: usize) -> Gr
     let gen_preds: Vec<TermId> = (0..5)
         .map(|i| dict.intern(&format!("http://ex.org/g{i}")))
         .collect();
-    let inferred = dict.intern(PROP_INFERRED_FROM);
+    let inferred = dict.intern(PROP_SELECTED_FROM);
     let gen_by = dict.intern("http://loka.dev/provenance/propositionGeneratedBy");
     let model = dict.intern("\"model-x\"");
 

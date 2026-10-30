@@ -4,7 +4,7 @@ For every (subject, proposed predicate) pair the candidate selector produces
 (`candidate_predicates_with_evidence`, same arguments as inference), count:
 
 - subject-side evidence: the subject's statements that matched a neighbour
-  (what `propositionInferredFrom` cites today);
+  (what `propositionSelectedFrom` cites today);
 - neighbour-side evidence: for every neighbour s2 that produced a match and
   has the proposed predicate, s2's matching statement plus s2's statements
   with the proposed predicate (what retraction of a neighbour would need).

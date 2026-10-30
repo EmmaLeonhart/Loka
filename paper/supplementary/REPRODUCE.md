@@ -77,7 +77,7 @@ python training/infer_with_citations.py \
     --output training/data/generated_v5.nt
 ```
 
-Add `--post` to write the generated triples back into the live store with `propositionGenerated true` annotations and `propositionInferredFrom` citation edges.
+Add `--post` to write the generated triples back into the live store with `propositionGenerated true` annotations and `propositionSelectedFrom` citation edges.
 
 ## Paper claim → command map
 

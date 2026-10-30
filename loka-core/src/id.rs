@@ -210,7 +210,7 @@ pub struct TermDictionary {
     /// Reverse map for RDF-star quoted triples. `quoted_triple_id(s,p,o)` is a
     /// content hash (one-way), so without this map a quoted-triple TermId
     /// cannot be rendered back to `<< s p o >>` and provenance cascades can't
-    /// dereference a `propositionInferredFrom` source id. Populated whenever a
+    /// dereference a `propositionSelectedFrom` source id. Populated whenever a
     /// quoted triple is registered; persisted via the `quoted` sled tree and
     /// rehydrated on startup.
     quoted: HashMap<TermId, [TermId; 3]>,

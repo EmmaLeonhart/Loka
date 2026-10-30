@@ -21,13 +21,13 @@ of out-edges:
 - **Ordinary data edges** (`wdt:P31`, `:hasEmbedding`, …). These are *not*
   derivations. Real-data → real-data is **not** a dependency.
 - **Provenance back-edges** from generated triples that cited it:
-  `<<G>> loka-prov:propositionInferredFrom <<src>>`.
+  `<<G>> loka-prov:propositionSelectedFrom <<src>>`.
 
 Cascade-retraction propagates **only along provenance back-edges**,
 recursively, regardless of whether the deleted node is real or model-emitted:
 
 - Deleting a real-data node → drops the node's own triples **and** every
-  generated triple whose `propositionInferredFrom` chain dereferences any of
+  generated triple whose `propositionSelectedFrom` chain dereferences any of
   those rows, transitively.
 - Deleting a generated node → the same, plus removes the node's own row.
 
@@ -47,12 +47,12 @@ From `training/preprocess.py` (the canonical constants) and the write-back in
 | `propositionGenerated` | `<<G>>` (quoted generated triple) | `true` | G is model-emitted |
 | `propositionGeneratedBy` | `<<G>>` | `"loka-wikidata-vN"` | which model |
 | `propositionConfidence` | `<<G>>` | a literal | model confidence |
-| `propositionInferredFrom` | `<<G>>` | `<<src>>` (quoted source triple) | **the derivation edge** |
+| `propositionSelectedFrom` | `<<G>>` | `<<src>>` (quoted source triple) | **the derivation edge** |
 | `propositionImportedFrom` | `<<G>>` | source ref | import provenance |
 
 So a generated fact `S P "X"` lands as the asserted triple `S P "X"` plus
 RDF-star annotation rows whose subject is `quoted_triple_id(S,P,"X")` and, for
-`propositionInferredFrom`, whose object is `quoted_triple_id(src_s,src_p,src_o)`.
+`propositionSelectedFrom`, whose object is `quoted_triple_id(src_s,src_p,src_o)`.
 
 ## 3. The hard prerequisite: a quoted-triple reverse index (Phase 0)
 
@@ -65,7 +65,7 @@ ingest-side **Bug A** (the proto bulk path even persists the bare
 Cascade-retraction **cannot be correct without this reverse map**:
 
 - Given a removed row `T = (s,p,o)`, the cascade must find every generated
-  `<<G>>` with `<<G>> propositionInferredFrom <<src>>` where `<<src>>`
+  `<<G>>` with `<<G>> propositionSelectedFrom <<src>>` where `<<src>>`
   *dereferences to* `T`. The annotation only stores `quoted_triple_id(src)`.
   To test "does `<<src>>` reference `T`?" we must reverse
   `quoted_triple_id(src) → (src_s,src_p,src_o)` and compare. With only the
@@ -94,14 +94,14 @@ RETRACT-SET(root_id):
         ∪ store.find_by_object(root_id):
       removed_triples.add(T); frontier.add(T)
 
-  # 2. Provenance closure — only along propositionInferredFrom back-edges,
+  # 2. Provenance closure — only along propositionSelectedFrom back-edges,
   #    only within the reserved namespace.
   while frontier not empty:
       next_frontier = ∅
       for T in frontier:
           qid_T = quoted_triple_id(T.s, T.p, T.o)
           # generated triples that cite T as a source:
-          for ann in store.find_by_predicate_object(P_inferredFrom, qid_T):
+          for ann in store.find_by_predicate_object(P_selectedFrom, qid_T):
               # ann.subject is quoted_triple_id(G); reverse it (Phase 0):
               G = reverse_quoted(ann.subject)
               if G is None: continue              # not a quoted triple → skip
@@ -118,7 +118,7 @@ RETRACT-SET(root_id):
 
 Key correctness points:
 
-- **Bound:** only `find_by_predicate_object(propositionInferredFrom, …)` is
+- **Bound:** only `find_by_predicate_object(propositionSelectedFrom, …)` is
   followed for the recursion, and only annotation rows whose predicate
   `is_reserved_prov` are swept for a removed generated node. A regular edge is
   never a derivation.

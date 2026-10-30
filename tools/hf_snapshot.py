@@ -98,7 +98,7 @@ pretty_name: Loka — Neuro-Symbolic World Model
 Loka is a neuro-symbolic world model: an RDF-star triplestore engine plus a small
 role-aware transformer trained on the same triples, sharing a single SPARQL+
 query layer. Generated triples write back into the store with
-`propositionInferredFrom` citation edges that point at the curated context the
+`propositionSelectedFrom` citation edges that point at the curated context the
 prediction was conditioned on, so every model-emitted fact is auditable,
 queryable, and filterable in SPARQL.
 
@@ -119,7 +119,7 @@ released {{LATEST_DATE}}). See *Snapshots* below for the full version history.
 | `corpus/vocab_bpe.json` | 50 K-piece BPE vocabulary used by v6 and later. |
 | `corpus/tokenizer_bpe.json` | `tokenizers` library JSON for the BPE tokenizer. Pass to inference / training scripts via `--bpe-tokenizer`. |
 | `corpus/vocab.json` | Word-level vocabulary used by v3–v5 (kept for reproducibility). |
-| `corpus/generated_v*.nt` | RDF-star inferences emitted by trained models, with `propositionInferredFrom` provenance back to their citation context. |
+| `corpus/generated_v*.nt` | RDF-star inferences emitted by trained models, with `propositionSelectedFrom` provenance back to their citation context. |
 | `loka-data/` *(optional, ~770 MB)* | The live RDF-star Loka store used to extract the corpus. Pull this and `loka serve --data-dir loka-data/` to query directly. |
 | `checkpoints/wikidata_v*.pt` | Role-aware transformer checkpoints, PyTorch `.pt` format. Same 44.5 M-parameter architecture from v5 onward (d_model 512, 6 layers, 8 heads, 50 K BPE vocab, 8 tokens per role). |
 
@@ -233,8 +233,8 @@ Every triple under `corpus/generated_*.nt` carries an RDF-star annotation block:
 <<S P "predicted-value">> loka-prov:propositionGenerated   "true"^^xsd:boolean .
 <<S P "predicted-value">> loka-prov:propositionGeneratedBy "loka-wikidata-v8" .
 <<S P "predicted-value">> loka-prov:propositionConfidence  "0.67"^^xsd:decimal .
-<<S P "predicted-value">> loka-prov:propositionInferredFrom <<S P_existing O_existing>> .
-... (one inferredFrom edge per cited context triple)
+<<S P "predicted-value">> loka-prov:propositionSelectedFrom <<S P_existing O_existing>> .
+... (one selectedFrom edge per cited context triple)
 ```
 
 `loka-prov:` expands to `http://loka.dev/provenance/`. Predicates under that
@@ -244,7 +244,7 @@ three layers (corpus stripping in `training/preprocess.py`, candidate
 filtering in `training/infer_with_citations.py`, emit-time guard before each
 primary triple is written).
 
-The `propositionInferredFrom` edges are auditable like any other RDF: SPARQL
+The `propositionSelectedFrom` edges are auditable like any other RDF: SPARQL
 can query "every generated triple that cites a triple about X" or "remove all
 v6 generations" with a single pattern match. Generated triples are flagged
 out of training corpora automatically (the `FILTER NOT EXISTS << ?s ?p ?o >>

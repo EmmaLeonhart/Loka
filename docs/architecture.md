@@ -82,18 +82,18 @@ IRIs and blank nodes are interned at write time to 64-bit integer IDs. All index
 
 Quoted triples (RDF-star) are hashed as a tuple `(S, P, O) → u64` content ID using xxHash3. Collision probability is negligible at any realistic graph size.
 
-Because that hash is one-way, the engine also keeps a **persisted `quoted_triple_id → (s,p,o)` reverse index** (a dedicated sled tree, written inside the same batch transaction as the triples so it is never lost relative to its rows, rehydrated into the in-memory dictionary on reopen). Without it a quoted-triple subject cannot be rendered back to `<< s p o >>` (it would surface as an opaque `_:idN` blank node, and an ingest path could only persist a `<<QUOTED_TRIPLE>>` sentinel), and a provenance cascade could not dereference a `propositionInferredFrom` source. The reverse index is what makes RDF-star round-trip losslessly across ingest, persistence, query, and Turtle/N-Triples export. **All ingest paths mint quoted ids through `register_quoted`, never the bare hash function**, so the mapping is always recorded.
+Because that hash is one-way, the engine also keeps a **persisted `quoted_triple_id → (s,p,o)` reverse index** (a dedicated sled tree, written inside the same batch transaction as the triples so it is never lost relative to its rows, rehydrated into the in-memory dictionary on reopen). Without it a quoted-triple subject cannot be rendered back to `<< s p o >>` (it would surface as an opaque `_:idN` blank node, and an ingest path could only persist a `<<QUOTED_TRIPLE>>` sentinel), and a provenance cascade could not dereference a `propositionSelectedFrom` source. The reverse index is what makes RDF-star round-trip losslessly across ingest, persistence, query, and Turtle/N-Triples export. **All ingest paths mint quoted ids through `register_quoted`, never the bare hash function**, so the mapping is always recorded.
 
 ### 3.3 Cascade-Retraction (Provenance-Bounded Deletion)
 
-Every model-generated triple carries `propositionInferredFrom` RDF-star edges to the context it was conditioned on (§ provenance schema). This makes the provenance graph not merely auditable but **actionable**: removing a node — real data or model-generated — also removes every generated inference that transitively cited it.
+Every model-generated triple carries `propositionSelectedFrom` RDF-star edges to the context it was conditioned on (§ provenance schema). This makes the provenance graph not merely auditable but **actionable**: removing a node — real data or model-generated — also removes every generated inference that transitively cited it.
 
 `loka-core::retract_set(root, store, dict) → RetractSet` computes the set, grouped by cascade depth, **non-destructively**:
 
 1. **Depth 0** = the node's own rows (`find_by_subject ∪ find_by_object`).
-2. **Closure**: for each removed triple `T`, find `<<G>> propositionInferredFrom <<T>>` annotation rows; reverse `<<G>>` via the §3.2 reverse index; remove `G`'s asserted row plus all of `G`'s provenance annotation rows; recurse on `G`.
+2. **Closure**: for each removed triple `T`, find `<<G>> propositionSelectedFrom <<T>>` annotation rows; reverse `<<G>>` via the §3.2 reverse index; remove `G`'s asserted row plus all of `G`'s provenance annotation rows; recurse on `G`.
 
-Invariants: traversal follows **only** `propositionInferredFrom` and is bounded to the reserved `http://loka.dev/provenance/` namespace, so an ordinary data edge is never treated as a derivation — **real→real is not a dependency**, and **child→parent is not a dependency** (provenance points child→parent; the cascade only walks parent→child). It is cycle-safe (a triple is never processed twice) and terminates in ≤ provenance-DAG depth.
+Invariants: traversal follows **only** `propositionSelectedFrom` and is bounded to the reserved `http://loka.dev/provenance/` namespace, so an ordinary data edge is never treated as a derivation — **real→real is not a dependency**, and **child→parent is not a dependency** (provenance points child→parent; the cascade only walks parent→child). It is cycle-safe (a triple is never processed twice) and terminates in ≤ provenance-DAG depth. Stores written before 2026-10-29 cite with the old name, `propositionInferredFrom`; the cascade follows that IRI too (`PROP_SELECTED_FROM_LEGACY`), and nothing writes it any more.
 
 Surfaces, destructive path opt-in at every one (dry-run preview is the default):
 

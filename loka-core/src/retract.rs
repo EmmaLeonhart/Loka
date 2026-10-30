@@ -3,7 +3,7 @@
 //! Remove a node — real data **or** AI-generated — and every *generated*
 //! inference that transitively cited it disappears with it. Propagation
 //! follows **only** RDF-star provenance back-edges
-//! (`<<G>> http://loka.dev/provenance/propositionInferredFrom <<src>>`),
+//! (`<<G>> http://loka.dev/provenance/propositionSelectedFrom <<src>>`),
 //! never ordinary data edges: real→real is not a dependency.
 //!
 //! This module is the non-destructive core (cascade-retraction Phase 1 in
@@ -12,7 +12,7 @@
 //! MCP tool build on top of it.
 //!
 //! Correctness rests on the quoted-triple reverse map (Phase 0): a
-//! `propositionInferredFrom` object is a content-addressed
+//! `propositionSelectedFrom` object is a content-addressed
 //! `quoted_triple_id`, and the cascade must decide whether that quoted
 //! source dereferences a removed row — impossible without
 //! [`TermDictionary::resolve_quoted`].
@@ -29,9 +29,15 @@ use crate::triple::Triple;
 /// removed. Mirrors `training/preprocess.py`'s `RESERVED_PROVENANCE_PREFIX`.
 pub const RESERVED_PROVENANCE_PREFIX: &str = "http://loka.dev/provenance/";
 
-/// `RESERVED_PROVENANCE_PREFIX + "propositionInferredFrom"` — the single
-/// predicate the cascade recurses along.
-pub const PROP_INFERRED_FROM: &str = "http://loka.dev/provenance/propositionInferredFrom";
+/// `RESERVED_PROVENANCE_PREFIX + "propositionSelectedFrom"` — the predicate
+/// the cascade recurses along.
+pub const PROP_SELECTED_FROM: &str = "http://loka.dev/provenance/propositionSelectedFrom";
+
+/// The name [`PROP_SELECTED_FROM`] had before 2026-10-29. Never written any
+/// more; the cascade still follows it so stores written before the rename
+/// retract the same way.
+pub const PROP_SELECTED_FROM_LEGACY: &str =
+    "http://loka.dev/provenance/propositionInferredFrom";
 
 /// The result of [`retract_set`]: every triple that would be removed,
 /// grouped by cascade depth (index = depth). Depth 0 is the root node's own
@@ -67,7 +73,7 @@ impl RetractSet {
 /// Algorithm (see `planning/cascade-retraction.md` §4):
 /// 1. Depth 0 = the node's own rows (`find_by_subject ∪ find_by_object`).
 /// 2. Repeatedly: for every triple `T` removed in the previous round, find
-///    `<<G>> propositionInferredFrom <<T>>` annotation rows; reverse
+///    `<<G>> propositionSelectedFrom <<T>>` annotation rows; reverse
 ///    `<<G>>` via the quoted map; remove `G`'s asserted row **and** all of
 ///    `G`'s provenance annotation rows (predicate under the reserved
 ///    namespace only); recurse on `G`.
@@ -114,12 +120,16 @@ pub fn retract_set(root_id: TermId, store: &TripleStore, dict: &TermDictionary) 
         return out;
     }
 
-    // The cascade only follows `propositionInferredFrom`. If that predicate
-    // was never interned, there are no provenance edges — depth 0 is all.
-    let inferred_from = match dict.lookup(PROP_INFERRED_FROM) {
-        Some(id) => id,
-        None => return out,
-    };
+    // The cascade only follows `propositionSelectedFrom` (and its pre-rename
+    // name). If neither was ever interned, there are no provenance edges —
+    // depth 0 is all.
+    let selected_from: Vec<TermId> = [PROP_SELECTED_FROM, PROP_SELECTED_FROM_LEGACY]
+        .iter()
+        .filter_map(|iri| dict.lookup(iri))
+        .collect();
+    if selected_from.is_empty() {
+        return out;
+    }
 
     // --- Provenance closure. ---
     while !frontier.is_empty() {
@@ -130,8 +140,11 @@ pub fn retract_set(root_id: TermId, store: &TripleStore, dict: &TermDictionary) 
             let qid_t = quoted_triple_id(t.subject, t.predicate, t.object);
 
             // Generated triples that cited `t` as a source:
-            // `<<G>> propositionInferredFrom <<t>>`.
-            for ann in store.find_by_predicate_object(inferred_from, qid_t) {
+            // `<<G>> propositionSelectedFrom <<t>>`.
+            let citing = selected_from
+                .iter()
+                .flat_map(|&p| store.find_by_predicate_object(p, qid_t));
+            for ann in citing {
                 let g_qid = ann.subject; // == quoted_triple_id(G)
                 let (gs, gp, go) = match dict.resolve_quoted(g_qid) {
                     Some(g) => g,
@@ -188,8 +201,8 @@ mod tests {
     /// Real:       Q42  P_pob  Q350           (place of birth)
     ///             Q42  P_name "Douglas"      (a second real row on Q42)
     ///             Q350 P_in   Q1             (real→real — must NOT cascade)
-    /// Generated:  <<Q350 G_died Q999>> inferredFrom <<Q42  P_pob  Q350>>
-    ///             <<Q999 G_city Q1  >> inferredFrom <<Q350 G_died Q999>>
+    /// Generated:  <<Q350 G_died Q999>> selectedFrom <<Q42  P_pob  Q350>>
+    ///             <<Q999 G_city Q1  >> selectedFrom <<Q350 G_died Q999>>
     /// plus each generated row carries propositionGeneratedBy.
     fn fixture() -> (TripleStore, TermDictionary, TermId) {
         let mut dict = TermDictionary::new();
@@ -206,7 +219,7 @@ mod tests {
         let g_city = dict.intern("http://wd/G_city");
         let douglas = dict.intern("\"Douglas\"");
 
-        let inferred = dict.intern(PROP_INFERRED_FROM);
+        let inferred = dict.intern(PROP_SELECTED_FROM);
         let gen_by = dict.intern("http://loka.dev/provenance/propositionGeneratedBy");
         let model = dict.intern("\"loka-v14\"");
 
@@ -215,14 +228,14 @@ mod tests {
         store.insert(Triple::new(q42, p_name, douglas)).unwrap();
         store.insert(Triple::new(q350, p_in, q1)).unwrap();
 
-        // G1: << Q350 G_died Q999 >> inferredFrom << Q42 P_pob Q350 >>
+        // G1: << Q350 G_died Q999 >> selectedFrom << Q42 P_pob Q350 >>
         store.insert(Triple::new(q350, g_died, q999)).unwrap();
         let g1 = dict.register_quoted(q350, g_died, q999);
         let src1 = dict.register_quoted(q42, p_pob, q350);
         store.insert(Triple::new(g1, inferred, src1)).unwrap();
         store.insert(Triple::new(g1, gen_by, model)).unwrap();
 
-        // G2: << Q999 G_city Q1 >> inferredFrom << Q350 G_died Q999 >>
+        // G2: << Q999 G_city Q1 >> selectedFrom << Q350 G_died Q999 >>
         store.insert(Triple::new(q999, g_city, q1)).unwrap();
         let g2 = dict.register_quoted(q999, g_city, q1);
         let src2 = dict.register_quoted(q350, g_died, q999); // == g1
@@ -279,11 +292,11 @@ mod tests {
             dict.lookup("http://wd/G_died").unwrap(),
             dict.lookup("http://wd/Q999").unwrap(),
         );
-        let inferred = dict.lookup(PROP_INFERRED_FROM).unwrap();
+        let inferred = dict.lookup(PROP_SELECTED_FROM).unwrap();
         assert!(
             set.all()
                 .any(|t| t.subject == g1 && t.predicate == inferred),
-            "G1's inferredFrom annotation is retracted"
+            "G1's selectedFrom annotation is retracted"
         );
         assert!(set.max_depth() >= 2, "two provenance hops");
     }
@@ -317,7 +330,7 @@ mod tests {
 
     #[test]
     fn child_to_parent_is_not_a_dependency() {
-        // Provenance points child→parent (G2 inferredFrom G1). Cascade only
+        // Provenance points child→parent (G2 selectedFrom G1). Cascade only
         // propagates parent→child. Retract Q1 — it appears only in G2's
         // asserted row (<<Q999 G_city Q1>>) and one real row — so the leaf
         // G2 goes but its parent G1 and the real source must survive.
@@ -380,12 +393,39 @@ mod tests {
         let o = dict.intern("http://x/o");
         store.insert(Triple::new(s, p, o)).unwrap();
         let q = dict.register_quoted(s, p, o);
-        let inferred = dict.intern(PROP_INFERRED_FROM);
-        // << s p o >> inferredFrom << s p o >>  (self-citation)
+        let inferred = dict.intern(PROP_SELECTED_FROM);
+        // << s p o >> selectedFrom << s p o >>  (self-citation)
         store.insert(Triple::new(q, inferred, q)).unwrap();
         // Must terminate.
         let set = retract_set(s, &store, &dict);
         assert!(set.total() >= 1);
+    }
+
+    /// A store written before the 2026-10-29 rename cites with the old
+    /// `propositionInferredFrom` IRI; the cascade must still follow it.
+    #[test]
+    fn follows_pre_rename_predicate() {
+        let mut dict = TermDictionary::new();
+        let mut store = TripleStore::new();
+        let a = dict.intern("http://x/a");
+        let p = dict.intern("http://x/p");
+        let b = dict.intern("http://x/b");
+        let g = dict.intern("http://x/g");
+        let c = dict.intern("http://x/c");
+        let d = dict.intern("http://x/d");
+        store.insert(Triple::new(a, p, b)).unwrap();
+        // Generated (c g d) cites (a p b) through the legacy predicate only.
+        store.insert(Triple::new(c, g, d)).unwrap();
+        let src = dict.register_quoted(a, p, b);
+        let gen = dict.register_quoted(c, g, d);
+        let legacy = dict.intern(PROP_SELECTED_FROM_LEGACY);
+        store.insert(Triple::new(gen, legacy, src)).unwrap();
+        assert!(dict.lookup(PROP_SELECTED_FROM).is_none());
+
+        let set = retract_set(a, &store, &dict);
+        assert_eq!(set.max_depth(), 1);
+        assert!(set.by_depth[1].contains(&Triple::new(c, g, d)));
+        assert!(set.by_depth[1].contains(&Triple::new(gen, legacy, src)));
     }
 
     /// Retracting a node that a generated triple touches directly removes that

@@ -45,7 +45,7 @@ from infer_with_citations import (  # noqa: E402
     LOKA_GENERATED,
     LOKA_GENERATED_BY,
     LOKA_CONFIDENCE,
-    LOKA_INFERRED_FROM,
+    LOKA_SELECTED_FROM,
     XSD_BOOLEAN,
     XSD_DECIMAL,
 )
@@ -175,7 +175,7 @@ def generate_for_subject_llm(
         out_lines.append(f'{qt} <{LOKA_CONFIDENCE}> "{conf:.4f}"^^<{XSD_DECIMAL}> .')
         for cp_uri, co_term in subj_facts[s_uri][:max_citations]:
             cited = quoted(s_t, f"<{cp_uri}>", fmt_term(co_term))
-            out_lines.append(f"{qt} <{LOKA_INFERRED_FROM}> {cited} .")
+            out_lines.append(f"{qt} <{LOKA_SELECTED_FROM}> {cited} .")
         log.append(f"  + {s_label} | {p_label} | {o_label}  (conf={conf:.3f})")
     return out_lines, log
 

@@ -30,7 +30,7 @@ from infer_with_citations import (  # noqa: E402
     LOKA_GENERATED,
     LOKA_GENERATED_BY,
     LOKA_CONFIDENCE,
-    LOKA_INFERRED_FROM,
+    LOKA_SELECTED_FROM,
     XSD_BOOLEAN,
     XSD_DECIMAL,
 )
@@ -162,7 +162,7 @@ def main() -> None:
                 cited = quoted(
                     s_term, label_to_urn(cp, "prop"), f'"{escape_literal(co)}"'
                 )
-                out_lines.append(f"{qt} <{LOKA_INFERRED_FROM}> {cited} .")
+                out_lines.append(f"{qt} <{LOKA_SELECTED_FROM}> {cited} .")
             n_emitted += 1
 
     print(f"\n[smoke] {n_emitted}/{n_attempted} predictions met threshold")
