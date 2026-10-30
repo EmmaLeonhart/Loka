@@ -7,6 +7,14 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — Paper: `lprov:` for Loka's namespace; Lean attempt queued last
+
+Round-2 fix (Claude, Qwen): the paper abbreviated `http://loka.dev/provenance/` as `prov:`,
+which is PROV-O's registered prefix, in a paper that also cites PROV-O terms. The §3.2 example
+and its note now use `lprov:`, and say so. Emma: attempt a Lean proof of the lookup bound after
+everything else, only if it is easy (queued last).
+
+---
 ## 2026-10-29 — §6.3: why the reified baseline uses wasDerivedFrom; named graphs an upper bound
 
 Round-2 fix (ChatGPT, Claude, Meta AI, Mistral). §2.2 recommends `prov:used`, but §6.3's reified
