@@ -7,6 +7,21 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — §6.2 retraction timings: five runs, median and range
+
+Emma chose five runs each. Ran `cargo bench -p loka-core --bench retract` five times back to
+back (17:30–17:37 PST) on the renamed code, release build, nothing else heavy running. The
+graph sizes, removal counts and depths match the paper exactly. Medians of the five per-run
+medians: 0.45 ms (range 0.44–0.47), 2.84 ms (2.57–3.33), 86.3 ms (82.0–104.6), 85.0 ms
+(80.5–86.2). The largest spread is 1.3×, at 10k and 100k, each from one slow run. The two
+large rows still take the same time, and their ranges overlap, so that finding does not rest
+on one run. Per removed triple: 0.31, 0.39, 0.72, 0.80 µs (the paper had 0.28, 0.40 and
+0.8–0.9 from the old single run). §6.2's table now has a range column and the text says what
+the spread shows. It keeps the earlier between-session 1.6× note, now as the reason absolute
+figures are not portable. Raw output and per-run medians are in
+`paper/supplementary/retract-trials/`.
+
+---
 ## 2026-10-29 — `propositionInferredFrom` renamed to `propositionSelectedFrom`
 
 Emma chose "rename everywhere". The new name says what the edge records: the statements the

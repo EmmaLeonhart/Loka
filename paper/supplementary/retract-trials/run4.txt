@@ -1,0 +1,51 @@
+=== run 4 2026-10-29 17:30:02.17 
+    Finished `bench` profile [optimized + debuginfo] target(s) in 0.41s
+     Running benches\retract.rs (target\release\deps\retract-8fafe11a6bd1cb1a.exe)
+Gnuplot not found, using plotters backend
+retract_set n=1000: store rows 5034, removed 1439 triples, max depth 14
+Benchmarking retract_set/generated_triples/1000
+Benchmarking retract_set/generated_triples/1000: Warming up for 3.0000 s
+Benchmarking retract_set/generated_triples/1000: Collecting 100 samples in estimated 6.3888 s (20k iterations)
+Benchmarking retract_set/generated_triples/1000: Analyzing
+retract_set/generated_triples/1000
+                        time:   [439.98 µs 452.39 µs 465.20 µs]
+                        change: [+1.2501% +4.2429% +7.2249%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+retract_set n=10000: store rows 50484, removed 7367 triples, max depth 24
+Benchmarking retract_set/generated_triples/10000
+Benchmarking retract_set/generated_triples/10000: Warming up for 3.0000 s
+Benchmarking retract_set/generated_triples/10000: Collecting 100 samples in estimated 5.0763 s (1600 iterations)
+Benchmarking retract_set/generated_triples/10000: Analyzing
+retract_set/generated_triples/10000
+                        time:   [2.9709 ms 3.0306 ms 3.0902 ms]
+                        change: [+1.0375% +4.5246% +8.2419%] (p = 0.01 < 0.05)
+                        Performance has regressed.
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) low mild
+retract_set n=100000: store rows 504389, removed 120461 triples, max depth 34
+Benchmarking retract_set/generated_triples/100000
+Benchmarking retract_set/generated_triples/100000: Warming up for 3.0000 s
+
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 9.2s, or reduce sample count to 50.
+Benchmarking retract_set/generated_triples/100000: Collecting 100 samples in estimated 9.1551 s (100 iterations)
+Benchmarking retract_set/generated_triples/100000: Analyzing
+retract_set/generated_triples/100000
+                        time:   [87.362 ms 88.621 ms 89.858 ms]
+                        change: [+5.1837% +7.3216% +9.4550%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 11 outliers among 100 measurements (11.00%)
+  7 (7.00%) low mild
+  4 (4.00%) high mild
+retract_set n=1000000: store rows 5050435, removed 106255 triples, max depth 39
+Benchmarking retract_set/generated_triples/1000000
+Benchmarking retract_set/generated_triples/1000000: Warming up for 3.0000 s
+Benchmarking retract_set/generated_triples/1000000: Collecting 10 samples in estimated 8.6814 s (110 iterations)
+Benchmarking retract_set/generated_triples/1000000: Analyzing
+retract_set/generated_triples/1000000
+                        time:   [78.227 ms 79.372 ms 80.604 ms]
+                        change: [-4.7617% -1.9234% +1.2481%] (p = 0.25 > 0.05)
+                        No change in performance detected.
+Found 2 outliers among 10 measurements (20.00%)
+  1 (10.00%) low mild
+  1 (10.00%) high severe
+

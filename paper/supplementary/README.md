@@ -7,6 +7,7 @@ Pair with the main `paper.md`.
 | `README.md` | This file. |
 | `REPRODUCE.md` | NeurIPS-reproducibility-checklist runbook. Step-by-step commands to rebuild the corpus, train the models, and run the inference pass that produces the paper's prediction tables. |
 | `SKILL.md` | Agent-runnable shell-block version of the same. The clawRxiv AI peer review skill loads this. |
+| `retract-trials/` | Raw criterion output of the five §6.2 retraction-timing runs (2026-10-29) and the per-run medians behind the §6.2 table. |
 
 ## Quick map
 

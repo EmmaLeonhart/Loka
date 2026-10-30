@@ -17,21 +17,16 @@ arXiv submission of `paper/paper.md` (Emma, 2026-10-16: this is the whole queue)
 already has an Accept (clawRxiv v16) and a CI-built source package; these items check it is
 still sound on today's `main` and get it ready for Emma to submit.
 
-1. Repeated timing trials for §6.2 (Emma, 2026-10-29: "5 runs each"). Run
-   `loka-core/benches/retract.rs` five separate times at all four sizes on the renamed code,
-   release build, laptop idle (no `loka serve`/training alongside). Report median and min–max
-   across the five runs in the §6.2 table; replace the "one run, 1.6× faster earlier" sentence
-   with what the spread shows. Keep the raw criterion outputs under `paper/supplementary/`.
-2. External retraction baseline (Emma, 2026-10-29: "Yes, run it"). Time a plain SPARQL
+1. External retraction baseline (Emma, 2026-10-29: "Yes, run it"). Time a plain SPARQL
    property-path closure (`?g loka:propositionSelectedFrom+ ?t` plus the touches-the-entity
    rule) on the same four generated stores as §6.2, five runs each, and compare with
    `retract_set`. Check the closure returns the same set. Add a column or short table to §6.2
    and a sentence to §8; drop "no external baseline" from §7.3 if it is there.
-3. Retitle the paper to "Loka: Provenance for Retracting Model-Generated Triples in an RDF-star
+2. Retitle the paper to "Loka: Provenance for Retracting Model-Generated Triples in an RDF-star
    Store" (Emma, 2026-10-29). `paper/paper.md`, `paper/arxiv/METADATA.md`, the LaTeX build
    inputs, `pages/arxiv/index.html`, README, CLAUDE.md's focus line, TODO.md.
-4. Rebuild and refresh: wait for the Paper PDF run on the new `main`, check the extracted text
-   for the rename and items 1–3, and replace `pages/arxiv/`'s PDF and source tarball; update page count and
+3. Rebuild and refresh: wait for the Paper PDF run on the new `main`, check the extracted text
+   for the rename, the five-run timings and items 1–2, and replace `pages/arxiv/`'s PDF and source tarball; update page count and
    abstract on the page and in METADATA if they changed.
 
 ---
