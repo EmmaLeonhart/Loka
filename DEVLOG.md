@@ -14,8 +14,10 @@ record "stays complete relative to the procedure". The selector also uses the pr
 the top-N cutoff and the negative test that the subject lacks the predicate, and none of these
 is recorded. §4.4 now says so, and states the narrower guarantee the retraction relies on:
 retracting any cited node, or any subject or neighbour the selector consulted, reaches the
-prediction. Each consulted neighbour contributes a cited statement, and the subject's consulted
-statements that matched are cited.
+prediction. I first wrote "any subject or neighbour the selector consulted", which was wrong: a
+consulted neighbour that did not contribute the predicate is not cited. The guarantee now covers
+the subject and the contributing neighbours, and says that a non-contributing neighbour may still
+have affected the ranking.
 
 ---
 ## 2026-10-29 — §1, §3.4: "every generated triple" scoped to the §4.4 procedure
