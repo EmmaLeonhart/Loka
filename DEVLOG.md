@@ -7,6 +7,27 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 (evening) — LLM review round 2: five Weak Accept, one Weak Reject (main track)
+
+Emma asked for every LLM to review the changed paper again, persistently. Meta AI, Gemini,
+ChatGPT, Grok and Mistral: Weak Accept. Claude: Weak Reject for a main-track venue, but
+"nothing here blocks an arXiv posting". ChatGPT moved up from round 1's Weak Reject.
+Uploads: the extension's file upload where a file input exists (Meta AI, ChatGPT, Claude,
+Grok); a synthetic paste of the file into the message box where none does (Gemini, Mistral;
+the drop event did not work on Gemini).
+
+Not run: DeepSeek, whose Google sign-in shows a slider CAPTCHA (agents may not solve them),
+with Proton VPN on and again after Emma turned it off; so the VPN was not the cause. I could not
+stop the VPN myself: closing the app left its services running, and stopping them needs an admin
+prompt. Qwen took the paper as text (guests cannot upload) but then asked for a birth year.
+Copilot, Perplexity and HuggingChat need sign-ins. Perplexity also caps guest messages below
+the paper's length.
+
+Checked the reviewers' specific errors: three were PDF-extraction artefacts. Claude's
+row-ledger point is real: the paper never gives the 2M store's starting row count (2,015,262 in
+the log). Seven text fixes are queued; the experiments the reviewers want are listed for Emma.
+
+---
 ## 2026-10-29 — `/arxiv/` serves the build that cites v0.4.7; queue empty
 
 Paper PDF run 40984075531 (for `3fe8148`) is green, 18 pages; the extracted text cites v0.4.7 and

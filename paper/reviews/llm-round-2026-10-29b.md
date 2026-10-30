@@ -21,3 +21,44 @@ the same prompt as round 1 (`llm-round-2026-10-29.md`):
 | Claude (Fable 5.1) | **Weak Reject** for a main-track venue, Accept at a workshop; "nothing here blocks an arXiv posting" (round 1: Weak Accept) | claude.ai/chat/e0133834-b0cc-4531-a332-275c5d48fa4a |
 | Grok | **Weak Accept** ("no claim is contradicted by the tables") | grok.com/c/151b7336-b287-4366-850a-10dea830a49f |
 | Mistral (Vibe) | **Weak Accept** ("with W1–W3 addressed I would move to Accept"; checked the arithmetic and found it clean) | chat.mistral.ai/work/e1c93fc9-4824-49d3-a7be-3bfedaa6b801 |
+| Qwen | none: guest chat took the paper as text but then asked for a birth year (personal data; needs Emma's yes); guests cannot upload files | — |
+| Microsoft Copilot | none: requires a Microsoft sign-in | — |
+| Perplexity | none: uploads need a sign-in, and guest messages are capped at ~40,000 characters (the paper is 65,700) | — |
+| DeepSeek via HuggingChat | none: HuggingChat requires a Hugging Face login in this Chrome | — |
+
+Six reviews: **five Weak Accept** (Meta AI, Gemini, ChatGPT, Grok, Mistral) and **one Weak
+Reject for a main-track venue** (Claude, which adds "nothing here blocks an arXiv posting").
+Round 1 was four Weak Accept and one Weak Reject (ChatGPT); ChatGPT moved up, Claude moved down.
+Texts were read with the extension's page-text tool; links above.
+
+## Checked and not real
+
+- "Green et al. 2007 missing from References" (Meta AI): it is there.
+- "§6.5 table typo `9 / 10.3 19 / / 36`" (Gemini) and "`[SEP_0]`, role `0`" (Mistral): PDF text
+  extraction; the source reads `9 / 10.3 / 19 / 36`, `[SEP_O]`, `O`.
+- "§5 missing" (Meta AI): extraction.
+
+## Checked and real
+
+- **§6.2 2M-store row ledger** (Claude): 2,000,623 + 672 + 13,318 − 5,377 ≠ 2,009,885. The log
+  (`training/logs/retract_commit_hf2m.json`) has `rows_before` 2,015,262, and 2,015,262 − 5,377 =
+  2,009,885, so the number is right but the paper never gives the starting count (649 rows of
+  the starting store are not accounted for by the three numbers it does give).
+
+## Points raised by more than one reviewer
+
+- **Exclusion is a pipeline property, not a store invariant** (Meta W1, ChatGPT W3, Mistral W2,
+  Claude W8): the abstract states it unconditionally; the training side has one guard, not three.
+- **Selection provenance vs what the model learned** (ChatGPT W1, Grok, Gemini): retraction does
+  not remove a deleted statement's influence on trained weights; §2.4/§2.6 wording overreaches.
+- **Abstract timing** (Meta, Gemini, Grok, Mistral, ChatGPT): "about 0.1 s" is the 85 ms
+  in-memory preview, not a commit; the two §6.2 tables give different `retract_set` times.
+- **8,621 is (entity, generated triple) pairs**, not triples (ChatGPT, Mistral).
+- **Store-size claim rests on two points** (all six): wants a store-size × removal-size grid.
+- **No other RDF-star store** (Gemini, Claude, Grok, ChatGPT): run the SPARQL closure on Jena or
+  Oxigraph; "any SPARQL-star store can compute it" is untested.
+- **§6.3**: reification baseline uses `prov:wasDerivedFrom` while §2.2 recommends `prov:used`
+  (ChatGPT, Claude); named graphs counted, not queried (Meta, Mistral, ChatGPT).
+- **Hardware not stated** (ChatGPT, Claude, Mistral).
+- **Node-rooted, single-justification semantics** (all): state formally; measure over-deletion.
+- **Model-debugging history is long for cs.DB** (Claude, Mistral).
