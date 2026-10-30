@@ -106,7 +106,10 @@ fn bench_baseline(c: &mut Criterion) {
             sparql.len(),
             engine == sparql
         );
-        assert_eq!(engine, sparql, "SPARQL closure differs from retract_set at n={n}");
+        assert_eq!(
+            engine, sparql,
+            "SPARQL closure differs from retract_set at n={n}"
+        );
 
         group.bench_with_input(BenchmarkId::new("retract_set", n), &n, |b, _| {
             b.iter(|| retract_set(black_box(root), &g.store, &g.dict))
