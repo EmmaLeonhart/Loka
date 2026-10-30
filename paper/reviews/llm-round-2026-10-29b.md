@@ -14,3 +14,7 @@ the same prompt as round 1 (`llm-round-2026-10-29.md`):
 
 | Reviewer | Verdict | Link |
 |---|---|---|
+| Meta AI | **Weak Accept** for arXiv ("Weak Reject for a top-tier venue in current form") | meta.ai/prompt/37905ade-5f45-4dbe-83ba-c4b1faeda481 |
+| DeepSeek | none: Google sign-in hits DeepSeek's slider CAPTCHA, with Proton VPN on and again after Emma turned it off (agents may not solve CAPTCHAs) | — |
+| Gemini (Flash) | **Weak Accept** ("leaning Accept for arXiv") | gemini.google.com/app/3610c94b3ec46721 |
+| ChatGPT | **Weak Accept** (round 1: Weak Reject) | chatgpt.com/c/6ae3f785-eaf8-83e8-b966-f699a761a2e1 |
