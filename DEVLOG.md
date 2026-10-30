@@ -7,6 +7,17 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — Appendix B moved to docs/model-history.md; §5.5's exclusion sentence corrected
+
+Round-2 fix (Claude W7, Mistral W5). Appendix B, the model-series debugging history (~730
+words), is now `docs/model-history.md`, and §5 links to it by URL. §5 itself was already about
+500 words, so I kept it rather than cut it to a table: it is the evidence behind the released
+corpora's exclusions. Claude called §5.5's "generated triples never enter a corpus, whichever
+path builds it" vacuous on the streaming path, and it was. It now says the streamed corpora hold
+no generated triples because the dump holds none, and that the §3.1 flag filter applies only
+when extracting from a store. The paper went from 10,518 to about 9,800 words.
+
+---
 ## 2026-10-29 — §3.1 guards as a list; §2.4/§2.6 scoped to stored outputs
 
 Round-2 fixes (Qwen, Claude W8, ChatGPT W1). §3.1's guard paragraph is now a three-item list:
