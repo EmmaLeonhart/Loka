@@ -7,6 +7,14 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — §7.3: the correctness checks test traversal, not dependency capture
+
+Perplexity W2 (round 2): every correctness check compares retraction with a closure over the
+links that were recorded, so a citation the selector should have written but did not would be
+missing from both sides. §7.3 now says this, and names the missing test, an oracle that
+recomputes expected citations from the selector's inputs on small graphs, as not built.
+
+---
 ## 2026-10-29 — §4.4: "cites everything it used" replaced by what the record guarantees
 
 Perplexity W1 (round 2): §4.4 said the bounded selector "cites everything it used", so the

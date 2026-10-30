@@ -358,6 +358,7 @@ Per prediction, the provenance cost is nearly the same under both generators: th
 - The link-prediction set is small (19,686 rankable queries), skewed toward literal-valued predicates, and drawn from the triples a larger label cache newly resolved rather than sampled uniformly from Wikidata. Entities are identified by English label, so distinct entities with the same label are merged, which affects the transformer and TransE alike.
 - No model was tuned, and only one checkpoint (v13) has a held-out set that requires no retraining.
 - Retraction was evaluated on synthetic graphs of up to 5M rows and on real Wikidata stores of 153k and 2M triples with dependency chains of two generated hops, on one machine; longer real chains were not built, and inference over the 2M-triple store covered a sample of 3,000 subjects.
+- The correctness checks (§6.1–6.2) compare retraction with a closure over the recorded `propositionSelectedFrom` links; they test that retraction follows the record, not that the selector recorded every link §4.4 promises. A missing citation would be absent from both sides. An oracle that recomputes the expected citations from the selector's inputs on small graphs would close that gap; we have not built one.
 - The source dataset revision was not pinned when the corpora were built (References). The released corpora are fixed, but the path from source dump to corpus cannot be replayed exactly.
 
 ---

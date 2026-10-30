@@ -19,9 +19,7 @@ still sound on today's `main` and get it ready for Emma to submit.
 
 Fixes from the late round-2 reviews (DeepSeek, Perplexity, on the reframed build):
 
-1. §7.3: one sentence that the correctness tests check retraction against the recorded links,
-   not that the selector recorded every link (Perplexity W2: a capture oracle is future work).
-2. Rebuild and refresh `/arxiv/`.
+1. Rebuild and refresh `/arxiv/`.
 
 Not queued, for Emma (new experiments; INTENT says ask first): a store-size × removal-size grid; an extractor run on the
 153k store showing 0 generated/reserved rows; deeper chains; an over-deletion count. Also:
