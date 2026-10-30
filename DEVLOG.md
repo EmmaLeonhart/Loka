@@ -7,6 +7,17 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — Abstract and §9: retraction time is the in-memory set computation, ~85 ms
+
+Round-2 fix (Meta AI, Gemini, Grok, Mistral, ChatGPT). The abstract said "about 0.1 s" for the
+5M-row retraction. That is the in-memory set computation, measured at 85 ms; commits are
+measured separately. The abstract now says "about 85 ms in memory", and that deleting from disk
+is measured separately. It also says 8,621 counts (entity, generated triple) pairs, and it
+separates the reference-implementation check (small generated graphs) from the timing (Claude).
+§9 matches. METADATA and the `/arxiv/` page abstract are synced at the rebuild item, after the
+reframe rewrites the abstract again.
+
+---
 ## 2026-10-29 — §6.2 gives the 2M store's starting row count; reframe planned
 
 Round-2 fix 1 (Claude's ledger point). §6.2 now says the store held 2,015,262 rows before the 30
