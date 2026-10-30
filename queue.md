@@ -17,9 +17,11 @@ arXiv submission of `paper/paper.md` (Emma, 2026-10-16: this is the whole queue)
 already has an Accept (clawRxiv v16) and a CI-built source package; these items check it is
 still sound on today's `main` and get it ready for Emma to submit.
 
-1. Rebuild and refresh: wait for the Paper PDF run on the new `main`, check the extracted text
-   for the rename, the five-run timings, the SPARQL baseline and the new title, and replace `pages/arxiv/`'s PDF and source tarball; update page count and
-   abstract on the page and in METADATA if they changed.
+1. Ask Emma with AskUserQuestion whether to tag a release (e.g. `v0.4.7`) for the paper to cite.
+   The paper and METADATA cite `v0.4.6`, which has neither the `propositionSelectedFrom` rename
+   nor `loka-sparql/benches/retract_baseline.rs` that §6.2 now points at. A release is
+   outward-facing, so ask first rather than tag. If yes: tag with informative release notes,
+   then point paper.md line 3 and METADATA's Comments at it and refresh `/arxiv/`.
 
 ---
 

@@ -7,6 +7,21 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — `/arxiv/` refreshed: new title, rename, five-run timings, SPARQL baseline
+
+Paper PDF run 40982555153 (for `dc962ed`) is green: 18 pages, so the page count stays. The
+named PDF's extracted text has the new title and author, the §6.2 range column, and the baseline
+table. The monospace font extracts garbled (`propositioneletedprom`), so I compared it with the
+previous PDF. That one had the garbled old name 16 times; this one has the new name 18 times and
+the old name once, in §3.1's rename note. The source tarball's `paper.tex` carries the new title.
+Both files replace `pages/arxiv/`'s copies under the old file names (kept on purpose, see the
+retitle entry). The abstract did not change.
+
+Found while checking: the paper cites release `v0.4.6`, which predates the rename and the
+baseline bench. A release is outward-facing, so it is queued as a question for Emma instead of
+being tagged.
+
+---
 ## 2026-10-29 — Paper retitled: "Loka: Provenance for Retracting Model-Generated Triples in an RDF-star Store"
 
 Emma chose this title. It addresses Claude's review point that the triples get retracted, not
