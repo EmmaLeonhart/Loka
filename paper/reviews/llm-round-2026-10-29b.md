@@ -22,8 +22,8 @@ the same prompt as round 1 (`llm-round-2026-10-29.md`):
 | Grok | **Weak Accept** ("no claim is contradicted by the tables") | grok.com/c/151b7336-b287-4366-850a-10dea830a49f |
 | Mistral (Vibe) | **Weak Accept** ("with W1–W3 addressed I would move to Accept"; checked the arithmetic and found it clean) | chat.mistral.ai/work/e1c93fc9-4824-49d3-a7be-3bfedaa6b801 |
 | Qwen (3.7-Plus, guest) | **Weak Accept**. Run after Emma gave her birth year for the age check; guests cannot upload, so it got the Markdown source of `c49db95` as text | chat.qwen.ai (guest chat, no saved link) |
-| Microsoft Copilot | none: requires a Microsoft sign-in | — |
-| Perplexity | none: uploads need a sign-in, and guest messages are capped at ~40,000 characters (the paper is 65,700) | — |
+| Microsoft Copilot | none: Emma tried to sign in; Microsoft refused to create the account ("account creation has been blocked") | — |
+| Perplexity (free plan, after Emma signed in) | **Weak Reject** for a full systems paper, "not an objection to posting a preprint". Run on the reframed 17-page build (`c60a23b`); its first answer was a plain summary, so the prompt was sent as a follow-up | perplexity.ai/search/044546cf-6ced-46ae-8718-deb4bb365c66 |
 | DeepSeek via HuggingChat | none: HuggingChat requires a Hugging Face login in this Chrome | — |
 
 Seven reviews: **six Weak Accept** (Meta AI, Gemini, ChatGPT, Grok, Mistral, Qwen) and **one Weak
@@ -36,6 +36,16 @@ such as RotatE (W2); profile where retraction time goes (W3); "the preview remov
 83 triples" should say "identified"; `prov:` prefix clashes with PROV-O; the §3.1 guard paragraph
 should be a list mapping each invariant to its guards; the RDF-star CG report needs a year;
 frame the 6–10× as a limit of this executor, not of SPARQL-star.
+
+Perplexity's points (on the reframed build): (W1) "cites everything it used" overstates. The
+record cites one neighbour statement carrying the proposed predicate, not necessarily the
+matching statement, and predicate ranking, the top-N cutoff, the negative "subject lacks this
+predicate" test and label lookups are not recorded. Wants a precise completeness condition
+scoped to whole-node deletion. (W2) The correctness tests check traversal, not dependency
+capture: a missing citation would be absent from both the store and the reference. Wants a
+capture oracle on small graphs. (W3) Annotations attach to triple content, not to an
+assertion. A triple that is both curated and generated is unresolved. (W4) Novelty versus the
+engineering integration.
 
 ## Checked and not real
 
