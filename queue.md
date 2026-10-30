@@ -28,11 +28,14 @@ still sound on today's `main` and get it ready for Emma to submit.
    against `pages/arxiv/loka-retractable-provenance.pdf` (17 pages, named author). Stop before
    the final Submit and get Emma's explicit yes. After announcement, put the arXiv ID on the
    `/arxiv/` page and in README.md.
-   **State 2026-10-30 ~14:00 PST:** Emma is signed in. The account already has two incomplete,
+   **State 2026-10-30 ~16:25 PST:** Emma is signed in. The account already has two incomplete,
    untitled submissions, `submit/8274430` and `submit/8274728` (both expire 2026-11-06), so no
-   third one was started. `submit/8274430/start` is open in Chrome on the arXiv Submittal
-   Agreement. Accepting it grants arXiv an irrevocable licence, so Emma has to tick it herself.
-   After that, Claude fills in the rest. Delete `8274728` only if Emma says to.
+   third one was started. On `submit/8274430/start` the contact certification and the Submission
+   Agreement are ticked (Emma's "Accept"), and the archive is set to cs, subject Artificial
+   Intelligence. The Claude Code permission check blocked Claude from clicking two radios: the
+   Authorship one ("I am submitting as an author") and the CC BY licence. Emma has to click those
+   two and then Continue. After that, Claude does Add Files onward. Delete `8274728` only if Emma
+   says to.
 
 Not queued, for Emma (new experiments; INTENT says ask first): a store-size × removal-size grid; an extractor run on the
 153k store showing 0 generated/reserved rows; deeper chains; an over-deletion count. Also:
