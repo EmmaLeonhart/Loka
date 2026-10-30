@@ -7,6 +7,16 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — §6.3: why the reified baseline uses wasDerivedFrom; named graphs an upper bound
+
+Round-2 fix (ChatGPT, Claude, Meta AI, Mistral). §2.2 recommends `prov:used`, but §6.3's reified
+baseline used `prov:wasDerivedFrom`. §6.3 now explains: `prov:used` runs from an activity, so a
+faithful mapping adds an activity node and links per generated triple. The baseline as run is
+therefore the smaller one, and the comparison does not flatter RDF-star. Following Claude, it
+also says named graphs could hold each cited statement in a singleton graph, so variant (b)'s
+counts are an upper bound, compared by size only. No numbers changed.
+
+---
 ## 2026-10-29 — §6.2 names the hardware
 
 Round-2 fix (ChatGPT, Claude, Mistral). Read from this machine with `Get-CimInstance`: AMD Ryzen

@@ -20,25 +20,23 @@ still sound on today's `main` and get it ready for Emma to submit.
 Fixes from LLM review round 2 (`paper/reviews/llm-round-2026-10-29b.md`). Text-only; each
 is one paper edit, no new experiment.
 
-1. §6.3: say the reification baseline uses `prov:wasDerivedFrom` (not the `prov:used` of §2.2)
-   and why, and that named graphs are compared by size only.
-2. Rename the `prov:` prefix for `http://loka.dev/provenance/` to `lprov:` in the paper (Claude,
+1. Rename the `prov:` prefix for `http://loka.dev/provenance/` to `lprov:` in the paper (Claude,
    Qwen: `prov:` is PROV-O's registered prefix).
-3. Reframe as an ontology-for-AI paper (Emma, 2026-10-29: "this is an ontology paper ... using
+2. Reframe as an ontology-for-AI paper (Emma, 2026-10-29: "this is an ontology paper ... using
    ontology for AI"). Abstract, §1 and Contributions: the contribution is a small provenance
    vocabulary for model-generated statements and the operations it enables in the store (query,
    cascade retraction). Corpus exclusion drops from Contribution 1 to one sentence, scoped to
    flagged pipeline output; delete "even if one of those guards regresses". The model is the
    generator that produced the triples, not a contribution. §8 may keep one sentence that the
    store could serve as a harness for training world models (Emma: "we're leaving this open").
-4. §3.1: turn the guard paragraph into a short list (each invariant → its guards), scoped to the
+3. §3.1: turn the guard paragraph into a short list (each invariant → its guards), scoped to the
    pipeline; §2.4/§2.6: retraction removes stored outputs, not a statement's influence on
    trained weights.
-5. Compress §5 and Appendix B (model-debugging history) to about half a page plus the version
+4. Compress §5 and Appendix B (model-debugging history) to about half a page plus the version
    table; move the full narrative to `docs/model-history.md` and link it.
-6. arXiv category: primary cs.AI, cross-list cs.DB (Emma called it "an AI paper"; my call,
+5. arXiv category: primary cs.AI, cross-list cs.DB (Emma called it "an AI paper"; my call,
    easy to reverse): `paper/arxiv/METADATA.md`, `/arxiv/` page, TODO.md steps.
-7. Rebuild and refresh `/arxiv/`.
+6. Rebuild and refresh `/arxiv/`.
 
 Possible replacement for the store-size benchmarks, for Emma: a Lean proof that `retract_set`
 does a bounded number of index lookups per removed triple (cost ∝ removed × log store size).
