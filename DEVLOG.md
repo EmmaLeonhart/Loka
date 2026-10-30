@@ -7,6 +7,29 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — §6.2 external baseline: the retraction set from plain SPARQL-star, 6–10× slower
+
+Emma said to run it. New bench `loka-sparql/benches/retract_baseline.rs` builds the same graphs
+and roots as the retract bench. It computes the retraction set with three SPARQL-star queries
+(rows touching the root; their reserved annotations; `?g sel* ?h` where `?h` cites a triple
+touching the root, plus `?g`'s annotations and dereferenced triple), asserts the set equals
+`retract_set`'s, and times both in one process. A path ending in a quoted pattern
+(`<<?g>> sel+ << e ?p ?o >>`) returns no rows in this engine, so the query uses one hop into
+the quoted pattern and then `*` between variables. Five runs, 17:42–17:52 PST: equal sets at all
+four sizes in every run. Medians: `retract_set` 0.37 / 2.36 / 71.5 / 71.3 ms, SPARQL 3.73 / 20.8
+/ 469 / 429 ms, so 10.0 / 8.8 / 6.6 / 6.0× slower. The SPARQL closure also takes about the same
+time on the 0.5M- and 5M-row stores. §6.2 has the table and says the dedicated traversal is an
+optimisation, not a requirement: any SPARQL-star store holding the annotation block can compute
+the same set.
+
+Decision: the queue item said to also add a sentence to §8. §8 lists two future directions,
+and the baseline is a result, not a direction, so the portability point went into §6.2 instead.
+`retract_set` ran about 17 % faster here than in the five-run table measured minutes before by
+the other bench binary. The paper says so and gives the within-process ratio as the comparable
+figure. Not filed as a bug: the paper reports the path-into-quoted-pattern limitation as a fact
+of the engine, and it is not on the arXiv path.
+
+---
 ## 2026-10-29 — §6.2 retraction timings: five runs, median and range
 
 Emma chose five runs each. Ran `cargo bench -p loka-core --bench retract` five times back to

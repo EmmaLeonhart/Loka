@@ -1,0 +1,84 @@
+   Compiling loka-sparql v0.4.6 (C:\Users\Emma\Documents\GitHub\Loka\loka-sparql)
+    Finished `bench` profile [optimized + debuginfo] target(s) in 30.57s
+     Running benches\retract_baseline.rs (target\release\deps\retract_baseline-917402118ddb1284.exe)
+Gnuplot not found, using plotters backend
+retract_baseline n=1000: store rows 5034, retract_set 1439 triples, SPARQL 1439 triples, equal true
+Benchmarking retract_baseline/retract_set/1000
+Benchmarking retract_baseline/retract_set/1000: Warming up for 3.0000 s
+Benchmarking retract_baseline/retract_set/1000: Collecting 10 samples in estimated 5.0071 s (19k iterations)
+Benchmarking retract_baseline/retract_set/1000: Analyzing
+retract_baseline/retract_set/1000
+                        time:   [366.57 µs 387.71 µs 408.90 µs]
+                        change: [-10.602% -3.8845% +3.1838%] (p = 0.33 > 0.05)
+                        No change in performance detected.
+Found 1 outliers among 10 measurements (10.00%)
+  1 (10.00%) high mild
+Benchmarking retract_baseline/sparql_closure/1000
+Benchmarking retract_baseline/sparql_closure/1000: Warming up for 3.0000 s
+Benchmarking retract_baseline/sparql_closure/1000: Collecting 10 samples in estimated 5.2081 s (1265 iterations)
+Benchmarking retract_baseline/sparql_closure/1000: Analyzing
+retract_baseline/sparql_closure/1000
+                        time:   [3.6656 ms 3.6958 ms 3.7362 ms]
+                        change: [-8.7540% -3.9010% +0.5412%] (p = 0.16 > 0.05)
+                        No change in performance detected.
+retract_baseline n=10000: store rows 50484, retract_set 7367 triples, SPARQL 7367 triples, equal true
+Benchmarking retract_baseline/retract_set/10000
+Benchmarking retract_baseline/retract_set/10000: Warming up for 3.0000 s
+Benchmarking retract_baseline/retract_set/10000: Collecting 10 samples in estimated 5.0645 s (2145 iterations)
+Benchmarking retract_baseline/retract_set/10000: Analyzing
+retract_baseline/retract_set/10000
+                        time:   [2.2830 ms 2.3340 ms 2.4311 ms]
+                        change: [-8.9415% -3.1597% +2.9854%] (p = 0.36 > 0.05)
+                        No change in performance detected.
+Found 2 outliers among 10 measurements (20.00%)
+  1 (10.00%) high mild
+  1 (10.00%) high severe
+Benchmarking retract_baseline/sparql_closure/10000
+Benchmarking retract_baseline/sparql_closure/10000: Warming up for 3.0000 s
+Benchmarking retract_baseline/sparql_closure/10000: Collecting 10 samples in estimated 5.8156 s (275 iterations)
+Benchmarking retract_baseline/sparql_closure/10000: Analyzing
+retract_baseline/sparql_closure/10000
+                        time:   [20.672 ms 21.023 ms 21.311 ms]
+                        change: [-32.822% -29.689% -26.575%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 1 outliers among 10 measurements (10.00%)
+  1 (10.00%) low mild
+retract_baseline n=100000: store rows 504389, retract_set 120461 triples, SPARQL 120461 triples, equal true
+Benchmarking retract_baseline/retract_set/100000
+Benchmarking retract_baseline/retract_set/100000: Warming up for 3.0000 s
+Benchmarking retract_baseline/retract_set/100000: Collecting 10 samples in estimated 7.9488 s (110 iterations)
+Benchmarking retract_baseline/retract_set/100000: Analyzing
+retract_baseline/retract_set/100000
+                        time:   [68.388 ms 69.575 ms 71.231 ms]
+                        change: [-15.759% -9.6863% -3.8049%] (p = 0.01 < 0.05)
+                        Performance has improved.
+Found 3 outliers among 10 measurements (30.00%)
+  1 (10.00%) low severe
+  1 (10.00%) high mild
+  1 (10.00%) high severe
+Benchmarking retract_baseline/sparql_closure/100000
+Benchmarking retract_baseline/sparql_closure/100000: Warming up for 3.0000 s
+Benchmarking retract_baseline/sparql_closure/100000: Collecting 10 samples in estimated 9.4342 s (20 iterations)
+Benchmarking retract_baseline/sparql_closure/100000: Analyzing
+retract_baseline/sparql_closure/100000
+                        time:   [471.28 ms 484.64 ms 498.77 ms]
+                        change: [+2.3016% +5.9440% +9.4663%] (p = 0.01 < 0.05)
+                        Performance has regressed.
+retract_baseline n=1000000: store rows 5050435, retract_set 106255 triples, SPARQL 106255 triples, equal true
+Benchmarking retract_baseline/retract_set/1000000
+Benchmarking retract_baseline/retract_set/1000000: Warming up for 3.0000 s
+Benchmarking retract_baseline/retract_set/1000000: Collecting 10 samples in estimated 7.7417 s (110 iterations)
+Benchmarking retract_baseline/retract_set/1000000: Analyzing
+retract_baseline/retract_set/1000000
+                        time:   [71.180 ms 72.635 ms 73.789 ms]
+                        change: [-30.612% -25.769% -20.762%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Benchmarking retract_baseline/sparql_closure/1000000
+Benchmarking retract_baseline/sparql_closure/1000000: Warming up for 3.0000 s
+Benchmarking retract_baseline/sparql_closure/1000000: Collecting 10 samples in estimated 8.6176 s (20 iterations)
+Benchmarking retract_baseline/sparql_closure/1000000: Analyzing
+retract_baseline/sparql_closure/1000000
+                        time:   [435.15 ms 449.10 ms 463.45 ms]
+                        change: [-1.0233% +4.9173% +10.441%] (p = 0.12 > 0.05)
+                        No change in performance detected.
+
