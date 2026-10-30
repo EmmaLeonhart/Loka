@@ -23,24 +23,27 @@ is one paper edit, no new experiment.
 1. §6.2 2M-store ledger: give the pre-retraction row count (2,015,262, from
    `training/logs/retract_commit_hf2m.json`) and say what the 649 rows beyond imported +
    generated + annotations are, if the logs show it; otherwise say they are unaccounted for.
-2. Abstract and §3.1: state that exclusion holds for output written through Loka's pipeline
-   (flagged), not for triples another tool posts unflagged; Contribution 1's "even if one guard
-   regresses" holds for the output side only.
-3. Abstract, §2.4, §2.6: say selection provenance records what the selector consulted, not what
-   the model learned in training; retraction does not remove a statement's influence on weights.
-4. Abstract: "about 0.1 s" → the in-memory preview time (~85 ms), commits separate; say 8,621 is
+2. Abstract: "about 0.1 s" → the in-memory preview time (~85 ms), commits separate; say 8,621 is
    (entity, generated triple) pairs.
-5. §6.2: one sentence tying the two `retract_set` tables together; "any SPARQL-star store" →
+3. §6.2: one sentence tying the two `retract_set` tables together; "any SPARQL-star store" →
    "in principle; tested only on this engine".
-6. §6.2: state the laptop's CPU, RAM and OS (check `planning/system-instability-verdict-2026-05-13.md`).
-7. §6.3: say the reification baseline uses `prov:wasDerivedFrom` (not the `prov:used` of §2.2)
+4. §6.2: state the laptop's CPU, RAM and OS (check `planning/system-instability-verdict-2026-05-13.md`).
+5. §6.3: say the reification baseline uses `prov:wasDerivedFrom` (not the `prov:used` of §2.2)
    and why, and that named graphs are compared by size only.
-8. Rebuild and refresh `/arxiv/`.
+6. Rebuild and refresh `/arxiv/`.
+
+Held for Emma's framing decision (2026-10-29 evening: "training isn't a big topic of this paper
+... this is essentially an ontology paper"): the paper may drop training exclusion as a
+contribution and shrink §5/Appendix B, which would make these two edits moot:
+- Abstract and §3.1: state that exclusion holds for output written through Loka's pipeline (flagged), not for triples another tool posts unflagged; Contribution 1's "even if one guard regresses" holds for the output side only.
+- Abstract, §2.4, §2.6: say selection provenance records what the selector consulted, not what the model learned in training; retraction does not remove a statement's influence on weights.
+- Possible replacement for the store-size benchmarks: a Lean proof that `retract_set` does a
+  bounded number of index lookups per removed triple (cost ∝ removed × log store size).
 
 Not queued, for Emma (new experiments; INTENT says ask first): the SPARQL closure on another
 RDF-star store (Jena/Oxigraph); a store-size × removal-size grid; an extractor run on the
 153k store showing 0 generated/reserved rows; deeper chains; an over-deletion count. Also:
-Qwen (birth-year check), Copilot (Microsoft sign-in), Perplexity and HuggingChat (sign-in) were
+Copilot (Microsoft sign-in), Perplexity and HuggingChat (sign-in) were
 not run; each needs Emma's yes.
 
 ---
