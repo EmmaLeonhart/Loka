@@ -7,6 +7,17 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — `/arxiv/` refreshed with the round-2 fixes and the reframe: 17 pages
+
+Paper PDF run 40990570168 (for `c60a23b`) is green, 17 pages (was 18; Appendix B moved out).
+The extracted text has the new abstract, "about 85 ms", the 2,015,262-row count, the hardware
+line, the store-side-flags contribution, the §8 harness sentence and v0.4.7, and neither
+"0.1 s" nor Appendix B. The named PDF and source tarball replace `pages/arxiv/`'s copies
+(`a5be903`). The new abstract (1,737 characters) is now in METADATA and on the page, and the
+page count is 17 there and in TODO.md's check step. A renumbering slip had dropped the Lean
+item from the queue; it is restored as the last item.
+
+---
 ## 2026-10-29 — arXiv category: cs.AI primary, cs.DB cross-list
 
 Emma: "this is an AI paper, but it's ... using ontology for AI". My call from that: primary
