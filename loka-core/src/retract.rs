@@ -36,8 +36,7 @@ pub const PROP_SELECTED_FROM: &str = "http://loka.dev/provenance/propositionSele
 /// The name [`PROP_SELECTED_FROM`] had before 2026-10-29. Never written any
 /// more; the cascade still follows it so stores written before the rename
 /// retract the same way.
-pub const PROP_SELECTED_FROM_LEGACY: &str =
-    "http://loka.dev/provenance/propositionInferredFrom";
+pub const PROP_SELECTED_FROM_LEGACY: &str = "http://loka.dev/provenance/propositionInferredFrom";
 
 /// The result of [`retract_set`]: every triple that would be removed,
 /// grouped by cascade depth (index = depth). Depth 0 is the root node's own

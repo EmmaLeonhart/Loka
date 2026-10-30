@@ -37,7 +37,8 @@ pub use pseudotable::{
 };
 pub use rdfxml::parse_rdfxml;
 pub use retract::{
-    retract_set, RetractSet, PROP_SELECTED_FROM, PROP_SELECTED_FROM_LEGACY, RESERVED_PROVENANCE_PREFIX,
+    retract_set, RetractSet, PROP_SELECTED_FROM, PROP_SELECTED_FROM_LEGACY,
+    RESERVED_PROVENANCE_PREFIX,
 };
 pub use store::TripleStore;
 pub use temporal::{
