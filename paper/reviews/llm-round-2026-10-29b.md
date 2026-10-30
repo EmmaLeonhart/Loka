@@ -21,15 +21,21 @@ the same prompt as round 1 (`llm-round-2026-10-29.md`):
 | Claude (Fable 5.1) | **Weak Reject** for a main-track venue, Accept at a workshop; "nothing here blocks an arXiv posting" (round 1: Weak Accept) | claude.ai/chat/e0133834-b0cc-4531-a332-275c5d48fa4a |
 | Grok | **Weak Accept** ("no claim is contradicted by the tables") | grok.com/c/151b7336-b287-4366-850a-10dea830a49f |
 | Mistral (Vibe) | **Weak Accept** ("with W1–W3 addressed I would move to Accept"; checked the arithmetic and found it clean) | chat.mistral.ai/work/e1c93fc9-4824-49d3-a7be-3bfedaa6b801 |
-| Qwen | none: guest chat took the paper as text but then asked for a birth year (personal data; needs Emma's yes); guests cannot upload files | — |
+| Qwen (3.7-Plus, guest) | **Weak Accept**. Run after Emma gave her birth year for the age check; guests cannot upload, so it got the Markdown source of `c49db95` as text | chat.qwen.ai (guest chat, no saved link) |
 | Microsoft Copilot | none: requires a Microsoft sign-in | — |
 | Perplexity | none: uploads need a sign-in, and guest messages are capped at ~40,000 characters (the paper is 65,700) | — |
 | DeepSeek via HuggingChat | none: HuggingChat requires a Hugging Face login in this Chrome | — |
 
-Six reviews: **five Weak Accept** (Meta AI, Gemini, ChatGPT, Grok, Mistral) and **one Weak
+Seven reviews: **six Weak Accept** (Meta AI, Gemini, ChatGPT, Grok, Mistral, Qwen) and **one Weak
 Reject for a main-track venue** (Claude, which adds "nothing here blocks an arXiv posting").
 Round 1 was four Weak Accept and one Weak Reject (ChatGPT); ChatGPT moved up, Claude moved down.
 Texts were read with the extension's page-text tool; links above.
+
+Qwen's points: node-rooted retraction is the main practical limit (W1); a stronger generator
+such as RotatE (W2); profile where retraction time goes (W3); "the preview removed a median of
+83 triples" should say "identified"; `prov:` prefix clashes with PROV-O; the §3.1 guard paragraph
+should be a list mapping each invariant to its guards; the RDF-star CG report needs a year;
+frame the 6–10× as a limit of this executor, not of SPARQL-star.
 
 ## Checked and not real
 
@@ -59,6 +65,7 @@ Texts were read with the extension's page-text tool; links above.
   Oxigraph; "any SPARQL-star store can compute it" is untested.
 - **§6.3**: reification baseline uses `prov:wasDerivedFrom` while §2.2 recommends `prov:used`
   (ChatGPT, Claude); named graphs counted, not queried (Meta, Mistral, ChatGPT).
+- **`prov:` prefix clashes with PROV-O** (Claude, Qwen): use `loka:` or similar.
 - **Hardware not stated** (ChatGPT, Claude, Mistral).
 - **Node-rooted, single-justification semantics** (all): state formally; measure over-deletion.
 - **Model-debugging history is long for cs.DB** (Claude, Mistral).

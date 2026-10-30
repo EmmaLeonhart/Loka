@@ -7,6 +7,19 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 (evening) — Qwen reviewed too: Weak Accept; training-exclusion fixes held
+
+Emma gave her birth year for Qwen's age check, so Qwen ran as a guest on the Markdown source
+(guests cannot upload): Weak Accept. That makes six Weak Accept and one Weak Reject (Claude,
+main track). Emma also said training "isn't a big topic of this paper ... this is essentially
+an ontology paper". The reviewers' training-exclusion points come from the paper still listing
+corpus exclusion as Contribution 1, a leftover of the model-training phase. Claude noted the
+loop was never closed: v11–v14 trained from the parquet stream, not from a store. The two queued
+wording fixes about it are held for her framing decision. A Lean proof of the lookup-count
+bound (cost ∝ removed × log store size) is noted as a possible replacement for more
+store-size benchmarks.
+
+---
 ## 2026-10-29 (evening) — LLM review round 2: five Weak Accept, one Weak Reject (main track)
 
 Emma asked for every LLM to review the changed paper again, persistently. Meta AI, Gemini,
