@@ -7,6 +7,15 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — Lean proof of the retraction lookup bound: not attempted (not easy here)
+
+Emma: "if we can do a lean proof that's really easy, we do it. Otherwise, we don't." There is no
+Lean toolchain on this laptop (`lean`, `lake`, `elan` absent). The proof would mean installing
+one, modelling `retract_set` and its index operations in Lean, and proving that lookups are
+bounded per removed triple. That is not the easy case, so it is dropped. The paper keeps its
+two-data-point wording for the store-size claim, already qualified as an observation.
+
+---
 ## 2026-10-29 — `/arxiv/` refreshed with the round-2 fixes and the reframe: 17 pages
 
 Paper PDF run 40990570168 (for `c60a23b`) is green, 17 pages (was 18; Appendix B moved out).

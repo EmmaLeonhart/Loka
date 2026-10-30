@@ -17,13 +17,8 @@ arXiv submission of `paper/paper.md` (Emma, 2026-10-16: this is the whole queue)
 already has an Accept (clawRxiv v16) and a CI-built source package; these items check it is
 still sound on today's `main` and get it ready for Emma to submit.
 
-Fixes from LLM review round 2 (`paper/reviews/llm-round-2026-10-29b.md`). Text-only; each
-is one paper edit, no new experiment.
-
-1. Attempt a Lean proof that `retract_set` does a bounded number of index lookups per removed
-   triple (cost ∝ removed × log store size). Emma, 2026-10-29: not load-bearing; "if we can do a
-   lean proof that's really easy, we do it. Otherwise, we don't." Time-box it; if it is not
-   easy, record that and drop it. If done, rebuild and refresh `/arxiv/` after.
+(empty: round-2 fixes and the ontology reframe are done; arXiv waits on Emma's upload, see
+TODO.md "Paper / arXiv — ready for Emma to submit")
 
 Not queued, for Emma (new experiments; INTENT says ask first): a store-size × removal-size grid; an extractor run on the
 153k store showing 0 generated/reserved rows; deeper chains; an over-deletion count. Also:
