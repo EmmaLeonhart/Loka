@@ -7,6 +7,13 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — §6.2 names the hardware
+
+Round-2 fix (ChatGPT, Claude, Mistral). Read from this machine with `Get-CimInstance`: AMD Ryzen
+7 8845HS, 32 GB RAM (31.3 GB visible), Lexar NQ700 NVMe SSD, Windows 11 Home (HP Victus 16).
+§6.2 states it once, for all of §6's timings. Every §6 timing was run on this laptop (DEVLOG).
+
+---
 ## 2026-10-29 — §6.2: SPARQL portability "in principle"; no Jena run (Emma)
 
 Round-2 fix (Gemini, Claude, ChatGPT, Qwen). The sentence "any SPARQL-star store ... can compute

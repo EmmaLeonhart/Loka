@@ -253,7 +253,7 @@ The comparison found a defect on its first run. When the retracted node was itse
 
 ### 6.2 Retraction cost
 
-We time `retract_set` with criterion on generated graphs of four sizes, using the same generator (curated and generated triples in equal number, entities = a quarter of that number). The root is the entity with the largest retraction set among a fixed sample of 50. Single laptop, release build; the whole benchmark was run five times back to back, and the table gives the median of the five per-run medians with the range across runs. The store is the in-memory index that the engine computes retractions against in every mode, including the server, which mirrors writes to its persistent store:
+We time `retract_set` with criterion on generated graphs of four sizes, using the same generator (curated and generated triples in equal number, entities = a quarter of that number). The root is the entity with the largest retraction set among a fixed sample of 50. Single laptop (AMD Ryzen 7 8845HS, 32 GB RAM, NVMe SSD, Windows 11; all timings in §6 are from this machine), release build; the whole benchmark was run five times back to back, and the table gives the median of the five per-run medians with the range across runs. The store is the in-memory index that the engine computes retractions against in every mode, including the server, which mirrors writes to its persistent store:
 
 | Generated triples | Store rows | Triples removed | Max depth | Median time (5 runs) | Range across runs |
 |---|---|---|---|---|---|
