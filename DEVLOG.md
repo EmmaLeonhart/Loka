@@ -7,6 +7,17 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 (late) — Session wrap: crons stopped, arXiv upload queued first, transcript committed
+
+Emma: stop all cron jobs, put the arXiv upload process at the very start of the queue, and
+commit and push everything including the transcript, in that order; "at this point, we're then
+done". The loop cron (`7,37 * * * *`, job `2ffd397b`) is deleted. Queue item 1 is now the active
+upload walk-through. Chrome is connected again, and the arxiv.org login page is open with
+Emma's username filled; she has to click Submit there herself. The session transcript is in
+`transcripts/2026-10-29-session-6408507b.jsonl`, scanned for token patterns (none). It is
+a snapshot taken just before this commit, so this commit and push are not in it.
+
+---
 ## 2026-10-29 — `/arxiv/` refreshed with the DeepSeek/Perplexity fixes; queue empty
 
 Paper PDF run 40993098827 (for `312d8d3`) is green, still 17 pages. The extracted text has the

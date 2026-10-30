@@ -17,8 +17,17 @@ arXiv submission of `paper/paper.md` (Emma, 2026-10-16: this is the whole queue)
 already has an Accept (clawRxiv v16) and a CI-built source package; these items check it is
 still sound on today's `main` and get it ready for Emma to submit.
 
-(empty: all round-2 fixes are done; arXiv waits on Emma's upload, see TODO.md "Paper / arXiv —
-ready for Emma to submit")
+1. **Upload the paper to arXiv, actively** (Emma, 2026-10-29: "put it in the beginning of the
+   queue to basically actively go through the process of uploading"). In Chrome via the
+   extension: Emma signs in at arxiv.org herself (agents may not submit a password, even an
+   autofilled one; the login page was left open with her username filled). Then Claude starts
+   Submit → New and fills it from `paper/arxiv/METADATA.md`: licence CC BY 4.0, primary cs.AI,
+   cross-list cs.DB; upload `pages/arxiv/loka-retractable-provenance-source.tar.gz` (the
+   `c60a23b`+ build, 17 pages); paste title, abstract and comments. If arXiv asks for an
+   endorsement, show Emma the code and stop; requesting it is hers. Check arXiv's compiled PDF
+   against `pages/arxiv/loka-retractable-provenance.pdf` (17 pages, named author). Stop before
+   the final Submit and get Emma's explicit yes. After announcement, put the arXiv ID on the
+   `/arxiv/` page and in README.md.
 
 Not queued, for Emma (new experiments; INTENT says ask first): a store-size × removal-size grid; an extractor run on the
 153k store showing 0 generated/reserved rows; deeper chains; an over-deletion count. Also:
