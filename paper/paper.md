@@ -1,4 +1,4 @@
-# Loka: Retractable Provenance for Model-Generated Triples in an RDF-star Store
+# Loka: Provenance for Retracting Model-Generated Triples in an RDF-star Store
 
 **Code:** <https://github.com/EmmaLeonhart/Loka> (release `v0.4.6`: <https://github.com/EmmaLeonhart/Loka/releases/tag/v0.4.6>) &middot; **Model checkpoints:** <https://huggingface.co/datasets/EmmaLeonhart/loka> (`checkpoints/wikidata_v3.pt`–`wikidata_v14.pt`, plus per-epoch checkpoints for v13 and v14, snapshot tags `v13.*` `v14.*`) &middot; **Normalized-Wikidata training corpora (v11+):** <https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata> (snapshot tags `v11-50k`, `v12-100k`, `v13-500k`, `v14-1M`) &middot; **Source dataset:** <https://huggingface.co/datasets/philippesaade/wikidata>
 

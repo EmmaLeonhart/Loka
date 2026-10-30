@@ -3,7 +3,7 @@
 ## Current focus: the arXiv submission (Emma, 2026-10-16)
 
 **The purpose of work in this repo right now is the arXiv submission of `paper/paper.md`
-(*Loka: Retractable Provenance for Model-Generated Triples in an RDF-star Store*) and nothing
+(*Loka: Provenance for Retracting Model-Generated Triples in an RDF-star Store*) and nothing
 else.** Every session, and every work-loop cron tick, starts from that:
 
 - `queue.md` holds only arXiv items. When it is empty, the work loop promotes only arXiv-related

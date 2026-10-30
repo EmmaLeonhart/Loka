@@ -7,7 +7,7 @@ references. **Submitting is Emma's action.**
 
 ## Fields
 
-- **Title:** Loka: Retractable Provenance for Model-Generated Triples in an RDF-star Store
+- **Title:** Loka: Provenance for Retracting Model-Generated Triples in an RDF-star Store
 - **Authors:** Emma Leonhart
 - **Contact:** emma@topazcomputing.com
 - **Primary category:** cs.DB (Databases)

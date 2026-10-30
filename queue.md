@@ -17,11 +17,8 @@ arXiv submission of `paper/paper.md` (Emma, 2026-10-16: this is the whole queue)
 already has an Accept (clawRxiv v16) and a CI-built source package; these items check it is
 still sound on today's `main` and get it ready for Emma to submit.
 
-1. Retitle the paper to "Loka: Provenance for Retracting Model-Generated Triples in an RDF-star
-   Store" (Emma, 2026-10-29). `paper/paper.md`, `paper/arxiv/METADATA.md`, the LaTeX build
-   inputs, `pages/arxiv/index.html`, README, CLAUDE.md's focus line, TODO.md.
-2. Rebuild and refresh: wait for the Paper PDF run on the new `main`, check the extracted text
-   for the rename, the five-run timings, the SPARQL baseline and item 1, and replace `pages/arxiv/`'s PDF and source tarball; update page count and
+1. Rebuild and refresh: wait for the Paper PDF run on the new `main`, check the extracted text
+   for the rename, the five-run timings, the SPARQL baseline and the new title, and replace `pages/arxiv/`'s PDF and source tarball; update page count and
    abstract on the page and in METADATA if they changed.
 
 ---

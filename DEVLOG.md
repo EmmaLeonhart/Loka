@@ -7,6 +7,17 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — Paper retitled: "Loka: Provenance for Retracting Model-Generated Triples in an RDF-star Store"
+
+Emma chose this title. It addresses Claude's review point that the triples get retracted, not
+the provenance. Changed in `paper/paper.md`, `paper/paper.tex`, `paper/arxiv/METADATA.md`, the
+`/arxiv/` page (heading and the three meta descriptions) and CLAUDE.md's focus line. Kept as
+written: DEVLOG, `paper/reviews/`, and `planning/arxiv-readiness.md` (a dated memo that explains
+the old title's choice). Decision: the public file names `loka-retractable-provenance.pdf` /
+`-source.tar.gz` and the SKILL name stay. They are URLs the review records and shared links
+point at, and arXiv shows the title from the metadata, not the file name.
+
+---
 ## 2026-10-29 — §6.2 external baseline: the retraction set from plain SPARQL-star, 6–10× slower
 
 Emma said to run it. New bench `loka-sparql/benches/retract_baseline.rs` builds the same graphs

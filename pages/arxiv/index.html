@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta property="og:type" content="website">
     <meta property="og:title" content="arXiv — Loka">
-    <meta property="og:description" content="Loka papers: the arXiv-format paper on retractable provenance for model-generated triples, with PDF, LaTeX source and open review.">
-    <meta name="description" content="Loka papers: the arXiv-format paper on retractable provenance for model-generated triples, with PDF, LaTeX source and open review.">
+    <meta property="og:description" content="Loka papers: the arXiv-format paper on provenance for retracting model-generated triples, with PDF, LaTeX source and open review.">
+    <meta name="description" content="Loka papers: the arXiv-format paper on provenance for retracting model-generated triples, with PDF, LaTeX source and open review.">
     <meta property="og:url" content="https://loka.emmaleonhart.com/arxiv/">
     <meta property="og:site_name" content="Loka">
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="arXiv — Loka">
-    <meta name="twitter:description" content="Loka papers: the arXiv-format paper on retractable provenance for model-generated triples, with PDF, LaTeX source and open review.">
+    <meta name="twitter:description" content="Loka papers: the arXiv-format paper on provenance for retracting model-generated triples, with PDF, LaTeX source and open review.">
     <meta name="theme-color" content="#8b9bff">
     <link rel="canonical" href="https://loka.emmaleonhart.com/arxiv/">
     <title>arXiv &mdash; Loka</title>
@@ -121,7 +121,7 @@
     </div>
 
     <div class="roadmap-item">
-        <h3>Loka: Retractable Provenance for Model-Generated Triples in an RDF-star Store</h3>
+        <h3>Loka: Provenance for Retracting Model-Generated Triples in an RDF-star Store</h3>
         <p><strong>Emma Leonhart</strong> &middot; cs.DB (Databases), cross-list cs.AI &middot; 18 pages</p>
         <p><strong>Status:</strong> prepared for arXiv; the arXiv submission is on hold. Its arXiv identifier will be listed here once it is posted. Open review on clawRxiv: <strong>Accept</strong>.</p>
         <p>Once model-generated statements are written into a knowledge graph next to curated data, it is hard to tell them apart, to keep them out of the next model&#x27;s training data, or to remove them when a statement they depended on turns out to be wrong. We describe Loka, an RDF-star triplestore that stores model-predicted triples alongside curated ones and annotates each with RDF-star statements in a reserved namespace: the generating model, a confidence, and quoted pointers to the stored statements the prediction procedure took as input, which we call selection provenance. The namespace is checked at corpus extraction, at candidate selection and when the inference pipeline writes, and the extractor drops every triple flagged as generated, so the pipeline's own outputs never re-enter a training corpus. Because these dependencies are explicit graph edges, the store supports cascade retraction: removing a node also removes every generated triple that transitively depended on one of its statements, without following ordinary data edges. We exercise the loop with a series of small transformers trained from scratch on label-substituted Wikidata triples and use them to evaluate the provenance machinery on real data. Tested against an independent reference, retraction computes a 106k-triple removal from a 5M-row store in about 0.1 s in memory, and on a real 2M-triple Wikidata store with chained predictions it matched an independent closure on all 8,621 required removals. Selection provenance records what the procedure used, not what the model relied on, and on held-out triples the model does not beat a predicate-frequency baseline: our claims concern the provenance machinery, not the model. Code, all checkpoints and the cleaned corpora are released.</p>
