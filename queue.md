@@ -20,14 +20,11 @@ still sound on today's `main` and get it ready for Emma to submit.
 Fixes from LLM review round 2 (`paper/reviews/llm-round-2026-10-29b.md`). Text-only; each
 is one paper edit, no new experiment.
 
-1. §3.1: turn the guard paragraph into a short list (each invariant → its guards), scoped to the
-   pipeline; §2.4/§2.6: retraction removes stored outputs, not a statement's influence on
-   trained weights.
-2. Compress §5 and Appendix B (model-debugging history) to about half a page plus the version
+1. Compress §5 and Appendix B (model-debugging history) to about half a page plus the version
    table; move the full narrative to `docs/model-history.md` and link it.
-3. arXiv category: primary cs.AI, cross-list cs.DB (Emma called it "an AI paper"; my call,
+2. arXiv category: primary cs.AI, cross-list cs.DB (Emma called it "an AI paper"; my call,
    easy to reverse): `paper/arxiv/METADATA.md`, `/arxiv/` page, TODO.md steps.
-4. Rebuild and refresh `/arxiv/`.
+3. Rebuild and refresh `/arxiv/`.
 
 Not queued, for Emma (new experiments; INTENT says ask first): a store-size × removal-size grid; an extractor run on the
 153k store showing 0 generated/reserved rows; deeper chains; an over-deletion count. Also:

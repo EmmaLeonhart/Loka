@@ -7,6 +7,17 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — §3.1 guards as a list; §2.4/§2.6 scoped to stored outputs
+
+Round-2 fixes (Qwen, Claude W8, ChatGPT W1). §3.1's guard paragraph is now a three-item list:
+each invariant and the guard or guards that cover it. Only the "model proposes or writes a
+reserved predicate" invariant has two guards. §2.4 now says cascade retraction removes stored
+outputs that depended on a withdrawn source, not what the model learned from it. §2.6 now
+qualifies "everything the model learned inside a known, released dataset": the live label
+fetches (§4.2) and the unpinned source revision (§7.3) are exceptions (Claude). It also says
+selection provenance does not record training-time dependence.
+
+---
 ## 2026-10-29 — Abstract, §1 and contributions reframed: an ontology for model-generated statements
 
 Emma: "this is an ontology paper ... using ontology for AI". The abstract now leads with the

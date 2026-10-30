@@ -54,7 +54,7 @@ Link prediction scores candidate completions of (subject, predicate, ?) queries.
 
 ### 2.4 Attribution for generated content
 
-Retrieval-augmented generation conditions a language model on retrieved passages (Lewis et al., 2020), and attributed question answering asks a model to return evidence supporting its answer and evaluates whether the evidence does support it (Bohnet et al., 2022). Those lines of work aim at support: the cited source should justify the output. Selection provenance makes a weaker, procedural claim: the cited statements were the input to the procedure that produced the output. That is enough for retraction, which needs to know what an output depended on, and it is not a claim of support (§7.2). Machine unlearning addresses the complementary problem of removing a training example's influence from the model itself (Bourtoule et al., 2021); cascade retraction removes a source's influence from the model's *stored outputs*, and needs no change to the model.
+Retrieval-augmented generation conditions a language model on retrieved passages (Lewis et al., 2020), and attributed question answering asks a model to return evidence supporting its answer and evaluates whether the evidence does support it (Bohnet et al., 2022). Those lines of work aim at support: the cited source should justify the output. Selection provenance makes a weaker, procedural claim: the cited statements were the input to the procedure that produced the output. That is enough for retraction, which needs to know what an output depended on, and it is not a claim of support (§7.2). Machine unlearning addresses the complementary problem of removing a training example's influence from the model itself (Bourtoule et al., 2021); cascade retraction removes the model's *stored outputs* that depended on a withdrawn source, and needs no change to the model. It does not remove whatever the model learned from that source during training.
 
 ### 2.5 Truth maintenance and deletion propagation
 
@@ -62,7 +62,7 @@ Cascade retraction is closest in spirit to truth maintenance. A justification-ba
 
 ### 2.6 Training from scratch
 
-The models in our case study are trained from scratch on triples, not fine-tuned from a pretrained language model. With a pretrained model, a generated triple can draw on pretraining data the store knows nothing about, so its provenance record would be incomplete by construction; training only on the corpus keeps everything the model learned inside a known, released dataset. The schema itself does not depend on this choice.
+The models in our case study are trained from scratch on triples, not fine-tuned from a pretrained language model. With a pretrained model, a generated triple can draw on pretraining data the store knows nothing about, so its provenance record would be incomplete by construction; training only on the corpus keeps what the model learned inside a known, released dataset, apart from the property labels fetched from the live Wikidata endpoint (§4.2) and the unpinned source revision (§7.3). Selection provenance does not record that training-time dependence; it records only what the procedure consulted at inference. The schema itself does not depend on this choice.
 
 ---
 
@@ -102,7 +102,13 @@ It also drops any row whose predicate IRI matches the reserved prefix. Both this
 
 **Emit-time guard.** Each prediction's primary triple is checked against the reserved prefix immediately before it is written to the output stream. A reserved-prefix predicate is logged loudly and dropped.
 
-The layers protect two different invariants. Keeping *generated triples* out of a corpus rests on the extractor's generated-flag filter alone: a generated triple uses an ordinary data predicate, so the prefix checks do not see it. Keeping *system metadata* out of the model's input and output rests on all three: the extractor's prefix filter keeps annotation rows out of training, and the selector and the emit-time guard stop the model proposing or writing a reserved predicate. The guards for that second invariant overlap only on the output side: the selector or the emit-time guard alone stops a reserved predicate being proposed or written, while keeping annotation rows out of training rests on the extractor's prefix filter alone. Each guard exists so that a regression in one path cannot silently let the model output system metadata; the selector and the emit-time guard are not covered by a test that disables the other. All of these guards sit in Loka's extractor and inference pipeline, not in the store: in keeping with storing whatever is written, the store accepts any triple over `POST /triples`, so a generated triple that another tool writes without the generated flag is not excluded from a corpus.
+The layers protect two different invariants, with different coverage:
+
+- *Generated triples stay out of an extracted corpus*: the extractor's generated-flag filter alone. A generated triple uses an ordinary data predicate, so the prefix checks do not see it.
+- *Annotation rows stay out of an extracted corpus*: the extractor's prefix filter alone.
+- *The model does not propose or write a reserved predicate*: the selector and the emit-time guard, either of which suffices. They are not covered by a test that disables the other.
+
+All of these guards sit in Loka's extractor and inference pipeline, not in the store. In keeping with storing whatever is written, the store accepts any triple over `POST /triples`, so a generated triple that another tool writes without the generated flag is not excluded from a corpus.
 
 ### 3.2 Annotating generated triples
 
