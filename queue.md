@@ -28,6 +28,11 @@ still sound on today's `main` and get it ready for Emma to submit.
    against `pages/arxiv/loka-retractable-provenance.pdf` (17 pages, named author). Stop before
    the final Submit and get Emma's explicit yes. After announcement, put the arXiv ID on the
    `/arxiv/` page and in README.md.
+   **State 2026-10-30 ~14:00 PST:** Emma is signed in. The account already has two incomplete,
+   untitled submissions, `submit/8274430` and `submit/8274728` (both expire 2026-11-06), so no
+   third one was started. `submit/8274430/start` is open in Chrome on the arXiv Submittal
+   Agreement. Accepting it grants arXiv an irrevocable licence, so Emma has to tick it herself.
+   After that, Claude fills in the rest. Delete `8274728` only if Emma says to.
 
 Not queued, for Emma (new experiments; INTENT says ask first): a store-size × removal-size grid; an extractor run on the
 153k store showing 0 generated/reserved rows; deeper chains; an over-deletion count. Also:
