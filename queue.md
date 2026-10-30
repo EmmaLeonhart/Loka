@@ -17,8 +17,8 @@ arXiv submission of `paper/paper.md` (Emma, 2026-10-16: this is the whole queue)
 already has an Accept (clawRxiv v16) and a CI-built source package; these items check it is
 still sound on today's `main` and get it ready for Emma to submit.
 
-1. Refresh `/arxiv/` once the Paper PDF run for the v0.4.7 citation commit is green: check the
-   PDF cites v0.4.7, copy the named PDF and source tarball over `pages/arxiv/`'s copies.
+(empty: the review-round decisions and the v0.4.7 release are done; arXiv waits on Emma's
+upload, see TODO.md "Paper / arXiv — ready for Emma to submit")
 
 ---
 

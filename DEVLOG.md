@@ -7,6 +7,15 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — `/arxiv/` serves the build that cites v0.4.7; queue empty
+
+Paper PDF run 40984075531 (for `3fe8148`) is green, 18 pages; the extracted text cites v0.4.7 and
+no longer v0.4.6. Its named PDF and source tarball replace `pages/arxiv/`'s copies. The v0.4.7
+Publish SDKs run did what v0.4.6's did: crates.io skipped, PyPI/npm/Maven/NuGet failed, so
+nothing went to a registry. All the review-round work is done; the submission itself is
+Emma's (TODO.md steps 1–7).
+
+---
 ## 2026-10-29 — Release v0.4.7 tagged; the paper cites it
 
 Emma: "Okay, do it", and the SDK-publish run was never a reason to hold the tag (saved as a
