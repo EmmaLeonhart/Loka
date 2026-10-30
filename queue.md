@@ -20,9 +20,7 @@ still sound on today's `main` and get it ready for Emma to submit.
 Fixes from LLM review round 2 (`paper/reviews/llm-round-2026-10-29b.md`). Text-only; each
 is one paper edit, no new experiment.
 
-1. arXiv category: primary cs.AI, cross-list cs.DB (Emma called it "an AI paper"; my call,
-   easy to reverse): `paper/arxiv/METADATA.md`, `/arxiv/` page, TODO.md steps.
-2. Rebuild and refresh `/arxiv/`.
+1. Rebuild and refresh `/arxiv/`.
 
 Not queued, for Emma (new experiments; INTENT says ask first): a store-size × removal-size grid; an extractor run on the
 153k store showing 0 generated/reserved rows; deeper chains; an over-deletion count. Also:

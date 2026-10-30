@@ -10,8 +10,8 @@ references. **Submitting is Emma's action.**
 - **Title:** Loka: Provenance for Retracting Model-Generated Triples in an RDF-star Store
 - **Authors:** Emma Leonhart
 - **Contact:** emma@topazcomputing.com
-- **Primary category:** cs.DB (Databases)
-- **Cross-list:** cs.AI (Artificial Intelligence)
+- **Primary category:** cs.AI (Artificial Intelligence)
+- **Cross-list:** cs.DB (Databases)
 - **Comments:** 18 pages. Code: https://github.com/EmmaLeonhart/Loka (release v0.4.7). Checkpoints and corpora: https://huggingface.co/datasets/EmmaLeonhart/loka and https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata
 - **License:** CC BY 4.0 (decided 2026-10-16, see DEVLOG). It matches the rest of the release:
   open code (AGPL), CC0 source data, public checkpoints and corpora. A CC licence on arXiv can't

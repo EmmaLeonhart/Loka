@@ -7,6 +7,14 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — arXiv category: cs.AI primary, cs.DB cross-list
+
+Emma: "this is an AI paper, but it's ... using ontology for AI". My call from that: primary
+category cs.AI, cross-list cs.DB (was the reverse). Changed in `paper/arxiv/METADATA.md`, the
+`/arxiv/` page and TODO.md's submission steps, including which archive an endorser should have
+posted in. Easy to switch back at upload time if Emma prefers cs.DB.
+
+---
 ## 2026-10-29 — Appendix B moved to docs/model-history.md; §5.5's exclusion sentence corrected
 
 Round-2 fix (Claude W7, Mistral W5). Appendix B, the model-series debugging history (~730

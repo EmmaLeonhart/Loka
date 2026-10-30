@@ -133,11 +133,11 @@ was fixed), the Qwen path was scoped out (§7.2), and the licence was set to CC 
 Only Emma can do these steps, because they need her arXiv account:
 
 1. **Account.** Log in at <https://arxiv.org/login>, or register with emma@topazcomputing.com.
-2. **Start a submission** (Submit → New). Licence: CC BY 4.0. Category: cs.DB primary;
-   cs.AI cross-list goes on the metadata page.
-3. **Endorsement, if asked.** A first submission to cs.DB from an account with no papers there
+2. **Start a submission** (Submit → New). Licence: CC BY 4.0. Category: cs.AI primary;
+   cs.DB cross-list goes on the metadata page.
+3. **Endorsement, if asked.** A first submission to cs.AI from an account with no papers there
    and no academic email usually needs an endorsement. arXiv shows an endorsement code and a
-   link to request one. Send the code to someone who has posted in cs.DB; they enter it at
+   link to request one. Send the code to someone who has posted in cs.AI; they enter it at
    arxiv.org/auth/endorse. If arXiv doesn't ask, skip this step.
 4. **Upload** `loka-arxiv-source.tar.gz` from <https://loka.emmaleonhart.com/arxiv/>, or from
    the latest "Paper PDF" run's `paper-pdfs` artifact. arXiv compiles `paper.tex`.
