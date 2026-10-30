@@ -381,6 +381,12 @@ We described how a triplestore can hold model-generated statements next to curat
 
 ---
 
+## AI assistance
+
+Claude Code (Anthropic) was used throughout this project, under the author's direction, to write and test much of the code and to draft and revise the text of this paper. Drafts were also reviewed by language-model reviewers. The author takes full responsibility for the paper's content.
+
+---
+
 ## References
 
 - Ali, M., Berrendorf, M., Hoyt, C. T., Vermue, L., Sharifzadeh, S., Tresp, V., Lehmann, J. *PyKEEN 1.0: A Python Library for Training and Evaluating Knowledge Graph Embeddings.* Journal of Machine Learning Research 22(82):1–6, 2021.
