@@ -23,9 +23,9 @@ still sound on today's `main` and get it ready for Emma to submit.
    autofilled one; the login page was left open with her username filled). Then Claude starts
    Submit → New and fills it from `paper/arxiv/METADATA.md`: licence CC BY 4.0, primary cs.LG,
    cross-lists cs.DB and cs.AI; upload `pages/arxiv/loka-retractable-provenance-source.tar.gz` (the
-   `c60a23b`+ build, 17 pages); paste title, abstract and comments. If arXiv asks for an
+   `d669ec8`+ build with the AI-assistance section, 18 pages); paste title, abstract and comments. If arXiv asks for an
    endorsement, show Emma the code and stop; requesting it is hers. Check arXiv's compiled PDF
-   against `pages/arxiv/loka-retractable-provenance.pdf` (17 pages, named author). Stop before
+   against `pages/arxiv/loka-retractable-provenance.pdf` (18 pages, named author). Stop before
    the final Submit and get Emma's explicit yes. After announcement, put the arXiv ID on the
    `/arxiv/` page and in README.md.
    **State 2026-10-30 ~16:25 PST:** Emma is signed in. The account already has two incomplete,

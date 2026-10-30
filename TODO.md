@@ -142,7 +142,7 @@ Only Emma can do these steps, because they need her arXiv account:
 4. **Upload** `loka-arxiv-source.tar.gz` from <https://loka.emmaleonhart.com/arxiv/>, or from
    the latest "Paper PDF" run's `paper-pdfs` artifact. arXiv compiles `paper.tex`.
 5. **Metadata.** Paste the title, abstract and comments from `paper/arxiv/METADATA.md`.
-6. **Check** arXiv's compiled PDF against the one on the `/arxiv/` page (17 pages, named
+6. **Check** arXiv's compiled PDF against the one on the `/arxiv/` page (18 pages, named
    author), then submit. Announcement follows moderation, usually within one or two working days.
 7. Afterwards, the arXiv identifier goes on the `/arxiv/` page and in README.md. Any session
    can do that once Emma pastes the ID.

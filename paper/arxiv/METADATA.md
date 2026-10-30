@@ -12,7 +12,7 @@ references. **Submitting is Emma's action.**
 - **Contact:** emma@topazcomputing.com
 - **Primary category:** cs.LG (Machine Learning) (Emma, 2026-10-30)
 - **Cross-list:** cs.DB (Databases), cs.AI (Artificial Intelligence)
-- **Comments:** 17 pages. Code: https://github.com/EmmaLeonhart/Loka (release v0.4.7). Checkpoints and corpora: https://huggingface.co/datasets/EmmaLeonhart/loka and https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata
+- **Comments:** 18 pages. Code: https://github.com/EmmaLeonhart/Loka (release v0.4.7). Checkpoints and corpora: https://huggingface.co/datasets/EmmaLeonhart/loka and https://huggingface.co/datasets/EmmaLeonhart/normalized-wikidata
 - **License:** CC BY 4.0 (decided 2026-10-16, see DEVLOG). It matches the rest of the release:
   open code (AGPL), CC0 source data, public checkpoints and corpora. A CC licence on arXiv can't
   be withdrawn once a version is posted, so this is the one field to re-read before clicking.

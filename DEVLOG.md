@@ -7,6 +7,27 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-30 — arXiv upload under way; categories changed; AI-assistance statement added
+
+The loop cron is re-armed (`7,37 * * * *`). On arxiv.org, Emma is signed in. The account already
+had two untitled incomplete submissions (`submit/8274430`, `submit/8274728`, both expiring
+2026-11-06). Claude used `8274430` and left `8274728` alone. Emma said "Accept", and Claude
+accepted the Submission Agreement and ticked the contact certification. The Claude Code
+permission check refused two clicks, "I am submitting as an author" and the CC BY licence
+("Consent Given For The User"), so those are Emma's.
+
+Emma changed the categories: primary **cs.LG**, cross-lists **cs.DB and cs.AI**. Updated in
+`paper/arxiv/METADATA.md`, `queue.md` and the `/arxiv/` page. Cross-lists are entered on arXiv's
+Metadata step.
+
+Emma asked whether the paper has an AI declaration. It did not. Added `## AI assistance` before
+References: Claude Code was used under her direction to write and test much of the code and to
+draft and revise the paper, drafts were reviewed by language-model reviewers, and she takes full
+responsibility. Paper PDF run 41145054025 built cleanly; the PDF is now 18 pages (was 17). The
+source tarball and PDF under `pages/arxiv/` were refreshed from that run, and "17 pages" became
+18 in METADATA comments, the `/arxiv/` page, queue.md and TODO.md.
+
+---
 ## 2026-10-29 (late) — Session wrap: crons stopped, arXiv upload queued first, transcript committed
 
 Emma: stop all cron jobs, put the arXiv upload process at the very start of the queue, and
