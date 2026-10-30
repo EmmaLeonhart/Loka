@@ -7,6 +7,18 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — §6.2: SPARQL portability "in principle"; no Jena run (Emma)
+
+Round-2 fix (Gemini, Claude, ChatGPT, Qwen). The sentence "any SPARQL-star store ... can compute
+the same retraction set" was untested beyond Loka. Emma: no Jena comparison, because the paper
+also presents Loka itself, and the world-model-harness use of the store stays open. §6.2 now
+says the semantics do not depend on the dedicated traversal and are portable in principle,
+that the queries ran only on Loka's executor, and that `retract_set` adds 6–10× speed. It also
+says plainly that the section's two tables measure the same thing in separate binaries (Gemini
+wanted them reconciled). INTENT.md records the framing; the Jena experiment is off the
+for-Emma list.
+
+---
 ## 2026-10-29 — Abstract and §9: retraction time is the in-memory set computation, ~85 ms
 
 Round-2 fix (Meta AI, Gemini, Grok, Mistral, ChatGPT). The abstract said "about 0.1 s" for the

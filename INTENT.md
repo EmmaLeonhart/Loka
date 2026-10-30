@@ -32,4 +32,8 @@ README.md.
   with the prompt saved in `paper/reviews/llm-round-2026-10-29.md`. A "permission denied" from
   the extension can be transient: retry before reporting a reviewer as unavailable (Emma,
   2026-10-29). clawRxiv has given no reviews since 2026-10-16 (site-wide).
+- The paper is an ontology-for-AI paper (Emma, 2026-10-29): the contribution is the provenance
+  vocabulary and what the store does with it, not the model or training. It also presents Loka
+  itself, so no comparison runs on Jena or other triplestores; the world-model-harness use of
+  the store is left open as a direction, not claimed.
 - When Emma is angry, freeze and answer from context; do not search or start anything new.
