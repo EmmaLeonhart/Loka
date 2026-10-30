@@ -7,6 +7,16 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — v0.4.7 release: Emma said yes; tag held on the SDK-publish question
+
+Emma chose to tag v0.4.7 for the paper. Before tagging I found that a `v*` tag also runs
+`publish-sdks.yml`, which tried PyPI, npm, Maven and NuGet at v0.4.6 (all failed; crates.io
+skipped). If a credential has been added since, the tag would publish an SDK, which cannot be
+undone and is Emma-gated. I asked whether to cancel that run. Her reply was that the cron was
+waiting for the turn to end, so I ended the turn and did not push the tag. The queue item now
+holds the release and says not to push it on a cron tick.
+
+---
 ## 2026-10-29 — `/arxiv/` refreshed: new title, rename, five-run timings, SPARQL baseline
 
 Paper PDF run 40982555153 (for `dc962ed`) is green: 18 pages, so the page count stays. The
