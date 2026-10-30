@@ -7,6 +7,22 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — §6.2 gives the 2M store's starting row count; reframe planned
+
+Round-2 fix 1 (Claude's ledger point). §6.2 now says the store held 2,015,262 rows before the 30
+commits (`rows_before` in `training/logs/retract_commit_hf2m.json`), so 2,015,262 − 5,377 =
+2,009,885 reads directly. That is 649 rows more than imported + generated + annotations. The logs
+do not break the store down further, and the paper says so instead of guessing. (The import also
+had 19,933 server-rejected lines per DEVLOG 2026-10-07, so the import count itself may be lines
+sent, not rows stored.)
+
+Emma settled the framing: "this is an ontology paper ... using ontology for AI". Queued as
+separate items: the `prov:` → `lprov:` prefix, an abstract/intro/contributions reframe that
+demotes corpus exclusion, the §3.1 guard list and the §2.4/§2.6 scope, compressing §5 and
+Appendix B, and switching the arXiv primary category to cs.AI (my call from "an AI paper"; easy
+to reverse). The two held training-exclusion items are folded into these.
+
+---
 ## 2026-10-29 (evening) — Qwen reviewed too: Weak Accept; training-exclusion fixes held
 
 Emma gave her birth year for Qwen's age check, so Qwen ran as a guest on the Markdown source

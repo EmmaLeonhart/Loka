@@ -20,25 +20,32 @@ still sound on today's `main` and get it ready for Emma to submit.
 Fixes from LLM review round 2 (`paper/reviews/llm-round-2026-10-29b.md`). Text-only; each
 is one paper edit, no new experiment.
 
-1. §6.2 2M-store ledger: give the pre-retraction row count (2,015,262, from
-   `training/logs/retract_commit_hf2m.json`) and say what the 649 rows beyond imported +
-   generated + annotations are, if the logs show it; otherwise say they are unaccounted for.
-2. Abstract: "about 0.1 s" → the in-memory preview time (~85 ms), commits separate; say 8,621 is
+1. Abstract: "about 0.1 s" → the in-memory preview time (~85 ms), commits separate; say 8,621 is
    (entity, generated triple) pairs.
-3. §6.2: one sentence tying the two `retract_set` tables together; "any SPARQL-star store" →
+2. §6.2: one sentence tying the two `retract_set` tables together; "any SPARQL-star store" →
    "in principle; tested only on this engine".
-4. §6.2: state the laptop's CPU, RAM and OS (check `planning/system-instability-verdict-2026-05-13.md`).
-5. §6.3: say the reification baseline uses `prov:wasDerivedFrom` (not the `prov:used` of §2.2)
+3. §6.2: state the laptop's CPU, RAM and OS (check `planning/system-instability-verdict-2026-05-13.md`).
+4. §6.3: say the reification baseline uses `prov:wasDerivedFrom` (not the `prov:used` of §2.2)
    and why, and that named graphs are compared by size only.
-6. Rebuild and refresh `/arxiv/`.
+5. Rename the `prov:` prefix for `http://loka.dev/provenance/` to `lprov:` in the paper (Claude,
+   Qwen: `prov:` is PROV-O's registered prefix).
+6. Reframe as an ontology-for-AI paper (Emma, 2026-10-29: "this is an ontology paper ... using
+   ontology for AI"). Abstract, §1 and Contributions: the contribution is a small provenance
+   vocabulary for model-generated statements and the operations it enables in the store (query,
+   cascade retraction). Corpus exclusion drops from Contribution 1 to one sentence, scoped to
+   flagged pipeline output; delete "even if one of those guards regresses". The model is the
+   generator that produced the triples, not a contribution.
+7. §3.1: turn the guard paragraph into a short list (each invariant → its guards), scoped to the
+   pipeline; §2.4/§2.6: retraction removes stored outputs, not a statement's influence on
+   trained weights.
+8. Compress §5 and Appendix B (model-debugging history) to about half a page plus the version
+   table; move the full narrative to `docs/model-history.md` and link it.
+9. arXiv category: primary cs.AI, cross-list cs.DB (Emma called it "an AI paper"; my call,
+   easy to reverse): `paper/arxiv/METADATA.md`, `/arxiv/` page, TODO.md steps.
+10. Rebuild and refresh `/arxiv/`.
 
-Held for Emma's framing decision (2026-10-29 evening: "training isn't a big topic of this paper
-... this is essentially an ontology paper"): the paper may drop training exclusion as a
-contribution and shrink §5/Appendix B, which would make these two edits moot:
-- Abstract and §3.1: state that exclusion holds for output written through Loka's pipeline (flagged), not for triples another tool posts unflagged; Contribution 1's "even if one guard regresses" holds for the output side only.
-- Abstract, §2.4, §2.6: say selection provenance records what the selector consulted, not what the model learned in training; retraction does not remove a statement's influence on weights.
-- Possible replacement for the store-size benchmarks: a Lean proof that `retract_set` does a
-  bounded number of index lookups per removed triple (cost ∝ removed × log store size).
+Possible replacement for the store-size benchmarks, for Emma: a Lean proof that `retract_set`
+does a bounded number of index lookups per removed triple (cost ∝ removed × log store size).
 
 Not queued, for Emma (new experiments; INTENT says ask first): the SPARQL closure on another
 RDF-star store (Jena/Oxigraph); a store-size × removal-size grid; an extractor run on the
