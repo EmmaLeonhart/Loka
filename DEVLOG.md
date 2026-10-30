@@ -7,6 +7,14 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — §1, §3.4: "every generated triple" scoped to the §4.4 procedure
+
+DeepSeek (round 2, reframed build): §1 said every model-predicted triple is written with its
+selection-provenance edges, and §3.4 said every generated triple carries them. §7.2 says the
+interactive Qwen generator writes none. Both sentences now say "every triple written by Loka's
+inference procedure (§4.4)", which is what the evaluation covers.
+
+---
 ## 2026-10-29 — Lean proof of the retraction lookup bound: not attempted (not easy here)
 
 Emma: "if we can do a lean proof that's really easy, we do it. Otherwise, we don't." There is no

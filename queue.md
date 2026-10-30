@@ -19,17 +19,14 @@ still sound on today's `main` and get it ready for Emma to submit.
 
 Fixes from the late round-2 reviews (DeepSeek, Perplexity, on the reframed build):
 
-1. §1 and §3.4: "every model-predicted triple is written together with ... from which stored
-   statements" and "every generated triple carries `propositionSelectedFrom` edges" are false
-   for the interactive generator (§7.2); scope both to triples written by the §4.4 procedure.
-2. §4.4: replace "cites everything it used" (Perplexity W1) with what is true: the subject's
+1. §4.4: replace "cites everything it used" (Perplexity W1) with what is true: the subject's
    matching statements plus one statement per contributing neighbour, within the selector's
    bounds; ranking, the top-N cutoff and the "subject lacks this predicate" test are not
    recorded. State the completeness condition as: sufficient for whole-node retraction of any
    cited node.
-3. §7.3: one sentence that the correctness tests check retraction against the recorded links,
+2. §7.3: one sentence that the correctness tests check retraction against the recorded links,
    not that the selector recorded every link (Perplexity W2: a capture oracle is future work).
-4. Rebuild and refresh `/arxiv/`.
+3. Rebuild and refresh `/arxiv/`.
 
 Not queued, for Emma (new experiments; INTENT says ask first): a store-size × removal-size grid; an extractor run on the
 153k store showing 0 generated/reserved rows; deeper chains; an over-deletion count. Also:
