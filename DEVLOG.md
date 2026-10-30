@@ -7,6 +7,19 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — Abstract, §1 and contributions reframed: an ontology for model-generated statements
+
+Emma: "this is an ontology paper ... using ontology for AI". The abstract now leads with the
+provenance vocabulary and what the store does with it: query, filter at extraction, retract by
+dependency. "The pipeline's own outputs never re-enter a training corpus" is gone, and §1's
+second problem is a corpus exported from the graph, not the next model's training data.
+Contributions are now: (1) the vocabulary, (2) cascade retraction, (3) store-side use of the
+flags, explicitly scoped to Loka's own flagged writes (the store accepts unflagged triples from
+other writers), and (4) the Wikidata case study, where the model is the workload. "Even if one of
+those guards regresses" is deleted (Claude W8). §9 matches. §8 gets one sentence leaving the
+store-as-training-harness idea open, unclaimed (Emma). No numbers changed.
+
+---
 ## 2026-10-29 — Paper: `lprov:` for Loka's namespace; Lean attempt queued last
 
 Round-2 fix (Claude, Qwen): the paper abbreviated `http://loka.dev/provenance/` as `prov:`,
