@@ -7,6 +7,17 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-29 — §4.4: "cites everything it used" replaced by what the record guarantees
+
+Perplexity W1 (round 2): §4.4 said the bounded selector "cites everything it used", so the
+record "stays complete relative to the procedure". The selector also uses the predicate ranking,
+the top-N cutoff and the negative test that the subject lacks the predicate, and none of these
+is recorded. §4.4 now says so, and states the narrower guarantee the retraction relies on:
+retracting any cited node, or any subject or neighbour the selector consulted, reaches the
+prediction. Each consulted neighbour contributes a cited statement, and the subject's consulted
+statements that matched are cited.
+
+---
 ## 2026-10-29 — §1, §3.4: "every generated triple" scoped to the §4.4 procedure
 
 DeepSeek (round 2, reframed build): §1 said every model-predicted triple is written with its
