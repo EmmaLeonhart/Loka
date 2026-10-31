@@ -7,6 +7,17 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-30 22:50 PST — Session wrap: loop cron stopped
+
+Emma: stop all crons for this session, then commit and push. The loop cron (`7,37 * * * *`, job
+`66c2b8fe`) is deleted. The arXiv paper is submitted (`submit/8274430`, in moderation; earliest
+announcement Mon 2026-11-02 20:00 ET). The only queue item is putting the arXiv ID on `/arxiv/`
+and in README.md once it's announced. Not queued, for Emma to decide: the reference nits found
+after submission (Bordes et al. "García-Durán" accent, a year on the W3C RDF-star citation, the
+§4.1 `^^<datatype>` line, which copies out of the PDF as control characters and runs about 9pt
+into the margin), for a possible v2.
+
+---
 ## 2026-10-30 22:13 PST — arXiv: earliest announcement is Monday evening
 
 The status on the account page went from *processing* to *submitted* (in moderation). By arXiv's
