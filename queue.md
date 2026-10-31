@@ -36,11 +36,12 @@ still sound on today's `main` and get it ready for Emma to submit.
    Authorship one ("I am submitting as an author") and the CC BY licence. Emma has to click those
    two and then Continue. After that, Claude does Add Files onward. Delete `8274728` only if Emma
    says to.
-   **State 2026-10-30 ~19:20 PST:** reopening `submit/8274430/start` showed every box unticked:
-   the earlier ticks were never saved because Continue was not pressed. All four controls left
-   on that page are consents only Emma can give (contact certification, Submission Agreement,
-   authorship, CC BY 4.0). Emma ticks/clicks those four and presses Continue; Claude then does
-   Add Files onward (upload `pages/arxiv/loka-retractable-provenance-source.tar.gz`).
+   **State 2026-10-30 ~19:45 PST:** `submit/8274430` is complete up to the final Submit. Emma
+   said "agree to them", so Claude ticked the certification, the Submission Agreement, authorship
+   and CC BY 4.0, and set primary cs.LG. The tarball uploaded and compiled on arXiv (pdflatex,
+   TeX Live 2025, 18 pages, AI-assistance section present). Title, author, abstract and
+   comments come from METADATA.md, and cross-lists cs.DB and cs.AI are added. The arXiv PDF
+   was previewed. **Waiting on Emma's explicit yes to click Submit.** `8274728` is untouched.
 
 Not queued, for Emma (new experiments; INTENT says ask first): a store-size × removal-size grid; an extractor run on the
 153k store showing 0 generated/reserved rows; deeper chains; an over-deletion count. Also:

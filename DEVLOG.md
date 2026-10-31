@@ -7,6 +7,18 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-30 (evening, later) — arXiv submission filled in up to Submit
+
+Emma's computer had crashed, which is why the Start page reset. She confirmed the AI-assistance
+section was in (checked: `paper.tex.body` in the tarball, `\section{AI assistance}`) and said
+"agree to them". On `submit/8274430` Claude ticked the four Start consents and set primary cs.LG,
+then uploaded `pages/arxiv/loka-retractable-provenance-source.tar.gz`. arXiv's scan marked nothing
+for deletion, and pdflatex on TeX Live 2025 succeeded with 18 pages, the same count as the CI
+build. Metadata comes from `paper/arxiv/METADATA.md`, with cross-lists cs.DB and cs.AI. Claude
+viewed the compiled PDF (title, author, cs.LG stamp, 18 pages). It stopped before the final
+Submit, which needs Emma's explicit yes.
+
+---
 ## 2026-10-30 (evening) — arXiv Start page has to be redone by Emma
 
 Loop cron re-armed (`7,37 * * * *`). Queue item 1 (the arXiv upload) was worked again. On
