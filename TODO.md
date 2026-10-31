@@ -121,7 +121,10 @@ Also, please, I don't know why it is that this TODO.md is so cluttered, and you 
 
 ---
 
-## Paper / arXiv — ready for Emma to submit (2026-10-16)
+## Paper / arXiv — submitted 2026-10-30 (`submit/8274430`, in moderation)
+
+**Submitted 2026-10-30 20:18 PST** (cs.LG; cross-lists cs.DB, cs.AI; CC BY 4.0). The steps below
+are done. What remains is step 7: the arXiv ID goes on `/arxiv/` and in README.md (queue.md).
 
 The 2026-10-08 hold is lifted: on 2026-10-16 Emma asked whether the paper is enough for arXiv. It
 is. The latest clawRxiv review (v16, post 2915) is **Accept**. The remaining cons depend on the

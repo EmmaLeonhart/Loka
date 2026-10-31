@@ -7,6 +7,17 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-30 20:18 PST — Paper submitted to arXiv
+
+Emma said "yes", and Claude clicked Submit on `submit/8274430`. arXiv showed "Article
+submitted", and the account page lists it as *processing*. It is the 18-page build with the
+AI-assistance section: primary cs.LG, cross-lists cs.DB and cs.AI, CC BY 4.0. arXiv did not ask
+for an endorsement. Its notice says the account has 1 submission left this month (limit 2 per
+calendar month). The unused draft `submit/8274728` was left alone and expires 2026-11-06.
+The upload queue item is done and deleted. The new first item is putting the arXiv ID on
+`/arxiv/` and in README.md once the paper is announced.
+
+---
 ## 2026-10-30 19:43 PST — loop tick: arXiv Submit still waiting on Emma
 
 Queue item 1 is the final Submit on `submit/8274430`, and it needs Emma's explicit yes. Claude's
