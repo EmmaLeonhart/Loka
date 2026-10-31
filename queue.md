@@ -36,6 +36,11 @@ still sound on today's `main` and get it ready for Emma to submit.
    Authorship one ("I am submitting as an author") and the CC BY licence. Emma has to click those
    two and then Continue. After that, Claude does Add Files onward. Delete `8274728` only if Emma
    says to.
+   **State 2026-10-30 ~19:20 PST:** reopening `submit/8274430/start` showed every box unticked:
+   the earlier ticks were never saved because Continue was not pressed. All four controls left
+   on that page are consents only Emma can give (contact certification, Submission Agreement,
+   authorship, CC BY 4.0). Emma ticks/clicks those four and presses Continue; Claude then does
+   Add Files onward (upload `pages/arxiv/loka-retractable-provenance-source.tar.gz`).
 
 Not queued, for Emma (new experiments; INTENT says ask first): a store-size × removal-size grid; an extractor run on the
 153k store showing 0 generated/reserved rows; deeper chains; an over-deletion count. Also:

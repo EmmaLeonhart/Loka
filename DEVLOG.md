@@ -7,6 +7,18 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-30 (evening) — arXiv Start page has to be redone by Emma
+
+Loop cron re-armed (`7,37 * * * *`). Queue item 1 (the arXiv upload) was worked again. On
+`submit/8274430/start` every box was unticked: the earlier ticks were never saved because
+Continue was not pressed. The item is stuck, and Claude made a call on it: it did not tick
+anything. The four controls on that page (contact certification, Submission Agreement,
+"I am submitting as an author", CC BY 4.0 licence) are legal consents in Emma's name. The
+permission check already refused two of them, and approval from an earlier session does not
+carry over. So the item stays first in the queue, with the state written down. Once Emma has
+ticked the four and pressed Continue, Claude does Add Files onward.
+
+---
 ## 2026-10-30 — arXiv upload under way; categories changed; AI-assistance statement added
 
 The loop cron is re-armed (`7,37 * * * *`). On arxiv.org, Emma is signed in. The account already
