@@ -36,7 +36,7 @@ still sound on today's `main` and get it ready for Emma to submit.
    Authorship one ("I am submitting as an author") and the CC BY licence. Emma has to click those
    two and then Continue. After that, Claude does Add Files onward. Delete `8274728` only if Emma
    says to.
-   **State 2026-10-30 ~19:45 PST:** `submit/8274430` is complete up to the final Submit. Emma
+   **State 2026-10-30 ~19:27 PST:** `submit/8274430` is complete up to the final Submit. Emma
    said "agree to them", so Claude ticked the certification, the Submission Agreement, authorship
    and CC BY 4.0, and set primary cs.LG. The tarball uploaded and compiled on arXiv (pdflatex,
    TeX Live 2025, 18 pages, AI-assistance section present). Title, author, abstract and
