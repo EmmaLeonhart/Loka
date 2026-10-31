@@ -7,7 +7,7 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
-## 2026-10-30 22:50 PST — Session wrap: loop cron stopped
+## 2026-10-30 23:04 PST — Session wrap: loop cron stopped
 
 Emma: stop all crons for this session, then commit and push. The loop cron (`7,37 * * * *`, job
 `66c2b8fe`) is deleted. The arXiv paper is submitted (`submit/8274430`, in moderation; earliest
