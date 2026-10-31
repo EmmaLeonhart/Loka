@@ -7,6 +7,13 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-30 22:13 PST — arXiv: earliest announcement is Monday evening
+
+The status on the account page went from *processing* to *submitted* (in moderation). By arXiv's
+schedule (14:00 ET cutoff), a submission at Friday 23:18 ET is announced Monday 2026-11-02 at 20:00
+ET at the earliest. Loop ticks before then won't check the account page. That's written in the queue item.
+
+---
 ## 2026-10-30 20:18 PST — Paper submitted to arXiv
 
 Emma said "yes", and Claude clicked Submit on `submit/8274430`. arXiv showed "Article

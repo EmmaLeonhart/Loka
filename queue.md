@@ -24,6 +24,9 @@ still sound on today's `main` and get it ready for Emma to submit.
    or a session can see it on the account page, add the abs link to `pages/arxiv/index.html`
    and README.md. If moderation puts the paper on hold or reclassifies it, tell Emma; replying
    to moderators is hers. Unused draft `submit/8274728` expires 2026-11-06 by itself.
+   **Timing:** arXiv's daily cutoff is 14:00 ET. This was submitted Friday 23:18 ET, after
+   Friday's cutoff, so the earliest announcement is Monday 2026-11-02 at 20:00 ET (17:00 PST),
+   unless moderation holds it. Ticks before then skip the account-page check and stay idle.
 
 Not queued, for Emma (new experiments; INTENT says ask first): a store-size × removal-size grid; an extractor run on the
 153k store showing 0 generated/reserved rows; deeper chains; an over-deletion count. Also:
