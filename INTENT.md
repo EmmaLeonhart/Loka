@@ -16,8 +16,10 @@ The arXiv submission of `paper/paper.md` and nothing else. The queue holds only 
 an empty queue is refilled only from arXiv work (a fixable point in a new review under
 `paper/reviews/`, a paper claim that no longer matches the code, a broken `/arxiv/` page or
 Paper PDF build). Otherwise the tick is idle: "nothing actionable; arXiv waiting on Emma".
-Only Emma does the arxiv.org steps; once she gives the arXiv ID it goes on `/arxiv/` and in
-README.md.
+On arxiv.org, Emma signs in herself. Claude fills the submission in Chrome at her direction,
+but the consents (agreement, authorship, licence) and the final Submit need her explicit yes in
+that session; a cron tick never clicks Submit. Once she gives the arXiv ID it goes on `/arxiv/`
+and in README.md.
 
 ## Standing constraints
 

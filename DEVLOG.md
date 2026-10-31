@@ -7,6 +7,14 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-10-30 19:43 PST — loop tick: arXiv Submit still waiting on Emma
+
+Queue item 1 is the final Submit on `submit/8274430`, and it needs Emma's explicit yes. Claude's
+call: a cron tick does not click it. Submitting is outward-facing and can't be undone, and the
+CC BY licence can't be withdrawn once posted. The item stays first. INTENT.md now says how the
+arXiv steps are split: Claude fills the form, Emma gives the consents and the Submit yes.
+
+---
 ## 2026-10-30 (evening, later) — arXiv submission filled in up to Submit
 
 Emma's computer had crashed, which is why the Start page reset. She confirmed the AI-assistance
