@@ -27,6 +27,8 @@ still sound on today's `main` and get it ready for Emma to submit.
    **Timing:** arXiv's daily cutoff is 14:00 ET. This was submitted Friday 23:18 ET, after
    Friday's cutoff, so the earliest announcement is Monday 2026-11-02 at 20:00 ET (17:00 PST),
    unless moderation holds it. Ticks before then skip the account-page check and stay idle.
+   **Checked 2026-11-01 09:27 PST:** Gmail has only the submission receipt, so no ID yet. Ticks
+   after Mon 17:00 PST check Gmail (`from:arxiv.org`) and the account page.
 
 Not queued, for Emma (new experiments; INTENT says ask first): a store-size × removal-size grid; an extractor run on the
 153k store showing 0 generated/reserved rows; deeper chains; an over-deletion count. Also:

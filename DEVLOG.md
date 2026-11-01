@@ -7,6 +7,19 @@ This started as **Loka**, a lean RDF-star triplestore with native vector indexin
 The "why" matters more than the "what." Per-commit detail lives in `git log`. This document is for narrative continuity — so a cold pickup understands the *trajectory* of the project, not just its current state. (For the current state, see `status.md`.)
 
 ---
+## 2026-11-01 09:27 PST — arXiv ID item checked; not done yet, stays first
+
+Emma asked for queue item 1 to be worked and not skipped. The cron is back on (`7,37 * * * *`,
+job `896be15a`). Claude searched Emma's Gmail for arXiv mail. The only message is the
+2026-10-30 23:18 ET receipt for `submit/8274430`: no arXiv ID, no hold, no reclassification.
+arXiv assigns the ID only when it announces the paper, so the item can't be finished today.
+Claude's call: leave `/arxiv/` and README.md unchanged. A placeholder or guessed ID on a public
+page would be wrong. The item stays first and is not deleted. The receipt says announcements
+go out at 20:00 ET, Sunday through Thursday. A Friday-after-cutoff submission goes in Monday's
+batch, so the queue's earliest date, Mon 2026-11-02 20:00 ET (17:00 PST), still holds. The first
+tick after that time checks Gmail and the account page for the ID.
+
+---
 ## 2026-10-30 23:04 PST — Session wrap: loop cron stopped
 
 Emma: stop all crons for this session, then commit and push. The loop cron (`7,37 * * * *`, job
